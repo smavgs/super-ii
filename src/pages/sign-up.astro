@@ -1,0 +1,45 @@
+---
+import { SignUp } from '@clerk/astro/components';
+import AuthStory from '@/components/AuthStory.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { authIsConfigured } from '@/lib/site';
+
+const authConfigured = authIsConfigured(Astro.locals);
+---
+
+<BaseLayout title="Join free" description="Create a free Super ii account with email, Google, or GitHub." noindex className="auth-body">
+  <div class="auth-page">
+    <AuthStory mode="sign-up" />
+    <section class="auth-panel">
+      <div class="auth-panel__inner">
+        <h2>Create your free account</h2>
+        <p>No payment card. Choose email, Google, or GitHub.</p>
+        {authConfigured ? (
+          <SignUp
+            routing="path"
+            path="/sign-up"
+            signInUrl="/sign-in"
+            fallbackRedirectUrl="/account"
+            appearance={{
+              elements: {
+                rootBox: 'sii-clerk-root',
+                cardBox: 'sii-clerk-card',
+              },
+              variables: {
+                colorPrimary: '#071a2f',
+                borderRadius: '12px',
+              },
+            }}
+          />
+        ) : (
+          <div class="auth-placeholder">
+            <h3>Account activation is being connected</h3>
+            <p>The interface is ready; the dedicated identity application still needs its production keys before public registration can open.</p>
+            <a class="button button--secondary button--block" href="/">Return home</a>
+          </div>
+        )}
+        <p class="auth-config-note">By creating an account, you agree to the <a href="/legal/terms">Terms</a> and acknowledge the <a href="/legal/privacy">Privacy Policy</a>.</p>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

@@ -1,0 +1,104 @@
+---
+import {
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from '@clerk/astro/components';
+import { authIsConfigured } from '@/lib/site';
+import LogoMark from './LogoMark.astro';
+
+const path = Astro.url.pathname;
+const authConfigured = authIsConfigured(Astro.locals);
+
+const nav = [
+  { href: '/models', label: 'Models' },
+  { href: '/datasets', label: 'Datasets' },
+  { href: '/spaces', label: 'Apps' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/docs', label: 'Docs' },
+];
+---
+
+<header class="site-header" data-site-header>
+  <div class="shell header-inner">
+    <a class="brand-lockup" href="/" aria-label="Super ii home">
+      <LogoMark size="small" priority />
+      <span>Super <strong>ii</strong></span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      {nav.map((item) => (
+        <a
+          href={item.href}
+          aria-current={path === item.href ? 'page' : undefined}
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="header-actions">
+      <button
+        class="icon-button theme-toggle"
+        type="button"
+        aria-label="Switch color theme"
+        data-theme-toggle
+      >
+        <i class="ph ph-sun" aria-hidden="true"></i>
+      </button>
+
+      {authConfigured ? (
+        <>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button class="button button--ghost button--small" type="button">Log in</button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button class="button button--dark button--small" type="button">Join free</button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <a class="button button--ghost button--small" href="/account">Workspace</a>
+            <UserButton
+              appearance={{
+                elements: { avatarBox: 'sii-clerk-avatar' },
+              }}
+            />
+          </Show>
+        </>
+      ) : (
+        <>
+          <a class="button button--ghost button--small auth-desktop" href="/sign-in">Log in</a>
+          <a class="button button--dark button--small auth-desktop" href="/sign-up">Join free</a>
+        </>
+      )}
+
+      <button
+        class="icon-button menu-toggle"
+        type="button"
+        aria-label="Open navigation"
+        aria-controls="mobile-navigation"
+        aria-expanded="false"
+        data-menu-toggle
+      >
+        <i class="ph ph-list" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobile-navigation" data-mobile-nav hidden>
+  <nav class="shell" aria-label="Mobile navigation">
+    {nav.map((item) => (
+      <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>
+        <span>{item.label}</span>
+        <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+      </a>
+    ))}
+    <div class="mobile-auth">
+      <a class="button button--secondary" href="/sign-in">Log in</a>
+      <a class="button button--dark" href="/sign-up">Join free</a>
+    </div>
+  </nav>
+</div>

@@ -1,0 +1,83 @@
+---
+import '@fontsource-variable/source-sans-3';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import { getImage } from 'astro:assets';
+import superIiLogo from '@/assets/super-ii-logo.png';
+import '@/styles/global.css';
+import Footer from '@/components/Footer.astro';
+import Header from '@/components/Header.astro';
+import { absoluteUrl, site } from '@/lib/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  noindex?: boolean;
+  className?: string;
+}
+
+const {
+  title,
+  description = site.brand.description,
+  image = '/brand/super-ii-logo.png',
+  noindex = false,
+  className = '',
+} = Astro.props;
+
+const pageTitle = title ? `${title} · ${site.brand.name}` : `${site.brand.name} · ${site.brand.tagline}`;
+const canonical = absoluteUrl(Astro.url.pathname);
+const imageUrl = absoluteUrl(image);
+const favicon = await getImage({
+  src: superIiLogo,
+  width: 256,
+  height: 256,
+  format: 'webp',
+  quality: 90,
+});
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffd21e" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/webp" href={favicon.src} />
+    <link rel="apple-touch-icon" href="/brand/super-ii-logo.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.brand.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={imageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <title>{pageTitle}</title>
+    <script is:inline>
+      (() => {
+        try {
+          const saved = localStorage.getItem('superii-theme');
+          const dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class={className}>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <Header />
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer />
+    <script is:inline src="/scripts/site.js" defer></script>
+  </body>
+</html>

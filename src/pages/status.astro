@@ -1,0 +1,34 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { authIsConfigured } from '@/lib/site';
+import { pingDatabase } from '@/lib/db';
+
+const authStatus = authIsConfigured(Astro.locals) ? 'Operational' : 'Activation pending';
+const databaseHealth = await pingDatabase(Astro.locals);
+const databaseStatus = databaseHealth === 'ok' ? 'Operational' : databaseHealth === 'unconfigured' ? 'Activation pending' : 'Degraded';
+const allOperational = authStatus === 'Operational' && databaseStatus === 'Operational';
+---
+
+<BaseLayout title="Status" description="Current operational status for the Super ii website, authentication, database, and public catalogs." noindex>
+  <PageHero
+    eyebrow="System status"
+    title="Super ii service status"
+    description="A direct view of the launch services. Catalog upload and runtime services are listed only after they exist."
+    compact
+  />
+
+  <section class="section">
+    <div class="shell status-board">
+      <div class="status-summary">
+        <i class:list={['ph', allOperational ? 'ph-check-circle' : 'ph-info']} aria-hidden="true"></i>
+        {allOperational ? 'All launch systems operational' : 'Website operational; launch integrations are being activated'}
+      </div>
+      <div class="status-row"><span>Public website</span><span class="status-value">Operational</span></div>
+      <div class="status-row"><span>Account authentication</span><span class="status-value">{authStatus}</span></div>
+      <div class="status-row"><span>Application database</span><span class="status-value">{databaseStatus}</span></div>
+      <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · 0 items</span></div>
+      <p>Checked at request time: <time datetime={new Date().toISOString()}>{new Date().toUTCString()}</time></p>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,62 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Security" description="The current Super ii security architecture, operational boundaries, reporting process, and planned controls.">
+  <PageHero
+    eyebrow="Security"
+    title="Security claims should be as reviewable as the code."
+    description="This page separates controls present at launch from controls that require later product or enterprise work."
+    compact
+  />
+
+  <div class="shell content-shell">
+    <article class="prose">
+      <h2 id="launch-controls">Launch controls</h2>
+      <ul>
+        <li>HTTPS is terminated at Cloudflare for the public domain.</li>
+        <li>Authentication is delegated to a dedicated identity provider; the website does not store account passwords.</li>
+        <li>Database access is server-side. Connection strings and secret keys are stored as deployment secrets, not committed to source.</li>
+        <li>Cross-origin state-changing requests are checked, and browser security headers are set at the edge.</li>
+        <li>The public catalog is empty at launch, so no unreviewed model or dataset files are distributed.</li>
+        <li>Dependencies are locked and audited in continuous integration before deployment.</li>
+      </ul>
+
+      <h2 id="data-boundaries">Data boundaries</h2>
+      <p>Account identity is handled by Clerk. Application records are stored in an isolated Neon Postgres project. The public site and server routes run on Cloudflare. Each provider processes data under its own terms and privacy commitments; the <a href="/legal/privacy">Privacy Policy</a> explains the categories used by Super ii.</p>
+
+      <h2 id="not-yet">Not claimed at launch</h2>
+      <p>Super ii does not claim a certification, formal uptime service level, penetration-test result, dedicated single-tenant environment, guaranteed data residency, or completed enterprise identity integration unless a later page or signed agreement supplies specific evidence.</p>
+
+      <h2 id="roadmap">Planned controls</h2>
+      <ul>
+        <li>Malware, secret, and unsafe-file scanning before artifact publication.</li>
+        <li>Immutable checksums, release provenance, and signed publishing records.</li>
+        <li>Fine-grained organization roles and review gates.</li>
+        <li>Expanded audit history and evidence exports.</li>
+        <li>Enterprise identity and regional deployment options where contracted.</li>
+      </ul>
+
+      <h2 id="report">Report a vulnerability</h2>
+      <p>Use the <a href="/contact?interest=security">security contact form</a> and choose <strong>Security report</strong>. Do not include exploit code, access tokens, personal data, or private artifacts in the first message. We will arrange an appropriate secure follow-up channel if needed.</p>
+
+      <h2 id="scope">Safe-harbor boundary</h2>
+      <p>Do not access, alter, download, or retain other people’s data; disrupt availability; use social engineering; test third-party infrastructure; or continue after being asked to stop. A formal disclosure policy will be published before a public bounty or testing program begins.</p>
+    </article>
+
+    <aside class="prose-aside">
+      <h2>On this page</h2>
+      <nav>
+        <a href="#launch-controls">Launch controls</a>
+        <a href="#data-boundaries">Data boundaries</a>
+        <a href="#not-yet">Not claimed</a>
+        <a href="#roadmap">Planned controls</a>
+        <a href="#report">Report a vulnerability</a>
+        <a href="#scope">Testing boundary</a>
+      </nav>
+    </aside>
+  </div>
+</BaseLayout>

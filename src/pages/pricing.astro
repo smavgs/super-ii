@@ -1,0 +1,129 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { plans } from '@/lib/site';
+
+export const prerender = true;
+
+const planCta = {
+  free: { label: 'Join free', href: '/sign-up', featured: false },
+  pro: { label: 'Join Pro beta list', href: '/contact?interest=pro', featured: true },
+  team: { label: 'Join Team beta list', href: '/contact?interest=team', featured: false },
+  enterprise: { label: 'Request a proposal', href: '/contact?interest=enterprise', featured: false },
+} as const;
+
+const comparison = [
+  { feature: 'Public repositories', values: ['Unlimited', 'Unlimited', 'Unlimited', 'Unlimited'] },
+  { feature: 'Private repositories', values: ['—', 'Included', 'Included', 'Custom'] },
+  { feature: 'Organization members', values: ['Community', 'Small teams', 'Per seat', 'Custom'] },
+  { feature: 'Role-based access', values: ['—', 'Basic', 'Advanced', 'Custom'] },
+  { feature: 'Audit history', values: ['—', '—', 'Included', 'Extended'] },
+  { feature: 'SSO and directory sync', values: ['—', '—', 'Option', 'Proposal'] },
+  { feature: 'Storage and compute', values: ['Community limits', 'Higher limits', 'Pooled limits', 'Negotiated'] },
+  { feature: 'Support', values: ['Community', 'Standard', 'Priority', 'Custom plan'] },
+];
+---
+
+<BaseLayout title="Pricing" description="Transparent Super ii plans for individuals, teams, and enterprises—with a real free tier and no card required to start.">
+  <PageHero
+    eyebrow="Simple, transparent plans"
+    title="Start in public for free. Pay when control and scale matter."
+    description="Free accounts are open now. Paid plans are published for transparency and will activate after beta readiness and payment onboarding."
+  >
+    <div class="pricing-notice">
+      <i class="ph ph-info" aria-hidden="true"></i>
+      <p><strong>Zero-upfront launch:</strong> Super ii does not charge before paid plans are active. Future payment-processor and usage charges apply only when a customer purchases or consumes paid services.</p>
+    </div>
+  </PageHero>
+
+  <section class="shell pricing-intro" aria-labelledby="plans-heading">
+    <h2 class="sr-only" id="plans-heading">Plans</h2>
+    <div class="pricing-grid">
+      {plans.map((plan) => {
+        const cta = planCta[plan.id as keyof typeof planCta];
+        return (
+          <article class:list={['price-card', cta.featured && 'price-card--featured']}>
+            {plan.status === 'available' && <span class="price-badge">Available now</span>}
+            {plan.status === 'beta-waitlist' && <span class="price-badge">Beta waitlist</span>}
+            {plan.status === 'proposal' && <span class="price-badge">By proposal</span>}
+            <h2>{plan.name}</h2>
+            <p class="price-card__summary">{plan.summary}</p>
+            <div class="price">
+              <strong>{plan.price}</strong>
+              <span>{plan.unit}</span>
+            </div>
+            <ul>
+              {plan.features.map((feature) => (
+                <li><i class="ph ph-check" aria-hidden="true"></i>{feature}</li>
+              ))}
+            </ul>
+            <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>
+              {cta.label}
+            </a>
+          </article>
+        );
+      })}
+    </div>
+  </section>
+
+  <section class="pricing-detail section--soft">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">Plan coverage</p>
+        <h2>A full path from first project to governed AI.</h2>
+        <p>Limits will be published before paid activation. Enterprise capabilities are scoped in writing and never implied by a badge alone.</p>
+      </div>
+
+      <div class="comparison-scroll">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th scope="col">Capability</th>
+              <th scope="col">Free</th>
+              <th scope="col">Pro</th>
+              <th scope="col">Team</th>
+              <th scope="col">Enterprise</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.map((row) => (
+              <tr>
+                <th scope="row">{row.feature}</th>
+                {row.values.map((value) => <td>{value}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell feature-rows">
+      <article class="feature-row">
+        <h2>Usage-based infrastructure</h2>
+        <div>
+          <p>Inference, hosted endpoints, accelerated app runtime, and storage are separate from subscriptions. When released, each service will show its unit price, included allowance, and spend controls before use.</p>
+          <ul>
+            <li><i class="ph ph-check" aria-hidden="true"></i> No surprise activation</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Usage visibility and budget controls</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Customer-supplied infrastructure proposals for larger workloads</li>
+          </ul>
+        </div>
+      </article>
+      <article class="feature-row">
+        <h2>Creator monetization</h2>
+        <div>
+          <p>Creator programs, paid apps, compute sponsorship, and revenue-sharing are planned surfaces—not active promises. Terms, fees, eligibility, and payout mechanics will be published before enrollment.</p>
+        </div>
+      </article>
+      <article class="feature-row">
+        <h2>Enterprise proposals</h2>
+        <div>
+          <p>Organizations can request a written proposal covering access controls, identity, support, regional requirements, deployment architecture, and commercial terms.</p>
+          <a class="button button--secondary" href="/enterprise">Explore enterprise</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

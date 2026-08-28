@@ -1,0 +1,21 @@
+---
+import LogoMark from '@/components/LogoMark.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Page not found" description="The requested Super ii page could not be found." noindex>
+  <section class="section">
+    <div class="shell empty-state">
+      <LogoMark size="medium" priority />
+      <p class="eyebrow">Error 404</p>
+      <h1>That page is not here.</h1>
+      <p>The link may be old, or the page may not have launched yet.</p>
+      <div class="button-row">
+        <a class="button button--dark" href="/">Go home</a>
+        <a class="button button--secondary" href="/models">Explore the hub</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

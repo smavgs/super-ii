@@ -1,17 +1,171 @@
 ---
+import LogoMark from '@/components/LogoMark.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
 
+export const prerender = true;
+
+const capabilities = [
+  {
+    title: 'Models',
+    copy: 'Version, document, discuss, and share machine-learning models with a clear path from experiment to release.',
+    href: '/models',
+    icon: 'ph-cube',
+    cta: 'Explore models',
+  },
+  {
+    title: 'Datasets',
+    copy: 'Publish data with licenses, schemas, previews, lineage, and the context people need to use it responsibly.',
+    href: '/datasets',
+    icon: 'ph-database',
+    cta: 'Explore datasets',
+  },
+  {
+    title: 'Apps',
+    copy: 'Turn ideas into interactive AI demos that anyone can try, inspect, and learn from in the browser.',
+    href: '/spaces',
+    icon: 'ph-browser',
+    cta: 'Explore apps',
+  },
+  {
+    title: 'Organizations',
+    copy: 'Give teams a shared home with roles, review paths, activity history, and room to grow into governed workflows.',
+    href: '/organizations',
+    icon: 'ph-users-three',
+    cta: 'Build together',
+  },
+];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout>
+  <section class="hero">
+    <div class="shell hero-inner">
+      <div class="hero-copy">
+        <div class="launch-pill"><span></span> Public beta · Catalog opens soon</div>
+        <h1>Open intelligence, built together.</h1>
+        <p class="hero-lead">
+          Super ii is a fast, public home for people building with AI—models, datasets, apps, and the communities around them.
+        </p>
+        <div class="button-row">
+          <a class="button button--dark" href="/sign-up">
+            Join Super ii
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </a>
+          <a class="button button--secondary" href="/models">Explore the hub</a>
+        </div>
+        <p class="hero-note">
+          <i class="ph ph-credit-card" aria-hidden="true"></i>
+          Start free. No card required.
+        </p>
+      </div>
+
+      <div class="hero-mark" aria-label="Super ii Sii brand mark">
+        <LogoMark size="large" priority />
+        <span class="hero-mark__caption">Built in public</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="trust-bar" aria-label="Launch principles">
+    <div class="shell trust-bar__inner">
+      <div class="trust-item"><i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i> Public by default</div>
+      <div class="trust-item"><i class="ph ph-lightning" aria-hidden="true"></i> Fast at the edge</div>
+      <div class="trust-item"><i class="ph ph-code" aria-hidden="true"></i> Open web stack</div>
+      <div class="trust-item"><i class="ph ph-shield-check" aria-hidden="true"></i> Clear access controls</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">One place to make progress</p>
+        <h2>From raw idea to useful AI.</h2>
+        <p>Discover work, understand how it was built, and collaborate without losing the decisions that made it trustworthy.</p>
+      </div>
+
+      <div class="capability-grid">
+        {capabilities.map((capability) => (
+          <a class="capability-card" href={capability.href}>
+            <div class="capability-card__icon">
+              <i class:list={['ph', capability.icon]} aria-hidden="true"></i>
+            </div>
+            <div>
+              <h3>{capability.title}</h3>
+              <p>{capability.copy}</p>
+            </div>
+            <span class="card-link">
+              {capability.cta}
+              <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="shell zero-state-panel">
+      <div class="zero-state-copy">
+        <p class="eyebrow">A clean beginning</p>
+        <h2>No demo models. No inflated numbers.</h2>
+        <p>
+          The old sample catalog is gone. Super ii starts with an honest empty hub, then grows only when real creators publish reviewed work.
+        </p>
+        <div class="button-row">
+          <a class="button button--dark" href="/models">See the empty catalog</a>
+          <a class="button button--secondary" href="/docs">How publishing will work</a>
+        </div>
+      </div>
+
+      <div class="zero-state-window" aria-label="Preview of the empty models catalog">
+        <div class="window-bar">
+          <span></span><span></span><span></span>
+          <div class="window-path">superii.site/models</div>
+        </div>
+        <div class="window-content">
+          <div>
+            <div class="window-empty-icon"><i class="ph ph-cube" aria-hidden="true"></i></div>
+            <h3>First release, coming soon</h3>
+            <p>Real model cards will appear here after review—never generated filler.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">What Super ii stands for</p>
+        <h2>A better default for shared AI work.</h2>
+      </div>
+
+      <div class="principle-grid">
+        <article class="principle">
+          <span class="principle__number">01</span>
+          <h3>Evidence over hype</h3>
+          <p>Model and dataset pages are designed to show licenses, limitations, versions, and provenance alongside performance.</p>
+        </article>
+        <article class="principle">
+          <span class="principle__number">02</span>
+          <h3>Useful access</h3>
+          <p>Public work stays easy to discover. Private collaboration and governance are paid capabilities, not barriers to learning.</p>
+        </article>
+        <article class="principle">
+          <span class="principle__number">03</span>
+          <h3>Honest growth</h3>
+          <p>Plans and limits are visible before purchase. Usage-priced infrastructure will be explained before it is activated.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="shell cta-band__inner">
+      <div>
+        <p class="eyebrow">The hub is open</p>
+        <h2>Claim your place before the first releases arrive.</h2>
+      </div>
+      <a class="button button--yellow" href="/sign-up">Join free</a>
+    </div>
+  </section>
+</BaseLayout>

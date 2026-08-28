@@ -1,0 +1,77 @@
+{
+  "brand": {
+    "name": "Super ii",
+    "shortName": "Sii",
+    "tagline": "Open intelligence, built together.",
+    "description": "A public AI collaboration hub for discovering, building, and sharing models, datasets, and apps.",
+    "url": "https://superii.site"
+  },
+  "launch": {
+    "phase": "Public beta",
+    "catalogStatus": "Opening soon",
+    "date": "2026-08-27"
+  },
+  "catalog": {
+    "models": [],
+    "datasets": [],
+    "spaces": []
+  },
+  "plans": [
+    {
+      "id": "free",
+      "name": "Free",
+      "price": "$0",
+      "unit": "forever",
+      "status": "available",
+      "summary": "For exploring and contributing in public.",
+      "features": ["Public profile and organizations", "Public models, datasets, and apps", "Community discussions", "Basic version history"]
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "price": "$9",
+      "unit": "per month",
+      "status": "beta-waitlist",
+      "summary": "For independent builders shipping more.",
+      "features": ["Everything in Free", "Private repositories", "Higher storage and compute limits", "Advanced publishing controls", "Priority build queue"]
+    },
+    {
+      "id": "team",
+      "name": "Team",
+      "price": "$20",
+      "unit": "per member / month",
+      "status": "beta-waitlist",
+      "summary": "For teams collaborating with control.",
+      "features": ["Everything in Pro", "Role-based access", "Audit history", "Team billing", "Shared resource groups"]
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "price": "Custom",
+      "unit": "annual agreement",
+      "status": "proposal",
+      "summary": "For governed AI at organizational scale.",
+      "features": ["Everything in Team", "SSO and directory sync options", "Regional deployment proposals", "Custom support plan", "Security and procurement review"]
+    }
+  ],
+  "routes": [
+    "/",
+    "/models",
+    "/datasets",
+    "/spaces",
+    "/pricing",
+    "/organizations",
+    "/enterprise",
+    "/docs",
+    "/about",
+    "/contact",
+    "/security",
+    "/status",
+    "/sign-in",
+    "/sign-up",
+    "/account",
+    "/legal/privacy",
+    "/legal/terms",
+    "/api/health"
+  ]
+}

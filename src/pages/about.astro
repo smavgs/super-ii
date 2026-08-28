@@ -1,0 +1,51 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="About" description="Why Super ii is building a public, evidence-minded home for open AI work.">
+  <PageHero
+    eyebrow="About Super ii"
+    title="A public home for AI work people can understand."
+    description="Super ii exists to make useful AI projects easier to discover, inspect, improve, and carry into real teams."
+  />
+
+  <div class="shell content-shell">
+    <article class="prose">
+      <h2 id="why">Why build another hub?</h2>
+      <p>AI work is more useful when the artifact and its context stay together. A model without a clear license, a dataset without lineage, or an app without limitations is harder to trust and harder to improve.</p>
+      <p>Super ii is being built around the opposite default: public discovery, explicit documentation, version history, visible limitations, and team controls that appear when collaboration becomes more complex.</p>
+
+      <h2 id="start">Why start empty?</h2>
+      <p>The original prototype used generated sample models to exercise the interface. Those entries were useful for design but not honest launch content, so the production catalog begins at zero. Real counts will be derived from real activity.</p>
+
+      <h2 id="business">How the business works</h2>
+      <p>Public participation starts free. Subscriptions are planned for private work, greater limits, team controls, governance, and support. Infrastructure-heavy services such as inference, hosted endpoints, storage, and accelerated apps will use transparent usage pricing when launched.</p>
+
+      <h2 id="principles">Operating principles</h2>
+      <ul>
+        <li>Separate what is live from what is planned.</li>
+        <li>Show material limits before asking for payment.</li>
+        <li>Protect credentials and private content by design.</li>
+        <li>Keep public knowledge easy to reach.</li>
+        <li>Prefer evidence and reproducibility over popularity theatre.</li>
+      </ul>
+
+      <h2 id="contact">Help shape it</h2>
+      <p>Creators, researchers, companies, and curious builders can <a href="/contact">tell us what they need</a>. Early feedback will shape publishing, governance, pricing, and infrastructure priorities.</p>
+    </article>
+
+    <aside class="prose-aside">
+      <h2>On this page</h2>
+      <nav>
+        <a href="#why">Why another hub?</a>
+        <a href="#start">Why start empty?</a>
+        <a href="#business">Business model</a>
+        <a href="#principles">Principles</a>
+        <a href="#contact">Help shape it</a>
+      </nav>
+    </aside>
+  </div>
+</BaseLayout>

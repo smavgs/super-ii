@@ -1,0 +1,17 @@
+{
+  "name": "Super ii",
+  "short_name": "Sii",
+  "description": "Open intelligence, built together.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffd21e",
+  "icons": [
+    {
+      "src": "/brand/super-ii-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

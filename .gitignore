@@ -6,6 +6,9 @@ dist/
 # dependencies
 node_modules/
 
+# local Cloudflare deployment state
+.wrangler/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
@@ -15,7 +18,12 @@ pnpm-debug.log*
 
 # environment variables
 .env
-.env.production
+.env.*
+.dev.vars
+!.env.example
+
+# local visual QA captures (the written QA record remains tracked)
+qa/evidence/
 
 # macOS-specific files
 .DS_Store

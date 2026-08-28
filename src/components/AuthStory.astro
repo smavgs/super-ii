@@ -1,0 +1,23 @@
+---
+import LogoMark from './LogoMark.astro';
+
+interface Props {
+  mode: 'sign-in' | 'sign-up';
+}
+
+const { mode } = Astro.props;
+const signingUp = mode === 'sign-up';
+---
+
+<section class="auth-story">
+  <div class="auth-story__inner">
+    <LogoMark size="medium" priority />
+    <h1>{signingUp ? 'Build your place in public.' : 'Welcome back.'}</h1>
+    <p>{signingUp ? 'Join the first Super ii community and be ready when creator publishing opens.' : 'Return to your Super ii profile, organizations, and early-access preferences.'}</p>
+    <div class="auth-points">
+      <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Fast email sign-in</div>
+      <div class="auth-point"><i class="ph ph-google-logo" aria-hidden="true"></i> Continue with Google</div>
+      <div class="auth-point"><i class="ph ph-github-logo" aria-hidden="true"></i> Continue with GitHub</div>
+    </div>
+  </div>
+</section>

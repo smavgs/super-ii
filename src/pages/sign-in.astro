@@ -1,0 +1,44 @@
+---
+import { SignIn } from '@clerk/astro/components';
+import AuthStory from '@/components/AuthStory.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { authIsConfigured } from '@/lib/site';
+
+const authConfigured = authIsConfigured(Astro.locals);
+---
+
+<BaseLayout title="Log in" description="Log in to Super ii with email, Google, or GitHub." noindex className="auth-body">
+  <div class="auth-page">
+    <AuthStory mode="sign-in" />
+    <section class="auth-panel">
+      <div class="auth-panel__inner">
+        <h2>Log in to Super ii</h2>
+        <p>Use the fastest secure option for you.</p>
+        {authConfigured ? (
+          <SignIn
+            routing="path"
+            path="/sign-in"
+            signUpUrl="/sign-up"
+            fallbackRedirectUrl="/account"
+            appearance={{
+              elements: {
+                rootBox: 'sii-clerk-root',
+                cardBox: 'sii-clerk-card',
+              },
+              variables: {
+                colorPrimary: '#071a2f',
+                borderRadius: '12px',
+              },
+            }}
+          />
+        ) : (
+          <div class="auth-placeholder">
+            <h3>Account activation is being connected</h3>
+            <p>The interface is ready; the dedicated identity application still needs its production keys before public sign-in can open.</p>
+            <a class="button button--secondary button--block" href="/">Return home</a>
+          </div>
+        )}
+      </div>
+    </section>
+  </div>
+</BaseLayout>

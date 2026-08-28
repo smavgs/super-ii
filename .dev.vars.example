@@ -1,0 +1,5 @@
+# Copy to .dev.vars only for local Wrangler development. Never commit real values.
+PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+DATABASE_URL=
+CONTACT_HASH_SALT=

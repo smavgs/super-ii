@@ -1,0 +1,65 @@
+---
+import { catalogMeta, type CatalogKind } from '@/lib/site';
+
+interface Props {
+  kind: CatalogKind;
+}
+
+const { kind } = Astro.props;
+const meta = catalogMeta[kind];
+---
+
+<section class="catalog-shell shell" data-catalog data-kind={kind}>
+  <aside class="catalog-sidebar">
+    <div class="catalog-filter-title">
+      <span>Filter</span>
+      <span class="count-badge">0</span>
+    </div>
+    <fieldset disabled>
+      <legend>Task</legend>
+      <label><input type="checkbox" /> Text</label>
+      <label><input type="checkbox" /> Image</label>
+      <label><input type="checkbox" /> Audio</label>
+      <label><input type="checkbox" /> Multimodal</label>
+    </fieldset>
+    <fieldset disabled>
+      <legend>Access</legend>
+      <label><input type="checkbox" /> Public</label>
+      <label><input type="checkbox" /> Gated</label>
+    </fieldset>
+  </aside>
+
+  <div class="catalog-main">
+    <div class="catalog-toolbar">
+      <label class="search-control">
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <span class="sr-only">Search {meta.title.toLowerCase()}</span>
+        <input
+          type="search"
+          placeholder={meta.example}
+          autocomplete="off"
+          data-catalog-search
+        />
+        <kbd>/</kbd>
+      </label>
+      <select aria-label={`Sort ${meta.title.toLowerCase()}`} disabled>
+        <option>Recently updated</option>
+      </select>
+    </div>
+
+    <div class="empty-state" aria-live="polite">
+      <div class="empty-state__icon">
+        <i class:list={['ph', meta.icon]} aria-hidden="true"></i>
+      </div>
+      <p class="eyebrow">A clean start</p>
+      <h2>No public {meta.title.toLowerCase()} yet</h2>
+      <p data-empty-copy>
+        We intentionally cleared the demo catalog. The first real {meta.singular} will appear here after it is reviewed and published.
+      </p>
+      <div class="button-row">
+        <a class="button button--dark" href="/sign-up">Create your account</a>
+        <a class="button button--secondary" href="/docs">Read the publishing guide</a>
+      </div>
+    </div>
+  </div>
+</section>

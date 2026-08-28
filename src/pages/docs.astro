@@ -1,0 +1,69 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Documentation" description="Learn how Super ii accounts, organizations, public repositories, reviews, plans, and future publishing workflows work.">
+  <PageHero
+    eyebrow="Documentation"
+    title="Build in public with a clear path to release."
+    description="The launch documentation covers what works today and labels the publishing capabilities that open after the first creator cohort."
+    compact
+  />
+
+  <div class="shell content-shell">
+    <article class="prose">
+      <h2 id="start">Start here</h2>
+      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub, set up your profile, explore the empty public hub, and register interest in creator and paid-plan access.</p>
+      <blockquote><p>Model, dataset, and app uploads are intentionally closed at initial launch. We will open publishing only after storage, moderation, review, and download controls are ready.</p></blockquote>
+
+      <h2 id="account">Create an account</h2>
+      <ol>
+        <li>Select <strong>Join free</strong> anywhere on the site.</li>
+        <li>Continue with email, Google, or GitHub.</li>
+        <li>Verify the address when prompted and complete your public profile.</li>
+      </ol>
+      <p>The free plan requires no payment card. Authentication is provided through a dedicated Super ii application; account credentials are not stored in the website source.</p>
+
+      <h2 id="catalog">Explore the hub</h2>
+      <p>The three public catalogs are separated by the kind of work they contain:</p>
+      <ul>
+        <li><a href="/models">Models</a> will hold weights, configuration, cards, versions, licenses, and responsible-use notes.</li>
+        <li><a href="/datasets">Datasets</a> will hold schemas, samples, licenses, provenance, and data cards.</li>
+        <li><a href="/spaces">Apps</a> will hold interactive AI experiences and the project information behind them.</li>
+      </ul>
+
+      <h2 id="publish">Publishing roadmap</h2>
+      <p>Publishing will open in stages. The first cohort will use reviewed uploads, immutable release records, and file-integrity checks. Later releases can add automated scanning, large-file storage, gated access, and hosted runtimes.</p>
+      <p>Until then, an empty result means exactly what it says: no public item has been approved. There are no generated demo entries or simulated download counts.</p>
+
+      <h2 id="organizations">Organizations</h2>
+      <p>Organizations are shared identities for teams. Free accounts can participate in public community work. Paid team capabilities will add private repositories, richer roles, audit history, and shared billing when those features leave beta.</p>
+
+      <h2 id="plans">Plans and usage</h2>
+      <p><a href="/pricing">Pricing</a> distinguishes the open Free plan from beta-waitlist and proposal plans. Storage, inference, endpoints, and accelerated app runtime will be usage-priced separately, with limits and spend controls shown before activation.</p>
+
+      <h2 id="api">API status</h2>
+      <p>A small health endpoint is available now at <a href="/api/health"><code>/api/health</code></a>. Repository and file APIs will be documented when uploads open, so developers do not build against an unstable contract.</p>
+
+      <h2 id="support">Get help</h2>
+      <p>Use the <a href="/contact">contact form</a> for access, plan, enterprise, security, privacy, or launch questions. Please do not include secrets, credentials, private model files, or sensitive personal data.</p>
+    </article>
+
+    <aside class="prose-aside">
+      <h2>On this page</h2>
+      <nav>
+        <a href="#start">Start here</a>
+        <a href="#account">Create an account</a>
+        <a href="#catalog">Explore the hub</a>
+        <a href="#publish">Publishing roadmap</a>
+        <a href="#organizations">Organizations</a>
+        <a href="#plans">Plans and usage</a>
+        <a href="#api">API status</a>
+        <a href="#support">Get help</a>
+      </nav>
+    </aside>
+  </div>
+</BaseLayout>

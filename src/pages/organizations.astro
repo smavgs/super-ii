@@ -1,0 +1,48 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Organizations" description="Give your AI team a shared Super ii home with roles, review paths, activity history, and shared resources.">
+  <PageHero
+    eyebrow="Build as a team"
+    title="One shared home for every AI project."
+    description="Organizations keep people, repositories, roles, and decisions together—from an open research group to a governed enterprise program."
+  >
+    <div class="button-row">
+      <a class="button button--dark" href="/sign-up">Create an account</a>
+      <a class="button button--secondary" href="/contact?interest=team">Discuss a team plan</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <div class="shell feature-rows">
+      <article class="feature-row">
+        <h2>Shared identity</h2>
+        <div>
+          <p>Bring models, datasets, and apps under a clear organization name. Public work remains discoverable while ownership and contributor roles stay understandable.</p>
+          <ul>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Organization profiles and public collections</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Member invitations and roles</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Personal and organization workspaces</li>
+          </ul>
+        </div>
+      </article>
+      <article class="feature-row">
+        <h2>Review without friction</h2>
+        <div>
+          <p>Keep discussions close to releases and preserve an activity trail. Team and enterprise plans will add richer review gates and audit history.</p>
+        </div>
+      </article>
+      <article class="feature-row">
+        <h2>Governance when needed</h2>
+        <div>
+          <p>Enterprise proposals can include SSO, directory sync, custom roles, regional deployment requirements, and procurement support. Availability is confirmed in the signed proposal.</p>
+          <a class="button button--secondary" href="/enterprise">View enterprise options</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

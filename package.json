@@ -1,20 +1,46 @@
 {
   "name": "super-ii-website",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "private": false,
+  "description": "The fast, public AI collaboration hub for Super ii.",
+  "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
+    "build": "./scripts/build.sh",
+    "check": "astro check",
+    "preview": "wrangler dev",
+    "validate": "python3 tools/validate_site.py && go run ./tools/releasecheck ./src/content/site.json && node tools/check-routes.mjs",
+    "db:check": "python3 tools/validate_migrations.py",
+    "deploy": "./scripts/deploy.sh",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^7.2.8"
+    "@astrojs/cloudflare": "14.2.5",
+    "@clerk/astro": "4.0.19",
+    "@fontsource-variable/source-sans-3": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@neondatabase/serverless": "1.1.0",
+    "@phosphor-icons/web": "2.1.2",
+    "astro": "7.2.8",
+    "drizzle-orm": "0.45.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@cloudflare/workers-types": "^5.20260827.1",
+    "typescript": "6.0.3",
+    "wrangler": "4.126.0"
+  },
+  "overrides": {
+    "nanoid": "5.1.16"
   },
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "sharp": true,
+    "workerd": true,
+    "fsevents": false
   }
 }

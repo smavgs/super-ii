@@ -1,0 +1,61 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Enterprise" description="Super ii enterprise proposals for governed AI collaboration, identity, regional requirements, and support.">
+  <PageHero
+    eyebrow="Enterprise"
+    title="Governed collaboration without closing the door on open work."
+    description="Super ii enterprise proposals pair public discovery with the identity, access, deployment, and support requirements larger organizations need."
+  >
+    <div class="button-row">
+      <a class="button button--dark" href="/contact?interest=enterprise">Request a proposal</a>
+      <a class="button button--secondary" href="/security">Review the security approach</a>
+    </div>
+  </PageHero>
+
+  <section class="section">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">Scoped to your requirements</p>
+        <h2>Capabilities confirmed in writing.</h2>
+        <p>Enterprise pages should help procurement—not replace it. Each proposal names the supported controls, responsibilities, service levels, and exclusions.</p>
+      </div>
+      <div class="capability-grid">
+        <article class="capability-card">
+          <div class="capability-card__icon"><i class="ph ph-identification-card" aria-hidden="true"></i></div>
+          <div><h3>Identity and access</h3><p>Options for SSO, directory sync, custom roles, domain controls, and structured offboarding.</p></div>
+          <span class="card-link">Proposal scoped <i class="ph ph-file-text" aria-hidden="true"></i></span>
+        </article>
+        <article class="capability-card">
+          <div class="capability-card__icon"><i class="ph ph-map-pin" aria-hidden="true"></i></div>
+          <div><h3>Deployment requirements</h3><p>Regional needs, customer-controlled infrastructure, retention boundaries, and network architecture can be assessed.</p></div>
+          <span class="card-link">Architecture reviewed <i class="ph ph-compass" aria-hidden="true"></i></span>
+        </article>
+        <article class="capability-card">
+          <div class="capability-card__icon"><i class="ph ph-clipboard-text" aria-hidden="true"></i></div>
+          <div><h3>Audit and policy</h3><p>Activity history, review gates, access policy, and evidence exports can be included where the product supports them.</p></div>
+          <span class="card-link">Controls enumerated <i class="ph ph-list-checks" aria-hidden="true"></i></span>
+        </article>
+        <article class="capability-card">
+          <div class="capability-card__icon"><i class="ph ph-headset" aria-hidden="true"></i></div>
+          <div><h3>Support plan</h3><p>Named channels, response targets, onboarding, and escalation paths are defined for the purchased service.</p></div>
+          <span class="card-link">Terms documented <i class="ph ph-handshake" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="shell cta-band__inner">
+      <div>
+        <p class="eyebrow">Begin with requirements</p>
+        <h2>Tell us what your team must protect, prove, and ship.</h2>
+      </div>
+      <a class="button button--yellow" href="/contact?interest=enterprise">Start a conversation</a>
+    </div>
+  </section>
+</BaseLayout>

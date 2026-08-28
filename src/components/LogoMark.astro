@@ -1,0 +1,30 @@
+---
+import { Image } from 'astro:assets';
+import superIiLogo from '@/assets/super-ii-logo.png';
+
+interface Props {
+  size?: 'small' | 'medium' | 'large';
+  label?: string;
+  priority?: boolean;
+}
+
+const {
+  size = 'medium',
+  label = 'Super ii',
+  priority = false,
+} = Astro.props;
+---
+
+<span class:list={['logo-mark', `logo-mark--${size}`]}>
+  <Image
+    src={superIiLogo}
+    alt={label}
+    width={768}
+    height={768}
+    format="webp"
+    quality={90}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding="async"
+  />
+</span>

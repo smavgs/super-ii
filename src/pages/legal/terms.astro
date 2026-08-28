@@ -1,0 +1,107 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = true;
+const effectiveDate = 'August 27, 2026';
+---
+
+<BaseLayout title="Terms of Service" description="Terms governing access to and use of Super ii accounts, organizations, public content, plans, and beta services." noindex>
+  <PageHero
+    eyebrow={`Legal · Effective ${effectiveDate}`}
+    title="Terms of Service"
+    description="These terms govern access to the Super ii public-beta Service. Please read them before creating an account."
+    compact
+  />
+
+  <div class="shell content-shell">
+    <article class="prose">
+      <h2 id="acceptance">1. Agreement</h2>
+      <p>These Terms of Service (“Terms”) are an agreement between you and Super ii concerning the websites, accounts, organizations, APIs, and related services available through <a href="https://superii.site">superii.site</a> (the “Service”). By accessing the Service or creating an account, you agree to these Terms and the <a href="/legal/privacy">Privacy Policy</a>. If you do not agree, do not use the Service.</p>
+
+      <h2 id="eligibility">2. Eligibility and authority</h2>
+      <p>You must be at least 13 years old and at least the minimum digital-consent age required where you live. If you use the Service for an organization, you represent that you have authority to bind that organization and “you” includes it.</p>
+
+      <h2 id="accounts">3. Accounts</h2>
+      <p>Provide accurate account information, keep authentication methods secure, and notify us promptly of suspected compromise. You are responsible for activity under your account except to the extent caused by Super ii. Accounts may not be sold, shared in a way that defeats access controls, or used to impersonate another person or organization.</p>
+
+      <h2 id="beta">4. Public beta</h2>
+      <p>The Service is in public beta. Features may be incomplete, change, experience interruption, or be withdrawn. The catalog begins empty, and publishing, downloads, compute, storage, paid plans, and creator monetization activate only when expressly marked available. A roadmap or waitlist is not a promise of release, timing, capacity, or price.</p>
+
+      <h2 id="content">5. Your content</h2>
+      <p>You retain ownership of content you submit. You grant Super ii a worldwide, non-exclusive, royalty-free license to host, store, reproduce, format, transmit, display, and distribute that content only as needed to operate, secure, promote, and improve the Service according to your visibility and access choices.</p>
+      <p>You must have the rights and permissions needed to submit content and choose its license. Do not submit content that violates law, intellectual-property rights, privacy, confidentiality, contractual restrictions, export controls, or applicable dataset and model licenses.</p>
+      <p>Public content may be copied or used by others under the license and information you publish. Removing it from Super ii may not remove copies already obtained by others.</p>
+
+      <h2 id="ai">6. AI-specific responsibilities</h2>
+      <p>You are responsible for evaluating models, datasets, apps, and outputs before relying on them. Documentation, popularity, labels, safety notes, or availability on Super ii does not establish accuracy, fitness, legal compliance, security, or suitability for a particular use.</p>
+      <p>Do not use the Service to develop or distribute unlawful capabilities, malware, credential theft, non-consensual intimate content, exploitative child content, targeted harassment, or systems that unlawfully discriminate or make prohibited high-impact decisions.</p>
+
+      <h2 id="acceptable-use">7. Acceptable use</h2>
+      <p>You may not:</p>
+      <ul>
+        <li>Interfere with, overload, probe, or bypass security or rate limits except under a written testing authorization.</li>
+        <li>Access another user’s account, private repository, or data without permission.</li>
+        <li>Upload malicious code, undisclosed secrets, unlawful data, or content designed to harm users or infrastructure.</li>
+        <li>Use automated access in a way that degrades the Service or ignores published API rules.</li>
+        <li>Misrepresent origin, ownership, affiliation, safety, performance, or licensing.</li>
+        <li>Use the Service to violate sanctions, export controls, or other applicable law.</li>
+      </ul>
+
+      <h2 id="plans">8. Plans, billing, and usage</h2>
+      <p>The Free plan is available without a payment card. Paid plans, if activated, may renew automatically for the billing period shown at checkout until cancelled. Prices, taxes, included limits, billing interval, renewal terms, and processor fees will be shown before purchase.</p>
+      <p>You authorize the disclosed payment processor to charge the payment method for purchased services. Unless law requires otherwise, fees already incurred are non-refundable. Cancellation stops future renewal but does not erase accrued usage charges or immediately end access already paid through the current period.</p>
+      <p>Compute, storage, inference, endpoints, and accelerated runtimes may be billed separately by usage. Spend controls reduce risk but may not prevent every delayed or previously incurred charge. Enterprise terms in a signed agreement control where they conflict with these Terms.</p>
+
+      <h2 id="third-party">9. Third-party services and content</h2>
+      <p>The Service relies on third-party infrastructure and may link to external content. Third parties have their own terms, privacy practices, availability, and security. Super ii does not control or endorse third-party content merely by linking to or interoperating with it.</p>
+
+      <h2 id="ip">10. Super ii materials</h2>
+      <p>The Service, brand, logos, interface, and software are protected by applicable intellectual-property laws. Open-source components remain governed by their licenses. These Terms do not grant a right to use Super ii trademarks or imply endorsement.</p>
+
+      <h2 id="moderation">11. Moderation and suspension</h2>
+      <p>We may review, restrict, remove, or preserve content and may limit or suspend access when reasonably necessary to protect the Service, comply with law, enforce these Terms, address non-payment, or investigate risk. Where appropriate, we will consider context and provide notice or an appeal path, but emergency action may occur first.</p>
+
+      <h2 id="termination">12. Termination</h2>
+      <p>You may stop using the Service and close your account through available settings or by contacting us. Terms that by their nature should continue—including licenses needed for retained public copies, accrued payment obligations, warranty disclaimers, liability limits, and dispute provisions—survive termination.</p>
+
+      <h2 id="disclaimers">13. Disclaimers</h2>
+      <p>To the maximum extent allowed by law, the Service is provided “as is” and “as available.” Super ii disclaims implied warranties of merchantability, fitness for a particular purpose, title, non-infringement, accuracy, and uninterrupted or error-free operation. Nothing in these Terms excludes a warranty that cannot legally be excluded.</p>
+
+      <h2 id="liability">14. Limitation of liability</h2>
+      <p>To the maximum extent allowed by law, Super ii will not be liable for indirect, incidental, special, consequential, exemplary, or punitive damages; lost profits, revenue, data, goodwill, or opportunities; or the conduct and content of users and third parties. Super ii’s aggregate liability arising from the Service will not exceed the greater of the amount you paid to Super ii for the Service in the 12 months before the event giving rise to the claim or USD 100. Mandatory consumer rights remain unaffected.</p>
+
+      <h2 id="changes">15. Changes</h2>
+      <p>We may update these Terms as the Service evolves. We will change the effective date and provide additional notice when required or when changes materially reduce your rights. Continued use after updated Terms take effect constitutes acceptance where permitted by law.</p>
+
+      <h2 id="general">16. General</h2>
+      <p>If a provision is unenforceable, the remaining provisions continue. Failure to enforce a provision is not a waiver. You may not transfer these Terms without consent; Super ii may transfer them as part of a reorganization, financing, merger, acquisition, or sale. Applicable mandatory law and consumer forums are not displaced by these Terms.</p>
+
+      <h2 id="contact">17. Contact</h2>
+      <p>Questions about these Terms may be submitted through the <a href="/contact">Super ii contact form</a>.</p>
+    </article>
+
+    <aside class="prose-aside">
+      <h2>Terms sections</h2>
+      <nav>
+        <a href="#acceptance">Agreement</a>
+        <a href="#eligibility">Eligibility</a>
+        <a href="#accounts">Accounts</a>
+        <a href="#beta">Public beta</a>
+        <a href="#content">Your content</a>
+        <a href="#ai">AI responsibilities</a>
+        <a href="#acceptable-use">Acceptable use</a>
+        <a href="#plans">Plans and billing</a>
+        <a href="#third-party">Third parties</a>
+        <a href="#ip">Super ii materials</a>
+        <a href="#moderation">Moderation</a>
+        <a href="#termination">Termination</a>
+        <a href="#disclaimers">Disclaimers</a>
+        <a href="#liability">Liability</a>
+        <a href="#changes">Changes</a>
+        <a href="#general">General</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </aside>
+  </div>
+</BaseLayout>
