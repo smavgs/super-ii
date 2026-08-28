@@ -21,7 +21,9 @@ export const prerender = true;
         <li>Authentication is delegated to a dedicated identity provider; the website does not store account passwords.</li>
         <li>Database access is server-side. Connection strings and secret keys are stored as deployment secrets, not committed to source.</li>
         <li>Cross-origin state-changing requests are checked, and browser security headers are set at the edge.</li>
-        <li>The public catalog is empty at launch, so no unreviewed model or dataset files are distributed.</li>
+        <li>Repository files remain quarantined until local ClamAV and Gitleaks scans, format policy, immutable hashing, and applicable offline inspection pass.</li>
+        <li>Postgres refuses publication unless every file is available and clean, required scan evidence passed, and a human review approved the revision.</li>
+        <li>Published browser-model and download routes resolve only files from the approved immutable revision.</li>
         <li>Dependencies are locked and audited in continuous integration before deployment.</li>
       </ul>
 
@@ -31,10 +33,10 @@ export const prerender = true;
       <h2 id="not-yet">Not claimed at launch</h2>
       <p>Super ii does not claim a certification, formal uptime service level, penetration-test result, dedicated single-tenant environment, guaranteed data residency, or completed enterprise identity integration unless a later page or signed agreement supplies specific evidence.</p>
 
-      <h2 id="roadmap">Planned controls</h2>
+      <h2 id="roadmap">Runtime-dependent and planned controls</h2>
       <ul>
-        <li>Malware, secret, and unsafe-file scanning before artifact publication.</li>
-        <li>Immutable checksums, release provenance, and signed publishing records.</li>
+        <li>ClamAV, Gitleaks, immutable checksums, and release provenance are implemented but require the separate Linux runtime to be active; failure keeps publishing closed.</li>
+        <li>Signed publishing attestations beyond the current checksum, review, audit, and lineage records.</li>
         <li>Fine-grained organization roles and review gates.</li>
         <li>Expanded audit history and evidence exports.</li>
         <li>Enterprise identity and regional deployment options where contracted.</li>

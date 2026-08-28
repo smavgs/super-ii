@@ -20,7 +20,29 @@ REQUIRED_TABLES = {
     "waitlist",
     "contact_submissions",
     "audit_events",
+    "repository_revisions",
+    "repository_files",
+    "repository_file_inspections",
+    "repository_releases",
+    "repository_tags",
+    "repository_downloads",
+    "repository_reviews",
+    "repository_revision_analyses",
+    "discussions",
+    "discussion_comments",
+    "reactions",
+    "discussion_events",
+    "likes",
+    "follows",
+    "repository_watchers",
+    "activity_events",
+    "collections",
+    "collection_items",
+    "repository_relationships",
+    "request_limits",
 }
+
+RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
 
 
 def main() -> int:
@@ -47,7 +69,7 @@ def main() -> int:
     if missing:
         errors.append(f"required tables missing: {sorted(missing)}")
 
-    for table in ("profiles", "organizations", "repositories", "waitlist", "contact_submissions", "audit_events"):
+    for table in sorted(RLS_TABLES):
         if f"alter table app.{table} enable row level security" not in lower:
             errors.append(f"RLS is not enabled for app.{table}")
 
@@ -55,13 +77,31 @@ def main() -> int:
         errors.append("repository seed rows are forbidden at launch")
     if "insert into app.plans" not in lower:
         errors.append("plan contract must be seeded transactionally")
+    if "create extension if not exists pg_trgm" not in lower:
+        errors.append("Postgres trigram search extension is required")
+    if "search_public_repositories" not in lower or "websearch_to_tsquery" not in lower:
+        errors.append("public full-text search function is required")
+    if "required_scans_not_passed" not in lower:
+        errors.append("publish function must fail closed on required scans")
+    if "revision_manifest_invalid" not in lower:
+        errors.append("publish function must verify immutable manifest totals")
+    if "repository_analysis_not_passed" not in lower:
+        errors.append("publish function must require the applicable offline repository analysis")
+    if "consume_request_limit" not in lower:
+        errors.append("runtime-facing routes require a database-backed rate limit")
+    for scanner in ("clamav", "gitleaks", "format_policy"):
+        if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
+            errors.append(f"publish gate must require a passed {scanner} inspection")
 
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
 
-    print(f"OK: {len(files)} migration file(s), {len(created)} tables, PL/pgSQL, RLS, and empty repository catalog verified")
+    print(
+        f"OK: {len(files)} migration file(s), {len(created)} tables, immutable files, "
+        "search, community, lineage, PL/pgSQL publish gates, RLS, and empty catalog verified"
+    )
     return 0
 
 

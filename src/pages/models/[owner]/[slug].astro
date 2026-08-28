@@ -1,0 +1,7 @@
+---
+import RepositoryPage from '@/components/RepositoryPage.astro';
+
+const owner = Astro.params.owner ?? '';
+const slug = Astro.params.slug ?? '';
+---
+<RepositoryPage kind="model" owner={owner} slug={slug} />

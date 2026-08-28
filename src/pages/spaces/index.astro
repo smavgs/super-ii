@@ -1,9 +1,8 @@
 ---
-import EmptyCatalog from '@/components/EmptyCatalog.astro';
+import Catalog from '@/components/Catalog.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
-export const prerender = true;
 ---
 
 <BaseLayout title="Apps" description="Explore community AI apps and interactive demonstrations on Super ii.">
@@ -13,5 +12,5 @@ export const prerender = true;
     description="Interactive AI demos that people can use in the browser, inspect, discuss, and learn from."
     compact
   />
-  <EmptyCatalog kind="spaces" />
+  <Catalog kind="spaces" />
 </BaseLayout>

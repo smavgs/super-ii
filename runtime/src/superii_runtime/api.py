@@ -1,0 +1,514 @@
+from __future__ import annotations
+
+import importlib.metadata
+from functools import lru_cache
+from pathlib import Path
+from typing import Annotated, Any
+from uuid import UUID
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse
+
+from .api_models import (
+    CreateRevisionRequest,
+    DiffusionGenerateRequest,
+    InspectRevisionRequest,
+    LlamaChatRequest,
+    LlamaGenerateRequest,
+    TokenizeRequest,
+)
+from .artifacts import ArtifactStore
+from .capabilities import capability_report
+from .database import RepositoryDatabase
+from .inspectors import (
+    inspect_dataset,
+    inspect_diffusers,
+    inspect_model,
+    inspect_tokenizer,
+    tokenize_text,
+)
+from .inspectors.gguf import inspect_gguf
+from .pipeline import UploadHeld, UploadRejected, process_upload
+from .scanners import scanner_readiness
+from .security import RuntimeAuth
+from .settings import Settings, get_settings
+from .spaces import SpaceRunner
+from .storage import ObjectStore, StorageError, normalize_repository_path
+from .workspaces import materialized_revision, revision_manifest
+
+app = FastAPI(
+    title="Super ii Runtime",
+    version="0.1.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+
+
+@lru_cache
+def get_store() -> ObjectStore:
+    settings = get_settings()
+    return ObjectStore(settings.storage_root, settings.max_upload_bytes)
+
+
+@lru_cache
+def get_artifact_store() -> ArtifactStore:
+    return ArtifactStore(get_settings().storage_root)
+
+
+def get_database(settings: Settings = Depends(get_settings)) -> RepositoryDatabase:
+    try:
+        return RepositoryDatabase(settings)
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="runtime database is not configured",
+        ) from error
+
+
+def _package_version(name: str) -> str:
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return "unavailable"
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"service": "superii-runtime", "status": "ok", "version": "0.1.0"}
+
+
+@app.get("/ready")
+def ready(
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    scanners = scanner_readiness(settings)
+    try:
+        database = RepositoryDatabase(settings)
+        database_ready = database.ping()
+    except RuntimeError:
+        database_ready = False
+    store = get_store()
+    storage_ready = store.root.is_dir() and store.root.exists()
+    ready_state = database_ready and storage_ready and all(scanners.values())
+    return {
+        "status": "ready" if ready_state else "blocked",
+        "database": database_ready,
+        "storage": storage_ready,
+        "required_scanners": scanners,
+        "publishing_enabled": ready_state,
+    }
+
+
+@app.get("/v1/capabilities")
+def capabilities(
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> dict[str, Any]:
+    return capability_report(settings)
+
+
+@app.post("/v1/repositories/{repository_id}/revisions", status_code=status.HTTP_201_CREATED)
+def create_revision(
+    repository_id: UUID,
+    payload: CreateRevisionRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    try:
+        row = database.create_revision(
+            repository_id,
+            payload.parent_revision_id,
+            payload.message,
+            payload.created_by,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=409, detail="revision could not be created") from error
+    return {key: str(value) if isinstance(value, UUID) else value for key, value in row.items()}
+
+
+@app.post(
+    "/v1/repositories/{repository_id}/revisions/{revision_id}/files",
+    status_code=status.HTTP_201_CREATED,
+)
+def upload_file(
+    repository_id: UUID,
+    revision_id: UUID,
+    path: Annotated[str, Form(min_length=1, max_length=1024)],
+    created_by: Annotated[str, Form(min_length=1, max_length=255)],
+    upload: Annotated[UploadFile, File()],
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    try:
+        return process_upload(
+            source=upload.file,
+            repository_path=path,
+            mime_type=upload.content_type,
+            repository_id=repository_id,
+            revision_id=revision_id,
+            created_by=created_by,
+            settings=settings,
+            database=database,
+            store=get_store(),
+        )
+    except StorageError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except UploadRejected as error:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "upload_rejected",
+                "failed_gates": [
+                    result.scanner for result in error.results if result.status == "failed"
+                ],
+            },
+        ) from error
+    except UploadHeld as error:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "upload_quarantined",
+                "errored_gates": [
+                    result.scanner for result in error.results if result.status == "error"
+                ],
+            },
+        ) from error
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/finalize")
+def finalize_revision(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    if not database.revision_is_ready_for_review(revision_id):
+        raise HTTPException(status_code=409, detail="revision contains pending or rejected files")
+    if not database.revision_analysis_passed(repository_id, revision_id):
+        raise HTTPException(
+            status_code=409, detail="applicable offline repository analysis has not passed"
+        )
+    files = database.list_revision_files(revision_id)
+    if any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    manifest_sha256 = revision_manifest(files)
+    database.update_revision_manifest(
+        revision_id,
+        manifest_sha256,
+        len(files),
+        sum(file.size_bytes for file in files),
+    )
+    database.set_revision_status(revision_id, "review")
+    return {
+        "repository_id": str(repository_id),
+        "revision_id": str(revision_id),
+        "status": "review",
+        "manifest_sha256": manifest_sha256,
+        "file_count": len(files),
+        "total_size_bytes": sum(file.size_bytes for file in files),
+    }
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/inspect")
+def inspect_revision(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: InspectRevisionRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+
+    try:
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            if payload.kind == "model":
+                result = {"model": None, "gguf": [], "safetensors": []}
+                if (workspace / "config.json").is_file():
+                    result["model"] = inspect_model(workspace)
+                for gguf_file in sorted(workspace.rglob("*.gguf")):
+                    result["gguf"].append(
+                        {
+                            "path": gguf_file.relative_to(workspace).as_posix(),
+                            "inspection": inspect_gguf(gguf_file),
+                        }
+                    )
+                for tensor_file in sorted(workspace.rglob("*.safetensors")):
+                    from .inspectors.safetensors import inspect_safetensors
+
+                    result["safetensors"].append(
+                        {
+                            "path": tensor_file.relative_to(workspace).as_posix(),
+                            "inspection": inspect_safetensors(tensor_file),
+                        }
+                    )
+                try:
+                    result["tokenizer"] = inspect_tokenizer(workspace)
+                except (OSError, ValueError, KeyError) as error:
+                    result["tokenizer"] = {"available": False, "reason": str(error)[:500]}
+                if (workspace / "model_index.json").is_file():
+                    result["diffusers"] = inspect_diffusers(workspace)
+                if result["model"] is None and not result["gguf"] and not result["safetensors"]:
+                    raise ValueError("no supported local model files were found")
+            elif payload.kind == "dataset":
+                result = {"dataset": inspect_dataset(workspace)}
+            else:
+                app_file = workspace / "app.py"
+                result = {
+                    "space": {
+                        "framework": "gradio" if app_file.exists() else None,
+                        "entrypoint": "app.py" if app_file.exists() else None,
+                        "runnable": app_file.exists(),
+                    }
+                }
+    except (OSError, ValueError, RuntimeError) as error:
+        database.save_revision_analysis(
+            repository_id,
+            revision_id,
+            payload.kind,
+            "failed",
+            {"error": str(error)[:1000]},
+            {},
+        )
+        raise HTTPException(status_code=422, detail="offline inspection failed") from error
+
+    versions = {
+        "datasets": _package_version("datasets"),
+        "safetensors": _package_version("safetensors"),
+        "tokenizers": _package_version("tokenizers"),
+        "transformers": _package_version("transformers"),
+    }
+    database.save_revision_analysis(
+        repository_id,
+        revision_id,
+        payload.kind,
+        "passed",
+        result,
+        versions,
+    )
+    return {"status": "passed", "analysis": result, "tool_versions": versions}
+
+
+def _model_file(workspace: Path, requested: str | None, suffix: str) -> Path:
+    if requested:
+        safe_path = normalize_repository_path(requested)
+        candidate = (workspace / Path(*safe_path.split("/"))).resolve()
+        if not candidate.is_relative_to(workspace) or not candidate.is_file():
+            raise ValueError("requested model file does not exist")
+        if candidate.suffix.lower() != suffix:
+            raise ValueError(f"requested model must use {suffix}")
+        return candidate
+    matches = sorted(workspace.rglob(f"*{suffix}"))
+    if len(matches) != 1:
+        raise ValueError(f"select one {suffix} model file")
+    return matches[0]
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/generate")
+def llama_generate(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: LlamaGenerateRequest,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    from .runtimes.llama_cpp import generate
+
+    try:
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            model = _model_file(workspace, payload.model_path, ".gguf")
+            return generate(
+                model=model,
+                prompt=payload.prompt,
+                max_tokens=payload.max_tokens,
+                temperature=payload.temperature,
+                top_p=payload.top_p,
+                seed=payload.seed,
+                settings=settings,
+            )
+    except (OSError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=422, detail=str(error)[:500]) from error
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/chat")
+def llama_chat(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: LlamaChatRequest,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    from .runtimes.llama_cpp import generate
+
+    prompt = "\n".join(f"{message.role}: {message.content}" for message in payload.messages)
+    prompt += "\nassistant:"
+    try:
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            model = _model_file(workspace, payload.model_path, ".gguf")
+            return generate(
+                model=model,
+                prompt=prompt,
+                max_tokens=payload.max_tokens,
+                temperature=payload.temperature,
+                top_p=payload.top_p,
+                seed=payload.seed,
+                settings=settings,
+                conversation=True,
+            )
+    except (OSError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=422, detail=str(error)[:500]) from error
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/diffusers/generate")
+def diffusers_generate(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: DiffusionGenerateRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    try:
+        from .runtimes.diffusers_local import generate_image
+
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            image = generate_image(
+                root=workspace,
+                prompt=payload.prompt,
+                negative_prompt=payload.negative_prompt,
+                steps=payload.steps,
+                guidance_scale=payload.guidance_scale,
+                width=payload.width,
+                height=payload.height,
+                seed=payload.seed,
+            )
+            artifact_id = get_artifact_store().save_png(image)
+    except ImportError as error:
+        raise HTTPException(status_code=503, detail="Diffusers runtime is not installed") from error
+    except (OSError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=422, detail="local diffusion generation failed") from error
+    return {
+        "artifact_id": str(artifact_id),
+        "download_path": f"/v1/artifacts/{artifact_id}",
+        "seed": payload.seed,
+        "offline": True,
+    }
+
+
+@app.get("/v1/artifacts/{artifact_id}")
+def generated_artifact(artifact_id: UUID, _auth: RuntimeAuth) -> FileResponse:
+    try:
+        path = get_artifact_store().resolve_png(artifact_id)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="artifact not found") from error
+    return FileResponse(path, media_type="image/png", filename=f"superii-{artifact_id}.png")
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/space/start")
+def start_space(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    try:
+        runner = SpaceRunner(settings)
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            space = runner.start(workspace, revision_id)
+    except (OSError, ValueError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail=str(error)[:500]) from error
+    return {"container": space.container_name, "status": space.state, "local_url": space.local_url}
+
+
+@app.get("/v1/repositories/{repository_id}/revisions/{revision_id}/space/status")
+def space_status(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    try:
+        space = SpaceRunner(settings).status(revision_id)
+    except (OSError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Space supervisor is unavailable") from error
+    return {"container": space.container_name, "status": space.state, "local_url": space.local_url}
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/space/stop")
+def stop_space(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    try:
+        space = SpaceRunner(settings).stop(revision_id)
+    except (OSError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Space supervisor is unavailable") from error
+    return {"container": space.container_name, "status": space.state, "local_url": None}
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/tokenize")
+def tokenizer_tool(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: TokenizeRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="revision not found")
+    try:
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            return tokenize_text(workspace, payload.text, payload.add_special_tokens)
+    except (OSError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=422, detail="tokenizer is not compatible") from error
+
+
+@app.get("/v1/files/{repository_file_id}")
+def download_file(
+    repository_file_id: UUID,
+    request: Request,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> FileResponse:
+    file = database.get_revision_file(repository_file_id)
+    if file is None:
+        raise HTTPException(status_code=404, detail="file not found")
+    path = get_store().resolve_key(file.storage_key)
+    if not path.is_file() or get_store().sha256(path) != file.sha256:
+        raise HTTPException(status_code=503, detail="stored file failed integrity verification")
+    database.record_download(file, file.size_bytes, request.headers.get("user-agent"))
+    return FileResponse(
+        path,
+        media_type=file.mime_type,
+        filename=Path(file.path).name,
+        headers={"ETag": f'"sha256:{file.sha256}"', "X-Content-Type-Options": "nosniff"},
+    )

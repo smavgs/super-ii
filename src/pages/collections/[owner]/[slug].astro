@@ -1,0 +1,85 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import type { RepositoryKind } from '@/lib/catalog';
+import { sqlClient } from '@/lib/db';
+import { kindPath } from '@/lib/repository';
+
+type CollectionItem = {
+  id: string;
+  kind: RepositoryKind;
+  owner_handle: string;
+  slug: string;
+  title: string;
+  summary: string;
+  note: string;
+};
+
+type CollectionView = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  updated_at: string;
+  owner_handle: string;
+  items: CollectionItem[];
+};
+
+const sql = sqlClient(Astro.locals);
+const owner = Astro.params.owner ?? '';
+const slug = Astro.params.slug ?? '';
+let collection: CollectionView | null = null;
+if (sql) {
+  try {
+    const rows = await sql`
+      select
+        c.id, c.slug, c.title, c.summary, c.updated_at, p.handle as owner_handle,
+        coalesce(jsonb_agg(jsonb_build_object(
+          'id', r.id,
+          'kind', r.kind,
+          'owner_handle', r.owner_handle,
+          'slug', r.slug,
+          'title', r.title,
+          'summary', r.summary,
+          'note', ci.note
+        ) order by ci.position, ci.added_at) filter (where r.id is not null), '[]'::jsonb) as items
+      from app.collections c
+      join app.profiles p on p.id = c.owner_profile_id
+      left join app.collection_items ci on ci.collection_id = c.id
+      left join app.repositories r on r.id = ci.repository_id
+        and r.visibility = 'public' and r.status = 'published'
+      where lower(p.handle) = lower(${owner})
+        and lower(c.slug) = lower(${slug})
+        and c.visibility = 'public'
+        and p.is_public
+      group by c.id, p.handle
+      limit 1
+    `;
+    collection = (rows[0] as CollectionView | undefined) ?? null;
+  } catch {}
+}
+if (!collection) Astro.response.status = 404;
+---
+
+<BaseLayout title={collection?.title ?? 'Collection not found'} description={collection?.summary ?? 'This collection is unavailable.'} noindex={!collection}>
+  <section class="shell repository-page">
+    {collection ? (
+      <>
+        <header class="repository-header">
+          <p class="eyebrow">Collection by {collection.owner_handle}</p>
+          <h1>{collection.title}</h1>
+          <p>{collection.summary}</p>
+        </header>
+        <div class="catalog-results">
+          {collection.items.map((item) => (
+            <a class="catalog-card" href={`/${kindPath(item.kind)}/${item.owner_handle}/${item.slug}`}>
+              <div class="catalog-card__topline"><span>{item.kind}</span><span>{item.owner_handle} / {item.slug}</span></div>
+              <h2>{item.title}</h2><p>{item.note || item.summary}</p>
+            </a>
+          ))}
+        </div>
+      </>
+    ) : (
+      <div class="unavailable-state"><p class="eyebrow">Not found</p><h1>This public collection does not exist.</h1><a href="/collections">Back to collections</a></div>
+    )}
+  </section>
+</BaseLayout>

@@ -27,6 +27,7 @@ if [[ -f .dev.vars ]]; then
 fi
 
 npm run validate
+node tools/copy-browser-ai-assets.mjs
 npx astro build
 
 if [[ -n "$dev_vars_backup" ]]; then

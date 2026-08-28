@@ -1,0 +1,472 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
+import type { RepositoryKind } from '@/lib/catalog';
+
+interface Props {
+  kind: RepositoryKind;
+  owner: string;
+  slug: string;
+}
+
+const { kind, owner, slug } = Astro.props;
+const result = await getPublicRepository(Astro.locals, kind, owner, slug);
+const repository = result.repository;
+if (!repository) Astro.response.status = result.state === 'error' ? 503 : 404;
+
+function pretty(value: unknown): string {
+  const rendered = JSON.stringify(value, null, 2);
+  return rendered.length > 100_000 ? `${rendered.slice(0, 100_000)}\n…truncated in page view` : rendered;
+}
+
+function relatedPath(relationship: RepositoryBundle['relationships'][number]): string {
+  return `/${kindPath(relationship.related_kind)}/${encodeURIComponent(relationship.related_owner)}/${encodeURIComponent(relationship.related_slug)}`;
+}
+---
+
+<BaseLayout
+  title={repository?.title ?? 'Repository unavailable'}
+  description={repository?.summary ?? 'This public Super ii repository is unavailable.'}
+  noindex={!repository}
+>
+  {repository ? (
+    <main class="repository-page shell">
+      <header class="repository-header">
+        <p class="eyebrow">{repository.kind} repository</p>
+        <p class="repository-path">{repository.owner_handle} / {repository.slug}</p>
+        <h1>{repository.title}</h1>
+        <p>{repository.summary}</p>
+        <div class="repository-badges">
+          <span>{repository.license ?? 'License pending'}</span>
+          {repository.task && <span>{repository.task}</span>}
+          {repository.library && <span>{repository.library}</span>}
+          {repository.modality && <span>{repository.modality}</span>}
+          <span>revision {repository.revision_sequence}</span>
+          <span>{repository.likes_count} likes</span>
+          <span>{repository.watchers_count} watching</span>
+        </div>
+        <div class="repository-actions" data-repository-actions data-repository-id={repository.id}>
+          <button class="button button--secondary button--small" type="button" data-like-button data-active="false">
+            <i class="ph ph-heart" aria-hidden="true"></i><span>Like</span>
+          </button>
+          <label>
+            <span class="sr-only">Watch notifications</span>
+            <select data-watch-level>
+              <option value="releases">Watch releases</option>
+              <option value="discussions">Watch discussions</option>
+              <option value="all">Watch all</option>
+              <option value="off">Stop watching</option>
+            </select>
+          </label>
+          <button class="button button--secondary button--small" type="button" data-watch-button>Save watch</button>
+          <label>
+            <span class="sr-only">Choose a collection</span>
+            <select data-collection-select disabled><option value="">Add to collection…</option></select>
+          </label>
+          <button class="button button--secondary button--small" type="button" data-collection-button disabled>Add</button>
+          <p data-community-status aria-live="polite"></p>
+        </div>
+      </header>
+
+      <nav class="repository-tabs" aria-label="Repository sections">
+        <a href="#files">Files</a>
+        <a href="#versions">Versions</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#lineage">Lineage</a>
+        <a href="#community">Community</a>
+      </nav>
+
+      <section class="repository-section" id="files">
+        <div class="repository-section__heading">
+          <div><p class="eyebrow">Immutable revision</p><h2>Files</h2></div>
+          <code>{repository.manifest_sha256}</code>
+        </div>
+        <div class="file-table-wrap">
+          <table class="file-table">
+            <thead><tr><th>Path</th><th>Type</th><th>Size</th><th>SHA-256</th><th></th></tr></thead>
+            <tbody>
+              {repository.files.map((file) => (
+                <tr>
+                  <td><code>{file.path}</code></td>
+                  <td>{file.mime_type}</td>
+                  <td>{Number(file.size_bytes).toLocaleString()} B</td>
+                  <td><code title={file.sha256}>{file.sha256.slice(0, 12)}…</code></td>
+                  <td><a href={`/api/repositories/${repository.id}/files/${file.id}`}>Download</a></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="repository-integrity">Every listed file passed ClamAV, Gitleaks, format policy, immutable manifest verification, and human review before publication.</p>
+      </section>
+
+      <section class="repository-section" id="versions">
+        <div class="repository-section__heading"><div><p class="eyebrow">Release history</p><h2>Versions</h2></div></div>
+        <div class="version-list">
+          {repository.versions.map((version) => (
+            <article>
+              <div><strong>Revision {version.sequence}</strong><time datetime={version.published_at}>{new Date(version.published_at).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })}</time></div>
+              <p>{version.message || 'No release message.'}</p>
+              <small>{version.file_count} files · {Number(version.total_size_bytes).toLocaleString()} bytes · <code>{version.manifest_sha256.slice(0, 16)}…</code></small>
+            </article>
+          ))}
+        </div>
+        {repository.releases.length > 0 && (
+          <div class="release-list">
+            <h3>Named releases</h3>
+            {repository.releases.map((release) => <p><strong>{release.name}</strong> <span>{release.notes}</span></p>)}
+          </div>
+        )}
+        {repository.tags.length > 0 && <p class="tag-list">{repository.tags.map((tag) => <span>{tag.name}</span>)}</p>}
+      </section>
+
+      {kind === 'model' && (
+        <section class="repository-section model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
+          <div class="repository-section__heading"><div><p class="eyebrow">Local tools</p><h2>Try this model</h2></div></div>
+          <div class="tool-grid">
+            <form class="tool-card" data-tokenizer-form>
+              <h3>Tokenizer</h3>
+              <p>Tokenize locally on the Super ii Runtime without any external model API.</p>
+              <textarea name="text" maxlength="100000" required placeholder="Type text to inspect tokens"></textarea>
+              <button class="button button--dark button--small" type="submit">Tokenize</button>
+              <pre data-tokenizer-output hidden></pre>
+            </form>
+            <form class="tool-card" data-browser-ai-form>
+              <h3>Browser inference</h3>
+              <p>Runs on your device with local model files and local WASM. WebGPU falls back to WASM.</p>
+              <select name="task">
+                <option value="text-classification">Text classification</option>
+                <option value="feature-extraction">Embeddings</option>
+                <option value="text-generation">Text generation</option>
+              </select>
+              <textarea name="input" maxlength="100000" required placeholder="Input for this model"></textarea>
+              <button class="button button--dark button--small" type="submit">Run on this device</button>
+              <p class="tool-status" data-browser-ai-status></p>
+              <pre data-browser-ai-output hidden></pre>
+            </form>
+          </div>
+        </section>
+      )}
+
+      <section class="repository-section" id="analysis">
+        <div class="repository-section__heading"><div><p class="eyebrow">Offline inspection</p><h2>Analysis</h2></div></div>
+        {repository.analyses.length ? repository.analyses.map((analysis) => (
+          <details class="analysis-panel" open={repository.analyses.length === 1}>
+            <summary>{analysis.analysis_type} · passed</summary>
+            <pre>{pretty(analysis.result)}</pre>
+          </details>
+        )) : <p>No public analysis artifact is attached to this revision.</p>}
+      </section>
+
+      <section class="repository-section" id="lineage">
+        <div class="repository-section__heading"><div><p class="eyebrow">Provenance graph</p><h2>Lineage</h2></div></div>
+        {repository.relationships.length ? (
+          <ul class="lineage-list">
+            {repository.relationships.map((relationship) => (
+              <li>
+                <span>{relationship.direction === 'outgoing' ? relationship.relationship_type : `source: ${relationship.relationship_type}`}</span>
+                <a href={relatedPath(relationship)}>{relationship.related_owner} / {relationship.related_slug}</a>
+                {relationship.evidence_url && <a href={relationship.evidence_url} rel="nofollow noreferrer">Evidence</a>}
+              </li>
+            ))}
+          </ul>
+        ) : <p>No lineage relationship has been declared for this release.</p>}
+      </section>
+
+      <section class="repository-section" id="community">
+        <div class="repository-section__heading"><div><p class="eyebrow">Community</p><h2>Discussions</h2></div></div>
+        <form class="discussion-form" data-discussion-form data-repository-id={repository.id}>
+          <h3>Start a discussion</h3>
+          <label>Title <input name="title" minlength="3" maxlength="300" required /></label>
+          <label>Message <textarea name="body" maxlength="100000" required></textarea></label>
+          <button class="button button--dark button--small" type="submit">Publish discussion</button>
+          <p data-form-status aria-live="polite"></p>
+        </form>
+        {repository.discussions.length ? (
+          <div class="discussion-list">
+            {repository.discussions.map((discussion) => (
+              <article data-discussion-id={discussion.id}>
+                <div><span>{discussion.status}</span><span>{discussion.comment_count} comments</span></div>
+                <h3>{discussion.title}</h3>
+                <p>{discussion.body}</p>
+                <small>Started by {discussion.author}</small>
+                <div class="reaction-row" aria-label="React to discussion">
+                  {(['helpful', 'celebrate', 'heart', 'eyes'] as const).map((reaction) => (
+                    <button type="button" data-reaction data-target-type="discussion" data-target-id={discussion.id} data-reaction-name={reaction} data-active="false">
+                      {reaction} <span>{discussion.reactions[reaction] ?? 0}</span>
+                    </button>
+                  ))}
+                </div>
+                {discussion.comments.length > 0 && (
+                  <div class="comment-list">
+                    {discussion.comments.map((comment) => (
+                      <div class="comment-card">
+                        <p>{comment.body}</p>
+                        <small>{comment.author}</small>
+                        <div class="reaction-row" aria-label="React to comment">
+                          {(['helpful', 'heart'] as const).map((reaction) => (
+                            <button type="button" data-reaction data-target-type="comment" data-target-id={comment.id} data-reaction-name={reaction} data-active="false">
+                              {reaction} <span>{comment.reactions[reaction] ?? 0}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {discussion.status === 'open' && (
+                  <form class="comment-form" data-comment-form data-discussion-id={discussion.id}>
+                    <label><span class="sr-only">Add a comment</span><textarea name="body" maxlength="100000" required placeholder="Add a comment"></textarea></label>
+                    <button class="button button--secondary button--small" type="submit">Comment</button>
+                    <p data-form-status aria-live="polite"></p>
+                  </form>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : <p>No discussion has started yet.</p>}
+      </section>
+    </main>
+  ) : (
+    <section class="shell unavailable-state">
+      <p class="eyebrow">{result.state === 'error' ? 'Service unavailable' : 'Not found'}</p>
+      <h1>{result.state === 'error' ? 'Repository data is temporarily unavailable.' : 'This public repository does not exist.'}</h1>
+      <p>No placeholder content is shown.</p>
+      <a class="button button--secondary" href={`/${kindPath(kind)}`}>Back to catalog</a>
+    </section>
+  )}
+</BaseLayout>
+
+{repository && kind === 'model' && <script>
+  import { createBrowserAiRunner, type BrowserAiTask } from '@/lib/browser-ai';
+
+  const tools = document.querySelector('[data-model-tools]');
+  if (tools instanceof HTMLElement) {
+    const repositoryId = tools.dataset.repositoryId;
+    const browserModel = tools.dataset.browserModel;
+    const tokenizerForm = tools.querySelector('[data-tokenizer-form]');
+    tokenizerForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(tokenizerForm instanceof HTMLFormElement) || !repositoryId) return;
+      const output = tokenizerForm.querySelector('[data-tokenizer-output]');
+      const submit = tokenizerForm.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const form = new FormData(tokenizerForm);
+        const response = await fetch(`/api/repositories/${repositoryId}/tokenize`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ text: form.get('text'), add_special_tokens: true }),
+        });
+        const data = await response.json() as Record<string, unknown>;
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Tokenizer unavailable');
+        if (output instanceof HTMLElement) {
+          output.hidden = false;
+          output.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (error) {
+        if (output instanceof HTMLElement) {
+          output.hidden = false;
+          output.textContent = error instanceof Error ? error.message : 'Tokenizer unavailable';
+        }
+      } finally {
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+
+    const browserForm = tools.querySelector('[data-browser-ai-form]');
+    browserForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(browserForm instanceof HTMLFormElement) || !browserModel) return;
+      const status = browserForm.querySelector('[data-browser-ai-status]');
+      const output = browserForm.querySelector('[data-browser-ai-output]');
+      const submit = browserForm.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      let runner;
+      try {
+        const form = new FormData(browserForm);
+        if (status instanceof HTMLElement) status.textContent = 'Loading verified local model files…';
+        runner = await createBrowserAiRunner(
+          String(form.get('task')) as BrowserAiTask,
+          browserModel,
+          (progress) => {
+            if (status instanceof HTMLElement && typeof progress === 'object' && progress) {
+              const event = progress as { status?: string; progress?: number };
+              status.textContent = event.progress === undefined
+                ? (event.status ?? 'Loading…')
+                : `${event.status ?? 'Loading'} ${Math.round(event.progress)}%`;
+            }
+          },
+        );
+        const result = await runner.run(String(form.get('input')));
+        if (status instanceof HTMLElement) status.textContent = `Completed locally with ${runner.device}.`;
+        if (output instanceof HTMLElement) {
+          output.hidden = false;
+          output.textContent = JSON.stringify(result, null, 2);
+        }
+      } catch (error) {
+        if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Browser inference failed.';
+      } finally {
+        await runner?.dispose();
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+  }
+</script>}
+
+{repository && <script>
+  function statusFor(element: Element, message: string, error = false) {
+    if (element instanceof HTMLElement) {
+      element.textContent = message;
+      element.dataset.state = error ? 'error' : 'success';
+    }
+  }
+
+  async function postJson(path: string, payload: Record<string, unknown>) {
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json() as Record<string, unknown>;
+    if (!response.ok) {
+      const message = response.status === 401
+        ? 'Log in or join free to use community features.'
+        : (typeof data.error === 'string' ? data.error : 'Request failed.');
+      throw new Error(message);
+    }
+    return data;
+  }
+
+  const actions = document.querySelector('[data-repository-actions]');
+  if (actions instanceof HTMLElement && actions.dataset.repositoryId) {
+    const repositoryId = actions.dataset.repositoryId;
+    const actionsStatus = actions.querySelector('[data-community-status]');
+    const like = actions.querySelector('[data-like-button]');
+    like?.addEventListener('click', async () => {
+      if (!(like instanceof HTMLButtonElement)) return;
+      const next = like.dataset.active !== 'true';
+      like.disabled = true;
+      try {
+        await postJson(`/api/repositories/${repositoryId}/like`, { active: next });
+        like.dataset.active = String(next);
+        const label = like.querySelector('span');
+        if (label) label.textContent = next ? 'Unlike' : 'Like';
+        statusFor(actionsStatus as Element, next ? 'Repository liked.' : 'Like removed.');
+      } catch (error) {
+        statusFor(actionsStatus as Element, error instanceof Error ? error.message : 'Like failed.', true);
+      } finally {
+        like.disabled = false;
+      }
+    });
+    const watch = actions.querySelector('[data-watch-button]');
+    watch?.addEventListener('click', async () => {
+      const select = actions.querySelector('[data-watch-level]');
+      if (!(watch instanceof HTMLButtonElement) || !(select instanceof HTMLSelectElement)) return;
+      watch.disabled = true;
+      try {
+        await postJson(`/api/repositories/${repositoryId}/watch`, { level: select.value });
+        statusFor(actionsStatus as Element, select.value === 'off' ? 'Watch removed.' : `Watching ${select.value}.`);
+      } catch (error) {
+        statusFor(actionsStatus as Element, error instanceof Error ? error.message : 'Watch update failed.', true);
+      } finally {
+        watch.disabled = false;
+      }
+    });
+
+    const collectionSelect = actions.querySelector('[data-collection-select]');
+    const collectionButton = actions.querySelector('[data-collection-button]');
+    fetch('/api/collections', { headers: { accept: 'application/json' } })
+      .then(async (response) => ({ response, data: await response.json() as Record<string, unknown> }))
+      .then(({ response, data }) => {
+        if (!response.ok || !(collectionSelect instanceof HTMLSelectElement)) return;
+        const collections = Array.isArray(data.collections) ? data.collections : [];
+        for (const item of collections) {
+          if (!item || typeof item !== 'object') continue;
+          const collection = item as Record<string, unknown>;
+          if (typeof collection.id !== 'string' || typeof collection.title !== 'string') continue;
+          collectionSelect.add(new Option(collection.title, collection.id));
+        }
+        collectionSelect.disabled = collections.length === 0;
+        if (collectionButton instanceof HTMLButtonElement) collectionButton.disabled = collections.length === 0;
+      })
+      .catch(() => {});
+    collectionButton?.addEventListener('click', async () => {
+      if (!(collectionButton instanceof HTMLButtonElement) || !(collectionSelect instanceof HTMLSelectElement) || !collectionSelect.value) return;
+      collectionButton.disabled = true;
+      try {
+        await postJson(`/api/collections/${collectionSelect.value}/items`, { repository_id: repositoryId });
+        statusFor(actionsStatus as Element, 'Added to collection.');
+      } catch (error) {
+        statusFor(actionsStatus as Element, error instanceof Error ? error.message : 'Collection update failed.', true);
+      } finally {
+        collectionButton.disabled = false;
+      }
+    });
+  }
+
+  document.querySelector('[data-discussion-form]')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!(form instanceof HTMLFormElement) || !form.dataset.repositoryId) return;
+    const submit = form.querySelector('button[type="submit"]');
+    const formStatus = form.querySelector('[data-form-status]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    try {
+      const data = new FormData(form);
+      await postJson(`/api/repositories/${form.dataset.repositoryId}/discussions`, {
+        title: data.get('title'),
+        body: data.get('body'),
+      });
+      statusFor(formStatus as Element, 'Discussion published. Refreshing…');
+      location.reload();
+    } catch (error) {
+      statusFor(formStatus as Element, error instanceof Error ? error.message : 'Discussion failed.', true);
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+
+  document.querySelectorAll('[data-comment-form]').forEach((element) => {
+    element.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      if (!(form instanceof HTMLFormElement) || !form.dataset.discussionId) return;
+      const submit = form.querySelector('button[type="submit"]');
+      const formStatus = form.querySelector('[data-form-status]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const data = new FormData(form);
+        await postJson(`/api/discussions/${form.dataset.discussionId}/comments`, { body: data.get('body') });
+        statusFor(formStatus as Element, 'Comment published. Refreshing…');
+        location.reload();
+      } catch (error) {
+        statusFor(formStatus as Element, error instanceof Error ? error.message : 'Comment failed.', true);
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-reaction]').forEach((element) => {
+    element.addEventListener('click', async () => {
+      if (!(element instanceof HTMLButtonElement)) return;
+      const active = element.dataset.active !== 'true';
+      element.disabled = true;
+      try {
+        await postJson('/api/reactions', {
+          target_type: element.dataset.targetType,
+          target_id: element.dataset.targetId,
+          reaction: element.dataset.reactionName,
+          active,
+        });
+        element.dataset.active = String(active);
+        const count = element.querySelector('span');
+        if (count) count.textContent = String(Math.max(0, Number(count.textContent ?? 0) + (active ? 1 : -1)));
+      } catch (error) {
+        const articleStatus = element.closest('article')?.querySelector('[data-form-status]');
+        statusFor(articleStatus as Element, error instanceof Error ? error.message : 'Reaction failed.', true);
+      } finally {
+        element.disabled = false;
+      }
+    });
+  });
+</script>}

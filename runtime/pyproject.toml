@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "superii-runtime"
+version = "0.1.0"
+description = "Offline-first storage, inspection, scanning, and local AI runtime for Super ii."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+dependencies = [
+  "datasets==5.0.1",
+  "fastapi==0.141.1",
+  "pillow==12.3.0",
+  "psycopg[binary]==3.3.4",
+  "pydantic-settings==2.15.0",
+  "pyarrow==25.0.1",
+  "python-multipart==0.0.32",
+  "safetensors==0.8.0",
+  "tokenizers==0.23.1",
+  "transformers==5.16.1",
+  "uvicorn[standard]==0.52.4",
+]
+
+[project.optional-dependencies]
+diffusion = [
+  "diffusers==0.40.0",
+  "torch==2.13.0",
+]
+spaces = [
+  "gradio==6.26.0",
+]
+test = [
+  "httpx2==2.12.0",
+  "pytest==9.1.1",
+  "ruff==0.16.5",
+]
+
+[project.scripts]
+superii-runtime = "superii_runtime.main:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/superii_runtime"]
+
+[tool.uv]
+# Super ii uses its own content-addressed object directory; Xet is intentionally absent.
+exclude-dependencies = ["hf-xet"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"space-image/launch_gradio.py" = ["S104"]
+"src/superii_runtime/api.py" = ["B008"]
+"src/superii_runtime/runtimes/llama_cpp.py" = ["S603"]
+"src/superii_runtime/scanners.py" = ["S603"]
+"src/superii_runtime/security.py" = ["B008"]
+"src/superii_runtime/settings.py" = ["S104"]
+"src/superii_runtime/spaces.py" = ["S108", "S603"]
+"src/superii_runtime/storage.py" = ["S103"]
+"tests/*" = ["S104"]

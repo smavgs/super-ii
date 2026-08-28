@@ -2,19 +2,43 @@
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
-import { pingDatabase } from '@/lib/db';
+import { pingDatabase, sqlClient } from '@/lib/db';
+import { pingRuntime } from '@/lib/runtime';
 
 const authStatus = authIsConfigured(Astro.locals) ? 'Operational' : 'Activation pending';
 const databaseHealth = await pingDatabase(Astro.locals);
 const databaseStatus = databaseHealth === 'ok' ? 'Operational' : databaseHealth === 'unconfigured' ? 'Activation pending' : 'Degraded';
-const allOperational = authStatus === 'Operational' && databaseStatus === 'Operational';
+const runtimeHealth = await pingRuntime(Astro.locals);
+const runtimeStatus = runtimeHealth.state === 'ready'
+  ? 'Operational'
+  : runtimeHealth.state === 'blocked'
+    ? 'Connected · publishing blocked'
+    : runtimeHealth.state === 'unconfigured'
+      ? 'Not connected'
+      : 'Unavailable';
+const publishingStatus = runtimeHealth.publishing_enabled ? 'Review-gated' : 'Closed safely';
+let publicItems = 0;
+const sql = sqlClient(Astro.locals);
+if (sql) {
+  try {
+    const rows = await sql`
+      select count(*)::integer as item_count
+      from app.repositories
+      where visibility = 'public' and status = 'published'
+    `;
+    publicItems = Number(rows[0]?.item_count ?? 0);
+  } catch {}
+}
+const allOperational = authStatus === 'Operational'
+  && databaseStatus === 'Operational'
+  && runtimeHealth.state !== 'error';
 ---
 
 <BaseLayout title="Status" description="Current operational status for the Super ii website, authentication, database, and public catalogs." noindex>
   <PageHero
     eyebrow="System status"
     title="Super ii service status"
-    description="A direct view of the launch services. Catalog upload and runtime services are listed only after they exist."
+    description="A request-time view of the public control plane and the separate, fail-closed runtime data plane."
     compact
   />
 
@@ -22,12 +46,15 @@ const allOperational = authStatus === 'Operational' && databaseStatus === 'Opera
     <div class="shell status-board">
       <div class="status-summary">
         <i class:list={['ph', allOperational ? 'ph-check-circle' : 'ph-info']} aria-hidden="true"></i>
-        {allOperational ? 'All launch systems operational' : 'Website operational; launch integrations are being activated'}
+        {allOperational ? 'Public control plane operational' : 'Website operational; one or more integrations need attention'}
       </div>
       <div class="status-row"><span>Public website</span><span class="status-value">Operational</span></div>
       <div class="status-row"><span>Account authentication</span><span class="status-value">{authStatus}</span></div>
       <div class="status-row"><span>Application database</span><span class="status-value">{databaseStatus}</span></div>
-      <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · 0 items</span></div>
+      <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · {publicItems} items</span></div>
+      <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{runtimeStatus}</span></div>
+      <div class="status-row"><span>Artifact publishing</span><span class="status-value">{publishingStatus}</span></div>
+      <p>Publishing remains closed unless Postgres, local object storage, ClamAV, and Gitleaks all report ready. Human approval is still required after automated checks.</p>
       <p>Checked at request time: <time datetime={new Date().toISOString()}>{new Date().toUTCString()}</time></p>
     </div>
   </section>

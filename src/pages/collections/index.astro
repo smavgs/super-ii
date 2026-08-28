@@ -1,0 +1,111 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { sqlClient } from '@/lib/db';
+
+type CollectionSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  updated_at: string;
+  owner_handle: string;
+  item_count: number;
+};
+
+const sql = sqlClient(Astro.locals);
+let collections: CollectionSummary[] = [];
+let unavailable = false;
+if (sql) {
+  try {
+    collections = await sql`
+      select
+        c.id,
+        c.slug,
+        c.title,
+        c.summary,
+        c.updated_at,
+        p.handle as owner_handle,
+        count(ci.repository_id)::integer as item_count
+      from app.collections c
+      join app.profiles p on p.id = c.owner_profile_id
+      left join app.collection_items ci on ci.collection_id = c.id
+      where c.visibility = 'public' and p.is_public
+      group by c.id, p.handle
+      order by c.updated_at desc
+      limit 100
+    ` as CollectionSummary[];
+  } catch {
+    unavailable = true;
+  }
+}
+---
+
+<BaseLayout title="Collections" description="Curated public collections of Super ii models, datasets, and apps.">
+  <PageHero eyebrow="Community discovery" title="Collections" description="Curated paths through public models, datasets, and apps." compact />
+  <section class="section shell">
+    <form class="discussion-form collection-create-form" data-collection-create-form>
+      <h2>Create a collection</h2>
+      <label>Title <input name="title" maxlength="200" required /></label>
+      <label>Slug <input name="slug" maxlength="96" pattern="[a-z0-9][a-z0-9._-]*[a-z0-9]|[a-z0-9]" required placeholder="local-ai-starters" /></label>
+      <label>Summary <textarea name="summary" maxlength="2000"></textarea></label>
+      <label>Visibility <select name="visibility"><option value="public">Public</option><option value="private">Private</option></select></label>
+      <button class="button button--dark button--small" type="submit">Create collection</button>
+      <p data-form-status aria-live="polite"></p>
+    </form>
+    {collections.length ? (
+      <div class="capability-grid">
+        {collections.map((collection) => (
+          <a class="capability-card" href={`/collections/${collection.owner_handle}/${collection.slug}`}>
+            <div><p class="eyebrow">{collection.item_count} items</p><h2>{collection.title}</h2><p>{collection.summary}</p></div>
+            <span class="card-link"><span>{collection.owner_handle}</span><i class="ph ph-arrow-up-right"></i></span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state">
+        <div class="empty-state__icon"><i class="ph ph-stack"></i></div>
+        <p class="eyebrow">{unavailable ? 'Temporarily unavailable' : 'A clean start'}</p>
+        <h2>{unavailable ? 'Collections cannot be loaded.' : 'No public collections yet'}</h2>
+        <p>{unavailable ? 'No placeholder collections are shown.' : 'The first community-curated collection will appear here.'}</p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.querySelector('[data-collection-create-form]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    const submit = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('[data-form-status]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    try {
+      const values = new FormData(form);
+      const response = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: values.get('title'),
+          slug: values.get('slug'),
+          summary: values.get('summary'),
+          visibility: values.get('visibility'),
+        }),
+      });
+      const data = await response.json() as Record<string, unknown>;
+      if (!response.ok) {
+        const message = response.status === 401 ? 'Log in or join free to create a collection.' : data.error;
+        throw new Error(typeof message === 'string' ? message : 'Collection could not be created.');
+      }
+      if (status instanceof HTMLElement) status.textContent = 'Collection created. Refreshing…';
+      location.reload();
+    } catch (error) {
+      if (status instanceof HTMLElement) {
+        status.textContent = error instanceof Error ? error.message : 'Collection could not be created.';
+        status.dataset.state = 'error';
+      }
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+</script>

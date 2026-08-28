@@ -1,0 +1,18 @@
+from fastapi.testclient import TestClient
+
+from superii_runtime.api import app
+
+
+def test_health_does_not_require_secrets() -> None:
+    response = TestClient(app).get("/health")
+    assert response.status_code == 200
+    assert response.json() == {
+        "service": "superii-runtime",
+        "status": "ok",
+        "version": "0.1.0",
+    }
+
+
+def test_capabilities_fail_closed_without_runtime_token() -> None:
+    response = TestClient(app).get("/v1/capabilities")
+    assert response.status_code == 503

@@ -1,0 +1,28 @@
+# Super ii
+
+> Super ii is a public AI collaboration hub for models, datasets, browser apps, community discussions, collections, and provenance.
+
+The public catalog intentionally launches empty. Real repositories will appear only after their files pass automated security and format checks plus human review. Account access supports email, Google, and GitHub. Artifact uploads and publishing are not open while the separate self-hosted runtime is disconnected.
+
+## Explore
+
+- [Home](https://superii.site/): Product overview and launch principles
+- [Models](https://superii.site/models): Public model catalog and local browser inference tools
+- [Datasets](https://superii.site/datasets): Public dataset catalog
+- [Apps](https://superii.site/spaces): Isolated Gradio application catalog
+- [Collections](https://superii.site/collections): Curated public repository lists
+- [Organizations](https://superii.site/organizations): Team collaboration overview
+
+## Build and verify
+
+- [Documentation](https://superii.site/docs): Architecture, formats, security gates, and capability status
+- [Security](https://superii.site/security): Publication controls and responsible disclosure
+- [Status](https://superii.site/status): Request-time control-plane and runtime readiness
+- [Pricing](https://superii.site/pricing): Plans and launch availability
+
+## Company and policies
+
+- [About](https://superii.site/about): Mission and product principles
+- [Contact](https://superii.site/contact): Contact form
+- [Privacy](https://superii.site/legal/privacy): Privacy policy
+- [Terms](https://superii.site/legal/terms): Terms of service

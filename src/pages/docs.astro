@@ -16,8 +16,8 @@ export const prerender = true;
   <div class="shell content-shell">
     <article class="prose">
       <h2 id="start">Start here</h2>
-      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub, set up your profile, explore the empty public hub, and register interest in creator and paid-plan access.</p>
-      <blockquote><p>Model, dataset, and app uploads are intentionally closed at initial launch. We will open publishing only after storage, moderation, review, and download controls are ready.</p></blockquote>
+      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub, explore public repositories, search their metadata, join discussions, react, follow, watch, and curate collections.</p>
+      <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision also needs human approval before Postgres permits publication.</p></blockquote>
 
       <h2 id="account">Create an account</h2>
       <ol>
@@ -30,14 +30,18 @@ export const prerender = true;
       <h2 id="catalog">Explore the hub</h2>
       <p>The three public catalogs are separated by the kind of work they contain:</p>
       <ul>
-        <li><a href="/models">Models</a> will hold weights, configuration, cards, versions, licenses, and responsible-use notes.</li>
-        <li><a href="/datasets">Datasets</a> will hold schemas, samples, licenses, provenance, and data cards.</li>
-        <li><a href="/spaces">Apps</a> will hold interactive AI experiences and the project information behind them.</li>
+        <li><a href="/models">Models</a> hold immutable revisions, weights, configuration, cards, local analysis, licenses, lineage, and responsible-use notes.</li>
+        <li><a href="/datasets">Datasets</a> hold schemas, bounded previews, licenses, provenance, data cards, and immutable files.</li>
+        <li><a href="/spaces">Apps</a> hold reviewed Gradio projects and their project information.</li>
       </ul>
 
+      <h2 id="architecture">Architecture</h2>
+      <p>The Astro website on Cloudflare is the public control plane. Postgres stores version history, review evidence, full-text and trigram search, community state, collections, and lineage. A separately operated Linux runtime is the data plane for quarantine, content-addressed files, ClamAV, Gitleaks, offline format inspection, and optional local inference.</p>
+      <p>No commercial inference API sits behind the tools. Browser inference uses local repository files and local Transformers.js WASM. Server inference is designed for operator-owned llama.cpp and optional Diffusers hardware. vLLM and semantic-search TEI remain explicitly deferred until dedicated capacity and measured search demand justify them.</p>
+
       <h2 id="publish">Publishing roadmap</h2>
-      <p>Publishing will open in stages. The first cohort will use reviewed uploads, immutable release records, and file-integrity checks. Later releases can add automated scanning, large-file storage, gated access, and hosted runtimes.</p>
-      <p>Until then, an empty result means exactly what it says: no public item has been approved. There are no generated demo entries or simulated download counts.</p>
+      <p>An upload enters quarantine, receives path/MIME/hash validation, then must pass ClamAV, Gitleaks, format policy, and its applicable offline inspector. Clean bytes move into an immutable SHA-256 object store. A finalized manifest and human approval are required before the PL/pgSQL publication gate can make the revision public.</p>
+      <p>An empty result means exactly what it says: no public item has been approved. There are no generated demo entries or simulated download counts.</p>
 
       <h2 id="organizations">Organizations</h2>
       <p>Organizations are shared identities for teams. Free accounts can participate in public community work. Paid team capabilities will add private repositories, richer roles, audit history, and shared billing when those features leave beta.</p>
@@ -46,7 +50,7 @@ export const prerender = true;
       <p><a href="/pricing">Pricing</a> distinguishes the open Free plan from beta-waitlist and proposal plans. Storage, inference, endpoints, and accelerated app runtime will be usage-priced separately, with limits and spend controls shown before activation.</p>
 
       <h2 id="api">API status</h2>
-      <p>A small health endpoint is available now at <a href="/api/health"><code>/api/health</code></a>. Repository and file APIs will be documented when uploads open, so developers do not build against an unstable contract.</p>
+      <p>The health endpoint is at <a href="/api/health"><code>/api/health</code></a>. Public search is available at <a href="/api/search"><code>/api/search</code></a>. Published file downloads, tokenizer requests, local browser-model files, discussions, comments, reactions, likes, watches, follows, and collections use scoped server routes; state-changing routes require a same-origin authenticated session, and resource-heavy work is rate limited.</p>
 
       <h2 id="support">Get help</h2>
       <p>Use the <a href="/contact">contact form</a> for access, plan, enterprise, security, privacy, or launch questions. Please do not include secrets, credentials, private model files, or sensitive personal data.</p>
@@ -58,6 +62,7 @@ export const prerender = true;
         <a href="#start">Start here</a>
         <a href="#account">Create an account</a>
         <a href="#catalog">Explore the hub</a>
+        <a href="#architecture">Architecture</a>
         <a href="#publish">Publishing roadmap</a>
         <a href="#organizations">Organizations</a>
         <a href="#plans">Plans and usage</a>

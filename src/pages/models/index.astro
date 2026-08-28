@@ -1,9 +1,8 @@
 ---
-import EmptyCatalog from '@/components/EmptyCatalog.astro';
+import Catalog from '@/components/Catalog.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
-export const prerender = true;
 ---
 
 <BaseLayout title="Models" description="Discover public AI models on Super ii. The catalog begins empty and opens to reviewed community releases soon.">
@@ -13,5 +12,5 @@ export const prerender = true;
     description="Versioned model repositories with clear files, licenses, cards, discussions, and responsible-use notes."
     compact
   />
-  <EmptyCatalog kind="models" />
+  <Catalog kind="models" />
 </BaseLayout>

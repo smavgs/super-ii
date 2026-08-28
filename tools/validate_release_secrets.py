@@ -49,9 +49,16 @@ def main() -> int:
         return 1
 
     files = [path for path in build_dir.rglob("*") if path.is_file()]
-    forbidden_files = [path for path in files if path.name == ".dev.vars"]
+    forbidden_files = [
+        path
+        for path in files
+        if path.name == ".dev.vars" or path.name == ".DS_Store" or path.name.startswith("._")
+    ]
     if forbidden_files:
-        print("ERROR: a .dev.vars file was copied into the production build", file=sys.stderr)
+        names = ", ".join(
+            str(path.relative_to(build_dir)) for path in sorted(forbidden_files)
+        )
+        print(f"ERROR: forbidden local metadata entered the production build: {names}", file=sys.stderr)
         return 1
 
     private_values = parse_private_values(env_file) if env_file and env_file.is_file() else {}

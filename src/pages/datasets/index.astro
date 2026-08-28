@@ -1,9 +1,8 @@
 ---
-import EmptyCatalog from '@/components/EmptyCatalog.astro';
+import Catalog from '@/components/Catalog.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
-export const prerender = true;
 ---
 
 <BaseLayout title="Datasets" description="Discover documented public datasets on Super ii, with licenses, schemas, previews, and version history.">
@@ -13,5 +12,5 @@ export const prerender = true;
     description="Share data with the licenses, schemas, previews, lineage, and context others need to use it responsibly."
     compact
   />
-  <EmptyCatalog kind="datasets" />
+  <Catalog kind="datasets" />
 </BaseLayout>

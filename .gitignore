@@ -18,6 +18,13 @@ pnpm-debug.log*
 # Python bytecode
 __pycache__/
 *.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Super ii Runtime local state (uploads and generated artifacts never enter Git)
+runtime/data/
+runtime/workspaces/
 
 
 # environment variables

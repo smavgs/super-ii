@@ -15,6 +15,7 @@
     "preview": "wrangler dev",
     "validate": "python3 tools/validate_site.py && go run ./tools/releasecheck ./src/content/site.json && node tools/check-routes.mjs",
     "db:check": "python3 tools/validate_migrations.py",
+    "db:test": "./scripts/test-postgres.sh",
     "deploy": "./scripts/deploy.sh",
     "astro": "astro"
   },
@@ -23,6 +24,7 @@
     "@clerk/astro": "4.0.19",
     "@fontsource-variable/source-sans-3": "5.3.0",
     "@fontsource/ibm-plex-mono": "5.3.0",
+    "@huggingface/transformers": "4.2.0",
     "@neondatabase/serverless": "1.1.0",
     "@phosphor-icons/web": "2.1.2",
     "astro": "7.2.8",
@@ -35,7 +37,9 @@
     "wrangler": "4.126.0"
   },
   "overrides": {
-    "nanoid": "5.1.16"
+    "adm-zip": "0.6.0",
+    "nanoid": "5.1.16",
+    "sharp": "0.35.4"
   },
   "allowScripts": {
     "esbuild": true,

@@ -19,7 +19,13 @@ Every requested language has a real production responsibility:
 | Shell | Reproducible check/build/deploy pipeline |
 | Go | Independent release-contract and supplied-logo verification |
 
-Infrastructure is Cloudflare Workers, Clerk authentication, and Neon Postgres. The free tiers allow a zero-upfront launch; payment and metered infrastructure still incur disclosed fees when customers use paid services.
+Infrastructure is split deliberately:
+
+- **Super ii Website** is the Cloudflare/Astro control plane and public UI.
+- **Super ii Runtime** is the self-hosted Linux data plane for files, scanning, offline inspection, llama.cpp, Diffusers, and isolated Gradio Spaces.
+- **Postgres** stores immutable repository history, search, review evidence, community data, collections, and lineage.
+
+The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
 ## Local development
 
@@ -27,6 +33,7 @@ Infrastructure is Cloudflare Workers, Clerk authentication, and Neon Postgres. T
 npm ci
 npm run check
 npm run db:check
+npm run db:test
 npm run build
 npm run dev
 ```
@@ -41,11 +48,13 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 - Go independently verifies the route/plan/catalog contract and exact logo hash.
 - JavaScript checks every declared route and internal link against the Astro source tree.
 
-`npm run db:check` verifies the SQL migration uses transactions, PL/pgSQL, row-level security, all required tables, and no repository seed rows.
+`npm run db:check` verifies transactions, PL/pgSQL, row-level security, the repository core, Postgres search, community/social/collection/lineage tables, fail-closed publication gates, and no repository seed rows.
+
+`npm run db:test` applies every migration twice to a disposable PostgreSQL 17 container, runs the transactional interaction and publication smoke test, and verifies that test rows roll back cleanly.
 
 ## Database
 
-Apply `database/migrations/0001_launch_schema.sql` to a new, isolated Postgres database. It creates application tables, RLS, contact rate limiting, and the published plan contract. It does not create model, dataset, app, user, or organization records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The migrations create the launch schema, immutable repository revisions/files, security evidence, discovery, community, social graph, collections, and lineage. They do not create model, dataset, app, user, or organization records.
 
 Required deployment secrets:
 
@@ -53,8 +62,12 @@ Required deployment secrets:
 - `CLERK_SECRET_KEY`
 - `DATABASE_URL`
 - `CONTACT_HASH_SALT`
+- `RUNTIME_URL`
+- `RUNTIME_TOKEN`
 
 Store them with Cloudflare secrets or local ignored env files. Do not add values to `wrangler.jsonc` or Git.
+
+Runtime code, deployment, scanner, offline-model, llama.cpp, Diffusers, and Gradio instructions are in [`runtime/README.md`](runtime/README.md).
 
 ## Deploy
 
