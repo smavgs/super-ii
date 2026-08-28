@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -86,6 +87,13 @@ def main() -> int:
     for forbidden in ("54 models", "thousands of our own models", "private model hub"):
         if forbidden in source_text:
             errors.append(f"legacy demo claim remains in production source: {forbidden!r}")
+
+    unbound_clerk_button = re.compile(
+        r"<Sign(?:In|Up)Button\b(?![^>]*\basChild\b)[^>]*>\s*<button\b",
+        re.DOTALL,
+    )
+    if unbound_clerk_button.search(source_text):
+        errors.append("custom Clerk sign-in and sign-up buttons must use asChild")
 
     if errors:
         for error in errors:

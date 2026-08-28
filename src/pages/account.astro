@@ -23,7 +23,7 @@ const authConfigured = authIsConfigured(Astro.locals);
             <div class="account-card">
               <h2>Log in to continue</h2>
               <p>Your account settings are available after authentication.</p>
-              <SignInButton mode="modal">
+              <SignInButton asChild mode="modal">
                 <button class="button button--dark" type="button">Log in</button>
               </SignInButton>
             </div>

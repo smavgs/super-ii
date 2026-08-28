@@ -51,10 +51,10 @@ const nav = [
       {authConfigured ? (
         <>
           <Show when="signed-out">
-            <SignInButton mode="modal">
+            <SignInButton asChild mode="modal">
               <button class="button button--ghost button--small" type="button">Log in</button>
             </SignInButton>
-            <SignUpButton mode="modal">
+            <SignUpButton asChild mode="modal">
               <button class="button button--dark button--small" type="button">Join free</button>
             </SignUpButton>
           </Show>
