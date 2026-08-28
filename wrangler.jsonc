@@ -9,6 +9,16 @@
     "directory": "./dist",
     "html_handling": "drop-trailing-slash"
   },
+  "routes": [
+    {
+      "pattern": "superii.site",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.superii.site",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
