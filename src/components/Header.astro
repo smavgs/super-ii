@@ -49,31 +49,33 @@ const nav = [
         <i class="ph ph-sun" aria-hidden="true"></i>
       </button>
 
-      {authConfigured ? (
-        <>
-          <Show when="signed-out">
-            <SignInButton asChild mode="modal">
-              <button class="button button--ghost button--small" type="button">Log in</button>
-            </SignInButton>
-            <SignUpButton asChild mode="modal">
-              <button class="button button--dark button--small" type="button">Join free</button>
-            </SignUpButton>
-          </Show>
-          <Show when="signed-in">
-            <a class="button button--ghost button--small" href="/account">Workspace</a>
-            <UserButton
-              appearance={{
-                elements: { avatarBox: 'sii-clerk-avatar' },
-              }}
-            />
-          </Show>
-        </>
-      ) : (
-        <>
-          <a class="button button--ghost button--small auth-desktop" href="/sign-in">Log in</a>
-          <a class="button button--dark button--small auth-desktop" href="/sign-up">Join free</a>
-        </>
-      )}
+      <div class="header-auth auth-desktop">
+        {authConfigured ? (
+          <>
+            <Show when="signed-out">
+              <SignInButton asChild mode="modal">
+                <button class="button button--ghost button--small" type="button">Log in</button>
+              </SignInButton>
+              <SignUpButton asChild mode="modal">
+                <button class="button button--dark button--small" type="button">Join free</button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <a class="button button--ghost button--small" href="/account">Workspace</a>
+              <UserButton
+                appearance={{
+                  elements: { avatarBox: 'sii-clerk-avatar' },
+                }}
+              />
+            </Show>
+          </>
+        ) : (
+          <>
+            <a class="button button--ghost button--small" href="/sign-in">Log in</a>
+            <a class="button button--dark button--small" href="/sign-up">Join free</a>
+          </>
+        )}
+      </div>
 
       <button
         class="icon-button menu-toggle"
@@ -98,8 +100,22 @@ const nav = [
       </a>
     ))}
     <div class="mobile-auth">
-      <a class="button button--secondary" href="/sign-in">Log in</a>
-      <a class="button button--dark" href="/sign-up">Join free</a>
+      {authConfigured ? (
+        <>
+          <Show when="signed-out">
+            <a class="button button--secondary" href="/sign-in">Log in</a>
+            <a class="button button--dark" href="/sign-up">Join free</a>
+          </Show>
+          <Show when="signed-in">
+            <a class="button button--dark" href="/account">Open workspace</a>
+          </Show>
+        </>
+      ) : (
+        <>
+          <a class="button button--secondary" href="/sign-in">Log in</a>
+          <a class="button button--dark" href="/sign-up">Join free</a>
+        </>
+      )}
     </div>
   </nav>
 </div>

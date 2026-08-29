@@ -272,6 +272,12 @@ pre {
   margin-left: auto;
 }
 
+.header-auth {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .icon-button {
   display: inline-grid;
   width: 2.55rem;
@@ -2430,8 +2436,7 @@ pre {
     font-size: 16px;
   }
 
-  .auth-desktop,
-  .header-actions > .button {
+  .auth-desktop {
     display: none;
   }
 
