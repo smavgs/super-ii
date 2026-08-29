@@ -24,9 +24,16 @@ jobs:
           cache: false
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: '3.12'
+      - run: python -m pip install uv==0.11.24
       - run: npm ci
       - run: npm audit --omit=dev
       - run: npm run check
       - run: npm run db:check
+      - run: npm run db:test
+      - run: uv sync --directory runtime --extra test --frozen
+      - run: uv run --directory runtime ruff format --check .
+      - run: uv run --directory runtime ruff check .
+      - run: uv run --directory runtime pytest
+      - run: uv lock --directory runtime/space-image --check
       - run: npm run build

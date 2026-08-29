@@ -27,6 +27,8 @@ Infrastructure is split deliberately:
 
 The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
+The requested repository core, safe/offline inspectors, structured dataset and model previews, tokenizer, Transformers.js, llama.cpp, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, and lineage are implemented. vLLM and Text Embeddings Inference remain deliberately deferred until dedicated GPU capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
+
 ## Local development
 
 ```sh

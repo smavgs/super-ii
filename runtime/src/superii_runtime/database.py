@@ -217,6 +217,27 @@ class RepositoryDatabase:
             ).fetchone()
         return RevisionFile(**row) if row else None
 
+    def revision_is_public(self, repository_id: UUID, revision_id: UUID) -> bool:
+        """Require the exact approved revision currently published by a public repository."""
+
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                select exists (
+                  select 1
+                  from app.repositories r
+                  join app.repository_revisions rr on rr.id = r.latest_revision_id
+                  where r.id = %s
+                    and rr.id = %s
+                    and r.visibility = 'public'
+                    and r.status = 'published'
+                    and rr.status = 'published'
+                ) as is_public
+                """,
+                (repository_id, revision_id),
+            ).fetchone()
+        return bool(row and row["is_public"])
+
     def record_download(
         self,
         file: RevisionFile,

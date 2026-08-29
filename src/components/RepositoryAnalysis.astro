@@ -1,0 +1,188 @@
+---
+import type { RepositoryBundle, RepositoryFileView } from '@/lib/repository';
+
+interface Props {
+  repository: RepositoryBundle;
+}
+
+const { repository } = Astro.props;
+const analysis = repository.analyses.find((item) => item.analysis_type === repository.kind);
+const result = analysis?.result ?? {};
+
+function object(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function list(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function strings(value: unknown): string[] {
+  return list(value).map(String);
+}
+
+function display(value: unknown, limit = 1200): string {
+  const rendered = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+  return rendered.length > limit ? `${rendered.slice(0, limit)}…` : rendered;
+}
+
+function fileUrl(file: RepositoryFileView, inline = false): string {
+  return `/api/repositories/${repository.id}/files/${file.id}${inline ? '?inline=1' : ''}`;
+}
+
+const model = object(result.model);
+const safetensors = list(result.safetensors).map(object);
+const gguf = list(result.gguf).map(object);
+const tokenizer = object(result.tokenizer);
+const diffusers = object(result.diffusers);
+const dataset = object(result.dataset);
+const formats = list(dataset.formats).map(object);
+const media = list(dataset.media).map(object);
+const space = object(result.space);
+const filesByPath = new Map(repository.files.map((file) => [file.path, file]));
+---
+
+{analysis ? (
+  <div class="structured-analysis">
+    {repository.kind === 'model' && (
+      <>
+        {Object.keys(model).length > 0 && (
+          <article class="analysis-card">
+            <h3>Model configuration</h3>
+            <dl class="analysis-facts">
+              <div><dt>Architecture</dt><dd>{strings(model.architectures).join(', ') || 'Not declared'}</dd></div>
+              <div><dt>Model type</dt><dd>{String(model.model_type ?? 'Not declared')}</dd></div>
+              <div><dt>Task</dt><dd>{strings(model.tasks).join(', ') || 'Not inferred'}</dd></div>
+              <div><dt>Context length</dt><dd>{String(model.context_length ?? 'Not declared')}</dd></div>
+              <div><dt>Vocabulary</dt><dd>{String(model.vocabulary_size ?? 'Not declared')}</dd></div>
+              <div><dt>Safety mode</dt><dd>Offline · remote code disabled</dd></div>
+            </dl>
+            {model.generation && <details><summary>Generation settings</summary><pre>{display(model.generation, 20_000)}</pre></details>}
+          </article>
+        )}
+
+        {safetensors.map((entry) => {
+          const inspection = object(entry.inspection);
+          const tensors = list(inspection.tensors).map(object);
+          return (
+            <article class="analysis-card">
+              <h3>Safetensors · <code>{String(entry.path ?? 'file')}</code></h3>
+              <p>{Number(inspection.file_size_bytes ?? 0).toLocaleString()} bytes · {String(inspection.tensor_count ?? tensors.length)} tensors · validated without loading tensor values.</p>
+              <div class="analysis-table-wrap">
+                <table class="analysis-table">
+                  <thead><tr><th>Tensor</th><th>Shape</th><th>Dtype</th></tr></thead>
+                  <tbody>{tensors.map((tensor) => <tr><td><code>{String(tensor.name)}</code></td><td>{display(tensor.shape)}</td><td>{String(tensor.dtype)}</td></tr>)}</tbody>
+                </table>
+              </div>
+              <details><summary>File metadata</summary><pre>{display(inspection.metadata ?? {}, 20_000)}</pre></details>
+            </article>
+          );
+        })}
+
+        {gguf.map((entry) => (
+          <article class="analysis-card">
+            <h3>GGUF · <code>{String(entry.path ?? 'file')}</code></h3>
+            <p>Validated for local llama.cpp execution.</p>
+            <details><summary>GGUF metadata</summary><pre>{display(entry.inspection, 40_000)}</pre></details>
+          </article>
+        ))}
+
+        {Object.keys(tokenizer).length > 0 && (
+          <article class="analysis-card">
+            <h3>Tokenizer</h3>
+            <dl class="analysis-facts">
+              <div><dt>Class</dt><dd>{String(tokenizer.class ?? 'Unavailable')}</dd></div>
+              <div><dt>Fast tokenizer</dt><dd>{tokenizer.fast === true ? 'Yes' : 'No'}</dd></div>
+              <div><dt>Vocabulary</dt><dd>{String(tokenizer.vocabulary_size ?? 'Unknown')}</dd></div>
+              <div><dt>Maximum length</dt><dd>{String(tokenizer.model_max_length ?? 'Unknown')}</dd></div>
+            </dl>
+          </article>
+        )}
+
+        {Object.keys(diffusers).length > 0 && (
+          <article class="analysis-card">
+            <h3>Diffusers pipeline</h3>
+            <p>{String(diffusers.pipeline_class ?? 'Local diffusion pipeline')} · local files only · safetensors required.</p>
+            <details><summary>Pipeline components</summary><pre>{display(diffusers, 40_000)}</pre></details>
+          </article>
+        )}
+      </>
+    )}
+
+    {repository.kind === 'dataset' && (
+      <>
+        <dl class="analysis-facts analysis-facts--summary">
+          <div><dt>Total rows</dt><dd>{Number(dataset.row_count ?? 0).toLocaleString()}</dd></div>
+          <div><dt>Media files</dt><dd>{Number(dataset.media_count ?? 0).toLocaleString()}</dd></div>
+          <div><dt>Preview limit</dt><dd>First 100 rows and media files</dd></div>
+        </dl>
+        {formats.map((format) => {
+          const splits = Object.entries(object(format.splits));
+          return (
+            <article class="analysis-card">
+              <h3>{String(format.format ?? 'Dataset')} data</h3>
+              {splits.map(([splitName, splitValue]) => {
+                const split = object(splitValue);
+                const columns = strings(split.columns);
+                const rows = list(split.preview).map(object);
+                return (
+                  <details open>
+                    <summary>{splitName} · {Number(split.row_count ?? 0).toLocaleString()} rows</summary>
+                    <p><strong>Columns:</strong> {columns.join(', ') || 'None'}</p>
+                    <details><summary>Schema and types</summary><pre>{display(split.features ?? {}, 30_000)}</pre></details>
+                    {rows.length > 0 && (
+                      <div class="analysis-table-wrap">
+                        <table class="analysis-table dataset-preview">
+                          <thead><tr>{columns.map((column) => <th>{column}</th>)}</tr></thead>
+                          <tbody>{rows.map((row) => <tr>{columns.map((column) => <td>{display(row[column], 500)}</td>)}</tr>)}</tbody>
+                        </table>
+                      </div>
+                    )}
+                  </details>
+                );
+              })}
+            </article>
+          );
+        })}
+
+        {media.length > 0 && (
+          <article class="analysis-card">
+            <h3>Media previews</h3>
+            <div class="media-preview-grid">
+              {media.map((item) => {
+                const path = String(item.path ?? '');
+                const kind = String(item.kind ?? 'file');
+                const file = filesByPath.get(path);
+                return (
+                  <figure class="media-preview">
+                    {file && kind === 'image' && <img src={fileUrl(file, true)} alt={`Dataset preview: ${path}`} loading="lazy" />}
+                    {file && kind === 'audio' && <audio src={fileUrl(file, true)} controls preload="metadata"><a href={fileUrl(file)}>Download {path}</a></audio>}
+                    {file && kind === 'video' && <video src={fileUrl(file, true)} controls preload="metadata"><a href={fileUrl(file)}>Download {path}</a></video>}
+                    {file && kind === 'pdf' && <iframe src={fileUrl(file, true)} title={`PDF preview: ${path}`} loading="lazy" sandbox=""></iframe>}
+                    <figcaption><code>{path}</code><span>{Number(item.size_bytes ?? 0).toLocaleString()} bytes</span>{file && <a href={fileUrl(file)}>Download</a>}</figcaption>
+                  </figure>
+                );
+              })}
+            </div>
+          </article>
+        )}
+      </>
+    )}
+
+    {repository.kind === 'space' && (
+      <article class="analysis-card">
+        <h3>Gradio application contract</h3>
+        <dl class="analysis-facts">
+          <div><dt>Framework</dt><dd>{String(space.framework ?? 'Unavailable')}</dd></div>
+          <div><dt>Entrypoint</dt><dd>{String(space.entrypoint ?? 'Unavailable')}</dd></div>
+          <div><dt>Runnable</dt><dd>{space.runnable === true ? 'Reviewed and ready' : 'No'}</dd></div>
+          <div><dt>Isolation</dt><dd>No egress · read-only filesystem · resource limits</dd></div>
+        </dl>
+      </article>
+    )}
+
+    <details class="analysis-raw"><summary>Complete machine-readable analysis</summary><pre>{display(result, 100_000)}</pre></details>
+  </div>
+) : <p>No public analysis artifact is attached to this revision.</p>}

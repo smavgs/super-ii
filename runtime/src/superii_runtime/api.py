@@ -4,10 +4,13 @@ import importlib.metadata
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 from uuid import UUID
 
+import httpx
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from starlette.background import BackgroundTask
 
 from .api_models import (
     CreateRevisionRequest,
@@ -44,6 +47,46 @@ app = FastAPI(
     openapi_url=None,
 )
 
+SPACE_PROXY_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+SPACE_REQUEST_HEADERS = {
+    "accept",
+    "accept-encoding",
+    "content-type",
+    "if-modified-since",
+    "if-none-match",
+    "last-event-id",
+    "range",
+}
+SPACE_RESPONSE_HEADERS = {
+    "accept-ranges",
+    "cache-control",
+    "content-disposition",
+    "content-encoding",
+    "content-length",
+    "content-range",
+    "content-type",
+    "etag",
+    "last-modified",
+    "location",
+}
+INLINE_MEDIA_TYPES = {
+    "application/pdf",
+    "audio/aac",
+    "audio/flac",
+    "audio/m4a",
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/x-wav",
+    "image/gif",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "video/mp4",
+    "video/ogg",
+    "video/webm",
+}
+
 
 @lru_cache
 def get_store() -> ObjectStore:
@@ -53,7 +96,8 @@ def get_store() -> ObjectStore:
 
 @lru_cache
 def get_artifact_store() -> ArtifactStore:
-    return ArtifactStore(get_settings().storage_root)
+    settings = get_settings()
+    return ArtifactStore(settings.storage_root, settings.artifact_retention_seconds)
 
 
 def get_database(settings: Settings = Depends(get_settings)) -> RepositoryDatabase:
@@ -71,6 +115,18 @@ def _package_version(name: str) -> str:
         return importlib.metadata.version(name)
     except importlib.metadata.PackageNotFoundError:
         return "unavailable"
+
+
+def _require_public_revision(
+    database: RepositoryDatabase,
+    repository_id: UUID,
+    revision_id: UUID,
+) -> None:
+    if not database.revision_is_public(repository_id, revision_id):
+        raise HTTPException(status_code=404, detail="published revision not found")
+    files = database.list_revision_files(revision_id)
+    if not files or any(file.repository_id != repository_id for file in files):
+        raise HTTPException(status_code=404, detail="published revision not found")
 
 
 @app.get("/health")
@@ -317,9 +373,7 @@ def llama_generate(
     settings: Settings = Depends(get_settings),
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     from .runtimes.llama_cpp import generate
 
     try:
@@ -347,9 +401,7 @@ def llama_chat(
     settings: Settings = Depends(get_settings),
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     from .runtimes.llama_cpp import generate
 
     prompt = "\n".join(f"{message.role}: {message.content}" for message in payload.messages)
@@ -379,9 +431,7 @@ def diffusers_generate(
     _auth: RuntimeAuth,
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     try:
         from .runtimes.diffusers_local import generate_image
 
@@ -415,7 +465,17 @@ def generated_artifact(artifact_id: UUID, _auth: RuntimeAuth) -> FileResponse:
         path = get_artifact_store().resolve_png(artifact_id)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail="artifact not found") from error
-    return FileResponse(path, media_type="image/png", filename=f"superii-{artifact_id}.png")
+    return FileResponse(
+        path,
+        media_type="image/png",
+        filename=f"superii-{artifact_id}.png",
+        content_disposition_type="inline",
+        headers={
+            "Cache-Control": "private, no-store",
+            "Content-Security-Policy": "default-src 'none'",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/space/start")
@@ -426,13 +486,11 @@ def start_space(
     settings: Settings = Depends(get_settings),
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     try:
         runner = SpaceRunner(settings)
         with materialized_revision(database, get_store(), revision_id) as workspace:
-            space = runner.start(workspace, revision_id)
+            space = runner.start(workspace, repository_id, revision_id)
     except (OSError, ValueError, RuntimeError, TimeoutError) as error:
         raise HTTPException(status_code=503, detail=str(error)[:500]) from error
     return {"container": space.container_name, "status": space.state, "local_url": space.local_url}
@@ -446,9 +504,7 @@ def space_status(
     settings: Settings = Depends(get_settings),
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     try:
         space = SpaceRunner(settings).status(revision_id)
     except (OSError, RuntimeError, TimeoutError) as error:
@@ -464,14 +520,92 @@ def stop_space(
     settings: Settings = Depends(get_settings),
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     try:
         space = SpaceRunner(settings).stop(revision_id)
     except (OSError, RuntimeError, TimeoutError) as error:
         raise HTTPException(status_code=503, detail="Space supervisor is unavailable") from error
     return {"container": space.container_name, "status": space.state, "local_url": None}
+
+
+async def _close_space_proxy(upstream: httpx.Response, client: httpx.AsyncClient) -> None:
+    await upstream.aclose()
+    await client.aclose()
+
+
+@app.api_route(
+    "/v1/repositories/{repository_id}/revisions/{revision_id}/space/proxy",
+    methods=SPACE_PROXY_METHODS,
+)
+@app.api_route(
+    "/v1/repositories/{repository_id}/revisions/{revision_id}/space/proxy/{path:path}",
+    methods=SPACE_PROXY_METHODS,
+)
+async def proxy_space(
+    repository_id: UUID,
+    revision_id: UUID,
+    request: Request,
+    _auth: RuntimeAuth,
+    path: str = "",
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> StreamingResponse:
+    """Stream one published Gradio app through the authenticated runtime boundary."""
+
+    _require_public_revision(database, repository_id, revision_id)
+    if any(part == ".." for part in Path(path).parts):
+        raise HTTPException(status_code=400, detail="invalid Space path")
+    try:
+        space = SpaceRunner(settings).status(revision_id)
+    except (OSError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Space supervisor is unavailable") from error
+    if space.state != "running" or not space.local_url:
+        raise HTTPException(status_code=503, detail="Space is not running")
+
+    parsed = urlsplit(space.local_url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "::1", "localhost"}:
+        raise HTTPException(status_code=503, detail="Space endpoint failed validation")
+    suffix = path.lstrip("/")
+    target = f"{space.local_url.rstrip('/')}/{suffix}"
+    if request.url.query:
+        target = f"{target}?{request.url.query}"
+
+    headers = {
+        name: value
+        for name, value in request.headers.items()
+        if name.lower() in SPACE_REQUEST_HEADERS
+    }
+    client = httpx.AsyncClient(
+        timeout=httpx.Timeout(connect=5, read=None, write=120, pool=5),
+        follow_redirects=False,
+    )
+    try:
+        body = None if request.method in {"GET", "HEAD"} else request.stream()
+        upstream = await client.send(
+            client.build_request(request.method, target, headers=headers, content=body),
+            stream=True,
+        )
+    except httpx.HTTPError as error:
+        await client.aclose()
+        raise HTTPException(status_code=503, detail="Space app is unavailable") from error
+
+    response_headers = {
+        name: value
+        for name, value in upstream.headers.items()
+        if name.lower() in SPACE_RESPONSE_HEADERS
+    }
+    location = response_headers.get("location")
+    if location and location.startswith(space.local_url):
+        public_root = f"/api/repositories/{repository_id}/space"
+        response_headers["location"] = f"{public_root}{location[len(space.local_url) :]}"
+    response_headers["x-content-type-options"] = "nosniff"
+    response_headers["content-security-policy"] = "frame-ancestors 'self'"
+    return StreamingResponse(
+        upstream.aiter_raw(),
+        status_code=upstream.status_code,
+        headers=response_headers,
+        background=BackgroundTask(_close_space_proxy, upstream, client),
+    )
 
 
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/tokenize")
@@ -482,9 +616,7 @@ def tokenizer_tool(
     _auth: RuntimeAuth,
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    files = database.list_revision_files(revision_id)
-    if not files or any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
+    _require_public_revision(database, repository_id, revision_id)
     try:
         with materialized_revision(database, get_store(), revision_id) as workspace:
             return tokenize_text(workspace, payload.text, payload.add_special_tokens)
@@ -497,6 +629,7 @@ def download_file(
     repository_file_id: UUID,
     request: Request,
     _auth: RuntimeAuth,
+    inline: bool = False,
     database: RepositoryDatabase = Depends(get_database),
 ) -> FileResponse:
     file = database.get_revision_file(repository_file_id)
@@ -506,9 +639,17 @@ def download_file(
     if not path.is_file() or get_store().sha256(path) != file.sha256:
         raise HTTPException(status_code=503, detail="stored file failed integrity verification")
     database.record_download(file, file.size_bytes, request.headers.get("user-agent"))
+    preview = inline and file.mime_type.lower() in INLINE_MEDIA_TYPES
+    headers = {
+        "ETag": f'"sha256:{file.sha256}"',
+        "X-Content-Type-Options": "nosniff",
+    }
+    if preview:
+        headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'self'"
     return FileResponse(
         path,
         media_type=file.mime_type,
         filename=Path(file.path).name,
-        headers={"ETag": f'"sha256:{file.sha256}"', "X-Content-Type-Options": "nosniff"},
+        content_disposition_type="inline" if preview else "attachment",
+        headers=headers,
     )

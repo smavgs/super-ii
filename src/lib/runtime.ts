@@ -57,7 +57,7 @@ export async function runtimeFetch(
   const headers = new Headers(init.headers);
   headers.set('x-superii-runtime-token', token);
   headers.set('accept', headers.get('accept') ?? 'application/json');
-  return fetch(target, { ...init, headers, redirect: 'error' });
+  return fetch(target, { ...init, headers, redirect: init.redirect ?? 'error' });
 }
 
 export function proxiedFileResponse(upstream: Response, immutable = true): Response {
@@ -67,6 +67,7 @@ export function proxiedFileResponse(upstream: Response, immutable = true): Respo
     'content-disposition',
     'content-length',
     'content-range',
+    'content-security-policy',
     'content-type',
     'etag',
     'last-modified',

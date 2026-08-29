@@ -12,6 +12,7 @@ license = { text = "MIT" }
 dependencies = [
   "datasets==5.0.1",
   "fastapi==0.141.1",
+  "httpx==0.28.1",
   "pillow==12.3.0",
   "psycopg[binary]==3.3.4",
   "pydantic-settings==2.15.0",
@@ -61,6 +62,7 @@ ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
 "space-image/launch_gradio.py" = ["S104"]
+"space-image/space_proxy.py" = ["S104"]
 "src/superii_runtime/api.py" = ["B008"]
 "src/superii_runtime/runtimes/llama_cpp.py" = ["S603"]
 "src/superii_runtime/scanners.py" = ["S603"]

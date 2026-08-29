@@ -1701,6 +1701,7 @@ source = { editable = "." }
 dependencies = [
     { name = "datasets" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyarrow" },
@@ -1732,6 +1733,7 @@ requires-dist = [
     { name = "diffusers", marker = "extra == 'diffusion'", specifier = "==0.40.0" },
     { name = "fastapi", specifier = "==0.141.1" },
     { name = "gradio", marker = "extra == 'spaces'", specifier = "==6.26.0" },
+    { name = "httpx", specifier = "==0.28.1" },
     { name = "httpx2", marker = "extra == 'test'", specifier = "==2.12.0" },
     { name = "pillow", specifier = "==12.3.0" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.3.4" },

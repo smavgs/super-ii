@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     space_cpu_limit: float = Field(default=2.0, gt=0)
     space_memory_limit: str = "4g"
     space_pids_limit: int = Field(default=256, ge=32)
+    space_start_timeout_seconds: int = Field(default=60, ge=5, le=300)
+    artifact_retention_seconds: int = Field(default=86_400, ge=300, le=604_800)
     command_timeout_seconds: int = Field(default=900, ge=1)
 
     @field_validator("storage_root")

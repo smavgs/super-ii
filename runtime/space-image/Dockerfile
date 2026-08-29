@@ -18,7 +18,7 @@ RUN uv sync --frozen --no-dev --no-editable \
     && addgroup --system --gid 65532 superii \
     && adduser --system --uid 65532 --gid 65532 --no-create-home superii
 
-COPY --chown=65532:65532 launch_gradio.py /runner/launch_gradio.py
+COPY --chown=65532:65532 launch_gradio.py space_proxy.py /runner/
 
 ENV PATH="/runner/.venv/bin:${PATH}"
 

@@ -29,6 +29,7 @@ if demo is None or not hasattr(demo, "launch"):
 demo.launch(
     server_name="0.0.0.0",
     server_port=7860,
+    root_path=os.environ.get("SUPERII_SPACE_ROOT_PATH"),
     share=False,
     show_error=False,
     allowed_paths=[str(workspace)],

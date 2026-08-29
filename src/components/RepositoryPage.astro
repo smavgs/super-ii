@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
 
@@ -14,14 +15,12 @@ const result = await getPublicRepository(Astro.locals, kind, owner, slug);
 const repository = result.repository;
 if (!repository) Astro.response.status = result.state === 'error' ? 503 : 404;
 
-function pretty(value: unknown): string {
-  const rendered = JSON.stringify(value, null, 2);
-  return rendered.length > 100_000 ? `${rendered.slice(0, 100_000)}\n…truncated in page view` : rendered;
-}
-
 function relatedPath(relationship: RepositoryBundle['relationships'][number]): string {
   return `/${kindPath(relationship.related_kind)}/${encodeURIComponent(relationship.related_owner)}/${encodeURIComponent(relationship.related_slug)}`;
 }
+
+const hasGguf = repository?.files.some((file) => file.path.toLowerCase().endsWith('.gguf')) ?? false;
+const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() === 'model_index.json') ?? false;
 ---
 
 <BaseLayout
@@ -134,28 +133,84 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
             <form class="tool-card" data-browser-ai-form>
               <h3>Browser inference</h3>
               <p>Runs on your device with local model files and local WASM. WebGPU falls back to WASM.</p>
-              <select name="task">
+              <label>Task <select name="task" data-browser-task>
                 <option value="text-classification">Text classification</option>
                 <option value="feature-extraction">Embeddings</option>
+                <option value="token-classification">Token classification</option>
                 <option value="text-generation">Text generation</option>
-              </select>
-              <textarea name="input" maxlength="100000" required placeholder="Input for this model"></textarea>
+                <option value="image-classification">Image classification</option>
+                <option value="image-to-text">Image to text</option>
+                <option value="audio-classification">Audio classification</option>
+                <option value="automatic-speech-recognition">Speech recognition</option>
+              </select></label>
+              <label data-browser-text-field>Text input <textarea name="input" maxlength="100000" required placeholder="Input for this model"></textarea></label>
+              <label data-browser-media-field hidden>Local media <input name="media" type="file" /><span>Your selected file stays on this device.</span></label>
               <button class="button button--dark button--small" type="submit">Run on this device</button>
               <p class="tool-status" data-browser-ai-status></p>
               <pre data-browser-ai-output hidden></pre>
             </form>
+            {hasGguf && (
+              <form class="tool-card tool-card--wide" data-llama-form>
+                <h3>llama.cpp</h3>
+                <p>Run or chat with the reviewed GGUF model on the operator-owned runtime. Sign-in and rate limits protect the shared machine.</p>
+                <label>Mode <select name="mode"><option value="generate">Generate</option><option value="chat">Chat</option></select></label>
+                <label>System message <textarea name="system" maxlength="100000" placeholder="Optional for chat"></textarea></label>
+                <label>Prompt <textarea name="prompt" maxlength="100000" required placeholder="Ask or prompt this GGUF model"></textarea></label>
+                <div class="generation-grid">
+                  <label>Max tokens <input name="max_tokens" type="number" min="1" max="4096" value="256" required /></label>
+                  <label>Temperature <input name="temperature" type="number" min="0" max="2" step="0.05" value="0.7" required /></label>
+                  <label>Top P <input name="top_p" type="number" min="0.01" max="1" step="0.01" value="0.95" required /></label>
+                  <label>Seed <input name="seed" type="number" min="-1" max="2147483647" value="-1" required /></label>
+                </div>
+                <button class="button button--dark button--small" type="submit">Run on Super ii Runtime</button>
+                <p class="tool-status" data-llama-status></p>
+                <pre data-llama-output hidden></pre>
+              </form>
+            )}
+            {hasDiffusers && (
+              <form class="tool-card tool-card--wide" data-diffusers-form>
+                <h3>Diffusers image generation</h3>
+                <p>Generate with local reviewed weights, internet disabled, safetensors required, and no commercial inference API.</p>
+                <label>Prompt <textarea name="prompt" maxlength="5000" required placeholder="Describe the image"></textarea></label>
+                <label>Negative prompt <textarea name="negative_prompt" maxlength="5000" placeholder="Optional exclusions"></textarea></label>
+                <div class="generation-grid">
+                  <label>Steps <input name="steps" type="number" min="1" max="100" value="30" required /></label>
+                  <label>Guidance <input name="guidance_scale" type="number" min="0" max="30" step="0.1" value="7.5" required /></label>
+                  <label>Width <input name="width" type="number" min="128" max="2048" step="8" value="512" required /></label>
+                  <label>Height <input name="height" type="number" min="128" max="2048" step="8" value="512" required /></label>
+                  <label>Seed <input name="seed" type="number" min="0" max="4294967295" value="0" required /></label>
+                </div>
+                <button class="button button--dark button--small" type="submit">Generate locally</button>
+                <p class="tool-status" data-diffusers-status></p>
+                <img data-diffusers-image hidden alt="Generated by the selected local Diffusers model" />
+              </form>
+            )}
           </div>
+        </section>
+      )}
+
+      {kind === 'space' && (
+        <section class="repository-section space-runtime" data-space-runtime data-repository-id={repository.id}>
+          <div class="repository-section__heading"><div><p class="eyebrow">Isolated local container</p><h2>Run this app</h2></div></div>
+          <p>The reviewed Gradio repository runs with no network egress, a read-only filesystem, dropped Linux capabilities, and explicit CPU, memory, and process limits.</p>
+          <div class="space-controls">
+            <button class="button button--dark button--small" type="button" data-space-start>Start app</button>
+            <button class="button button--secondary button--small" type="button" data-space-stop disabled>Stop app</button>
+            <p data-space-status aria-live="polite">Sign in to start the self-hosted runtime.</p>
+          </div>
+          <iframe
+            data-space-frame
+            title={`${repository.title} Gradio app`}
+            hidden
+            sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts"
+            referrerpolicy="no-referrer"
+          ></iframe>
         </section>
       )}
 
       <section class="repository-section" id="analysis">
         <div class="repository-section__heading"><div><p class="eyebrow">Offline inspection</p><h2>Analysis</h2></div></div>
-        {repository.analyses.length ? repository.analyses.map((analysis) => (
-          <details class="analysis-panel" open={repository.analyses.length === 1}>
-            <summary>{analysis.analysis_type} · passed</summary>
-            <pre>{pretty(analysis.result)}</pre>
-          </details>
-        )) : <p>No public analysis artifact is attached to this revision.</p>}
+        <RepositoryAnalysis repository={repository} />
       </section>
 
       <section class="repository-section" id="lineage">
@@ -275,6 +330,28 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
     });
 
     const browserForm = tools.querySelector('[data-browser-ai-form]');
+    const browserTask = browserForm?.querySelector('[data-browser-task]');
+    const browserTextField = browserForm?.querySelector('[data-browser-text-field]');
+    const browserMediaField = browserForm?.querySelector('[data-browser-media-field]');
+    const browserText = browserTextField?.querySelector('textarea');
+    const browserMedia = browserMediaField?.querySelector('input[type="file"]');
+    function syncBrowserInput() {
+      if (!(browserTask instanceof HTMLSelectElement)) return;
+      const mediaTask = browserTask.value.startsWith('image-')
+        ? 'image'
+        : browserTask.value.startsWith('audio-') || browserTask.value === 'automatic-speech-recognition'
+          ? 'audio'
+          : null;
+      if (browserTextField instanceof HTMLElement) browserTextField.hidden = mediaTask !== null;
+      if (browserMediaField instanceof HTMLElement) browserMediaField.hidden = mediaTask === null;
+      if (browserText instanceof HTMLTextAreaElement) browserText.required = mediaTask === null;
+      if (browserMedia instanceof HTMLInputElement) {
+        browserMedia.required = mediaTask !== null;
+        browserMedia.accept = mediaTask ? `${mediaTask}/*` : '';
+      }
+    }
+    browserTask?.addEventListener('change', syncBrowserInput);
+    syncBrowserInput();
     browserForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!(browserForm instanceof HTMLFormElement) || !browserModel) return;
@@ -283,11 +360,27 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
       const submit = browserForm.querySelector('button[type="submit"]');
       if (submit instanceof HTMLButtonElement) submit.disabled = true;
       let runner;
+      let objectUrl: string | undefined;
       try {
         const form = new FormData(browserForm);
+        const task = String(form.get('task')) as BrowserAiTask;
+        const mediaTask = task.startsWith('image-')
+          || task.startsWith('audio-')
+          || task === 'automatic-speech-recognition';
+        let input: string;
+        if (mediaTask) {
+          const file = form.get('media');
+          if (!(file instanceof File) || file.size < 1) throw new Error('Choose a local media file first.');
+          if (file.size > 100 * 1024 * 1024) throw new Error('Local media is limited to 100 MB.');
+          objectUrl = URL.createObjectURL(file);
+          input = objectUrl;
+        } else {
+          input = String(form.get('input') ?? '');
+          if (!input) throw new Error('Enter text first.');
+        }
         if (status instanceof HTMLElement) status.textContent = 'Loading verified local model files…';
         runner = await createBrowserAiRunner(
-          String(form.get('task')) as BrowserAiTask,
+          task,
           browserModel,
           (progress) => {
             if (status instanceof HTMLElement && typeof progress === 'object' && progress) {
@@ -298,7 +391,7 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
             }
           },
         );
-        const result = await runner.run(String(form.get('input')));
+        const result = await runner.run(input);
         if (status instanceof HTMLElement) status.textContent = `Completed locally with ${runner.device}.`;
         if (output instanceof HTMLElement) {
           output.hidden = false;
@@ -308,9 +401,147 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
         if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Browser inference failed.';
       } finally {
         await runner?.dispose();
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
         if (submit instanceof HTMLButtonElement) submit.disabled = false;
       }
     });
+
+    const llamaForm = tools.querySelector('[data-llama-form]');
+    llamaForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(llamaForm instanceof HTMLFormElement) || !repositoryId) return;
+      const status = llamaForm.querySelector('[data-llama-status]');
+      const output = llamaForm.querySelector('[data-llama-output]');
+      const submit = llamaForm.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const form = new FormData(llamaForm);
+        const mode = String(form.get('mode'));
+        const prompt = String(form.get('prompt'));
+        const system = String(form.get('system') ?? '').trim();
+        const payload: Record<string, unknown> = {
+          mode,
+          max_tokens: Number(form.get('max_tokens')),
+          temperature: Number(form.get('temperature')),
+          top_p: Number(form.get('top_p')),
+          seed: Number(form.get('seed')),
+        };
+        if (mode === 'chat') {
+          payload.messages = [
+            ...(system ? [{ role: 'system', content: system }] : []),
+            { role: 'user', content: prompt },
+          ];
+        } else {
+          payload.prompt = prompt;
+        }
+        if (status instanceof HTMLElement) status.textContent = 'Running on the self-hosted llama.cpp runtime…';
+        const response = await fetch(`/api/repositories/${repositoryId}/llama`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json() as Record<string, unknown>;
+        const reason = typeof data.error === 'string' ? data.error : typeof data.detail === 'string' ? data.detail : 'llama.cpp unavailable';
+        if (!response.ok) throw new Error(reason);
+        if (status instanceof HTMLElement) status.textContent = 'Completed offline on Super ii Runtime.';
+        if (output instanceof HTMLElement) {
+          output.hidden = false;
+          output.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (error) {
+        if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'llama.cpp unavailable.';
+      } finally {
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+
+    const diffusersForm = tools.querySelector('[data-diffusers-form]');
+    diffusersForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(diffusersForm instanceof HTMLFormElement) || !repositoryId) return;
+      const status = diffusersForm.querySelector('[data-diffusers-status]');
+      const image = diffusersForm.querySelector('[data-diffusers-image]');
+      const submit = diffusersForm.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const form = new FormData(diffusersForm);
+        if (status instanceof HTMLElement) status.textContent = 'Generating with local reviewed weights…';
+        const response = await fetch(`/api/repositories/${repositoryId}/diffusers`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            prompt: String(form.get('prompt')),
+            negative_prompt: String(form.get('negative_prompt') ?? '') || null,
+            steps: Number(form.get('steps')),
+            guidance_scale: Number(form.get('guidance_scale')),
+            width: Number(form.get('width')),
+            height: Number(form.get('height')),
+            seed: Number(form.get('seed')),
+          }),
+        });
+        const data = await response.json() as Record<string, unknown>;
+        const reason = typeof data.error === 'string' ? data.error : typeof data.detail === 'string' ? data.detail : 'Diffusers unavailable';
+        if (!response.ok || typeof data.image_url !== 'string') throw new Error(reason);
+        if (image instanceof HTMLImageElement) {
+          image.src = data.image_url;
+          image.hidden = false;
+        }
+        if (status instanceof HTMLElement) status.textContent = `Completed offline · seed ${String(data.seed ?? '')}`;
+      } catch (error) {
+        if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Diffusers unavailable.';
+      } finally {
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+  }
+</script>}
+
+{repository && kind === 'space' && <script>
+  const runner = document.querySelector('[data-space-runtime]');
+  if (runner instanceof HTMLElement && runner.dataset.repositoryId) {
+    const repositoryId = runner.dataset.repositoryId;
+    const start = runner.querySelector('[data-space-start]');
+    const stop = runner.querySelector('[data-space-stop]');
+    const frame = runner.querySelector('[data-space-frame]');
+    const status = runner.querySelector('[data-space-status]');
+
+    function showState(message: string, running: boolean, error = false) {
+      if (status instanceof HTMLElement) {
+        status.textContent = message;
+        status.dataset.state = error ? 'error' : 'success';
+      }
+      if (start instanceof HTMLButtonElement) start.disabled = running;
+      if (stop instanceof HTMLButtonElement) stop.disabled = !running;
+      if (frame instanceof HTMLIFrameElement) {
+        frame.hidden = !running;
+        if (running && !frame.hasAttribute('src')) frame.src = `/api/repositories/${repositoryId}/space/`;
+        if (!running) frame.removeAttribute('src');
+      }
+    }
+
+    async function control(method: 'POST' | 'DELETE') {
+      if (start instanceof HTMLButtonElement) start.disabled = true;
+      if (stop instanceof HTMLButtonElement) stop.disabled = true;
+      if (status instanceof HTMLElement) status.textContent = method === 'POST' ? 'Starting isolated Gradio container…' : 'Stopping app…';
+      try {
+        const response = await fetch(`/api/repositories/${repositoryId}/space/control`, { method });
+        const data = await response.json() as Record<string, unknown>;
+        const reason = typeof data.error === 'string' ? data.error : typeof data.detail === 'string' ? data.detail : 'Space runtime unavailable';
+        if (!response.ok) throw new Error(reason);
+        showState(method === 'POST' ? 'App running in an isolated local container.' : 'App stopped.', method === 'POST');
+      } catch (error) {
+        showState(error instanceof Error ? error.message : 'Space runtime unavailable.', false, true);
+      }
+    }
+
+    start?.addEventListener('click', () => void control('POST'));
+    stop?.addEventListener('click', () => void control('DELETE'));
+    fetch(`/api/repositories/${repositoryId}/space/control`)
+      .then(async (response) => ({ response, data: await response.json() as Record<string, unknown> }))
+      .then(({ response, data }) => {
+        if (response.ok && data.status === 'running') showState('App already running in an isolated local container.', true);
+      })
+      .catch(() => undefined);
   }
 </script>}
 
