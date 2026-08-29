@@ -56,7 +56,7 @@ function secure(response: Response, request: Request): Response {
   headers.set('cross-origin-resource-policy', isolatedSpaceFrame ? 'cross-origin' : 'same-origin');
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
   headers.set('referrer-policy', 'strict-origin-when-cross-origin');
-  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-frame-options', sameOriginFrame ? 'SAMEORIGIN' : 'DENY');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
