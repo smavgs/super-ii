@@ -29,12 +29,16 @@ export type RepositoryBundle = {
   task: string | null;
   library: string | null;
   modality: string | null;
+  card_markdown: string;
+  provenance: Record<string, unknown>;
   total_size_bytes: string;
   updated_at: string;
   revision_id: string;
   revision_sequence: number;
   manifest_sha256: string;
   published_at: string;
+  commit_sha: string | null;
+  manifest: Array<Record<string, unknown>>;
   files: RepositoryFileView[];
   analyses: RepositoryAnalysisView[];
   releases: Array<{ id: string; name: string; slug: string; notes: string; created_at: string }>;
@@ -46,7 +50,17 @@ export type RepositoryBundle = {
     manifest_sha256: string;
     file_count: number;
     total_size_bytes: string;
+    commit_sha: string | null;
+    branch_name: string | null;
     published_at: string;
+  }>;
+  branches: Array<{
+    id: string;
+    name: string;
+    is_default: boolean;
+    revision_id: string | null;
+    sequence: number | null;
+    commit_sha: string | null;
   }>;
   discussions: Array<{
     id: string;
@@ -67,6 +81,7 @@ export type RepositoryBundle = {
   }>;
   likes_count: number;
   watchers_count: number;
+  downloads_count: number;
   relationships: Array<{
     id: string;
     relationship_type: string;
@@ -76,6 +91,14 @@ export type RepositoryBundle = {
     related_slug: string;
     related_title: string;
     evidence_url: string | null;
+  }>;
+  related: Array<{
+    kind: RepositoryKind;
+    owner_handle: string;
+    slug: string;
+    title: string;
+    summary: string;
+    match_score: number;
   }>;
 };
 
@@ -100,11 +123,15 @@ export async function getPublicRepository(
         r.task,
         r.library,
         r.modality,
+        r.card_markdown,
+        r.provenance,
         r.total_size_bytes,
         r.updated_at,
         rr.id as revision_id,
         rr.sequence as revision_sequence,
         rr.manifest_sha256,
+        rr.commit_sha,
+        rr.manifest,
         rr.published_at,
         coalesce((
           select jsonb_agg(jsonb_build_object(
@@ -159,11 +186,27 @@ export async function getPublicRepository(
             'manifest_sha256', version.manifest_sha256,
             'file_count', version.file_count,
             'total_size_bytes', version.total_size_bytes,
+            'commit_sha', version.commit_sha,
+            'branch_name', branch.name,
             'published_at', version.published_at
           ) order by version.sequence desc)
           from app.repository_revisions version
+          left join app.repository_branches branch on branch.id = version.branch_id
           where version.repository_id = r.id and version.status = 'published'
         ), '[]'::jsonb) as versions,
+        coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'id', branch.id,
+            'name', branch.name,
+            'is_default', branch.is_default,
+            'revision_id', head.id,
+            'sequence', head.sequence,
+            'commit_sha', head.commit_sha
+          ) order by branch.is_default desc, branch.name)
+          from app.repository_branches branch
+          left join app.repository_revisions head on head.id = branch.head_revision_id
+          where branch.repository_id = r.id
+        ), '[]'::jsonb) as branches,
         coalesce((
           select jsonb_agg(jsonb_build_object(
             'id', d.id,
@@ -210,6 +253,7 @@ export async function getPublicRepository(
         ), '[]'::jsonb) as discussions,
         (select count(*)::integer from app.likes l where l.repository_id = r.id) as likes_count,
         (select count(*)::integer from app.repository_watchers w where w.repository_id = r.id) as watchers_count,
+        (select count(*)::integer from app.repository_downloads download where download.repository_id = r.id) as downloads_count,
         coalesce((
           select jsonb_agg(relationship order by relationship->>'relationship_type')
           from (
@@ -243,7 +287,35 @@ export async function getPublicRepository(
             where rel.target_repository_id = r.id
               and related.visibility = 'public' and related.status = 'published'
           ) lineage
-        ), '[]'::jsonb) as relationships
+        ), '[]'::jsonb) as relationships,
+        coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'kind', related.kind,
+            'owner_handle', related.owner_handle,
+            'slug', related.slug,
+            'title', related.title,
+            'summary', related.summary,
+            'match_score', related.match_score
+          ) order by related.match_score desc, related.updated_at desc)
+          from (
+            select candidate.*,
+              (case when candidate.task is not null and r.task is not null and lower(candidate.task) = lower(r.task) then 4 else 0 end
+               + case when candidate.library is not null and r.library is not null and lower(candidate.library) = lower(r.library) then 3 else 0 end
+               + case when candidate.modality is not null and r.modality is not null and lower(candidate.modality) = lower(r.modality) then 2 else 0 end
+               + case when candidate.owner_handle = r.owner_handle then 1 else 0 end) as match_score
+            from app.repositories candidate
+            where candidate.id <> r.id
+              and candidate.visibility = 'public' and candidate.status = 'published'
+              and (
+                (candidate.task is not null and r.task is not null and lower(candidate.task) = lower(r.task))
+                or (candidate.library is not null and r.library is not null and lower(candidate.library) = lower(r.library))
+                or (candidate.modality is not null and r.modality is not null and lower(candidate.modality) = lower(r.modality))
+                or candidate.owner_handle = r.owner_handle
+              )
+            order by match_score desc, candidate.updated_at desc
+            limit 6
+          ) related
+        ), '[]'::jsonb) as related
       from app.repositories r
       join app.repository_revisions rr on rr.id = r.latest_revision_id
       where r.kind = ${kind}::repository_kind

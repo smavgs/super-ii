@@ -1,0 +1,28 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { sqlClient } from '@/lib/db';
+
+type Paper = { owner: string; slug: string; title: string; abstract: string; doi: string | null; published_on: string | null; created_at: string; repository_count: number };
+const sql = sqlClient(Astro.locals);
+let papers: Paper[] = [];
+let unavailable = false;
+if (sql) {
+  try {
+    papers = await sql`
+      select profile.handle as owner, paper.slug, paper.title, paper.abstract, paper.doi,
+             paper.published_on, paper.created_at,
+             (select count(*)::integer from app.paper_repository_links link where link.paper_id = paper.id) as repository_count
+      from app.papers paper join app.profiles profile on profile.id = paper.owner_profile_id
+      where paper.is_public order by coalesce(paper.published_on::timestamptz, paper.created_at) desc limit 100
+    ` as Paper[];
+  } catch { unavailable = true; }
+}
+---
+
+<BaseLayout title="Papers" description="Research papers connected to real Super ii models, datasets, and apps.">
+  <PageHero eyebrow="Research graph 📄" title="Papers connected to working repositories." description="Publish research metadata, link evidence to models and datasets, and make reproduction paths easier to follow." compact><div class="button-row"><a class="button button--dark" href="/papers/new">Publish a paper</a><a class="button button--secondary" href="/feed">Open community feed</a></div></PageHero>
+  <main class="section shell">
+    {papers.length ? <div class="content-card-grid">{papers.map((paper) => <a class="content-card" href={`/papers/${paper.owner}/${paper.slug}`}><p class="eyebrow">@{paper.owner} · {paper.repository_count} linked repositories</p><h2>{paper.title}</h2><p>{paper.abstract}</p><span>{paper.doi ? `DOI ${paper.doi}` : paper.published_on ? new Date(paper.published_on).toLocaleDateString('en', { dateStyle: 'medium' }) : 'Publication date not declared'}</span></a>)}</div> : <div class="empty-state"><div class="empty-state__icon"><i class="ph ph-file-text" aria-hidden="true"></i></div><h2>{unavailable ? 'Papers cannot be loaded.' : 'Publish the first paper'}</h2><p>{unavailable ? 'No placeholder research is shown.' : 'Connect a real paper to reviewed public repositories.'}</p><a class="button button--dark" href="/papers/new">Publish a paper</a></div>}
+  </main>
+</BaseLayout>

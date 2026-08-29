@@ -21,6 +21,17 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
 
 const hasGguf = repository?.files.some((file) => file.path.toLowerCase().endsWith('.gguf')) ?? false;
 const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() === 'model_index.json') ?? false;
+const cardTitle = kind === 'model' ? 'Model Card' : kind === 'dataset' ? 'Data Card' : 'App Card';
+const folders = repository
+  ? [...new Set(repository.files.flatMap((file) => {
+      const parts = file.path.split('/');
+      return parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join('/'));
+    }))].sort()
+  : [];
+const provenanceSources = repository && Array.isArray(repository.provenance.sources)
+  ? repository.provenance.sources.filter((value): value is string => typeof value === 'string')
+  : [];
+const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '🎉', heart: '❤️', eyes: '👀' };
 ---
 
 <BaseLayout
@@ -43,6 +54,8 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
           <span>revision {repository.revision_sequence}</span>
           <span>{repository.likes_count} likes</span>
           <span>{repository.watchers_count} watching</span>
+          <span>{repository.downloads_count} downloads</span>
+          {repository.commit_sha && <span title={repository.commit_sha}>commit {repository.commit_sha.slice(0, 10)}</span>}
         </div>
         <div class="repository-actions" data-repository-actions data-repository-id={repository.id}>
           <button class="button button--secondary button--small" type="button" data-like-button data-active="false">
@@ -68,6 +81,7 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
       </header>
 
       <nav class="repository-tabs" aria-label="Repository sections">
+        <a href="#card">{cardTitle}</a>
         <a href="#files">Files</a>
         <a href="#versions">Versions</a>
         <a href="#analysis">Analysis</a>
@@ -75,11 +89,32 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
         <a href="#community">Community</a>
       </nav>
 
+      <section class="repository-section" id="card">
+        <div class="repository-section__heading"><div><p class="eyebrow">Documentation</p><h2>{cardTitle}</h2></div></div>
+        {repository.card_markdown ? (
+          <article class="repository-card-markdown">{repository.card_markdown}</article>
+        ) : (
+          <p>This repository does not yet include a written {cardTitle.toLowerCase()}.</p>
+        )}
+        {provenanceSources.length > 0 && (
+          <div class="provenance-sources">
+            <h3>Declared provenance sources</h3>
+            <ul>{provenanceSources.map((source) => <li><a href={source} rel="nofollow noreferrer">{source}</a></li>)}</ul>
+          </div>
+        )}
+      </section>
+
       <section class="repository-section" id="files">
         <div class="repository-section__heading">
           <div><p class="eyebrow">Immutable revision</p><h2>Files</h2></div>
           <code>{repository.manifest_sha256}</code>
         </div>
+        <div class="repository-tree-summary">
+          <span><i class="ph ph-git-branch" aria-hidden="true"></i> {repository.branches.length} {repository.branches.length === 1 ? 'branch' : 'branches'}</span>
+          <span><i class="ph ph-folder" aria-hidden="true"></i> {folders.length} {folders.length === 1 ? 'folder' : 'folders'}</span>
+          <span><i class="ph ph-file" aria-hidden="true"></i> {repository.files.length} files</span>
+        </div>
+        {folders.length > 0 && <p class="folder-list" aria-label="Repository folders">{folders.map((folder) => <code><i class="ph ph-folder" aria-hidden="true"></i>{folder}/</code>)}</p>}
         <div class="file-table-wrap">
           <table class="file-table">
             <thead><tr><th>Path</th><th>Type</th><th>Size</th><th>SHA-256</th><th></th></tr></thead>
@@ -101,12 +136,20 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
 
       <section class="repository-section" id="versions">
         <div class="repository-section__heading"><div><p class="eyebrow">Release history</p><h2>Versions</h2></div></div>
+        <div class="branch-list" aria-label="Branches">
+          {repository.branches.map((branch) => (
+            <span class:list={['branch-chip', branch.is_default && 'branch-chip--default']}>
+              <i class="ph ph-git-branch" aria-hidden="true"></i>{branch.name}
+              {branch.sequence && <small>r{branch.sequence}</small>}
+            </span>
+          ))}
+        </div>
         <div class="version-list">
           {repository.versions.map((version) => (
             <article>
               <div><strong>Revision {version.sequence}</strong><time datetime={version.published_at}>{new Date(version.published_at).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })}</time></div>
               <p>{version.message || 'No release message.'}</p>
-              <small>{version.file_count} files · {Number(version.total_size_bytes).toLocaleString()} bytes · <code>{version.manifest_sha256.slice(0, 16)}…</code></small>
+              <small>{version.branch_name ?? 'main'} · {version.file_count} files · {Number(version.total_size_bytes).toLocaleString()} bytes · <code>{version.commit_sha?.slice(0, 12) ?? version.manifest_sha256.slice(0, 12)}…</code></small>
             </article>
           ))}
         </div>
@@ -194,10 +237,13 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
           <div class="repository-section__heading"><div><p class="eyebrow">Isolated local container</p><h2>Run this app</h2></div></div>
           <p>The reviewed Gradio repository runs with no network egress, a read-only filesystem, dropped Linux capabilities, and explicit CPU, memory, and process limits.</p>
           <div class="space-controls">
+            <button class="button button--secondary button--small" type="button" data-space-build>Prepare build</button>
             <button class="button button--dark button--small" type="button" data-space-start>Start app</button>
             <button class="button button--secondary button--small" type="button" data-space-stop disabled>Stop app</button>
+            <button class="button button--secondary button--small" type="button" data-space-logs>View logs</button>
             <p data-space-status aria-live="polite">Sign in to start the self-hosted runtime.</p>
           </div>
+          <pre class="space-logs" data-space-log-output hidden></pre>
           <iframe
             data-space-frame
             title={`${repository.title} Gradio app`}
@@ -226,6 +272,19 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
             ))}
           </ul>
         ) : <p>No lineage relationship has been declared for this release.</p>}
+        {repository.related.length > 0 && (
+          <div class="related-repositories">
+            <h3>Related models, datasets, and apps 🧭</h3>
+            <div class="catalog-results">
+              {repository.related.map((related) => (
+                <a class="catalog-card" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>
+                  <div class="catalog-card__topline"><span>{related.kind}</span><span>match {related.match_score}</span></div>
+                  <h3>{related.title}</h3><p>{related.summary}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       <section class="repository-section" id="community">
@@ -248,7 +307,7 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
                 <div class="reaction-row" aria-label="React to discussion">
                   {(['helpful', 'celebrate', 'heart', 'eyes'] as const).map((reaction) => (
                     <button type="button" data-reaction data-target-type="discussion" data-target-id={discussion.id} data-reaction-name={reaction} data-active="false">
-                      {reaction} <span>{discussion.reactions[reaction] ?? 0}</span>
+                      <span aria-hidden="true">{reactionEmoji[reaction]}</span> {reaction} <span>{discussion.reactions[reaction] ?? 0}</span>
                     </button>
                   ))}
                 </div>
@@ -261,7 +320,7 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
                         <div class="reaction-row" aria-label="React to comment">
                           {(['helpful', 'heart'] as const).map((reaction) => (
                             <button type="button" data-reaction data-target-type="comment" data-target-id={comment.id} data-reaction-name={reaction} data-active="false">
-                              {reaction} <span>{comment.reactions[reaction] ?? 0}</span>
+                              <span aria-hidden="true">{reactionEmoji[reaction]}</span> {reaction} <span>{comment.reactions[reaction] ?? 0}</span>
                             </button>
                           ))}
                         </div>
@@ -502,6 +561,9 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
     const repositoryId = runner.dataset.repositoryId;
     const start = runner.querySelector('[data-space-start]');
     const stop = runner.querySelector('[data-space-stop]');
+    const build = runner.querySelector('[data-space-build]');
+    const logs = runner.querySelector('[data-space-logs]');
+    const logOutput = runner.querySelector('[data-space-log-output]');
     const frame = runner.querySelector('[data-space-frame]');
     const status = runner.querySelector('[data-space-status]');
 
@@ -536,6 +598,33 @@ const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() ==
 
     start?.addEventListener('click', () => void control('POST'));
     stop?.addEventListener('click', () => void control('DELETE'));
+    build?.addEventListener('click', async () => {
+      if (!(build instanceof HTMLButtonElement)) return;
+      build.disabled = true;
+      if (status instanceof HTMLElement) status.textContent = 'Preparing immutable app bundle against the locked runtime image…';
+      try {
+        const response = await fetch(`/api/repositories/${repositoryId}/space/build`, { method: 'POST' });
+        const data = await response.json() as Record<string, unknown>;
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Space build unavailable.');
+        if (status instanceof HTMLElement) status.textContent = `Build ready · ${String(data.file_count ?? 0)} files · locked image.`;
+      } catch (error) {
+        if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Space build unavailable.';
+      } finally { build.disabled = false; }
+    });
+    logs?.addEventListener('click', async () => {
+      if (!(logs instanceof HTMLButtonElement) || !(logOutput instanceof HTMLElement)) return;
+      logs.disabled = true;
+      try {
+        const response = await fetch(`/api/repositories/${repositoryId}/space/logs?tail=200`);
+        const data = await response.json() as Record<string, unknown>;
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Space logs unavailable.');
+        logOutput.hidden = false;
+        logOutput.textContent = typeof data.logs === 'string' && data.logs ? data.logs : 'No container logs yet.';
+      } catch (error) {
+        logOutput.hidden = false;
+        logOutput.textContent = error instanceof Error ? error.message : 'Space logs unavailable.';
+      } finally { logs.disabled = false; }
+    });
     fetch(`/api/repositories/${repositoryId}/space/control`)
       .then(async (response) => ({ response, data: await response.json() as Record<string, unknown> }))
       .then(({ response, data }) => {

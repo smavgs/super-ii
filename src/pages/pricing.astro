@@ -1,14 +1,40 @@
 ---
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
 import { plans } from '@/lib/site';
 
-export const prerender = true;
+let signedIn = false;
+let teamOrganizations: Array<{ id: string; handle: string; name: string; member_count: number }> = [];
+const sql = sqlClient(Astro.locals);
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    signedIn = Boolean(profile);
+    if (profile) {
+      teamOrganizations = await sql`
+        select o.id, o.handle, coalesce(o.full_name, o.name) as name,
+               count(all_members.profile_id)::integer as member_count
+        from app.organization_members manager
+        join app.organizations o on o.id = manager.organization_id
+        left join app.organization_members all_members on all_members.organization_id = o.id
+        where manager.profile_id = ${profile.profileId}::uuid
+          and manager.role in ('owner', 'admin')
+        group by o.id, o.handle, o.full_name, o.name
+        order by o.handle
+      ` as typeof teamOrganizations;
+    }
+  } catch {
+    signedIn = false;
+    teamOrganizations = [];
+  }
+}
 
 const planCta = {
   free: { label: 'Join free', href: '/sign-up', featured: false },
-  pro: { label: 'Join Pro beta list', href: '/contact?interest=pro', featured: true },
-  team: { label: 'Join Team beta list', href: '/contact?interest=team', featured: false },
+  pro: { label: 'Pay with USDC', href: null, featured: true },
+  team: { label: 'Pay with USDC', href: null, featured: false },
   enterprise: { label: 'Request a proposal', href: '/contact?interest=enterprise', featured: false },
 } as const;
 
@@ -28,11 +54,11 @@ const comparison = [
   <PageHero
     eyebrow="Simple, transparent plans"
     title="Start in public for free. Pay when control and scale matter."
-    description="Free accounts are open now. Paid plans are published for transparency and will activate after beta readiness and payment onboarding."
+    description="Free accounts are open now. Pro and Team activate for 30 days after a verified USDC payment on Ethereum; Enterprise remains a written proposal."
   >
     <div class="pricing-notice">
       <i class="ph ph-info" aria-hidden="true"></i>
-      <p><strong>Zero-upfront launch:</strong> Super ii does not charge before paid plans are active. Future payment-processor and usage charges apply only when a customer purchases or consumes paid services.</p>
+      <p><strong>Crypto-only launch:</strong> no card is required. Pro and Team use a single USDC payment on Ethereum through NOWPayments; network and processor fees may apply.</p>
     </div>
   </PageHero>
 
@@ -57,9 +83,18 @@ const comparison = [
                 <li><i class="ph ph-check" aria-hidden="true"></i>{feature}</li>
               ))}
             </ul>
-            <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>
-              {cta.label}
-            </a>
+            {cta.href ? (
+              <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>{cta.label}</a>
+            ) : (
+              <form class="plan-checkout" data-plan-checkout data-plan-id={plan.id}>
+                {plan.id === 'team' && signedIn && teamOrganizations.length > 0 && <label>Organization <select name="organization_id" required>{teamOrganizations.map((organization) => <option value={organization.id}>{organization.name} · @{organization.handle}</option>)}</select></label>}
+                {plan.id === 'team' && <label>Seats <input name="seat_count" type="number" min="1" max="100" value={String(Math.max(2, teamOrganizations[0]?.member_count ?? 1))} required /></label>}
+                {plan.id === 'team' && signedIn && teamOrganizations.length === 0 && <span>Create an organization before activating Team. <a href="/organizations/new">Create one</a></span>}
+                <button class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} type="submit" disabled={plan.id === 'team' && signedIn && teamOrganizations.length === 0}>{cta.label}</button>
+                <span>USDC · Ethereum · 30 days</span>
+                <p data-form-status aria-live="polite"></p>
+              </form>
+            )}
           </article>
         );
       })}
@@ -71,7 +106,7 @@ const comparison = [
       <div class="section-heading">
         <p class="eyebrow">Plan coverage</p>
         <h2>A full path from first project to governed AI.</h2>
-        <p>Limits will be published before paid activation. Enterprise capabilities are scoped in writing and never implied by a badge alone.</p>
+        <p>Paid activation is manual-renewal for 30 days. Enterprise capabilities are scoped in writing and never implied by a badge alone.</p>
       </div>
 
       <div class="comparison-scroll">
@@ -127,3 +162,44 @@ const comparison = [
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  document.querySelectorAll('[data-plan-checkout]').forEach((candidate) => {
+    candidate.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(candidate instanceof HTMLFormElement)) return;
+      const planId = candidate.dataset.planId;
+      const status = candidate.querySelector('[data-form-status]');
+      const submit = candidate.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const values = new FormData(candidate);
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            plan_id: planId,
+            seat_count: Number(values.get('seat_count') ?? 1),
+            organization_id: values.get('organization_id') || null,
+          }),
+        });
+        const data = await response.json() as Record<string, unknown>;
+        if (response.status === 401) {
+          location.assign(`/sign-in?redirect_url=${encodeURIComponent(location.pathname)}`);
+          return;
+        }
+        if (!response.ok || typeof data.href !== 'string') {
+          throw new Error(typeof data.error === 'string' ? data.error : 'Checkout could not be created.');
+        }
+        if (status instanceof HTMLElement) status.textContent = 'Secure payment created. Opening checkout…';
+        location.assign(data.href);
+      } catch (error) {
+        if (status instanceof HTMLElement) {
+          status.textContent = error instanceof Error ? error.message : 'Checkout could not be created.';
+          status.dataset.state = 'error';
+        }
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+  });
+</script>

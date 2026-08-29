@@ -8,7 +8,7 @@ from uuid import UUID
 import httpx
 
 from superii_runtime.settings import Settings
-from superii_runtime.spaces import NETWORK_NAME, SpaceRunner
+from superii_runtime.spaces import SpaceRunner
 
 REPOSITORY_ID = UUID("11111111-1111-4111-8111-111111111111")
 REVISION_ID = UUID("55555555-5555-4555-8555-555555555555")
@@ -35,6 +35,7 @@ def main() -> None:
         )
         name = runner.container_name(REVISION_ID)
         proxy_name = runner.proxy_name(REVISION_ID)
+        network_name = runner.network_name(REVISION_ID)
         try:
             status = runner.start(fixture, REPOSITORY_ID, REVISION_ID)
             if status.state != "running" or not status.local_url:
@@ -56,10 +57,10 @@ def main() -> None:
                 raise RuntimeError("Space isolation metadata is missing")
             if app_host.get("ReadonlyRootfs") is not True:
                 raise RuntimeError("Space filesystem is not read only")
-            if app_host.get("NetworkMode") != NETWORK_NAME:
+            if app_host.get("NetworkMode") != network_name:
                 raise RuntimeError("Space is not attached exclusively to the internal network")
             networks = app_network.get("Networks")
-            if not isinstance(networks, dict) or set(networks) != {NETWORK_NAME}:
+            if not isinstance(networks, dict) or set(networks) != {network_name}:
                 raise RuntimeError("Space has an unexpected network attachment")
             egress = runner._run(
                 [
@@ -84,7 +85,7 @@ def main() -> None:
             proxy_networks = proxy_network.get("Networks")
             if not isinstance(proxy_networks, dict) or set(proxy_networks) != {
                 "bridge",
-                NETWORK_NAME,
+                network_name,
             }:
                 raise RuntimeError("trusted proxy network bridge is incomplete")
             ports = proxy_network.get("Ports")
@@ -97,6 +98,8 @@ def main() -> None:
             )
         finally:
             runner.stop(REVISION_ID)
+            if runner._run(["network", "inspect", network_name]).returncode == 0:
+                raise RuntimeError("per-revision Space network was not removed")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,88 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+---
+
+<BaseLayout title="New organization" description="Create a complete Super ii organization profile." noindex>
+  <PageHero eyebrow="New organization 🏢" title="Complete your organization profile" description="Create a shared public identity for your models, datasets, apps, collections, papers, and posts." compact />
+  <section class="section shell creator-shell">
+    <form class="form-card creator-form" data-organization-form>
+      <div class="form-grid form-grid--two">
+        <label>Organization username
+          <input name="handle" required maxlength="40" pattern="[a-z0-9][a-z0-9-]{0,38}[a-z0-9]|[a-z0-9]" autocomplete="off" placeholder="super-ii-labs" />
+          <span>Lowercase letters, numbers, and hyphens.</span>
+        </label>
+        <label>Organization type
+          <select name="organization_type" required>
+            <option value="company">Company</option>
+            <option value="university">University</option>
+            <option value="classroom">Classroom</option>
+            <option value="non-profit">Non-profit</option>
+            <option value="government">Government</option>
+            <option value="community">Community</option>
+          </select>
+        </label>
+      </div>
+      <label>Organization full name <input name="full_name" required maxlength="200" autocomplete="organization" placeholder="Super ii Labs" /></label>
+      <div class="form-grid form-grid--two">
+        <label>Homepage <span>(optional)</span><input name="homepage_url" type="url" maxlength="2048" placeholder="https://example.com" /></label>
+        <label>Logo URL <span>(optional)</span><input name="logo_url" type="url" maxlength="2048" placeholder="https://example.com/logo.png" /></label>
+        <label>GitHub username <span>(optional)</span><input name="github_username" maxlength="100" placeholder="super-ii" /></label>
+        <label>X username <span>(optional)</span><input name="twitter_username" maxlength="100" placeholder="superiisite" /></label>
+        <label>LinkedIn profile <span>(optional)</span><input name="linkedin_url" type="url" maxlength="2048" placeholder="https://www.linkedin.com/company/…" /></label>
+      </div>
+      <label>AI &amp; ML interests <span>(optional)</span>
+        <textarea name="ai_ml_interests" maxlength="2000" placeholder="Open models, dataset quality, local inference"></textarea>
+        <span>Separate interests with commas.</span>
+      </label>
+      <div class="form-actions">
+        <button class="button button--dark" type="submit">Create organization</button>
+        <a class="button button--secondary" href="/organizations">Cancel</a>
+      </div>
+      <p class="form-status" data-form-status aria-live="polite"></p>
+    </form>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.querySelector('[data-organization-form]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    const submit = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('[data-form-status]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    try {
+      const values = new FormData(form);
+      const interests = String(values.get('ai_ml_interests') ?? '').split(',').map((value) => value.trim()).filter(Boolean);
+      const response = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          handle: values.get('handle'),
+          organization_type: values.get('organization_type'),
+          full_name: values.get('full_name'),
+          homepage_url: values.get('homepage_url'),
+          logo_url: values.get('logo_url'),
+          github_username: values.get('github_username'),
+          twitter_username: values.get('twitter_username'),
+          linkedin_url: values.get('linkedin_url'),
+          ai_ml_interests: interests,
+        }),
+      });
+      const data = await response.json() as Record<string, unknown>;
+      if (!response.ok) {
+        const fallback = response.status === 401 ? 'Log in or join free to create an organization.' : 'Organization could not be created.';
+        throw new Error(typeof data.error === 'string' ? data.error : fallback);
+      }
+      if (status instanceof HTMLElement) status.textContent = 'Organization created. Opening it now…';
+      location.assign(typeof data.href === 'string' ? data.href : '/organizations');
+    } catch (error) {
+      if (status instanceof HTMLElement) {
+        status.textContent = error instanceof Error ? error.message : 'Organization could not be created.';
+        status.dataset.state = 'error';
+      }
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+</script>

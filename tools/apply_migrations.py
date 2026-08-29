@@ -82,7 +82,7 @@ def main() -> int:
                 """
             )
             table_count, repository_count, public_count = cursor.fetchone()
-            if table_count != 29:
+            if table_count != 36:
                 raise RuntimeError(f"unexpected app table count after migration: {table_count}")
             print(
                 f"Verified: app_tables={table_count}, repositories={repository_count}, "

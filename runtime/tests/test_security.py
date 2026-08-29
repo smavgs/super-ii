@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -31,6 +32,40 @@ def test_missing_scanners_fail_closed(tmp_path: Path) -> None:
     assert scan_clamav(path, settings).status == "error"
     assert scan_gitleaks(path, settings).status == "error"
     assert scanner_readiness(settings) == {"clamav": False, "gitleaks": False}
+
+
+def test_tcp_clamd_receives_a_stream_instead_of_a_host_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "file.txt"
+    path.write_text("clean text", encoding="utf-8")
+    config = tmp_path / "clamd.conf"
+    config.write_text("TCPSocket 3310\nTCPAddr 127.0.0.1\n", encoding="utf-8")
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "superii_runtime.scanners.shutil.which",
+        lambda command: "/usr/local/bin/clamdscan" if command == "clamdscan" else None,
+    )
+
+    def fake_run(arguments: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+        calls.append(arguments)
+        return subprocess.CompletedProcess(arguments, 0, stdout="ClamAV 1.5.4", stderr="")
+
+    monkeypatch.setattr("superii_runtime.scanners.subprocess.run", fake_run)
+    result = scan_clamav(
+        path,
+        Settings(
+            storage_root=tmp_path / "data",
+            clamav_command="clamdscan",
+            clamav_config_file=config,
+        ),
+    )
+
+    assert result.status == "passed"
+    assert "--stream" in calls[-1]
+    assert "--fdpass" not in calls[-1]
 
 
 def test_scaling_runtimes_are_explicitly_deferred(tmp_path: Path) -> None:

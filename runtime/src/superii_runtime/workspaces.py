@@ -6,6 +6,7 @@ import shutil
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 from uuid import UUID, uuid4
 
 from .database import RepositoryDatabase, RevisionFile
@@ -18,6 +19,20 @@ def revision_manifest(files: list[RevisionFile]) -> str:
         line = f"{file.path}\0{file.sha256}\0{file.size_bytes}\n".encode()
         digest.update(line)
     return digest.hexdigest()
+
+
+def revision_manifest_document(files: list[RevisionFile]) -> list[dict[str, Any]]:
+    """Return the public canonical release manifest without private storage keys."""
+
+    return [
+        {
+            "path": file.path,
+            "sha256": file.sha256,
+            "size_bytes": file.size_bytes,
+            "mime_type": file.mime_type,
+        }
+        for file in sorted(files, key=lambda item: item.path)
+    ]
 
 
 @contextmanager

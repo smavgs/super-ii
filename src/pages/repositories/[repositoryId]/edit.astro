@@ -1,0 +1,262 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { managedRepository } from '@/lib/creator';
+import { sqlClient } from '@/lib/db';
+import { pingRuntime } from '@/lib/runtime';
+
+type DraftFile = {
+  id: string;
+  path: string;
+  size_bytes: string;
+  mime_type: string;
+  sha256: string;
+  storage_state: string;
+  scan_status: string;
+};
+type Branch = { id: string; name: string; is_default: boolean; revision_id: string | null; sequence: number | null; status: string | null };
+
+const repositoryId = Astro.params.repositoryId ?? '';
+const selectedBranchId = Astro.url.searchParams.get('branch');
+const sql = sqlClient(Astro.locals);
+let repository: Awaited<ReturnType<typeof managedRepository>> = null;
+let files: DraftFile[] = [];
+let branches: Branch[] = [];
+let reviews: Array<{ decision: string; notes: string; updated_at: string }> = [];
+let authenticated = false;
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    authenticated = Boolean(profile);
+    if (profile) repository = await managedRepository(sql, repositoryId, profile.profileId, selectedBranchId);
+    if (repository) {
+      files = await sql`
+        select id, path, size_bytes, mime_type, sha256, storage_state, scan_status
+        from app.repository_files
+        where repository_id = ${repository.id}::uuid and revision_id = ${repository.revision_id}::uuid
+        order by path
+      ` as DraftFile[];
+      branches = await sql`
+        select b.id, b.name, b.is_default, rr.id as revision_id, rr.sequence, rr.status
+        from app.repository_branches b
+        left join app.repository_revisions rr on rr.id = b.head_revision_id
+        where b.repository_id = ${repository.id}::uuid
+        order by b.is_default desc, b.name
+      ` as Branch[];
+      reviews = await sql`
+        select decision, notes, updated_at
+        from app.repository_reviews
+        where revision_id = ${repository.revision_id}::uuid
+        order by updated_at desc
+      ` as Array<{ decision: string; notes: string; updated_at: string }>;
+    }
+  } catch {
+    repository = null;
+  }
+}
+if (!repository) Astro.response.status = authenticated ? 404 : 401;
+const runtime = repository ? await pingRuntime(Astro.locals) : null;
+const prefix = repository?.kind === 'model' ? 'models' : repository?.kind === 'dataset' ? 'datasets' : 'spaces';
+const publicHref = repository ? `/${prefix}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}` : '/account';
+const editable = repository && ['draft', 'quarantined'].includes(repository.revision_status);
+const published = repository?.revision_status === 'published';
+---
+
+<BaseLayout title={repository ? `Edit ${repository.title}` : 'Repository workspace'} description="Manage a Super ii repository revision, uploads, branches, releases, and review." noindex>
+  {repository ? (
+    <>
+      <PageHero eyebrow={`${repository.kind} workspace 🛠️`} title={repository.title} description={`${repository.owner_handle}/${repository.slug} · ${repository.branch_name} · revision ${repository.revision_status}`} compact>
+        <div class="button-row">
+          {published && <a class="button button--dark" href={publicHref}>View public repository</a>}
+          <a class="button button--secondary" href="/account">Back to account</a>
+        </div>
+      </PageHero>
+      <main class="section shell creator-workspace" data-repository-workspace data-repository-id={repository.id} data-revision-id={repository.revision_id} data-branch-id={repository.branch_id}>
+        <section class="workspace-status-grid">
+          <article class="workspace-status-card"><span>Branch</span><strong>{repository.branch_name}</strong><small>{branches.length} total</small></article>
+          <article class="workspace-status-card"><span>Revision</span><strong>{repository.revision_status}</strong><small>{files.length} files</small></article>
+          <article class="workspace-status-card"><span>Secure runtime</span><strong>{runtime?.state ?? 'unconfigured'}</strong><small>{runtime?.publishing_enabled ? 'Scanning enabled' : 'Uploads stay closed'}</small></article>
+          <article class="workspace-status-card"><span>Visibility</span><strong>Public</strong><small>Review required</small></article>
+        </section>
+
+        <section class="repository-section">
+          <div class="repository-section__heading"><div><p class="eyebrow">Git-style history</p><h2>Branches and commits</h2></div></div>
+          <div class="branch-list">
+            {branches.map((branch) => <a href={`/repositories/${repository.id}/edit?branch=${encodeURIComponent(branch.id)}`} class:list={['branch-chip', branch.is_default && 'branch-chip--default', branch.id === repository.branch_id && 'branch-chip--active']} aria-current={branch.id === repository.branch_id ? 'page' : undefined}><i class="ph ph-git-branch" aria-hidden="true"></i>{branch.name}<small>{branch.status ?? 'empty'}{branch.sequence ? ` · r${branch.sequence}` : ''}</small></a>)}
+          </div>
+          <div class="workspace-form-grid">
+            <form class="mini-form" data-branch-form>
+              <h3>Create branch</h3>
+              <label>Branch name <input name="name" required maxlength="128" placeholder="experiment/v2" /></label>
+              <button class="button button--secondary button--small" type="submit">Create branch</button>
+              <p data-form-status aria-live="polite"></p>
+            </form>
+            <form class="mini-form" data-commit-form>
+              <h3>Start next commit</h3>
+              <label>Branch <select name="branch_id">{branches.map((branch) => <option value={branch.id}>{branch.name}</option>)}</select></label>
+              <label>Commit message <input name="message" required maxlength="2000" placeholder="Document evaluation results" /></label>
+              <button class="button button--secondary button--small" type="submit" disabled={editable}>Create commit</button>
+              <p>{editable ? 'Finish the current editable revision first.' : 'Clean files from the branch head are inherited by checksum.'}</p>
+              <p data-form-status aria-live="polite"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="repository-section">
+          <div class="repository-section__heading"><div><p class="eyebrow">Quarantine first 🔒</p><h2>Files and folders</h2></div><span>{files.length} files</span></div>
+          {editable ? (
+            <form class="upload-dropzone" data-upload-form>
+              <i class="ph ph-upload-simple" aria-hidden="true"></i>
+              <h3>Upload repository files</h3>
+              <p>Choose one or more files. Browser folder paths are preserved when available. Each file must currently be 95 MiB or smaller.</p>
+              <label class="button button--secondary">Choose files <input name="files" type="file" multiple required /></label>
+              <button class="button button--dark" type="submit">Upload and scan</button>
+              <progress max="100" value="0" hidden data-upload-progress></progress>
+              <p data-form-status aria-live="polite"></p>
+            </form>
+          ) : <p>This revision is read-only because review has started.</p>}
+          <div class="file-table-wrap">
+            <table class="file-table">
+              <thead><tr><th>Path</th><th>Size</th><th>SHA-256</th><th>Gate</th><th></th></tr></thead>
+              <tbody>
+                {files.map((file) => (
+                  <tr>
+                    <td><code>{file.path}</code></td>
+                    <td>{Number(file.size_bytes).toLocaleString()} B</td>
+                    <td><code title={file.sha256}>{file.sha256.slice(0, 12)}…</code></td>
+                    <td>{file.storage_state} · {file.scan_status}</td>
+                    <td>{editable && <button class="text-button" type="button" data-delete-file={file.id}>Remove</button>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="repository-section">
+          <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Submit for review</h2></div></div>
+          <p>Submission runs offline repository analysis, seals the release manifest, and moves this revision into human review. You cannot change files after that point.</p>
+          <button class="button button--dark" type="button" data-submit-review disabled={!editable || files.length === 0 || runtime?.state !== 'ready'}>Run checks and submit</button>
+          {runtime?.state !== 'ready' && <p class="form-hint">The secure scanning runtime is not connected, so submission remains safely disabled.</p>}
+          <p data-submit-status aria-live="polite"></p>
+          {reviews.length > 0 && <div class="review-history"><h3>Review history</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
+        </section>
+
+        {published && (
+          <section class="repository-section">
+            <div class="repository-section__heading"><div><p class="eyebrow">Release management</p><h2>Tags and releases</h2></div></div>
+            <div class="workspace-form-grid">
+              <form class="mini-form" data-tag-form><h3>Create tag</h3><label>Tag <input name="name" required maxlength="128" placeholder="v1.0.0" /></label><button class="button button--secondary button--small" type="submit">Create tag</button><p data-form-status aria-live="polite"></p></form>
+              <form class="mini-form" data-release-form><h3>Create release</h3><label>Name <input name="name" required maxlength="120" placeholder="Version 1.0" /></label><label>Slug <input name="slug" required maxlength="128" placeholder="v1.0.0" /></label><label>Notes <textarea name="notes" maxlength="100000"></textarea></label><button class="button button--secondary button--small" type="submit">Create release</button><p data-form-status aria-live="polite"></p></form>
+            </div>
+          </section>
+        )}
+      </main>
+    </>
+  ) : (
+    <main class="section shell"><div class="empty-state"><h1>{authenticated ? 'Repository not found' : 'Log in to continue'}</h1><p>{authenticated ? 'This repository does not exist or you do not manage it.' : 'Your repository workspace is available after authentication.'}</p><a class="button button--dark" href={authenticated ? '/account' : '/sign-in'}>{authenticated ? 'Back to account' : 'Log in'}</a></div></main>
+  )}
+</BaseLayout>
+
+{repository && <script>
+  const workspace = document.querySelector('[data-repository-workspace]');
+  const repositoryId = workspace instanceof HTMLElement ? workspace.dataset.repositoryId : null;
+  const branchId = workspace instanceof HTMLElement ? workspace.dataset.branchId : null;
+
+  function workspacePath(path: string) {
+    if (!branchId) return path;
+    const url = new URL(path, location.origin);
+    url.searchParams.set('branch', branchId);
+    return `${url.pathname}${url.search}`;
+  }
+
+  async function jsonAction(path: string, body: Record<string, unknown>) {
+    const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await response.json() as Record<string, unknown>;
+    if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Request failed.');
+    return data;
+  }
+
+  const uploadForm = workspace?.querySelector('[data-upload-form]');
+  uploadForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(uploadForm instanceof HTMLFormElement) || !repositoryId) return;
+    const input = uploadForm.elements.namedItem('files');
+    const status = uploadForm.querySelector('[data-form-status]');
+    const progress = uploadForm.querySelector('[data-upload-progress]');
+    const submit = uploadForm.querySelector('button[type="submit"]');
+    if (!(input instanceof HTMLInputElement) || !input.files?.length) return;
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    if (progress instanceof HTMLProgressElement) { progress.hidden = false; progress.max = input.files.length; }
+    try {
+      let completed = 0;
+      for (const file of input.files) {
+        if (status instanceof HTMLElement) status.textContent = `Scanning ${file.name}…`;
+        const body = new FormData();
+        body.set('path', file.webkitRelativePath || file.name);
+        body.set('file', file, file.name);
+        const response = await fetch(workspacePath(`/api/repositories/${repositoryId}/files`), { method: 'POST', body });
+        const data = await response.json() as Record<string, unknown>;
+        if (!response.ok) throw new Error(typeof data.error === 'string' ? `${file.name}: ${data.error}` : `${file.name}: upload failed`);
+        completed += 1;
+        if (progress instanceof HTMLProgressElement) progress.value = completed;
+      }
+      if (status instanceof HTMLElement) status.textContent = 'Files passed scanning. Refreshing…';
+      location.reload();
+    } catch (error) {
+      if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Upload failed.'; status.dataset.state = 'error'; }
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+
+  workspace?.querySelectorAll('[data-delete-file]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement) || !repositoryId) return;
+      button.disabled = true;
+      const response = await fetch(workspacePath(`/api/repositories/${repositoryId}/files/${button.dataset.deleteFile}`), { method: 'DELETE' });
+      if (response.ok) location.reload(); else button.disabled = false;
+    });
+  });
+
+  const review = workspace?.querySelector('[data-submit-review]');
+  review?.addEventListener('click', async () => {
+    if (!(review instanceof HTMLButtonElement) || !repositoryId) return;
+    const status = workspace?.querySelector('[data-submit-status]');
+    review.disabled = true;
+    try {
+      if (status instanceof HTMLElement) status.textContent = 'Running offline analysis and sealing the manifest…';
+      await jsonAction(workspacePath(`/api/repositories/${repositoryId}/submit`), {});
+      if (status instanceof HTMLElement) status.textContent = 'Submitted for human review ✅';
+      location.reload();
+    } catch (error) {
+      if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Submission failed.'; status.dataset.state = 'error'; }
+      review.disabled = false;
+    }
+  });
+
+  for (const [selector, endpoint, payload] of [
+    ['[data-branch-form]', 'branches', (data: FormData) => ({ name: data.get('name') })],
+    ['[data-commit-form]', 'revisions', (data: FormData) => ({ branch_id: data.get('branch_id'), message: data.get('message') })],
+    ['[data-tag-form]', 'tags', (data: FormData) => ({ name: data.get('name') })],
+    ['[data-release-form]', 'releases', (data: FormData) => ({ name: data.get('name'), slug: data.get('slug'), notes: data.get('notes') })],
+  ] as const) {
+    const form = workspace?.querySelector(selector);
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(form instanceof HTMLFormElement) || !repositoryId) return;
+      const status = form.querySelector('[data-form-status]');
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit instanceof HTMLButtonElement) submit.disabled = true;
+      try {
+        const result = await jsonAction(workspacePath(`/api/repositories/${repositoryId}/${endpoint}`), payload(new FormData(form)));
+        if (status instanceof HTMLElement) status.textContent = 'Saved. Refreshing…';
+        if (typeof result.edit_href === 'string') location.assign(result.edit_href);
+        else location.reload();
+      } catch (error) {
+        if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Request failed.'; status.dataset.state = 'error'; }
+        if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+  }
+</script>}

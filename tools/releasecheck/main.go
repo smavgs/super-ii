@@ -75,18 +75,44 @@ func main() {
 	}
 
 	planIDs := make([]string, 0, len(contract.Plans))
+	availablePaid := make([]string, 0)
 	for _, p := range contract.Plans {
 		planIDs = append(planIDs, p.ID)
 		if len(p.Features) == 0 {
 			errors = append(errors, "plan has no features: "+p.ID)
 		}
 		if p.ID != "free" && p.Status == "available" {
-			errors = append(errors, "paid plan marked available before billing activation: "+p.ID)
+			availablePaid = append(availablePaid, p.ID)
 		}
 	}
 	sort.Strings(planIDs)
 	if strings.Join(planIDs, ",") != "enterprise,free,pro,team" {
 		errors = append(errors, "expected Free, Pro, Team, and Enterprise plan ids")
+	}
+	sort.Strings(availablePaid)
+	if strings.Join(availablePaid, ",") != "pro,team" {
+		errors = append(errors, "paid availability must be exactly Pro and Team")
+	} else {
+		billingPaths := []string{
+			filepath.Join(root, "src", "lib", "nowpayments.ts"),
+			filepath.Join(root, "src", "pages", "api", "checkout.ts"),
+			filepath.Join(root, "src", "pages", "api", "payments", "nowpayments", "ipn.ts"),
+			filepath.Join(root, "database", "migrations", "0005_creator_commerce.sql"),
+		}
+		billingContract := ""
+		for _, path := range billingPaths {
+			content, readErr := os.ReadFile(path)
+			if readErr != nil {
+				errors = append(errors, "paid billing source missing: "+path)
+				continue
+			}
+			billingContract += strings.ToLower(string(content))
+		}
+		for _, marker := range []string{"nowpayments_api_key", "nowpayments_ipn_secret", "usdc", "apply_nowpayments_status"} {
+			if !strings.Contains(billingContract, marker) {
+				errors = append(errors, "paid billing contract missing "+marker)
+			}
+		}
 	}
 
 	logo, err := os.ReadFile(filepath.Join(root, "public", "brand", "super-ii-logo.png"))

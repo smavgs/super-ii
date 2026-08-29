@@ -2,7 +2,7 @@ name: superii-runtime
 
 services:
   clamav:
-    image: clamav/clamav:1.5.4
+    image: clamav/clamav-debian:1.5.4
     restart: unless-stopped
     volumes:
       - superii-data:/data:ro
@@ -11,8 +11,17 @@ services:
       - "10001"
     networks:
       - runtime-private
+      - runtime-egress
+    ports:
+      - 127.0.0.1:3310:3310
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
     security_opt:
       - no-new-privileges:true
     healthcheck:

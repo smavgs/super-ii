@@ -31,7 +31,7 @@
       "name": "Pro",
       "price": "$9",
       "unit": "per month",
-      "status": "beta-waitlist",
+      "status": "available",
       "summary": "For independent builders shipping more.",
       "features": ["Everything in Free", "Private repositories", "Higher storage and compute limits", "Advanced publishing controls", "Priority build queue"]
     },
@@ -40,7 +40,7 @@
       "name": "Team",
       "price": "$20",
       "unit": "per member / month",
-      "status": "beta-waitlist",
+      "status": "available",
       "summary": "For teams collaborating with control.",
       "features": ["Everything in Pro", "Role-based access", "Audit history", "Team billing", "Shared resource groups"]
     },
@@ -61,7 +61,15 @@
     "/spaces",
     "/pricing",
     "/organizations",
+    "/organizations/new",
     "/collections",
+    "/new",
+    "/feed",
+    "/papers",
+    "/papers/new",
+    "/posts",
+    "/posts/new",
+    "/review",
     "/enterprise",
     "/docs",
     "/about",
@@ -74,6 +82,7 @@
     "/legal/privacy",
     "/legal/terms",
     "/api/health",
-    "/api/search"
+    "/api/search",
+    "/api/checkout"
   ]
 }

@@ -347,13 +347,37 @@ class RepositoryDatabase:
         manifest_sha256: str,
         file_count: int,
         total_size_bytes: int,
-    ) -> None:
+        manifest: list[dict[str, Any]],
+    ) -> str:
         with self.connect() as connection:
-            connection.execute(
+            row = connection.execute(
                 """
                 update app.repository_revisions
-                set manifest_sha256 = %s, file_count = %s, total_size_bytes = %s
+                set manifest_sha256 = %s,
+                    file_count = %s,
+                    total_size_bytes = %s,
+                    manifest = %s,
+                    commit_sha = encode(digest(
+                      coalesce((
+                        select parent.commit_sha
+                        from app.repository_revisions parent
+                        where parent.id = repository_revisions.parent_revision_id
+                      ), '')
+                      || E'\\n' || %s || E'\\n' || message || E'\\n' || id::text,
+                      'sha256'
+                    ), 'hex')
                 where id = %s
+                returning commit_sha
                 """,
-                (manifest_sha256, file_count, total_size_bytes, revision_id),
-            )
+                (
+                    manifest_sha256,
+                    file_count,
+                    total_size_bytes,
+                    Jsonb(manifest),
+                    manifest_sha256,
+                    revision_id,
+                ),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("revision manifest was not stored")
+            return str(row["commit_sha"])

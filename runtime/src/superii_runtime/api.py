@@ -37,7 +37,7 @@ from .security import RuntimeAuth
 from .settings import Settings, get_settings
 from .spaces import SpaceRunner
 from .storage import ObjectStore, StorageError, normalize_repository_path
-from .workspaces import materialized_revision, revision_manifest
+from .workspaces import materialized_revision, revision_manifest, revision_manifest_document
 
 app = FastAPI(
     title="Super ii Runtime",
@@ -251,11 +251,13 @@ def finalize_revision(
     if any(file.repository_id != repository_id for file in files):
         raise HTTPException(status_code=404, detail="revision not found")
     manifest_sha256 = revision_manifest(files)
-    database.update_revision_manifest(
+    manifest = revision_manifest_document(files)
+    commit_sha = database.update_revision_manifest(
         revision_id,
         manifest_sha256,
         len(files),
         sum(file.size_bytes for file in files),
+        manifest,
     )
     database.set_revision_status(revision_id, "review")
     return {
@@ -263,6 +265,8 @@ def finalize_revision(
         "revision_id": str(revision_id),
         "status": "review",
         "manifest_sha256": manifest_sha256,
+        "commit_sha": commit_sha,
+        "manifest": manifest,
         "file_count": len(files),
         "total_size_bytes": sum(file.size_bytes for file in files),
     }
@@ -494,6 +498,40 @@ def start_space(
     except (OSError, ValueError, RuntimeError, TimeoutError) as error:
         raise HTTPException(status_code=503, detail=str(error)[:500]) from error
     return {"container": space.container_name, "status": space.state, "local_url": space.local_url}
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/space/build")
+def build_space(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        runner = SpaceRunner(settings)
+        with materialized_revision(database, get_store(), revision_id) as workspace:
+            return runner.build(workspace, revision_id)
+    except (OSError, ValueError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail=str(error)[:500]) from error
+
+
+@app.get("/v1/repositories/{repository_id}/revisions/{revision_id}/space/logs")
+def space_logs(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    tail: int = 200,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        logs = SpaceRunner(settings).logs(revision_id, tail)
+    except (OSError, RuntimeError, TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Space logs are unavailable") from error
+    return {"logs": logs, "tail": min(max(tail, 1), 500)}
 
 
 @app.get("/v1/repositories/{repository_id}/revisions/{revision_id}/space/status")

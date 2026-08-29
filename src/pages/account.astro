@@ -3,8 +3,73 @@ import { Show, SignInButton, UserProfile } from '@clerk/astro/components';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
 
 const authConfigured = authIsConfigured(Astro.locals);
+const sql = sqlClient(Astro.locals);
+let repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }> = [];
+let organizations: Array<{ handle: string; full_name: string; role: string }> = [];
+let notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }> = [];
+let subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }> = [];
+let payments: Array<{ id: string; plan_id: string; price_amount_cents: number; status: string; created_at: string }> = [];
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) {
+      repositories = await sql`
+        select r.id, r.kind, r.owner_handle, r.slug, r.title, r.status, rr.status as revision_status
+        from app.repositories r
+        join app.repository_revisions rr on rr.id = coalesce(
+          (select b.head_revision_id from app.repository_branches b where b.repository_id = r.id and b.is_default limit 1),
+          r.latest_revision_id
+        )
+        where r.owner_profile_id = ${profile.profileId}::uuid
+          or exists (
+            select 1 from app.organization_members m
+            where m.organization_id = r.owner_organization_id
+              and m.profile_id = ${profile.profileId}::uuid
+              and m.role in ('owner', 'admin', 'maintainer')
+          )
+        order by r.updated_at desc limit 50
+      ` as typeof repositories;
+      organizations = await sql`
+        select o.handle, coalesce(o.full_name, o.name) as full_name, m.role
+        from app.organization_members m
+        join app.organizations o on o.id = m.organization_id
+        where m.profile_id = ${profile.profileId}::uuid
+        order by o.handle
+      ` as typeof organizations;
+      notifications = await sql`
+        select id, title, body, href, read_at, created_at
+        from app.notifications where profile_id = ${profile.profileId}::uuid
+        order by created_at desc limit 20
+      ` as typeof notifications;
+      subscriptions = await sql`
+        select s.plan_id, s.status, s.current_period_end,
+               coalesce('@' || o.handle, 'Personal') as owner_label
+        from app.subscriptions s
+        left join app.profiles p on p.clerk_user_id = s.clerk_user_id
+        left join app.organizations o
+          on o.id = s.organization_id
+          or (s.clerk_organization_id is not null and o.clerk_organization_id = s.clerk_organization_id)
+        where p.id = ${profile.profileId}::uuid
+          or exists (
+            select 1 from app.organization_members member
+            where member.organization_id = o.id and member.profile_id = ${profile.profileId}::uuid
+          )
+        order by s.updated_at desc limit 10
+      ` as typeof subscriptions;
+      payments = await sql`
+        select id, plan_id, price_amount_cents, status, created_at
+        from app.payment_orders where profile_id = ${profile.profileId}::uuid
+        order by created_at desc limit 10
+      ` as typeof payments;
+    }
+  } catch {
+    repositories = [];
+  }
+}
 ---
 
 <BaseLayout title="Account" description="Manage your Super ii account, security, organizations, and plan preferences." noindex>
@@ -12,6 +77,7 @@ const authConfigured = authIsConfigured(Astro.locals);
   <section class="shell account-shell">
     <nav class="account-nav" aria-label="Account sections">
       <a href="/account" aria-current="page">Profile</a>
+      <a href="/new">Repositories</a>
       <a href="/organizations">Organizations</a>
       <a href="/pricing">Plans</a>
     </nav>
@@ -29,19 +95,38 @@ const authConfigured = authIsConfigured(Astro.locals);
             </div>
           </Show>
           <Show when="signed-in">
-            <UserProfile
-              routing="hash"
-              appearance={{
-                elements: {
-                  rootBox: 'sii-clerk-profile-root',
-                  cardBox: 'sii-clerk-profile-card',
-                },
-                variables: {
-                  colorPrimary: '#071a2f',
-                  borderRadius: '12px',
-                },
-              }}
-            />
+            <div class="account-workspace">
+              <section class="account-card">
+                <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
+                {repositories.length ? <div class="account-list">{repositories.map((repository) => <a href={`/repositories/${repository.id}/edit`}><span><strong>{repository.owner_handle}/{repository.slug}</strong><small>{repository.kind} · {repository.revision_status}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <p>Create your first real model, dataset, or app repository.</p>}
+              </section>
+              <section class="account-card">
+                <div class="repository-section__heading"><div><p class="eyebrow">Teams 🏢</p><h2>Organizations</h2></div><a class="button button--secondary button--small" href="/organizations/new">New organization</a></div>
+                {organizations.length ? <div class="account-list">{organizations.map((organization) => <a href={`/organizations/${organization.handle}`}><span><strong>{organization.full_name}</strong><small>@{organization.handle} · {organization.role}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <p>You do not belong to an organization yet.</p>}
+              </section>
+              <section class="account-card">
+                <div class="repository-section__heading"><div><p class="eyebrow">Notifications 🔔</p><h2>Recent activity</h2></div></div>
+                {notifications.length ? <div class="notification-list">{notifications.map((notification) => <article data-notification={notification.id} data-read={String(Boolean(notification.read_at))}><div><strong>{notification.title}</strong><p>{notification.body}</p><time datetime={notification.created_at}>{new Date(notification.created_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time></div>{notification.href && <a href={notification.href}>Open</a>}{!notification.read_at && <button class="text-button" type="button" data-mark-read>Mark read</button>}</article>)}</div> : <p>No notifications yet.</p>}
+              </section>
+              <section class="account-card">
+                <div class="repository-section__heading"><div><p class="eyebrow">Plan and payments 💳</p><h2>Billing</h2></div><a class="button button--secondary button--small" href="/pricing">View plans</a></div>
+                {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString('en', { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
+                {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
+              </section>
+              <section class="account-card"><p class="eyebrow">Identity and security</p><h2>Profile settings</h2><UserProfile
+                routing="hash"
+                appearance={{
+                  elements: {
+                    rootBox: 'sii-clerk-profile-root',
+                    cardBox: 'sii-clerk-profile-card',
+                  },
+                  variables: {
+                    colorPrimary: '#071a2f',
+                    borderRadius: '12px',
+                  },
+                }}
+              /></section>
+            </div>
           </Show>
         </>
       ) : (
@@ -54,3 +139,20 @@ const authConfigured = authIsConfigured(Astro.locals);
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  document.querySelectorAll('[data-notification] [data-mark-read]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const notification = button.closest('[data-notification]');
+      if (!(button instanceof HTMLButtonElement) || !(notification instanceof HTMLElement)) return;
+      button.disabled = true;
+      const response = await fetch(`/api/notifications/${notification.dataset.notification}`, { method: 'POST' });
+      if (response.ok) {
+        notification.dataset.read = 'true';
+        button.remove();
+      } else {
+        button.disabled = false;
+      }
+    });
+  });
+</script>

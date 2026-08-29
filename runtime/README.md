@@ -58,6 +58,20 @@ docker compose up -d
 
 The Compose port is bound to `127.0.0.1:8788`. Put TLS or a private Cloudflare Tunnel in front of it. Do not expose port 8788 directly.
 
+On an Apple-silicon development host that also supervises Docker Spaces, run
+ClamAV from Compose and the authenticated runtime through
+`scripts/run-runtime-macos.sh`. The host client streams file bytes to ClamAV on
+localhost, so the antivirus container never receives a host filesystem path.
+Runtime credentials are read from macOS Keychain and never stored in the
+repository or a launch-agent property list.
+
+The dedicated `runtime.superii.site` connector runs from
+`run-cloudflared-macos.sh` under the checked-in launch-agent definition. Its
+remotely managed tunnel token belongs outside the repository at
+`~/Library/Application Support/Super ii Runtime/cloudflared-token`, owned by
+the runtime user with mode `0600`. The connector publishes only the loopback
+runtime on port `8788`; keep that port closed to the LAN.
+
 ## Gradio Spaces
 
 Build the pinned base image:

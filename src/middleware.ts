@@ -12,7 +12,7 @@ const csp = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://challenges.cloudflare.com https://*.protect.clerk.com https://*.js.stripe.com https://js.stripe.com https://hooks.stripe.com",
+  "frame-src 'self' https://challenges.cloudflare.com https://*.protect.clerk.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

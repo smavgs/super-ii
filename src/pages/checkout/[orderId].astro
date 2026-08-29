@@ -1,0 +1,142 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+
+type CheckoutOrder = {
+  id: string;
+  plan_id: string;
+  seat_count: number;
+  price_amount_cents: number;
+  pay_currency: string;
+  pay_network: string;
+  pay_amount: string | null;
+  pay_address: string | null;
+  status: string;
+  expires_at: string | null;
+  paid_at: string | null;
+};
+
+const orderId = Astro.params.orderId ?? '';
+const sql = sqlClient(Astro.locals);
+let order: CheckoutOrder | null = null;
+let authenticated = false;
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    authenticated = Boolean(profile);
+    if (profile) {
+      const rows = await sql`
+        select id, plan_id, seat_count, price_amount_cents, pay_currency, pay_network,
+               pay_amount, pay_address, status, expires_at, paid_at
+        from app.payment_orders
+        where id = ${orderId}::uuid and profile_id = ${profile.profileId}::uuid
+        limit 1
+      `;
+      order = (rows[0] as CheckoutOrder | undefined) ?? null;
+    }
+  } catch {
+    order = null;
+  }
+}
+if (!order) Astro.response.status = authenticated ? 404 : 401;
+const terminal = order ? ['finished', 'failed', 'refunded', 'expired'].includes(order.status) : true;
+---
+
+<BaseLayout title={order ? `${order.plan_id} checkout` : 'Checkout unavailable'} description="Complete a Super ii plan payment with USDC on Ethereum." noindex>
+  {order ? (
+    <>
+      <PageHero eyebrow="Secure crypto checkout 💳" title={`${order.plan_id === 'team' ? 'Team' : 'Pro'} · 30 days`} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · ${order.seat_count} ${order.seat_count === 1 ? 'seat' : 'seats'} · pay in USDC on Ethereum`} compact />
+      <main class="section shell checkout-shell" data-checkout data-order-id={order.id} data-terminal={String(terminal)}>
+        <section class="checkout-card">
+          <div class="checkout-status-row">
+            <div><p class="eyebrow">Payment status</p><h2 data-checkout-status>{order.status.replaceAll('_', ' ')}</h2></div>
+            <span class="status-dot" data-status={order.status}></span>
+          </div>
+          {order.status === 'finished' ? (
+            <div class="creator-callout creator-callout--success"><i class="ph ph-check-circle" aria-hidden="true"></i><p><strong>Plan active 🎉</strong> Your 30-day subscription has been activated. You can manage it from your account.</p></div>
+          ) : order.pay_address && order.pay_amount ? (
+            <>
+              <div class="payment-warning">
+                <i class="ph ph-warning" aria-hidden="true"></i>
+                <p><strong>Send only USDC on Ethereum (ETH/ERC-20).</strong> A different asset or network can be lost. The wallet network fee is separate.</p>
+              </div>
+              <label class="payment-copy-field">Exact amount
+                <span><code data-pay-amount>{order.pay_amount}</code><button type="button" data-copy={order.pay_amount}>Copy</button></span>
+              </label>
+              <label class="payment-copy-field">Deposit address
+                <span><code data-pay-address>{order.pay_address}</code><button type="button" data-copy={order.pay_address}>Copy</button></span>
+              </label>
+              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time>. Create a fresh checkout if it expires.</p>}
+              <p class="form-status" data-checkout-message aria-live="polite">Waiting for the Ethereum payment and confirmations…</p>
+            </>
+          ) : (
+            <div class="payment-warning"><i class="ph ph-warning" aria-hidden="true"></i><p>The payment address is unavailable. Please return to pricing and create a new checkout.</p></div>
+          )}
+          <div class="form-actions">
+            <a class="button button--dark" href="/account">Open account</a>
+            <a class="button button--secondary" href="/pricing">Back to pricing</a>
+          </div>
+        </section>
+        <aside class="checkout-aside">
+          <h2>What happens next</h2>
+          <ol>
+            <li>NOWPayments watches the deposit address.</li>
+            <li>Ethereum confirmations update this page.</li>
+            <li>Only a verified <strong>finished</strong> callback activates the plan.</li>
+          </ol>
+          <p>This is a single 30-day purchase, not an automatic card renewal. Renew manually before the period ends.</p>
+          <p>Network and processor fees may apply. Amounts underpaid, overpaid, sent on the wrong network, or sent after expiry may require NOWPayments support.</p>
+        </aside>
+      </main>
+    </>
+  ) : (
+    <main class="section shell"><div class="empty-state"><h1>{authenticated ? 'Checkout not found' : 'Log in to view checkout'}</h1><p>{authenticated ? 'This payment order does not exist or belongs to another account.' : 'Payment details are private to the account that created them.'}</p><a class="button button--dark" href={authenticated ? '/pricing' : '/sign-in'}>{authenticated ? 'Back to pricing' : 'Log in'}</a></div></main>
+  )}
+</BaseLayout>
+
+{order && !terminal && <script>
+  const checkout = document.querySelector('[data-checkout]');
+  const orderId = checkout instanceof HTMLElement ? checkout.dataset.orderId : null;
+  checkout?.querySelectorAll('[data-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy ?? '');
+        const original = button.textContent;
+        button.textContent = 'Copied';
+        setTimeout(() => { button.textContent = original; }, 1500);
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+    });
+  });
+
+  let checks = 0;
+  const refresh = async () => {
+    if (!orderId || document.visibilityState !== 'visible') return;
+    checks += 1;
+    try {
+      const response = await fetch(`/api/checkout/${orderId}`, { headers: { accept: 'application/json' } });
+      const data = await response.json() as { order?: { status?: string } };
+      const status = data.order?.status;
+      if (!response.ok || !status) return;
+      const heading = checkout?.querySelector('[data-checkout-status]');
+      const dot = checkout?.querySelector('.status-dot');
+      const message = checkout?.querySelector('[data-checkout-message]');
+      if (heading instanceof HTMLElement) heading.textContent = status.replaceAll('_', ' ');
+      if (dot instanceof HTMLElement) dot.dataset.status = status;
+      if (message instanceof HTMLElement) message.textContent = status === 'finished'
+        ? 'Payment confirmed. Your plan is active 🎉'
+        : `Payment status: ${status.replaceAll('_', ' ')}.`;
+      if (['finished', 'failed', 'refunded', 'expired'].includes(status)) {
+        if (status === 'finished') setTimeout(() => location.reload(), 800);
+        return;
+      }
+    } finally {
+      if (checks < 90) setTimeout(refresh, 10_000);
+    }
+  };
+  setTimeout(refresh, 4_000);
+</script>}

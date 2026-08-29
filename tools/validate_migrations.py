@@ -40,6 +40,13 @@ REQUIRED_TABLES = {
     "collection_items",
     "repository_relationships",
     "request_limits",
+    "repository_branches",
+    "repository_uploads",
+    "notifications",
+    "payment_orders",
+    "papers",
+    "posts",
+    "paper_repository_links",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -73,7 +80,10 @@ def main() -> int:
         if f"alter table app.{table} enable row level security" not in lower:
             errors.append(f"RLS is not enabled for app.{table}")
 
-    if re.search(r"insert\s+into\s+app\.repositories", lower):
+    # Repository creation belongs inside reviewed PL/pgSQL functions. Strip
+    # dollar-quoted function/DO bodies before checking for forbidden seed rows.
+    top_level_sql = re.sub(r"\$([a-z0-9_]*)\$.*?\$\1\$", "", lower, flags=re.DOTALL)
+    if re.search(r"insert\s+into\s+app\.repositories", top_level_sql):
         errors.append("repository seed rows are forbidden at launch")
     if "insert into app.plans" not in lower:
         errors.append("plan contract must be seeded transactionally")
@@ -89,6 +99,16 @@ def main() -> int:
         errors.append("publish function must require the applicable offline repository analysis")
     if "consume_request_limit" not in lower:
         errors.append("runtime-facing routes require a database-backed rate limit")
+    if "create_repository_with_revision" not in lower:
+        errors.append("creator publishing must create repositories and initial revisions transactionally")
+    if "create_repository_commit" not in lower:
+        errors.append("repository branches must support transactional commits")
+    if "apply_nowpayments_status" not in lower:
+        errors.append("payment activation must be transactional and idempotent")
+    if "create_or_reuse_payment_order" not in lower or "pg_advisory_xact_lock" not in lower:
+        errors.append("payment creation must deduplicate concurrent checkout attempts")
+    if "require_release_manifest" not in lower or "release_manifest_incomplete" not in lower:
+        errors.append("publication must require a structured manifest and commit checksum")
     for scanner in ("clamav", "gitleaks", "format_policy"):
         if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
             errors.append(f"publish gate must require a passed {scanner} inspection")

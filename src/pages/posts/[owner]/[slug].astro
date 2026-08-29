@@ -1,0 +1,11 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { sqlClient } from '@/lib/db';
+type PostView = { title: string; summary: string; body: string; published_at: string; updated_at: string; owner: string };
+const sql = sqlClient(Astro.locals); let post: PostView | null = null;
+if (sql) { try { const rows = await sql`select post.title, post.summary, post.body, post.published_at, post.updated_at, profile.handle as owner from app.posts post join app.profiles profile on profile.id = post.author_profile_id where lower(profile.handle) = lower(${Astro.params.owner ?? ''}) and lower(post.slug) = lower(${Astro.params.slug ?? ''}) and post.is_public limit 1`; post = (rows[0] as PostView | undefined) ?? null; } catch { post = null; } }
+if (!post) Astro.response.status = 404;
+---
+<BaseLayout title={post?.title ?? 'Post unavailable'} description={post?.summary || post?.body.slice(0, 200) || 'Public post unavailable.'} noindex={!post}>
+  {post ? <main class="shell repository-page post-page"><header class="repository-header"><p class="eyebrow">Community post ✍️</p><p class="repository-path">@{post.owner}</p><h1>{post.title}</h1>{post.summary && <p>{post.summary}</p>}<div class="repository-badges"><span>{new Date(post.published_at).toLocaleDateString('en', { dateStyle: 'long' })}</span></div></header><article class="repository-section longform-body">{post.body}</article></main> : <main class="section shell"><div class="empty-state"><h1>Post not found</h1><a class="button button--secondary" href="/posts">Browse posts</a></div></main>}
+</BaseLayout>

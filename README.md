@@ -2,7 +2,7 @@
 
 The production website for [superii.site](https://superii.site): a fast, public AI collaboration hub for models, datasets, apps, and organizations.
 
-The launch catalog intentionally contains zero models, datasets, or apps. Publishing and downloads open only after real storage, review, moderation, and access controls are ready.
+The launch catalog intentionally contains zero models, datasets, or apps. Every listing must arrive through the real upload, quarantine, inspection, immutable-manifest, and human-review pipeline; no demonstration repositories are presented as community content.
 
 ## Stack
 
@@ -66,8 +66,17 @@ Required deployment secrets:
 - `CONTACT_HASH_SALT`
 - `RUNTIME_URL`
 - `RUNTIME_TOKEN`
+- `NOWPAYMENTS_API_KEY`
+- `NOWPAYMENTS_IPN_SECRET`
+- `SUPERII_ADMIN_USER_IDS`
 
 Store them with Cloudflare secrets or local ignored env files. Do not add values to `wrangler.jsonc` or Git.
+
+Paid plans use one-time NOWPayments orders denominated in USD and paid only as
+USDC on Ethereum. An authenticated, same-origin checkout creates or reuses one
+bounded order; signed IPN callbacks must match its provider ID, order ID, exact
+price, currency, and network before PL/pgSQL activates a 30-day entitlement.
+Card collection is intentionally absent.
 
 Runtime code, deployment, scanner, offline-model, llama.cpp, Diffusers, and Gradio instructions are in [`runtime/README.md`](runtime/README.md).
 

@@ -24,6 +24,7 @@ const filters: CatalogFilters = {
   author: query.get('author') ?? undefined,
   maxSizeBytes: query.has('max_size') ? Number(query.get('max_size')) : undefined,
   updatedAfter: query.get('updated_after') ?? undefined,
+  sort: (query.get('sort') ?? undefined) as CatalogFilters['sort'],
 };
 const result = await searchCatalog(Astro.locals, repositoryKind, filters);
 const hasFilters = Object.values(filters).some((value) => value !== undefined && value !== '');
@@ -65,6 +66,13 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
         <kbd>/</kbd>
       </label>
       <button class="button button--dark" type="submit">Search</button>
+      <label class="catalog-sort"><span class="sr-only">Sort results</span><select name="sort" aria-label="Sort results">
+        <option value="trending" selected={filters.sort === 'trending' || (!filters.sort && !filters.query)}>Trending 🔥</option>
+        <option value="downloads" selected={filters.sort === 'downloads'}>Most downloaded</option>
+        <option value="likes" selected={filters.sort === 'likes'}>Most liked</option>
+        <option value="updated" selected={filters.sort === 'updated'}>Recently updated</option>
+        <option value="relevance" selected={filters.sort === 'relevance' || (!filters.sort && Boolean(filters.query))}>Best match</option>
+      </select></label>
     </div>
 
     {result.items.length ? (
@@ -82,6 +90,9 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
               {item.library && <span>{item.library}</span>}
               {item.modality && <span>{item.modality}</span>}
               <span>{Number(item.total_size_bytes).toLocaleString()} bytes</span>
+              <span>⬇️ {item.downloads_count}</span>
+              <span>❤️ {item.likes_count}</span>
+              {item.trend_score > 0 && <span>🔥 {item.trend_score}</span>}
             </div>
           </a>
         ))}

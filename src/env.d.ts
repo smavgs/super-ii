@@ -8,6 +8,9 @@ interface ImportMetaEnv {
   readonly CONTACT_HASH_SALT?: string;
   readonly RUNTIME_URL?: string;
   readonly RUNTIME_TOKEN?: string;
+  readonly NOWPAYMENTS_API_KEY?: string;
+  readonly NOWPAYMENTS_IPN_SECRET?: string;
+  readonly SUPERII_ADMIN_USER_IDS?: string;
 }
 
 interface ImportMeta {

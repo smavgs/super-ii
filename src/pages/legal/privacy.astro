@@ -3,7 +3,7 @@ import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 export const prerender = true;
-const effectiveDate = 'August 27, 2026';
+const effectiveDate = 'August 29, 2026';
 ---
 
 <BaseLayout title="Privacy Policy" description="How Super ii collects, uses, shares, protects, and retains personal information." noindex>
@@ -26,7 +26,7 @@ const effectiveDate = 'August 27, 2026';
         <li><strong>Account information:</strong> name, email address, profile image, username, authentication choice, and related account settings.</li>
         <li><strong>Organization information:</strong> organization name, membership, roles, and invitations when team features are used.</li>
         <li><strong>Communications:</strong> name, email, topic, message, and follow-up correspondence submitted through contact or support channels.</li>
-        <li><strong>Billing information:</strong> plan, subscription status, transaction identifiers, and limited payment metadata if paid plans are activated. Full card details are handled by the payment processor rather than stored by Super ii.</li>
+        <li><strong>Billing information:</strong> plan, seat count, subscription period, payment status, processor transaction identifier, quoted USDC amount, Ethereum deposit address, and limited callback metadata. Super ii does not collect card details for the current crypto-only checkout.</li>
         <li><strong>Content:</strong> models, datasets, apps, files, documentation, discussions, and metadata if publishing opens and you choose to submit them.</li>
       </ul>
       <h3>Information collected automatically</h3>
@@ -56,11 +56,12 @@ const effectiveDate = 'August 27, 2026';
         <li><strong>Cloudflare</strong> for edge delivery, security, hosting, and request logs.</li>
         <li><strong>Clerk</strong> for authentication, account management, organizations, and optional subscription management.</li>
         <li><strong>Neon</strong> for application database hosting.</li>
-        <li><strong>Stripe or another disclosed processor</strong> if production payments are activated.</li>
+        <li><strong>NOWPayments</strong> for USDC payment creation, blockchain payment monitoring, transaction status, and payment support.</li>
         <li>Professional advisers and authorities when reasonably necessary to comply with law, protect rights and safety, or investigate misuse.</li>
         <li>A successor in a merger, financing, reorganization, acquisition, or sale, subject to applicable notice requirements.</li>
       </ul>
       <p>Public profile and repository information is visible to anyone by design. We do not sell personal information for money or use it for cross-context behavioral advertising at launch.</p>
+      <p>Ethereum transactions and wallet addresses are recorded on a public blockchain and may remain publicly visible independently of Super ii or NOWPayments.</p>
 
       <h2 id="retention">5. Retention</h2>
       <p>We keep personal information only as long as reasonably needed for the purposes above. Account records generally remain while the account is active. Contact submissions are reviewed and periodically deleted when no longer needed. Security and audit records may be retained longer to protect the Service, resolve disputes, or meet legal obligations. Backup copies may persist for a limited period before rotating out.</p>

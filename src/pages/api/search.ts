@@ -22,6 +22,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       author: url.searchParams.get('author') ?? undefined,
       maxSizeBytes: url.searchParams.has('max_size') ? Number(url.searchParams.get('max_size')) : undefined,
       updatedAfter: url.searchParams.get('updated_after') ?? undefined,
+      sort: (url.searchParams.get('sort') ?? undefined) as 'relevance' | 'trending' | 'downloads' | 'likes' | 'updated' | undefined,
     },
     limit,
     offset,

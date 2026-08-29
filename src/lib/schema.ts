@@ -1,9 +1,11 @@
 import {
   bigint,
   boolean,
+  date,
   index,
   integer,
   jsonb,
+  numeric,
   pgEnum,
   pgSchema,
   primaryKey,
@@ -74,7 +76,15 @@ export const organizations = app.table(
     clerkOrganizationId: text('clerk_organization_id').unique(),
     handle: text('handle').notNull(),
     name: text('name').notNull(),
+    fullName: text('full_name'),
     description: text('description'),
+    organizationType: text('organization_type').notNull().default('community'),
+    homepageUrl: text('homepage_url'),
+    logoUrl: text('logo_url'),
+    githubUsername: text('github_username'),
+    twitterUsername: text('twitter_username'),
+    linkedinUrl: text('linkedin_url'),
+    aiMlInterests: jsonb('ai_ml_interests').$type<string[]>().notNull().default([]),
     isPublic: boolean('is_public').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -115,6 +125,7 @@ export const subscriptions = app.table(
     id: uuid('id').defaultRandom().primaryKey(),
     clerkUserId: text('clerk_user_id'),
     clerkOrganizationId: text('clerk_organization_id'),
+    organizationId: uuid('organization_id').references(() => organizations.id),
     planId: text('plan_id')
       .notNull()
       .references(() => plans.id),
@@ -125,7 +136,10 @@ export const subscriptions = app.table(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('subscriptions_clerk_user_idx').on(table.clerkUserId)],
+  (table) => [
+    index('subscriptions_clerk_user_idx').on(table.clerkUserId),
+    index('subscriptions_organization_idx').on(table.organizationId),
+  ],
 );
 
 export const repositories = app.table(
@@ -141,6 +155,11 @@ export const repositories = app.table(
     task: text('task'),
     library: text('library'),
     modality: text('modality'),
+    ownerProfileId: uuid('owner_profile_id').references(() => profiles.id),
+    ownerOrganizationId: uuid('owner_organization_id').references(() => organizations.id),
+    defaultBranch: text('default_branch').notNull().default('main'),
+    cardMarkdown: text('card_markdown').notNull().default(''),
+    provenance: jsonb('provenance').$type<Record<string, unknown>>().notNull().default({}),
     totalSizeBytes: bigint('total_size_bytes', { mode: 'bigint' }).notNull().default(0n),
     latestRevisionId: uuid('latest_revision_id'),
     visibility: repositoryVisibility('visibility').notNull().default('public'),
@@ -165,9 +184,12 @@ export const repositoryRevisions = app.table(
       .references(() => repositories.id, { onDelete: 'cascade' }),
     sequence: integer('sequence').notNull(),
     parentRevisionId: uuid('parent_revision_id'),
+    branchId: uuid('branch_id'),
     message: text('message').notNull().default(''),
+    commitSha: text('commit_sha'),
     status: repositoryRevisionStatus('status').notNull().default('draft'),
     manifestSha256: text('manifest_sha256'),
+    manifest: jsonb('manifest').$type<Array<Record<string, unknown>>>().notNull().default([]),
     fileCount: integer('file_count').notNull().default(0),
     totalSizeBytes: bigint('total_size_bytes', { mode: 'bigint' }).notNull().default(0n),
     createdBy: text('created_by').notNull(),
@@ -211,6 +233,56 @@ export const repositoryFiles = app.table(
     uniqueIndex('repository_files_revision_path_idx').on(table.revisionId, table.path),
     index('repository_files_sha256_idx').on(table.sha256),
   ],
+);
+
+export const repositoryBranches = app.table(
+  'repository_branches',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    headRevisionId: uuid('head_revision_id').references(() => repositoryRevisions.id, {
+      onDelete: 'set null',
+    }),
+    isDefault: boolean('is_default').notNull().default(false),
+    createdBy: text('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('repository_branches_repository_name_idx').on(table.repositoryId, table.name)],
+);
+
+export const repositoryUploads = app.table(
+  'repository_uploads',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    revisionId: uuid('revision_id')
+      .notNull()
+      .references(() => repositoryRevisions.id, { onDelete: 'cascade' }),
+    uploaderProfileId: uuid('uploader_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    path: text('path').notNull(),
+    mimeType: text('mime_type').notNull(),
+    expectedSizeBytes: bigint('expected_size_bytes', { mode: 'bigint' }).notNull(),
+    expectedSha256: text('expected_sha256').notNull(),
+    storageBackend: text('storage_backend').notNull().default('r2'),
+    storageKey: text('storage_key').notNull(),
+    providerUploadId: text('provider_upload_id'),
+    uploadedParts: jsonb('uploaded_parts').$type<Array<{ partNumber: number; etag: string }>>().notNull().default([]),
+    state: text('state').notNull().default('initiated'),
+    errorCode: text('error_code'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('repository_uploads_revision_path_idx').on(table.revisionId, table.path)],
 );
 
 export const repositoryFileInspections = app.table(
@@ -474,6 +546,106 @@ export const activityEvents = app.table(
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('activity_events_repository_created_idx').on(table.repositoryId, table.occurredAt)],
+);
+
+export const notifications = app.table(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    title: text('title').notNull(),
+    body: text('body').notNull().default(''),
+    href: text('href'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('notifications_profile_created_idx').on(table.profileId, table.createdAt)],
+);
+
+export const paymentOrders = app.table(
+  'payment_orders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id),
+    organizationId: uuid('organization_id').references(() => organizations.id),
+    planId: text('plan_id').notNull().references(() => plans.id),
+    seatCount: integer('seat_count').notNull().default(1),
+    provider: text('provider').notNull().default('nowpayments'),
+    providerPaymentId: text('provider_payment_id').unique(),
+    priceAmountCents: integer('price_amount_cents').notNull(),
+    priceCurrency: text('price_currency').notNull().default('usd'),
+    payCurrency: text('pay_currency').notNull().default('usdc'),
+    payNetwork: text('pay_network').notNull().default('eth'),
+    payAmount: numeric('pay_amount', { precision: 30, scale: 12 }),
+    payAddress: text('pay_address'),
+    status: text('status').notNull().default('created'),
+    providerPayload: jsonb('provider_payload').$type<Record<string, unknown>>().notNull().default({}),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    paidAt: timestamp('paid_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('payment_orders_profile_created_idx').on(table.profileId, table.createdAt)],
+);
+
+export const papers = app.table(
+  'papers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerProfileId: uuid('owner_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    abstract: text('abstract').notNull(),
+    canonicalUrl: text('canonical_url'),
+    doi: text('doi'),
+    publishedOn: date('published_on'),
+    isPublic: boolean('is_public').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('papers_owner_slug_idx').on(table.ownerProfileId, table.slug)],
+);
+
+export const posts = app.table(
+  'posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    authorProfileId: uuid('author_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull().default(''),
+    body: text('body').notNull(),
+    isPublic: boolean('is_public').notNull().default(true),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('posts_author_slug_idx').on(table.authorProfileId, table.slug)],
+);
+
+export const paperRepositoryLinks = app.table(
+  'paper_repository_links',
+  {
+    paperId: uuid('paper_id')
+      .notNull()
+      .references(() => papers.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    relationshipType: text('relationship_type').notNull().default('references'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.paperId, table.repositoryId, table.relationshipType] })],
 );
 
 export const collections = app.table(

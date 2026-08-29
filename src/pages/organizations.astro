@@ -1,18 +1,52 @@
 ---
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { sqlClient } from '@/lib/db';
 
-export const prerender = true;
+type OrganizationSummary = {
+  handle: string;
+  name: string;
+  full_name: string | null;
+  organization_type: string;
+  logo_url: string | null;
+  description: string | null;
+  member_count: number;
+  repository_count: number;
+};
+
+const sql = sqlClient(Astro.locals);
+let organizations: OrganizationSummary[] = [];
+let unavailable = false;
+if (sql) {
+  try {
+    organizations = await sql`
+      select o.handle, o.name, o.full_name, o.organization_type, o.logo_url,
+             o.description,
+             count(distinct m.profile_id)::integer as member_count,
+             count(distinct r.id)::integer as repository_count
+      from app.organizations o
+      left join app.organization_members m on m.organization_id = o.id
+      left join app.repositories r on r.owner_organization_id = o.id
+        and r.visibility = 'public' and r.status = 'published'
+      where o.is_public
+      group by o.id
+      order by o.updated_at desc
+      limit 100
+    ` as OrganizationSummary[];
+  } catch {
+    unavailable = true;
+  }
+}
 ---
 
-<BaseLayout title="Organizations" description="Give your AI team a shared Super ii home with roles, review paths, activity history, and shared resources.">
+<BaseLayout title="Organizations" description="Create and discover Super ii organizations for public AI collaboration.">
   <PageHero
-    eyebrow="Build as a team"
+    eyebrow="Build as a team 🤝"
     title="One shared home for every AI project."
     description="Organizations keep people, repositories, roles, and decisions together—from an open research group to a governed enterprise program."
   >
     <div class="button-row">
-      <a class="button button--dark" href="/sign-up">Create an account</a>
+      <a class="button button--dark" href="/organizations/new">Create organization</a>
       <a class="button button--secondary" href="/contact?interest=team">Discuss a team plan</a>
     </div>
   </PageHero>
@@ -20,29 +54,53 @@ export const prerender = true;
   <section class="section">
     <div class="shell feature-rows">
       <article class="feature-row">
-        <h2>Shared identity</h2>
+        <h2>Shared identity 🏢</h2>
         <div>
           <p>Bring models, datasets, and apps under a clear organization name. Public work remains discoverable while ownership and contributor roles stay understandable.</p>
           <ul>
             <li><i class="ph ph-check" aria-hidden="true"></i> Organization profiles and public collections</li>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Member invitations and roles</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Owner, admin, maintainer, member, and viewer roles</li>
             <li><i class="ph ph-check" aria-hidden="true"></i> Personal and organization workspaces</li>
           </ul>
         </div>
       </article>
       <article class="feature-row">
-        <h2>Review without friction</h2>
-        <div>
-          <p>Keep discussions close to releases and preserve an activity trail. Team and enterprise plans will add richer review gates and audit history.</p>
-        </div>
+        <h2>Review without friction ✅</h2>
+        <div><p>Keep discussions close to releases and preserve an activity trail. Every public revision still passes security, format, analysis, and human-review gates.</p></div>
       </article>
-      <article class="feature-row">
-        <h2>Governance when needed</h2>
-        <div>
-          <p>Enterprise proposals can include SSO, directory sync, custom roles, regional deployment requirements, and procurement support. Availability is confirmed in the signed proposal.</p>
-          <a class="button button--secondary" href="/enterprise">View enterprise options</a>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">Community directory</p>
+        <h2>Public organizations</h2>
+        <p>Real profiles appear here as teams create them—no sample organizations are inserted.</p>
+      </div>
+      {organizations.length ? (
+        <div class="capability-grid">
+          {organizations.map((organization) => (
+            <a class="capability-card" href={`/organizations/${organization.handle}`}>
+              <div>
+                {organization.logo_url && <img class="organization-logo organization-logo--small" src={organization.logo_url} alt="" loading="lazy" referrerpolicy="no-referrer" />}
+                <p class="eyebrow">{organization.organization_type}</p>
+                <h3>{organization.full_name ?? organization.name}</h3>
+                <p>{organization.description ?? `@${organization.handle} on Super ii`}</p>
+              </div>
+              <span class="card-link"><span>{organization.repository_count} repositories · {organization.member_count} members</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></span>
+            </a>
+          ))}
         </div>
-      </article>
+      ) : (
+        <div class="empty-state">
+          <div class="empty-state__icon"><i class="ph ph-buildings" aria-hidden="true"></i></div>
+          <p class="eyebrow">{unavailable ? 'Temporarily unavailable' : 'A clean start'}</p>
+          <h2>{unavailable ? 'Organizations cannot be loaded.' : 'Create the first public organization'}</h2>
+          <p>{unavailable ? 'No placeholder profiles are shown.' : 'Set up a real team profile, add your interests, and publish under one shared identity.'}</p>
+          <a class="button button--dark" href="/organizations/new">Create organization</a>
+        </div>
+      )}
     </div>
   </section>
 </BaseLayout>

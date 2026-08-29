@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
+import { managedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { proxiedFileResponse, runtimeFetch } from '@/lib/runtime';
 
@@ -71,4 +73,40 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
     response.headers.set('x-frame-options', 'SAMEORIGIN');
   }
   return response;
+};
+
+export const DELETE: APIRoute = async ({ locals, params, request }) => {
+  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
+  const sql = sqlClient(locals);
+  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, sql);
+  if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const branchId = new URL(request.url).searchParams.get('branch');
+  const repository = await managedRepository(sql, params.repositoryId ?? '', profile.profileId, branchId);
+  if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
+  if (!['draft', 'quarantined'].includes(repository.revision_status)) {
+    return Response.json({ error: 'files cannot be changed after review begins' }, { status: 409 });
+  }
+  try {
+    const rows = await sql`
+      delete from app.repository_files
+      where id = ${params.fileId ?? ''}::uuid
+        and repository_id = ${repository.id}::uuid
+        and revision_id = ${repository.revision_id}::uuid
+      returning size_bytes
+    `;
+    if (!rows.length) return Response.json({ error: 'file not found' }, { status: 404 });
+    await sql`
+      update app.repository_revisions
+      set file_count = (select count(*) from app.repository_files where revision_id = ${repository.revision_id}::uuid),
+          total_size_bytes = coalesce((select sum(size_bytes) from app.repository_files where revision_id = ${repository.revision_id}::uuid), 0),
+          status = case when exists (
+            select 1 from app.repository_files where revision_id = ${repository.revision_id}::uuid
+          ) then 'quarantined'::repository_revision_status else 'draft'::repository_revision_status end
+      where id = ${repository.revision_id}::uuid
+    `;
+    return Response.json({ ok: true });
+  } catch {
+    return Response.json({ error: 'file could not be removed' }, { status: 409 });
+  }
 };

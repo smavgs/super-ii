@@ -1,0 +1,96 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { sqlClient } from '@/lib/db';
+import { repositoryPath, type PublicRepository } from '@/lib/catalog';
+
+type OrganizationView = {
+  id: string;
+  handle: string;
+  name: string;
+  full_name: string | null;
+  description: string | null;
+  organization_type: string;
+  homepage_url: string | null;
+  logo_url: string | null;
+  github_username: string | null;
+  twitter_username: string | null;
+  linkedin_url: string | null;
+  ai_ml_interests: string[];
+  member_count: number;
+};
+
+const handle = Astro.params.handle ?? '';
+const sql = sqlClient(Astro.locals);
+let organization: OrganizationView | null = null;
+let repositories: PublicRepository[] = [];
+if (sql) {
+  try {
+    const rows = await sql`
+      select o.*,
+             (select count(*)::integer from app.organization_members m where m.organization_id = o.id) as member_count
+      from app.organizations o
+      where lower(o.handle) = lower(${handle}) and o.is_public
+      limit 1
+    `;
+    organization = (rows[0] as OrganizationView | undefined) ?? null;
+    if (organization) {
+      repositories = await sql`
+        select r.id as repository_id, r.kind, r.owner_handle, r.slug, r.title, r.summary,
+               r.license, r.task, r.library, r.modality, r.total_size_bytes,
+               r.updated_at, 0::real as rank
+               , (select count(*)::integer from app.repository_downloads d where d.repository_id = r.id) as downloads_count
+               , (select count(*)::integer from app.likes l where l.repository_id = r.id) as likes_count
+               , 0::integer as trend_score
+        from app.repositories r
+        where r.owner_organization_id = ${organization.id}::uuid
+          and r.visibility = 'public' and r.status = 'published'
+        order by r.updated_at desc
+        limit 100
+      ` as PublicRepository[];
+    }
+  } catch {
+    organization = null;
+  }
+}
+if (!organization) Astro.response.status = 404;
+---
+
+<BaseLayout title={organization?.full_name ?? 'Organization unavailable'} description={organization?.description ?? 'Public Super ii organization profile.'} noindex={!organization}>
+  {organization ? (
+    <main class="shell repository-page organization-page">
+      <header class="repository-header">
+        {organization.logo_url && <img class="organization-logo" src={organization.logo_url} alt={`${organization.full_name ?? organization.name} logo`} loading="eager" referrerpolicy="no-referrer" />}
+        <p class="eyebrow">{organization.organization_type} organization 🏢</p>
+        <p class="repository-path">@{organization.handle}</p>
+        <h1>{organization.full_name ?? organization.name}</h1>
+        <p>{organization.description ?? 'Building open intelligence together on Super ii.'}</p>
+        <div class="repository-badges">
+          <span>{organization.member_count} members</span>
+          <span>{repositories.length} public repositories</span>
+          {organization.ai_ml_interests.map((interest) => <span>{interest}</span>)}
+        </div>
+        <div class="button-row">
+          {organization.homepage_url && <a class="button button--secondary button--small" href={organization.homepage_url} rel="me external">Website</a>}
+          {organization.github_username && <a class="button button--secondary button--small" href={`https://github.com/${organization.github_username}`} rel="me external">GitHub</a>}
+          {organization.twitter_username && <a class="button button--secondary button--small" href={`https://x.com/${organization.twitter_username}`} rel="me external">X</a>}
+          {organization.linkedin_url && <a class="button button--secondary button--small" href={organization.linkedin_url} rel="me external">LinkedIn</a>}
+        </div>
+      </header>
+      <section class="repository-section">
+        <div class="repository-section__heading"><div><p class="eyebrow">Public work</p><h2>Repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
+        {repositories.length ? (
+          <div class="catalog-results">
+            {repositories.map((item) => (
+              <a class="catalog-card" href={repositoryPath(item)}>
+                <div class="catalog-card__topline"><span>{item.kind}</span><span>{item.license ?? 'License pending'}</span></div>
+                <h3>{item.title}</h3><p>{item.summary}</p>
+              </a>
+            ))}
+          </div>
+        ) : <p>No reviewed public repositories yet.</p>}
+      </section>
+    </main>
+  ) : (
+    <main class="section shell"><div class="empty-state"><h1>Organization not found</h1><p>This public organization does not exist or is unavailable.</p><a class="button button--secondary" href="/organizations">Browse organizations</a></div></main>
+  )}
+</BaseLayout>

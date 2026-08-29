@@ -1,0 +1,148 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+
+type OwnerOption = { id: string | null; handle: string; label: string; kind: 'profile' | 'organization' };
+const sql = sqlClient(Astro.locals);
+let owners: OwnerOption[] = [];
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) {
+      const profileRows = await sql`select handle, display_name from app.profiles where id = ${profile.profileId}::uuid`;
+      if (profileRows[0]) {
+        owners.push({
+          id: null,
+          handle: String(profileRows[0].handle),
+          label: `${String(profileRows[0].display_name)} (personal)`,
+          kind: 'profile',
+        });
+      }
+      const organizationRows = await sql`
+        select o.id, o.handle, coalesce(o.full_name, o.name) as label
+        from app.organizations o
+        join app.organization_members m on m.organization_id = o.id
+        where m.profile_id = ${profile.profileId}::uuid
+          and m.role in ('owner', 'admin', 'maintainer')
+        order by o.handle
+      `;
+      owners.push(...organizationRows.map((row) => ({
+        id: String(row.id),
+        handle: String(row.handle),
+        label: String(row.label),
+        kind: 'organization' as const,
+      })));
+    }
+  } catch {
+    owners = [];
+  }
+}
+---
+
+<BaseLayout title="New repository" description="Create a real Super ii model, dataset, or app repository." noindex>
+  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Start with an immutable main branch, then upload files for quarantine scanning, analysis, and review." compact />
+  <section class="section shell creator-shell">
+    <form class="form-card creator-form" data-repository-create-form>
+      <div class="creator-callout">
+        <i class="ph ph-shield-check" aria-hidden="true"></i>
+        <p><strong>Public and review-first.</strong> Uploads are quarantined until ClamAV, Gitleaks, format policy, repository analysis, and a human review all pass.</p>
+      </div>
+      <div class="form-grid form-grid--two">
+        <label>Repository type
+          <select name="kind" required data-repository-kind>
+            <option value="model">Model 🤖</option>
+            <option value="dataset">Dataset 🗂️</option>
+            <option value="space">App / Space ✨</option>
+          </select>
+        </label>
+        <label>Owner
+          <select name="organization_id" required={owners.length > 0} disabled={owners.length === 0}>
+            {owners.length ? owners.map((owner) => (
+              <option value={owner.id ?? ''}>@{owner.handle} · {owner.label}</option>
+            )) : <option value="">Log in to choose an owner</option>}
+          </select>
+        </label>
+      </div>
+      <div class="form-grid form-grid--two">
+        <label>Repository slug
+          <input name="slug" required maxlength="96" pattern="[a-z0-9][a-z0-9._-]{0,94}[a-z0-9]|[a-z0-9]" placeholder="open-reasoning-model" />
+        </label>
+        <label>License
+          <input name="license" maxlength="120" placeholder="apache-2.0" />
+        </label>
+      </div>
+      <label>Title <input name="title" required minlength="2" maxlength="200" placeholder="Open Reasoning Model" /></label>
+      <label>Summary <textarea name="summary" required minlength="10" maxlength="2000" placeholder="What this repository contains, who it helps, and important limitations."></textarea></label>
+      <div class="form-grid form-grid--three">
+        <label>Task <input name="task" maxlength="120" placeholder="text-generation" /></label>
+        <label>Library / framework <input name="library" maxlength="120" placeholder="transformers" /></label>
+        <label>Modality <input name="modality" maxlength="120" placeholder="text" /></label>
+      </div>
+      <label><span data-card-label>Model Card</span>
+        <textarea name="card_markdown" maxlength="100000" rows="10" placeholder="# Overview&#10;&#10;Document intended use, limitations, evaluation, training data, and responsible-use notes."></textarea>
+      </label>
+      <label>Provenance source URLs <span>(optional)</span>
+        <textarea name="source_urls" maxlength="10000" placeholder="https://example.org/source-one&#10;https://example.org/source-two"></textarea>
+        <span>One HTTPS source per line.</span>
+      </label>
+      <div class="form-actions">
+        <button class="button button--dark" type="submit" disabled={owners.length === 0}>Create repository</button>
+        {owners.length === 0 ? <a class="button button--secondary" href="/sign-in">Log in to continue</a> : <a class="button button--secondary" href="/account">Cancel</a>}
+      </div>
+      <p class="form-status" data-form-status aria-live="polite"></p>
+    </form>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.querySelector('[data-repository-create-form]');
+  const kind = form?.querySelector('[data-repository-kind]');
+  const cardLabel = form?.querySelector('[data-card-label]');
+  const updateCardLabel = () => {
+    if (!(kind instanceof HTMLSelectElement) || !(cardLabel instanceof HTMLElement)) return;
+    cardLabel.textContent = kind.value === 'dataset' ? 'Data Card' : kind.value === 'space' ? 'App Card' : 'Model Card';
+  };
+  kind?.addEventListener('change', updateCardLabel);
+  updateCardLabel();
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(form instanceof HTMLFormElement)) return;
+    const submit = form.querySelector('button[type="submit"]');
+    const status = form.querySelector('[data-form-status]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    try {
+      const values = new FormData(form);
+      const sourceUrls = String(values.get('source_urls') ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+      const response = await fetch('/api/repositories', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          kind: values.get('kind'),
+          organization_id: values.get('organization_id'),
+          slug: values.get('slug'),
+          title: values.get('title'),
+          summary: values.get('summary'),
+          license: values.get('license'),
+          task: values.get('task'),
+          library: values.get('library'),
+          modality: values.get('modality'),
+          card_markdown: values.get('card_markdown'),
+          source_urls: sourceUrls,
+        }),
+      });
+      const data = await response.json() as Record<string, unknown>;
+      if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Repository could not be created.');
+      if (status instanceof HTMLElement) status.textContent = 'Repository created. Opening the uploader…';
+      location.assign(typeof data.edit_href === 'string' ? data.edit_href : '/account');
+    } catch (error) {
+      if (status instanceof HTMLElement) {
+        status.textContent = error instanceof Error ? error.message : 'Repository could not be created.';
+        status.dataset.state = 'error';
+      }
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+</script>

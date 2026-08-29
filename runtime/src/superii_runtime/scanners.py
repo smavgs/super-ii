@@ -81,6 +81,10 @@ def scan_clamav(path: Path, settings: Settings) -> ScanResult:
         arguments = [executable, "--no-summary"]
         if settings.clamav_config_file is not None:
             arguments.append(f"--config-file={settings.clamav_config_file}")
+            if Path(executable).name == "clamdscan":
+                # A TCP clamd must receive bytes from the client. Sending a host path
+                # would otherwise ask the isolated daemon to read outside its container.
+                arguments.append("--stream")
         if Path(executable).name == "clamdscan" and settings.clamav_config_file is None:
             arguments.append("--fdpass")
         arguments.append(str(path))
