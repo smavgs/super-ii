@@ -1,6 +1,6 @@
 # Super ii
 
-The production website for [superii.site](https://superii.site): a fast, public AI collaboration hub for models, datasets, apps, and organizations.
+The production website for [superii.site](https://superii.site): a fast public collaboration hub for Ai models, datasets, apps, and organizations.
 
 The launch catalog intentionally contains zero models, datasets, or apps. Every listing must arrive through the real upload, quarantine, inspection, immutable-manifest, and human-review pipeline; no demonstration repositories are presented as community content.
 
