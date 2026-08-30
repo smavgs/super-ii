@@ -116,9 +116,7 @@ class SpaceRunner:
     def build(self, workspace: Path, revision_id: UUID) -> dict[str, str | int]:
         """Prepare an immutable app bundle against the pinned, prebuilt runtime image."""
 
-        image = self._run(
-            ["image", "inspect", self.settings.spaces_image, "--format", "{{.Id}}"]
-        )
+        image = self._run(["image", "inspect", self.settings.spaces_image, "--format", "{{.Id}}"])
         if image.returncode != 0:
             raise RuntimeError("pinned Super ii Gradio image is not built")
         prepared = self.prepare(workspace, revision_id)
