@@ -21,7 +21,9 @@ docker run -d \
   postgres:17-alpine >/dev/null
 
 attempt=0
-until docker exec "$container_name" pg_isready -U postgres -d superii_test >/dev/null 2>&1; do
+until ready=$(docker exec "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atqc "select 1" 2>/dev/null) \
+  && [ "$ready" = "1" ]; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 30 ]; then
     echo "ERROR: PostgreSQL did not become ready." >&2
