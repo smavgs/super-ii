@@ -1,20 +1,22 @@
 import type { APIRoute } from 'astro';
-import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
-import { managedRepository, safeRepositoryPath } from '@/lib/creator';
+import { managedRepository, safeRepositoryPath, scopedManagedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch, runtimeIsConfigured } from '@/lib/runtime';
+import { authorizeRepositoryRequest } from '@/lib/scoped-auth';
 
 const MAX_EDGE_UPLOAD = 95 * 1024 * 1024;
 
 export const POST: APIRoute = async ({ locals, params, request }) => {
-  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
-  if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const repositoryId = params.repositoryId ?? '';
+  const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:upload');
+  if (!authorization.ok) return Response.json({ error: authorization.error }, { status: authorization.status });
   const branchId = new URL(request.url).searchParams.get('branch');
-  const repository = await managedRepository(sql, params.repositoryId ?? '', profile.profileId, branchId);
+  const repository = authorization.actor.kind === 'profile'
+    ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branchId)
+    : await scopedManagedRepository(sql, repositoryId, branchId);
   if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
   if (!['draft', 'quarantined'].includes(repository.revision_status)) {
     return Response.json({ error: 'this revision is not accepting uploads' }, { status: 409 });
@@ -51,7 +53,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
 
   const body = new FormData();
   body.set('path', path);
-  body.set('created_by', profile.profileId);
+  body.set('created_by', authorization.actor.createdBy);
   body.set('upload', upload, upload.name);
   let upstream: Response | null;
   try {

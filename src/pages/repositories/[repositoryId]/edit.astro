@@ -16,6 +16,14 @@ type DraftFile = {
   scan_status: string;
 };
 type Branch = { id: string; name: string; is_default: boolean; revision_id: string | null; sequence: number | null; status: string | null };
+type TrustedPublisher = {
+  id: string;
+  subject: string;
+  workflow_ref: string | null;
+  allowed_scopes: string[];
+  enabled: boolean;
+  last_used_at: string | null;
+};
 
 const repositoryId = Astro.params.repositoryId ?? '';
 const selectedBranchId = Astro.url.searchParams.get('branch');
@@ -24,6 +32,7 @@ let repository: Awaited<ReturnType<typeof managedRepository>> = null;
 let files: DraftFile[] = [];
 let branches: Branch[] = [];
 let reviews: Array<{ decision: string; notes: string; updated_at: string }> = [];
+let trustedPublishers: TrustedPublisher[] = [];
 let authenticated = false;
 if (sql) {
   try {
@@ -50,6 +59,12 @@ if (sql) {
         where revision_id = ${repository.revision_id}::uuid
         order by updated_at desc
       ` as Array<{ decision: string; notes: string; updated_at: string }>;
+      trustedPublishers = await sql`
+        select id, subject, workflow_ref, allowed_scopes, enabled, last_used_at
+        from app.trusted_publishers
+        where repository_id = ${repository.id}::uuid
+        order by created_at desc
+      ` as TrustedPublisher[];
     }
   } catch {
     repository = null;
@@ -101,6 +116,49 @@ const published = repository?.revision_status === 'published';
               <p data-form-status aria-live="polite"></p>
             </form>
           </div>
+        </section>
+
+        <section class="repository-section">
+          <div class="repository-section__heading"><div><p class="eyebrow">Keyless automation 🔐</p><h2>GitHub Actions trusted publishing</h2></div><span>{trustedPublishers.filter((publisher) => publisher.enabled).length} active</span></div>
+          <p>Bind one GitHub repository and branch, tag, environment, or pull request to this Super ii repository. GitHub OIDC is verified against its live signing keys, then exchanged for a repository-bound token lasting no more than 10 minutes. No long-lived Super ii secret is stored in GitHub.</p>
+          <form class="mini-form trusted-publisher-form" data-trusted-publisher-form>
+            <label>GitHub OIDC subject
+              <input name="subject" required maxlength="500" placeholder="repo:owner/repository:ref:refs/heads/main" />
+              <span>Use the exact <code>sub</code> claim you expect from GitHub.</span>
+            </label>
+            <label>Exact reusable workflow ref <span>(optional)</span>
+              <input name="workflow_ref" maxlength="1000" placeholder="owner/repository/.github/workflows/publish.yml@refs/heads/main" />
+            </label>
+            <fieldset class="scope-picker">
+              <legend>Allowed short-lived scopes</legend>
+              <label><input type="checkbox" name="scope" value="repository:upload" checked /> Upload and remove draft files</label>
+              <label><input type="checkbox" name="scope" value="repository:commit" checked /> Create commits</label>
+              <label><input type="checkbox" name="scope" value="repository:submit" checked /> Run checks and submit for human review</label>
+              <label><input type="checkbox" name="scope" value="repository:trace" /> Write private-by-default agent trace metadata</label>
+            </fieldset>
+            <button class="button button--secondary button--small" type="submit">Trust GitHub workflow</button>
+            <p data-form-status aria-live="polite"></p>
+          </form>
+          <div class="trusted-publisher-list">
+            {trustedPublishers.map((publisher) => (
+              <article>
+                <div><strong>{publisher.subject}</strong><span>{publisher.enabled ? 'active' : 'disabled'}</span></div>
+                {publisher.workflow_ref && <code>{publisher.workflow_ref}</code>}
+                <p>{publisher.allowed_scopes.join(' · ')}</p>
+                <small>{publisher.last_used_at ? `Last exchanged ${new Date(publisher.last_used_at).toLocaleString()}` : 'Never exchanged'}</small>
+                {publisher.enabled && <button class="text-button" type="button" data-disable-publisher={publisher.id}>Disable and revoke tokens</button>}
+              </article>
+            ))}
+          </div>
+          <details class="trusted-publisher-guide">
+            <summary>GitHub Actions exchange contract</summary>
+            <ol>
+              <li>Grant the workflow <code>id-token: write</code> and <code>contents: read</code>.</li>
+              <li>Request a GitHub OIDC token with audience <code>https://superii.site</code>.</li>
+              <li>POST it as a bearer token to <code>https://superii.site/api/trusted-publishing/github/exchange</code> with this repository ID and the needed scopes.</li>
+              <li>Use the returned bearer token only for the bounded upload, commit, or submit call; never print or persist it.</li>
+            </ol>
+          </details>
         </section>
 
         <section class="repository-section">
@@ -233,6 +291,43 @@ const published = repository?.revision_status === 'published';
       if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Submission failed.'; status.dataset.state = 'error'; }
       review.disabled = false;
     }
+  });
+
+  const trustedPublisherForm = workspace?.querySelector('[data-trusted-publisher-form]');
+  trustedPublisherForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(trustedPublisherForm instanceof HTMLFormElement) || !repositoryId) return;
+    const submit = trustedPublisherForm.querySelector('button[type="submit"]');
+    const status = trustedPublisherForm.querySelector('[data-form-status]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    try {
+      const values = new FormData(trustedPublisherForm);
+      const response = await fetch(`/api/repositories/${repositoryId}/trusted-publishers`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          subject: values.get('subject'),
+          workflow_ref: values.get('workflow_ref'),
+          allowed_scopes: values.getAll('scope'),
+        }),
+      });
+      const data = await response.json() as Record<string, unknown>;
+      if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Trusted publisher could not be saved.');
+      if (status instanceof HTMLElement) status.textContent = 'Trusted publisher saved. Refreshing…';
+      location.reload();
+    } catch (error) {
+      if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Trusted publisher could not be saved.'; status.dataset.state = 'error'; }
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+
+  workspace?.querySelectorAll('[data-disable-publisher]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement) || !repositoryId) return;
+      button.disabled = true;
+      const response = await fetch(`/api/repositories/${repositoryId}/trusted-publishers/${button.dataset.disablePublisher}`, { method: 'DELETE' });
+      if (response.ok) location.reload(); else button.disabled = false;
+    });
   });
 
   for (const [selector, endpoint, payload] of [

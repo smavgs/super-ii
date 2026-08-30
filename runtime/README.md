@@ -21,6 +21,7 @@ Missing, timed-out, or errored scanners leave a file quarantined. A positive mal
 - Content-addressed local filesystem storage under `objects/sha256/`; Xet is intentionally absent.
 - Repository revisions, manifests, files, releases, tags, downloads, reviews, and inspection evidence in Postgres.
 - Offline `safetensors`, Datasets, Transformers, Tokenizers, GGUF, and optional Diffusers inspection.
+- Conservative model compatibility inspection for architecture, parameters, quantization, tensor format, size, RAM, VRAM, CPU, CUDA, ROCm, Metal/MLX, llama.cpp, and browser use. Publisher declarations remain labeled and are never promoted to benchmark evidence.
 - llama.cpp GGUF generation/chat endpoints with no model-routing provider.
 - Diffusers-generated PNG artifacts written atomically with private permissions and a configurable 24-hour retention window.
 - Gradio-only Spaces in read-only, no-egress, capability-dropped, resource-limited containers, streamed through the authenticated website into a sandboxed app iframe.

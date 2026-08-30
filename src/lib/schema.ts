@@ -410,6 +410,224 @@ export const repositoryRevisionAnalyses = app.table(
   (table) => [uniqueIndex('repository_revision_analyses_type_idx').on(table.revisionId, table.analysisType)],
 );
 
+export const repositoryCompatibility = app.table(
+  'repository_compatibility',
+  {
+    revisionId: uuid('revision_id')
+      .primaryKey()
+      .references(() => repositoryRevisions.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    architecture: text('architecture'),
+    parameterCount: bigint('parameter_count', { mode: 'bigint' }),
+    quantization: text('quantization'),
+    tensorFormat: text('tensor_format'),
+    modelSizeBytes: bigint('model_size_bytes', { mode: 'bigint' }).notNull().default(0n),
+    minimumRamBytes: bigint('minimum_ram_bytes', { mode: 'bigint' }).notNull().default(0n),
+    minimumVramBytes: bigint('minimum_vram_bytes', { mode: 'bigint' }).notNull().default(0n),
+    cpuCompatible: boolean('cpu_compatible'),
+    cudaCompatible: boolean('cuda_compatible'),
+    rocmCompatible: boolean('rocm_compatible'),
+    metalCompatible: boolean('metal_compatible'),
+    mlxCompatible: boolean('mlx_compatible'),
+    llamaCppCompatible: boolean('llama_cpp_compatible'),
+    browserCompatible: boolean('browser_compatible'),
+    confidence: text('confidence').notNull().default('derived'),
+    evidence: jsonb('evidence').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('repository_compatibility_discovery_idx').on(
+      table.minimumRamBytes,
+      table.minimumVramBytes,
+      table.cpuCompatible,
+      table.cudaCompatible,
+      table.rocmCompatible,
+      table.metalCompatible,
+      table.mlxCompatible,
+      table.llamaCppCompatible,
+      table.browserCompatible,
+    ),
+  ],
+);
+
+export const resourceGroups = app.table(
+  'resource_groups',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    createdByProfileId: uuid('created_by_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('resource_groups_organization_slug_idx').on(table.organizationId, table.slug)],
+);
+
+export const resourceGroupRepositories = app.table(
+  'resource_group_repositories',
+  {
+    resourceGroupId: uuid('resource_group_id')
+      .notNull()
+      .references(() => resourceGroups.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.resourceGroupId, table.repositoryId] })],
+);
+
+export const resourceGroupMembers = app.table(
+  'resource_group_members',
+  {
+    resourceGroupId: uuid('resource_group_id')
+      .notNull()
+      .references(() => resourceGroups.id, { onDelete: 'cascade' }),
+    profileId: uuid('profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.resourceGroupId, table.profileId] })],
+);
+
+export const serviceAccounts = app.table(
+  'service_accounts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    createdByProfileId: uuid('created_by_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    disabledAt: timestamp('disabled_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('service_accounts_organization_name_idx').on(table.organizationId, table.name)],
+);
+
+export const serviceAccountRoles = app.table(
+  'service_account_roles',
+  {
+    serviceAccountId: uuid('service_account_id')
+      .notNull()
+      .references(() => serviceAccounts.id, { onDelete: 'cascade' }),
+    resourceGroupId: uuid('resource_group_id')
+      .notNull()
+      .references(() => resourceGroups.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.serviceAccountId, table.resourceGroupId] })],
+);
+
+export const trustedPublishers = app.table(
+  'trusted_publishers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    issuer: text('issuer').notNull(),
+    subject: text('subject').notNull(),
+    audience: text('audience').notNull(),
+    workflowRef: text('workflow_ref'),
+    allowedScopes: jsonb('allowed_scopes').$type<string[]>().notNull().default([
+      'repository:upload',
+      'repository:commit',
+      'repository:submit',
+    ]),
+    createdByProfileId: uuid('created_by_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    enabled: boolean('enabled').notNull().default(true),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('trusted_publishers_repository_enabled_idx').on(table.repositoryId, table.enabled)],
+);
+
+export const scopedAccessTokens = app.table(
+  'scoped_access_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    serviceAccountId: uuid('service_account_id').references(() => serviceAccounts.id, {
+      onDelete: 'cascade',
+    }),
+    trustedPublisherId: uuid('trusted_publisher_id').references(() => trustedPublishers.id, {
+      onDelete: 'cascade',
+    }),
+    createdByProfileId: uuid('created_by_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'restrict' }),
+    tokenPrefix: text('token_prefix').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    scopes: jsonb('scopes').$type<string[]>().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('scoped_access_tokens_active_idx').on(table.tokenHash, table.expiresAt)],
+);
+
+export const agentTraces = app.table(
+  'agent_traces',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    repositoryId: uuid('repository_id')
+      .notNull()
+      .references(() => repositories.id, { onDelete: 'cascade' }),
+    revisionId: uuid('revision_id').references(() => repositoryRevisions.id, {
+      onDelete: 'set null',
+    }),
+    actorProfileId: uuid('actor_profile_id').references(() => profiles.id, {
+      onDelete: 'set null',
+    }),
+    serviceAccountId: uuid('service_account_id').references(() => serviceAccounts.id, {
+      onDelete: 'set null',
+    }),
+    trustedPublisherId: uuid('trusted_publisher_id').references(() => trustedPublishers.id, {
+      onDelete: 'set null',
+    }),
+    traceId: text('trace_id').notNull(),
+    agentName: text('agent_name').notNull(),
+    toolName: text('tool_name'),
+    status: text('status').notNull(),
+    durationMs: integer('duration_ms'),
+    inputSha256: text('input_sha256'),
+    outputSha256: text('output_sha256'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+    isPublic: boolean('is_public').notNull().default(false),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_traces_repository_trace_idx').on(table.repositoryId, table.traceId),
+    index('agent_traces_public_repository_idx').on(table.repositoryId, table.occurredAt),
+  ],
+);
+
 export const discussions = app.table(
   'discussions',
   {

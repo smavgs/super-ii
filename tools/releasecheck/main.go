@@ -73,6 +73,24 @@ func main() {
 			errors = append(errors, "route must begin with /: "+route)
 		}
 	}
+	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/system-state", "/system-state.json", "/system-state.md"} {
+		if !routes[requiredRoute] {
+			errors = append(errors, "missing agent-native route: "+requiredRoute)
+		}
+	}
+	for _, requiredFile := range []string{
+		"SYSTEM-STATE.md",
+		filepath.Join("src", "lib", "agent-resources.ts"),
+		filepath.Join("src", "lib", "mcp-server.ts"),
+		filepath.Join("src", "pages", "mcp.ts"),
+		filepath.Join("public", "schemas", "repository-manifest-v1.json"),
+		filepath.Join("public", "schemas", "repository-api-v1.json"),
+		filepath.Join("database", "migrations", "0007_agent_native_foundation.sql"),
+	} {
+		if info, statErr := os.Stat(filepath.Join(root, requiredFile)); statErr != nil || !info.Mode().IsRegular() {
+			errors = append(errors, "missing agent-native release file: "+requiredFile)
+		}
+	}
 
 	planIDs := make([]string, 0, len(contract.Plans))
 	availablePaid := make([]string, 0)

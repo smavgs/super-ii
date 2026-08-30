@@ -9,7 +9,7 @@ function candidates(route) {
   if (route === '/') return ['src/pages/index.astro'];
   const clean = route.replace(/^\//, '');
   if (clean.startsWith('api/')) return [`src/pages/${clean}.ts`];
-  return [`src/pages/${clean}.astro`, `src/pages/${clean}/index.astro`];
+  return [`src/pages/${clean}.astro`, `src/pages/${clean}.ts`, `src/pages/${clean}/index.astro`, `src/pages/${clean}/index.ts`];
 }
 
 const errors = [];

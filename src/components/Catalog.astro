@@ -22,8 +22,16 @@ const filters: CatalogFilters = {
   license: query.get('license') ?? undefined,
   modality: query.get('modality') ?? undefined,
   author: query.get('author') ?? undefined,
-  maxSizeBytes: query.has('max_size') ? Number(query.get('max_size')) : undefined,
+  maxSizeBytes: query.has('max_size_gb')
+    ? Number(query.get('max_size_gb')) * 1024 ** 3
+    : query.has('max_size')
+      ? Number(query.get('max_size'))
+      : undefined,
   updatedAfter: query.get('updated_after') ?? undefined,
+  hardware: (query.get('hardware') ?? undefined) as CatalogFilters['hardware'],
+  operatingSystem: (query.get('os') ?? undefined) as CatalogFilters['operatingSystem'],
+  maxRamBytes: query.has('max_ram_gb') ? Number(query.get('max_ram_gb')) * 1024 ** 3 : undefined,
+  maxVramBytes: query.has('max_vram_gb') ? Number(query.get('max_vram_gb')) * 1024 ** 3 : undefined,
   sort: (query.get('sort') ?? undefined) as CatalogFilters['sort'],
 };
 const result = await searchCatalog(Astro.locals, repositoryKind, filters);
@@ -43,9 +51,37 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
       <label class="catalog-field">License <input name="license" value={filters.license} /></label>
       <label class="catalog-field">Modality <input name="modality" value={filters.modality} /></label>
       <label class="catalog-field">Author <input name="author" value={filters.author} /></label>
-      <label class="catalog-field">Maximum bytes <input name="max_size" type="number" min="0" value={filters.maxSizeBytes} /></label>
+      <label class="catalog-field">Maximum size (GiB) <input name="max_size_gb" type="number" min="0" step="0.25" value={filters.maxSizeBytes === undefined ? undefined : filters.maxSizeBytes / 1024 ** 3} /></label>
       <label class="catalog-field">Updated after <input name="updated_after" type="date" value={filters.updatedAfter} /></label>
     </fieldset>
+    {repositoryKind === 'model' && (
+      <fieldset>
+        <legend>Runs on 🧠</legend>
+        <label class="catalog-field">Hardware
+          <select name="hardware">
+            <option value="">Any reviewed hardware</option>
+            <option value="apple-silicon" selected={filters.hardware === 'apple-silicon'}>Apple silicon / Metal</option>
+            <option value="nvidia" selected={filters.hardware === 'nvidia'}>NVIDIA CUDA</option>
+            <option value="amd" selected={filters.hardware === 'amd'}>AMD ROCm</option>
+            <option value="cpu" selected={filters.hardware === 'cpu'}>CPU</option>
+            <option value="browser" selected={filters.hardware === 'browser'}>Browser</option>
+            <option value="llama-cpp" selected={filters.hardware === 'llama-cpp'}>llama.cpp</option>
+          </select>
+        </label>
+        <label class="catalog-field">Operating system
+          <select name="os">
+            <option value="">Any operating system</option>
+            <option value="macos" selected={filters.operatingSystem === 'macos'}>macOS</option>
+            <option value="linux" selected={filters.operatingSystem === 'linux'}>Linux</option>
+            <option value="windows" selected={filters.operatingSystem === 'windows'}>Windows</option>
+            <option value="browser" selected={filters.operatingSystem === 'browser'}>Web browser</option>
+          </select>
+        </label>
+        <label class="catalog-field">Available RAM (GiB) <input name="max_ram_gb" type="number" min="0" step="0.25" value={filters.maxRamBytes === undefined ? undefined : filters.maxRamBytes / 1024 ** 3} /></label>
+        <label class="catalog-field">Available VRAM (GiB) <input name="max_vram_gb" type="number" min="0" step="0.25" value={filters.maxVramBytes === undefined ? undefined : filters.maxVramBytes / 1024 ** 3} /></label>
+        <p class="catalog-filter-note">Compatibility is conservative guidance. “Declared” means publisher-supplied; “derived” means offline format analysis.</p>
+      </fieldset>
+    )}
     <button class="button button--secondary button--small" type="submit">Apply filters</button>
     {hasFilters && <a class="catalog-clear" href={`/${kind}`}>Clear all</a>}
   </aside>
@@ -93,6 +129,11 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
               <span>⬇️ {item.downloads_count}</span>
               <span>❤️ {item.likes_count}</span>
               {item.trend_score > 0 && <span>🔥 {item.trend_score}</span>}
+              {item.architecture && <span>🧠 {item.architecture}</span>}
+              {item.quantization && <span>{item.quantization}</span>}
+              {item.minimum_ram_bytes !== null && <span>RAM ≥ {(Number(item.minimum_ram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
+              {item.minimum_vram_bytes !== null && Number(item.minimum_vram_bytes) > 0 && <span>VRAM ≥ {(Number(item.minimum_vram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
+              {item.compatibility_confidence && <span>{item.compatibility_confidence} compatibility</span>}
             </div>
           </a>
         ))}
@@ -107,7 +148,7 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
             ? 'Search is temporarily unavailable. No placeholder results are shown.'
             : hasFilters
               ? 'No reviewed public repository matches every selected filter.'
-              : `The first real ${meta.singular} will appear here after its files pass scanning and human review.`}
+              : `No reviewed public ${meta.singular} has been published yet. A real release appears here immediately after its files and human review pass.`}
         </p>
         <div class="button-row">
           <a class="button button--dark" href="/sign-up">Create your account</a>

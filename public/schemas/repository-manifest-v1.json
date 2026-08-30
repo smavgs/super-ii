@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/repository-manifest-v1.json",
+  "title": "Super ii reviewed repository manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "repository",
+    "revision",
+    "files",
+    "generated_from_reviewed_revision"
+  ],
+  "properties": {
+    "schema": { "const": "https://superii.site/schemas/repository-manifest-v1.json" },
+    "repository": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "kind", "owner", "slug", "title", "url", "visibility"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "kind": { "enum": ["model", "dataset", "space"] },
+        "owner": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "visibility": { "const": "public" }
+      }
+    },
+    "revision": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id", "sequence", "manifest_sha256", "total_size_bytes"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "commit_sha": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "manifest_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "total_size_bytes": { "type": ["integer", "string"], "pattern": "^[0-9]+$" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size_bytes", "mime_type", "sha256", "download_url"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "size_bytes": { "type": ["integer", "string"], "pattern": "^[0-9]+$" },
+          "mime_type": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "download_url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "generated_from_reviewed_revision": { "const": true }
+  }
+}

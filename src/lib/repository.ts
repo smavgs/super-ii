@@ -18,6 +18,25 @@ export type RepositoryAnalysisView = {
   completed_at: string | null;
 };
 
+export type RepositoryCompatibilityView = {
+  architecture: string | null;
+  parameter_count: string | null;
+  quantization: string | null;
+  tensor_format: string | null;
+  model_size_bytes: string;
+  minimum_ram_bytes: string;
+  minimum_vram_bytes: string;
+  cpu_compatible: boolean | null;
+  cuda_compatible: boolean | null;
+  rocm_compatible: boolean | null;
+  metal_compatible: boolean | null;
+  mlx_compatible: boolean | null;
+  llama_cpp_compatible: boolean | null;
+  browser_compatible: boolean | null;
+  confidence: 'declared' | 'derived' | 'verified';
+  evidence: Record<string, unknown>;
+};
+
 export type RepositoryBundle = {
   id: string;
   kind: RepositoryKind;
@@ -41,6 +60,7 @@ export type RepositoryBundle = {
   manifest: Array<Record<string, unknown>>;
   files: RepositoryFileView[];
   analyses: RepositoryAnalysisView[];
+  compatibility: RepositoryCompatibilityView | null;
   releases: Array<{ id: string; name: string; slug: string; notes: string; created_at: string }>;
   tags: Array<{ id: string; name: string; created_at: string }>;
   versions: Array<{
@@ -100,6 +120,17 @@ export type RepositoryBundle = {
     summary: string;
     match_score: number;
   }>;
+  agent_traces: Array<{
+    trace_id: string;
+    agent_name: string;
+    tool_name: string | null;
+    status: string;
+    duration_ms: number | null;
+    input_sha256: string | null;
+    output_sha256: string | null;
+    metadata: Record<string, unknown>;
+    occurred_at: string;
+  }>;
 };
 
 export async function getPublicRepository(
@@ -158,6 +189,28 @@ export async function getPublicRepository(
           from app.repository_revision_analyses a
           where a.revision_id = rr.id and a.status = 'passed'
         ), '[]'::jsonb) as analyses,
+        (
+          select jsonb_build_object(
+            'architecture', compatibility.architecture,
+            'parameter_count', compatibility.parameter_count,
+            'quantization', compatibility.quantization,
+            'tensor_format', compatibility.tensor_format,
+            'model_size_bytes', compatibility.model_size_bytes,
+            'minimum_ram_bytes', compatibility.minimum_ram_bytes,
+            'minimum_vram_bytes', compatibility.minimum_vram_bytes,
+            'cpu_compatible', compatibility.cpu_compatible,
+            'cuda_compatible', compatibility.cuda_compatible,
+            'rocm_compatible', compatibility.rocm_compatible,
+            'metal_compatible', compatibility.metal_compatible,
+            'mlx_compatible', compatibility.mlx_compatible,
+            'llama_cpp_compatible', compatibility.llama_cpp_compatible,
+            'browser_compatible', compatibility.browser_compatible,
+            'confidence', compatibility.confidence,
+            'evidence', compatibility.evidence
+          )
+          from app.repository_compatibility compatibility
+          where compatibility.revision_id = rr.id
+        ) as compatibility,
         coalesce((
           select jsonb_agg(jsonb_build_object(
             'id', release.id,
@@ -315,7 +368,22 @@ export async function getPublicRepository(
             order by match_score desc, candidate.updated_at desc
             limit 6
           ) related
-        ), '[]'::jsonb) as related
+        ), '[]'::jsonb) as related,
+        coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'trace_id', trace.trace_id,
+            'agent_name', trace.agent_name,
+            'tool_name', trace.tool_name,
+            'status', trace.status,
+            'duration_ms', trace.duration_ms,
+            'input_sha256', trace.input_sha256,
+            'output_sha256', trace.output_sha256,
+            'metadata', trace.metadata,
+            'occurred_at', trace.occurred_at
+          ) order by trace.occurred_at desc)
+          from app.agent_traces trace
+          where trace.repository_id = r.id and trace.is_public
+        ), '[]'::jsonb) as agent_traces
       from app.repositories r
       join app.repository_revisions rr on rr.id = r.latest_revision_id
       where r.kind = ${kind}::repository_kind

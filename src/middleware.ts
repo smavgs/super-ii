@@ -1,6 +1,10 @@
 import { clerkMiddleware } from '@clerk/astro/server';
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
+import { negotiatedRepositoryResponse } from '@/lib/agent-resources';
+import { getPublicRepository } from '@/lib/repository';
+import type { RepositoryKind } from '@/lib/catalog';
+import { getPublicPaper, paperDocument, paperMarkdown } from '@/lib/papers';
 
 const withClerk = clerkMiddleware();
 
@@ -63,6 +67,64 @@ function secure(response: Response, request: Request): Response {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (context.request.method === 'GET') {
+    const accept = context.request.headers.get('accept')?.toLowerCase() ?? '';
+    const machineRead = (
+      (accept.includes('application/json') || accept.includes('text/markdown'))
+      && !accept.includes('text/html')
+    );
+    const match = context.url.pathname.match(/^\/(models|datasets|spaces)\/([^/]+)\/([^/]+)$/);
+    if (machineRead && match) {
+      const kindMap: Record<string, RepositoryKind> = {
+        models: 'model',
+        datasets: 'dataset',
+        spaces: 'space',
+      };
+      let owner = '';
+      let slug = '';
+      try {
+        owner = decodeURIComponent(match[2]);
+        slug = decodeURIComponent(match[3]);
+      } catch {
+        return secure(Response.json({ error: 'invalid repository path' }, { status: 400 }), context.request);
+      }
+      const result = await getPublicRepository(context.locals, kindMap[match[1]], owner, slug);
+      if (!result.repository) {
+        return secure(Response.json(
+          { error: result.state === 'error' ? 'repository service unavailable' : 'repository not found' },
+          { status: result.state === 'error' ? 503 : 404 },
+        ), context.request);
+      }
+      const response = negotiatedRepositoryResponse(result.repository, context.request);
+      if (response) return secure(response, context.request);
+    }
+    const paperMatch = context.url.pathname.match(/^\/papers\/([^/]+)\/([^/]+)$/);
+    if (machineRead && paperMatch) {
+      let owner = '';
+      let slug = '';
+      try {
+        owner = decodeURIComponent(paperMatch[1]);
+        slug = decodeURIComponent(paperMatch[2]);
+      } catch {
+        return secure(Response.json({ error: 'invalid paper path' }, { status: 400 }), context.request);
+      }
+      const result = await getPublicPaper(context.locals, owner, slug);
+      if (!result.paper) {
+        return secure(Response.json(
+          { error: result.state === 'error' ? 'paper service unavailable' : 'paper not found' },
+          { status: result.state === 'error' ? 503 : 404 },
+        ), context.request);
+      }
+      const origin = context.url.origin;
+      const response = accept.includes('application/json')
+        ? Response.json(paperDocument(result.paper, origin))
+        : new Response(paperMarkdown(result.paper, origin), {
+            headers: { 'content-type': 'text/markdown; charset=utf-8' },
+          });
+      return secure(response, context.request);
+    }
+  }
+
   const runtimeEnv = env as Record<string, string | undefined>;
 
   const publishableKey =

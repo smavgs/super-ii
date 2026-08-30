@@ -2,7 +2,18 @@
 
 > Super ii is a public AI collaboration hub for models, datasets, browser apps, community discussions, collections, and provenance.
 
-The public catalog intentionally launches empty. Real repositories will appear only after their files pass automated security and format checks plus human review. Account access supports email, Google, and GitHub. Artifact uploads and publishing are not open while the separate self-hosted runtime is disconnected.
+The public catalog intentionally contains no seeded models, datasets, or apps. Real repositories appear only after their files pass automated security and format checks plus human review. Account access supports email, Google, and GitHub. Upload and publishing paths fail closed whenever the separate self-hosted runtime is not ready.
+
+## Agent access
+
+- [MCP](https://superii.site/mcp): Stateless, public, read-only Streamable HTTP tools
+- [Agent contract](https://superii.site/agents.md): Global automation rules and safety boundaries
+- [System state JSON](https://superii.site/system-state.json): Canonical capability and availability register
+- [System state Markdown](https://superii.site/system-state.md): Human-readable source register
+- [Repository manifest schema](https://superii.site/schemas/repository-manifest-v1.json): Versioned reviewed-release manifest contract
+- [Repository API schema](https://superii.site/schemas/repository-api-v1.json): Versioned machine-resource and download contract
+
+Every reviewed repository exposes README.md, agents.md, manifest.json, api, and mcp resources beneath its canonical URL. Default repository URLs also negotiate text/markdown and application/json. Public paper pages expose Markdown and JSON representations.
 
 ## Explore
 
@@ -18,6 +29,7 @@ The public catalog intentionally launches empty. Real repositories will appear o
 - [Documentation](https://superii.site/docs): Architecture, formats, security gates, and capability status
 - [Security](https://superii.site/security): Publication controls and responsible disclosure
 - [Status](https://superii.site/status): Request-time control-plane and runtime readiness
+- [System state](https://superii.site/system-state): Evidence-based product status ladder and capability register
 - [Pricing](https://superii.site/pricing): Plans and launch availability
 
 ## Company and policies

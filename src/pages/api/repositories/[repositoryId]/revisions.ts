@@ -1,15 +1,17 @@
 import type { APIRoute } from 'astro';
-import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
-import { managedRepository, textValue } from '@/lib/creator';
+import { managedRepository, scopedManagedRepository, textValue } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
+import { authorizeRepositoryRequest } from '@/lib/scoped-auth';
 
 export const POST: APIRoute = async ({ locals, params, request }) => {
-  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
-  if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
-  const repository = await managedRepository(sql, params.repositoryId ?? '', profile.profileId);
+  const repositoryId = params.repositoryId ?? '';
+  const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:commit');
+  if (!authorization.ok) return Response.json({ error: authorization.error }, { status: authorization.status });
+  const repository = authorization.actor.kind === 'profile'
+    ? await managedRepository(sql, repositoryId, authorization.actor.profileId)
+    : await scopedManagedRepository(sql, repositoryId);
   if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
   let payload: Record<string, unknown>;
   try { payload = await request.json() as Record<string, unknown>; } catch { return Response.json({ error: 'invalid JSON' }, { status: 400 }); }
@@ -21,7 +23,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
         ${repository.id}::uuid,
         ${branchId}::uuid,
         ${message},
-        ${profile.profileId}
+        ${authorization.actor.createdBy}
       )
     `;
     return Response.json({

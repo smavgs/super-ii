@@ -29,6 +29,15 @@ The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropi
 
 The requested repository core, safe/offline inspectors, structured dataset and model previews, tokenizer, Transformers.js, llama.cpp, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, and lineage are implemented. vLLM and Text Embeddings Inference remain deliberately deferred until dedicated GPU capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
 
+## Agent-native surface
+
+- [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
+- `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
+- Every reviewed public repository has one source of truth and stable HTML, Markdown, JSON, README, `agents.md`, manifest, API-contract, and MCP representations.
+- Offline model inspection records architecture, parameter count, quantization, tensor format, size, conservative RAM/VRAM guidance, and CPU/CUDA/ROCm/Metal/MLX/llama.cpp/browser compatibility. Declared, derived, and verified facts remain visibly distinct.
+- GitHub Actions trusted publishing exchanges a matching short-lived OIDC identity for a repository-bound, scope-bound, revocable token. Permanent upload credentials are not required.
+- Agent traces are private by default, size-bounded, metadata-filtered, and expose only hashes unless a profile manager explicitly makes a record public.
+
 ## Local development
 
 ```sh
@@ -56,7 +65,14 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The migrations create the launch schema, immutable repository revisions/files, security evidence, discovery, community, social graph, collections, and lineage. They do not create model, dataset, app, user, or organization records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 45-table schema creates the launch records, immutable repository revisions/files, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
+
+With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
+
+```sh
+uv run --project runtime python tools/apply_migrations.py --check-only
+uv run --project runtime python tools/apply_migrations.py
+```
 
 Required deployment secrets:
 

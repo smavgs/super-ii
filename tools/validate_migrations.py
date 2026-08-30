@@ -47,6 +47,15 @@ REQUIRED_TABLES = {
     "papers",
     "posts",
     "paper_repository_links",
+    "repository_compatibility",
+    "resource_groups",
+    "resource_group_repositories",
+    "resource_group_members",
+    "service_accounts",
+    "service_account_roles",
+    "trusted_publishers",
+    "scoped_access_tokens",
+    "agent_traces",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -109,6 +118,12 @@ def main() -> int:
         errors.append("payment creation must deduplicate concurrent checkout attempts")
     if "require_release_manifest" not in lower or "release_manifest_incomplete" not in lower:
         errors.append("publication must require a structured manifest and commit checksum")
+    if "sync_repository_compatibility" not in lower:
+        errors.append("model inspection must persist hardware compatibility transactionally")
+    if "has_repository_permission" not in lower:
+        errors.append("resource-group permissions must use a fail-closed PL/pgSQL check")
+    if "trusted_publishers" not in lower or "scoped_access_tokens" not in lower:
+        errors.append("trusted publishing requires publisher identities and hashed short-lived tokens")
     for scanner in ("clamav", "gitleaks", "format_policy"):
         if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
             errors.append(f"publish gate must require a passed {scanner} inspection")
@@ -120,7 +135,7 @@ def main() -> int:
 
     print(
         f"OK: {len(files)} migration file(s), {len(created)} tables, immutable files, "
-        "search, community, lineage, PL/pgSQL publish gates, RLS, and empty catalog verified"
+        "search, community, lineage, agent-native access, PL/pgSQL publish gates, RLS, and empty catalog verified"
     )
     return 0
 

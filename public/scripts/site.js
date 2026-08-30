@@ -65,8 +65,8 @@
     const query = catalogSearch.value.trim();
     const kind = catalog.dataset.kind === 'spaces' ? 'apps' : catalog.dataset.kind;
     emptyCopy.textContent = query
-      ? `No ${kind} match “${query}”. The catalog is intentionally empty until the first reviewed releases are published.`
-      : `We intentionally cleared the demo catalog. The first real ${kind === 'models' ? 'model' : kind === 'datasets' ? 'dataset' : 'app'} will appear here after it is reviewed and published.`;
+      ? `No ${kind} match “${query}”. Only reviewed public releases are searchable.`
+      : `No reviewed public ${kind === 'models' ? 'model' : kind === 'datasets' ? 'dataset' : 'app'} has been published yet. A real release appears here immediately after approval.`;
   });
 
   document.addEventListener('keydown', (event) => {

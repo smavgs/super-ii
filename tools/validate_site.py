@@ -17,6 +17,7 @@ EXPECTED_LOGO_SHA256 = "b28353284ddd75513d5344684711a2a2f50065197b9510c12b909adb
 EXPECTED_CATALOGS = {"models", "datasets", "spaces"}
 EXPECTED_PLANS = {"free", "pro", "team", "enterprise"}
 ALLOWED_PLAN_STATUSES = {"available", "beta-waitlist", "proposal"}
+STATUS_LADDER = {"designed", "implemented", "tested", "integrated", "staging", "production", "GA"}
 
 
 def fail(message: str) -> None:
@@ -100,9 +101,44 @@ def main() -> int:
     for forbidden in ("54 models", "thousands of our own models", "private model hub"):
         if forbidden in source_text:
             errors.append(f"legacy demo claim remains in production source: {forbidden!r}")
+    for stale in ("how publishing will work", "first release, coming soon", "after the first creator cohort"):
+        if stale in source_text:
+            errors.append(f"stale launch copy remains in production source: {stale!r}")
+
+    required_machine_files = [
+        ROOT / "SYSTEM-STATE.md",
+        ROOT / "src" / "lib" / "agent-resources.ts",
+        ROOT / "src" / "lib" / "mcp-server.ts",
+        ROOT / "src" / "pages" / "agents.md.ts",
+        ROOT / "src" / "pages" / "mcp.ts",
+        ROOT / "src" / "pages" / "system-state.json.ts",
+        ROOT / "src" / "pages" / "system-state.md.ts",
+        ROOT / "public" / "schemas" / "repository-manifest-v1.json",
+        ROOT / "public" / "schemas" / "repository-api-v1.json",
+        ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "compatibility.py",
+        ROOT / "database" / "migrations" / "0007_agent_native_foundation.sql",
+    ]
+    missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]
+    if missing_machine_files:
+        errors.append(f"agent-native production files missing: {missing_machine_files}")
+    else:
+        system_state = (ROOT / "SYSTEM-STATE.md").read_text(encoding="utf-8")
+        statuses = set(re.findall(r"\|\s*([^|]+?)\s*\|\s*(designed|implemented|tested|integrated|staging|production|GA)\s*\|", system_state))
+        if len(statuses) < 10:
+            errors.append("SYSTEM-STATE.md must contain a substantial canonical capability register")
+        if {status for _, status in statuses} - STATUS_LADDER:
+            errors.append("SYSTEM-STATE.md contains an unknown capability status")
+        mcp_contract = (ROOT / "src" / "lib" / "mcp-server.ts").read_text(encoding="utf-8")
+        for marker in ("createMcpHandler", "legacy: 'stateless'", "readOnlyHint: true", "search_models", "download_artifact"):
+            if marker not in mcp_contract:
+                errors.append(f"public MCP contract is missing {marker}")
+        trusted_contract = (ROOT / "src" / "pages" / "api" / "trusted-publishing" / "github" / "exchange.ts").read_text(encoding="utf-8")
+        for marker in ("createRemoteJWKSet", "jwtVerify", "token.actions.githubusercontent.com", "sha256Hex", "cache-control': 'no-store"):
+            if marker not in trusted_contract:
+                errors.append(f"trusted publishing contract is missing {marker}")
 
     unbound_clerk_button = re.compile(
-        r"<Sign(?:In|Up)Button\b(?![^>]*\basChild\b)[^>]*>\s*<button\b",
+        r"<sign(?:in|up)button\b(?![^>]*\baschild\b)[^>]*>\s*<button\b",
         re.DOTALL,
     )
     if unbound_clerk_button.search(source_text):
@@ -113,7 +149,7 @@ def main() -> int:
             fail(error)
         return 1
 
-    print(f"OK: site contract, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
+    print(f"OK: site, agent-native machine contract, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
     return 0
 
 

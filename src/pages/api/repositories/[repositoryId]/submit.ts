@@ -1,18 +1,20 @@
 import type { APIRoute } from 'astro';
-import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
-import { managedRepository } from '@/lib/creator';
+import { managedRepository, scopedManagedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch, runtimeIsConfigured } from '@/lib/runtime';
+import { authorizeRepositoryRequest } from '@/lib/scoped-auth';
 
 export const POST: APIRoute = async ({ locals, params, request }) => {
-  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
-  if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const repositoryId = params.repositoryId ?? '';
+  const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:submit');
+  if (!authorization.ok) return Response.json({ error: authorization.error }, { status: authorization.status });
   const branchId = new URL(request.url).searchParams.get('branch');
-  const repository = await managedRepository(sql, params.repositoryId ?? '', profile.profileId, branchId);
+  const repository = authorization.actor.kind === 'profile'
+    ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branchId)
+    : await scopedManagedRepository(sql, repositoryId, branchId);
   if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
   if (!runtimeIsConfigured(locals)) {
     return Response.json({ error: 'secure review runtime is not connected yet' }, { status: 503 });
@@ -63,7 +65,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     await sql`
       insert into app.notifications (profile_id, event_type, title, body, href, metadata)
       values (
-        ${profile.profileId}::uuid,
+        ${authorization.actor.profileId}::uuid,
         'repository.review_submitted',
         'Repository submitted for review ✅',
         'All automated checks passed. A human reviewer will make the final publication decision.',

@@ -5,7 +5,7 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types", "node"]
   },
   "include": [".astro/types.d.ts", "**/*"],
   "exclude": ["dist", ".wrangler"]

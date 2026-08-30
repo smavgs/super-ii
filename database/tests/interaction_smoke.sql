@@ -14,6 +14,8 @@ declare
   comment_id uuid;
   collection_id uuid;
   new_organization_id uuid;
+  resource_group_id uuid;
+  service_account_id uuid;
   created_repository record;
   created_commit app.repository_revisions;
   payment_order_id uuid;
@@ -67,6 +69,37 @@ begin
   ) then
     raise exception 'default repository branch was not created';
   end if;
+
+  insert into app.resource_groups (
+    organization_id, slug, name, description, created_by_profile_id
+  ) values (
+    new_organization_id, 'public-releases', 'Public releases',
+    'Scoped repository permissions', alice_id
+  ) returning id into resource_group_id;
+  insert into app.resource_group_repositories (resource_group_id, repository_id)
+  values (resource_group_id, created_repository.repository_id);
+  insert into app.resource_group_members (resource_group_id, profile_id, role)
+  values (resource_group_id, bob_id, 'reader');
+  if not app.has_repository_permission(bob_id, created_repository.repository_id, 'read')
+    or app.has_repository_permission(bob_id, created_repository.repository_id, 'upload') then
+    raise exception 'resource group permissions were not applied fail closed';
+  end if;
+
+  insert into app.service_accounts (
+    organization_id, name, description, created_by_profile_id
+  ) values (
+    new_organization_id, 'release-bot', 'Trusted publishing smoke test', alice_id
+  ) returning id into service_account_id;
+  insert into app.service_account_roles (service_account_id, resource_group_id, role)
+  values (service_account_id, resource_group_id, 'publisher');
+  insert into app.scoped_access_tokens (
+    repository_id, service_account_id, created_by_profile_id,
+    token_prefix, token_hash, scopes, expires_at
+  ) values (
+    created_repository.repository_id, service_account_id, alice_id,
+    'sii_test1234', repeat('e', 64), '["repository:publish"]'::jsonb,
+    now() + interval '5 minutes'
+  );
 
   update app.repository_revisions
   set status = 'rejected'
@@ -164,6 +197,13 @@ begin
     'public', 'published', now()
   ) returning id into public_repository_id;
 
+  insert into app.agent_traces (
+    repository_id, trace_id, agent_name, tool_name, status, is_public
+  ) values (
+    public_repository_id, 'trace-smoke-0001', 'release-bot', 'verify_manifest',
+    'succeeded', true
+  );
+
   if not app.set_repository_like(public_repository_id, alice_id, true) then
     raise exception 'like was not activated';
   end if;
@@ -226,8 +266,30 @@ begin
   insert into app.repository_revision_analyses (
     repository_id, revision_id, analysis_type, status, result, completed_at
   ) values (
-    publish_repository_id, revision_row.id, 'model', 'passed', '{"offline":true}', now()
+    publish_repository_id,
+    revision_row.id,
+    'model',
+    'passed',
+    '{"offline":true,"compatibility":{"architecture":"smoke","model_size_bytes":4,"minimum_ram_bytes":1073741824,"minimum_vram_bytes":0,"cpu_compatible":true,"llama_cpp_compatible":false,"confidence":"derived"}}',
+    now()
   );
+  if not exists (
+    select 1 from app.repository_compatibility
+    where revision_id = revision_row.id
+      and minimum_ram_bytes = 1073741824
+      and cpu_compatible
+  ) then
+    raise exception 'model compatibility was not synchronized';
+  end if;
+  update app.repository_revision_analyses
+  set status = 'failed'
+  where revision_id = revision_row.id and analysis_type = 'model';
+  if exists (select 1 from app.repository_compatibility where revision_id = revision_row.id) then
+    raise exception 'failed model analysis left stale compatibility data';
+  end if;
+  update app.repository_revision_analyses
+  set status = 'passed'
+  where revision_id = revision_row.id and analysis_type = 'model';
   insert into app.repository_reviews (
     repository_id, revision_id, reviewer_id, decision
   ) values (publish_repository_id, revision_row.id, 'human-reviewer', 'approved');

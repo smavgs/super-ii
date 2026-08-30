@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
-import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
-import { managedRepository } from '@/lib/creator';
+import { managedRepository, scopedManagedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { proxiedFileResponse, runtimeFetch } from '@/lib/runtime';
+import { authorizeRepositoryRequest } from '@/lib/scoped-auth';
 
 const INLINE_MEDIA_TYPES = new Set([
   'application/pdf',
@@ -76,13 +76,15 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
 };
 
 export const DELETE: APIRoute = async ({ locals, params, request }) => {
-  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
-  if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const repositoryId = params.repositoryId ?? '';
+  const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:upload');
+  if (!authorization.ok) return Response.json({ error: authorization.error }, { status: authorization.status });
   const branchId = new URL(request.url).searchParams.get('branch');
-  const repository = await managedRepository(sql, params.repositoryId ?? '', profile.profileId, branchId);
+  const repository = authorization.actor.kind === 'profile'
+    ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branchId)
+    : await scopedManagedRepository(sql, repositoryId, branchId);
   if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
   if (!['draft', 'quarantined'].includes(repository.revision_status)) {
     return Response.json({ error: 'files cannot be changed after review begins' }, { status: 409 });

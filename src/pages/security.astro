@@ -24,6 +24,9 @@ export const prerender = true;
         <li>Repository files remain quarantined until local ClamAV and Gitleaks scans, format policy, immutable hashing, and applicable offline inspection pass.</li>
         <li>Postgres refuses publication unless every file is available and clean, required scan evidence passed, and a human review approved the revision.</li>
         <li>Published browser-model and download routes resolve only files from the approved immutable revision.</li>
+        <li>The public MCP endpoint is read-only, rate limited, Origin-checked for browser clients, and restricted to reviewed public data.</li>
+        <li>GitHub Actions trusted publishing validates OIDC signatures and exact claims before issuing a hashed, repository-bound, scope-bound token for no more than 10 minutes.</li>
+        <li>Agent traces reject sensitive metadata keys, retain payload hashes instead of raw inputs and outputs, and stay private unless a repository manager explicitly makes a record public.</li>
         <li>Dependencies are locked and audited in continuous integration before deployment.</li>
       </ul>
 
@@ -36,8 +39,8 @@ export const prerender = true;
       <h2 id="roadmap">Runtime-dependent and planned controls</h2>
       <ul>
         <li>ClamAV, Gitleaks, immutable checksums, and release provenance are implemented but require the separate Linux runtime to be active; failure keeps publishing closed.</li>
-        <li>Signed publishing attestations beyond the current checksum, review, audit, and lineage records.</li>
-        <li>Fine-grained organization roles and review gates.</li>
+        <li>Signed supply-chain attestations beyond the current checksum, trusted-publisher, review, audit, and lineage records.</li>
+        <li>The resource-group and granular-role schema exists; the complete organization administration experience remains later work.</li>
         <li>Expanded audit history and evidence exports.</li>
         <li>Enterprise identity and regional deployment options where contracted.</li>
       </ul>

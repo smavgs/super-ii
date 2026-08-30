@@ -1,0 +1,51 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { systemState } from '@/lib/system-state';
+---
+
+<BaseLayout title="System state" description="Canonical, evidence-based capability and availability status for Super ii.">
+  <PageHero
+    eyebrow="Operational truth 🧭"
+    title="Super ii system state"
+    description={`Snapshot ${systemState.snapshot}. Status is separated from availability so implemented work is never presented as deployed or generally available.`}
+    compact
+  >
+    <div class="button-row">
+      <a class="button button--dark" href="/system-state.json">View JSON</a>
+      <a class="button button--secondary" href="/system-state.md">View Markdown</a>
+    </div>
+  </PageHero>
+
+  <main class="section shell system-state-page">
+    <section class="repository-section">
+      <div class="repository-section__heading">
+        <div><p class="eyebrow">Evidence register</p><h2>Capabilities</h2></div>
+        <span>{systemState.capabilities.length} tracked</span>
+      </div>
+      <div class="comparison-scroll">
+        <table class="comparison-table">
+          <thead><tr><th>Capability</th><th>Status</th><th>Availability</th><th>Evidence and boundary</th></tr></thead>
+          <tbody>
+            {systemState.capabilities.map((item) => (
+              <tr>
+                <th scope="row">{item.capability}</th>
+                <td><code>{item.status}</code></td>
+                <td>{item.availability}</td>
+                <td>{item.evidence}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="repository-section">
+      <div class="repository-section__heading"><div><p class="eyebrow">Shared vocabulary</p><h2>Status ladder</h2></div></div>
+      <ol class="status-ladder">
+        {systemState.statusLadder.map((status, index) => <li><span>{index + 1}</span><code>{status}</code></li>)}
+      </ol>
+      <p>Every production-facing claim is fail-closed. The public MCP endpoint is read-only; compute, publishing, private data, and payments are outside its authority.</p>
+    </section>
+  </main>
+</BaseLayout>

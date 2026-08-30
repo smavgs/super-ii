@@ -30,6 +30,7 @@ from .inspectors import (
     inspect_tokenizer,
     tokenize_text,
 )
+from .inspectors.compatibility import derive_model_compatibility
 from .inspectors.gguf import inspect_gguf
 from .pipeline import UploadHeld, UploadRejected, process_upload
 from .scanners import scanner_readiness
@@ -314,6 +315,7 @@ def inspect_revision(
                     result["diffusers"] = inspect_diffusers(workspace)
                 if result["model"] is None and not result["gguf"] and not result["safetensors"]:
                     raise ValueError("no supported local model files were found")
+                result["compatibility"] = derive_model_compatibility(workspace, result, files)
             elif payload.kind == "dataset":
                 result = {"dataset": inspect_dataset(workspace)}
             else:
@@ -341,6 +343,7 @@ def inspect_revision(
         "safetensors": _package_version("safetensors"),
         "tokenizers": _package_version("tokenizers"),
         "transformers": _package_version("transformers"),
+        "superii_compatibility": "1",
     }
     database.save_revision_analysis(
         repository_id,

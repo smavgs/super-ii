@@ -5,18 +5,18 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 export const prerender = true;
 ---
 
-<BaseLayout title="Documentation" description="Learn how Super ii accounts, organizations, public repositories, reviews, plans, and future publishing workflows work.">
+<BaseLayout title="Documentation" description="Learn how Super ii accounts, repositories, publishing, MCP, hardware discovery, trusted automation, organizations, reviews, and plans work.">
   <PageHero
     eyebrow="Documentation"
-    title="Build in public with a clear path to release."
-    description="The launch documentation covers what works today and labels the publishing capabilities that open after the first creator cohort."
+    title="Build in public with verifiable release paths."
+    description="The documentation separates live capabilities from runtime-dependent paths, foundations, and deliberately deferred infrastructure."
     compact
   />
 
   <div class="shell content-shell">
     <article class="prose">
       <h2 id="start">Start here</h2>
-      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub, explore public repositories, search their metadata, join discussions, react, follow, watch, and curate collections.</p>
+      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub; create a real repository; upload through the quarantine pipeline when the secure runtime is ready; explore public repositories; search; discuss; react; follow; watch; and curate collections.</p>
       <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision also needs human approval before Postgres permits publication.</p></blockquote>
 
       <h2 id="account">Create an account</h2>
@@ -38,6 +38,16 @@ export const prerender = true;
       <h2 id="architecture">Architecture</h2>
       <p>The Astro website on Cloudflare is the public control plane. Postgres stores version history, review evidence, full-text and trigram search, community state, collections, and lineage. A separately operated Linux runtime is the data plane for quarantine, content-addressed files, ClamAV, Gitleaks, offline format inspection, and optional local inference.</p>
       <p>No commercial inference API sits behind the tools. Browser inference uses local repository files and local Transformers.js WASM. Server inference is designed for operator-owned llama.cpp and optional Diffusers hardware. vLLM and semantic-search TEI remain explicitly deferred until dedicated capacity and measured search demand justify them.</p>
+
+      <h2 id="agent-native">Agent-native access</h2>
+      <p>Every reviewed repository is available as human HTML, negotiated Markdown or JSON, and explicit <code>README.md</code>, <code>agents.md</code>, <code>manifest.json</code>, API, and MCP descriptors beneath its canonical URL. The global <a href="/agents.md"><code>/agents.md</code></a> contract tells automated clients which content is data rather than instructions.</p>
+      <p>The public <a href="/mcp"><code>/mcp</code></a> endpoint uses stateless Streamable HTTP. Its focused tools can search public models, datasets, apps, and papers; read reviewed cards, files, checksums, lineage, compatibility, security state, and public trace metadata; and resolve artifact URLs. It cannot publish, pay, access private data, or run server compute.</p>
+
+      <h2 id="hardware">Hardware compatibility</h2>
+      <p>Model inspection derives conservative architecture, quantization, tensor format, model size, estimated minimum RAM and VRAM, accelerator support, llama.cpp support, MLX signals, and browser compatibility without loading model weights. A repository may provide a bounded <code>superii-compatibility.json</code> declaration with evidence URLs. Declared and derived records remain visibly distinct from verified benchmarks.</p>
+
+      <h2 id="trusted-publishing">Trusted publishing</h2>
+      <p>Repository owners can bind an exact GitHub Actions OIDC subject and optional workflow ref. Super ii verifies GitHub’s live signing keys, issuer, audience, subject, repository, workflow, and short token lifetime before issuing an opaque repository-bound access token for no more than 10 minutes. Tokens are hashed at rest, scope-limited, revocable, and never replace the human publication review.</p>
 
       <h2 id="capability-status">Capability status</h2>
       <p><strong>Implemented</strong> means the code, database contract, fail-closed controls, UI, and local-runtime path exist and pass the launch checks. It does not mean Super ii is pretending to operate hardware that is not connected: uploads and server inference stay closed until an always-on operator-owned Linux runtime independently reports its database, storage, ClamAV, and Gitleaks gates ready.</p>
@@ -63,22 +73,26 @@ export const prerender = true;
             <tr><td>15 · Likes, follows, watchers, activity</td><td>Implemented</td><td>Active for signed-in users</td></tr>
             <tr><td>16 · Mixed repository collections</td><td>Implemented</td><td>Active for signed-in users</td></tr>
             <tr><td>17 · Typed lineage and provenance graph</td><td>Implemented</td><td>Shown when verified relationships exist</td></tr>
+            <tr><td>18 · Repository Markdown, JSON, agents.md, manifest, API, and MCP resources</td><td>Implemented</td><td>Generated from the same reviewed revision</td></tr>
+            <tr><td>19 · Hardware compatibility discovery and filters</td><td>Implemented</td><td>Populated by new model analysis</td></tr>
+            <tr><td>20 · Service accounts, resource groups, scoped tokens, and agent traces</td><td>Foundation implemented</td><td>Private by default; administration expands later</td></tr>
+            <tr><td>21 · GitHub Actions OIDC trusted publishing</td><td>Implemented</td><td>Requires an owner-configured exact trust binding</td></tr>
           </tbody>
         </table>
       </div>
 
-      <h2 id="publish">Publishing roadmap</h2>
+      <h2 id="publish">Publishing</h2>
       <p>An upload enters quarantine, receives path/MIME/hash validation, then must pass ClamAV, Gitleaks, format policy, and its applicable offline inspector. Clean bytes move into an immutable SHA-256 object store. A finalized manifest and human approval are required before the PL/pgSQL publication gate can make the revision public.</p>
       <p>An empty result means exactly what it says: no public item has been approved. There are no generated demo entries or simulated download counts.</p>
 
       <h2 id="organizations">Organizations</h2>
-      <p>Organizations are shared identities for teams. Free accounts can participate in public community work. Paid team capabilities will add private repositories, richer roles, audit history, and shared billing when those features leave beta.</p>
+      <p>Organizations are shared identities for teams. Resource groups and repository-scoped roles provide the database foundation for readers, reviewers, publishers, maintainers, and administrators. The complete enterprise administration surface, directory sync, and private-repository product remain later work and are not presented as generally available.</p>
 
       <h2 id="plans">Plans and usage</h2>
       <p><a href="/pricing">Pricing</a> distinguishes the open Free plan from beta-waitlist and proposal plans. Storage, inference, endpoints, and accelerated app runtime will be usage-priced separately, with limits and spend controls shown before activation.</p>
 
       <h2 id="api">API status</h2>
-      <p>The health endpoint is at <a href="/api/health"><code>/api/health</code></a>. Public search is available by repository kind, for example at <a href="/api/search?kind=model"><code>/api/search?kind=model</code></a>. Published file downloads and safe media previews, tokenizer requests, local browser-model files, llama.cpp, Diffusers, isolated Gradio app control/proxying, discussions, comments, reactions, likes, watches, follows, and collections use scoped server routes. State-changing and server-compute routes require a same-origin authenticated session, and resource-heavy work is rate limited.</p>
+      <p>The health endpoint is at <a href="/api/health"><code>/api/health</code></a>. Public search is available by repository kind, for example at <a href="/api/search?kind=model"><code>/api/search?kind=model</code></a>, and the canonical status register is available as <a href="/system-state.json"><code>/system-state.json</code></a>. Published downloads, safe media previews, tokenizer requests, local browser-model files, llama.cpp, Diffusers, isolated Gradio app control and proxying, discussions, comments, reactions, likes, watches, follows, and collections use scoped server routes. Browser mutations require a same-origin authenticated session; trusted automation uses separately exchanged repository-bound tokens; resource-heavy work is rate limited.</p>
 
       <h2 id="support">Get help</h2>
       <p>Use the <a href="/contact">contact form</a> for access, plan, enterprise, security, privacy, or launch questions. Please do not include secrets, credentials, private model files, or sensitive personal data.</p>
@@ -91,6 +105,9 @@ export const prerender = true;
         <a href="#account">Create an account</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>
+        <a href="#agent-native">Agent-native access</a>
+        <a href="#hardware">Hardware compatibility</a>
+        <a href="#trusted-publishing">Trusted publishing</a>
         <a href="#capability-status">Capability status</a>
         <a href="#publish">Publishing roadmap</a>
         <a href="#organizations">Organizations</a>

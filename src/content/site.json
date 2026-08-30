@@ -8,7 +8,7 @@
   },
   "launch": {
     "phase": "Public beta",
-    "catalogStatus": "Opening soon",
+    "catalogStatus": "Review-first publishing",
     "date": "2026-08-27"
   },
   "catalog": {
@@ -76,6 +76,11 @@
     "/contact",
     "/security",
     "/status",
+    "/system-state",
+    "/system-state.json",
+    "/system-state.md",
+    "/agents.md",
+    "/mcp",
     "/sign-in",
     "/sign-up",
     "/account",

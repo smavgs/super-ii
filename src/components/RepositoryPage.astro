@@ -32,6 +32,18 @@ const provenanceSources = repository && Array.isArray(repository.provenance.sour
   ? repository.provenance.sources.filter((value): value is string => typeof value === 'string')
   : [];
 const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '🎉', heart: '❤️', eyes: '👀' };
+const compatibilityEvidence = repository?.compatibility && Array.isArray(repository.compatibility.evidence.evidence_urls)
+  ? repository.compatibility.evidence.evidence_urls.filter((value): value is string => typeof value === 'string' && value.startsWith('https://'))
+  : [];
+const compatibilityTargets = repository?.compatibility ? [
+  ['CPU', repository.compatibility.cpu_compatible],
+  ['NVIDIA CUDA', repository.compatibility.cuda_compatible],
+  ['AMD ROCm', repository.compatibility.rocm_compatible],
+  ['Apple Metal', repository.compatibility.metal_compatible],
+  ['MLX', repository.compatibility.mlx_compatible],
+  ['llama.cpp', repository.compatibility.llama_cpp_compatible],
+  ['Browser', repository.compatibility.browser_compatible],
+] as const : [];
 ---
 
 <BaseLayout
@@ -78,6 +90,12 @@ const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '�
           <button class="button button--secondary button--small" type="button" data-collection-button disabled>Add</button>
           <p data-community-status aria-live="polite"></p>
         </div>
+        <nav class="machine-resource-links" aria-label="Machine-readable repository resources">
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/README.md`}>README.md</a>
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/agents.md`}>agents.md</a>
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/manifest.json`}>manifest.json</a>
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/mcp`}>MCP</a>
+        </nav>
       </header>
 
       <nav class="repository-tabs" aria-label="Repository sections">
@@ -85,6 +103,7 @@ const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '�
         <a href="#files">Files</a>
         <a href="#versions">Versions</a>
         <a href="#analysis">Analysis</a>
+        {kind === 'model' && <a href="#compatibility">Compatibility</a>}
         <a href="#lineage">Lineage</a>
         <a href="#community">Community</a>
       </nav>
@@ -259,19 +278,70 @@ const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '�
         <RepositoryAnalysis repository={repository} />
       </section>
 
+      {kind === 'model' && (
+        <section class="repository-section" id="compatibility">
+          <div class="repository-section__heading">
+            <div><p class="eyebrow">Hardware intelligence 🧠</p><h2>Compatibility</h2></div>
+            {repository.compatibility && <span>{repository.compatibility.confidence}</span>}
+          </div>
+          {repository.compatibility ? (
+            <>
+              <div class="compatibility-facts">
+                <article><span>Architecture</span><strong>{repository.compatibility.architecture ?? 'Not identified'}</strong></article>
+                <article><span>Tensor format</span><strong>{repository.compatibility.tensor_format ?? 'Not identified'}</strong></article>
+                <article><span>Quantization</span><strong>{repository.compatibility.quantization ?? 'Not identified'}</strong></article>
+                <article><span>Model size</span><strong>{(Number(repository.compatibility.model_size_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
+                <article><span>Estimated minimum RAM</span><strong>{(Number(repository.compatibility.minimum_ram_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
+                <article><span>Estimated minimum VRAM</span><strong>{(Number(repository.compatibility.minimum_vram_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
+              </div>
+              <div class="compatibility-targets" aria-label="Compatible hardware and runtimes">
+                {compatibilityTargets.map(([label, compatible]) => (
+                  <span class:list={['compatibility-chip', compatible === true && 'compatibility-chip--yes', compatible === false && 'compatibility-chip--no']}>
+                    <i class:list={['ph', compatible === true ? 'ph-check-circle' : compatible === false ? 'ph-x-circle' : 'ph-question']} aria-hidden="true"></i>
+                    {label}: {compatible === true ? 'compatible' : compatible === false ? 'not detected' : 'unknown'}
+                  </span>
+                ))}
+              </div>
+              <p class="repository-integrity">
+                {repository.compatibility.confidence === 'verified'
+                  ? 'This record includes verified evidence.'
+                  : repository.compatibility.confidence === 'declared'
+                    ? 'These fields include publisher declarations checked for structure, not independent performance verification.'
+                    : 'These fields are conservative offline estimates from reviewed formats and metadata, not benchmark guarantees.'}
+              </p>
+              {compatibilityEvidence.length > 0 && <p class="compatibility-evidence"><strong>Evidence:</strong> {compatibilityEvidence.map((url) => <a href={url} rel="nofollow noreferrer">{url}</a>)}</p>}
+            </>
+          ) : <p>No compatibility record is available for this reviewed revision yet.</p>}
+        </section>
+      )}
+
       <section class="repository-section" id="lineage">
         <div class="repository-section__heading"><div><p class="eyebrow">Provenance graph</p><h2>Lineage</h2></div></div>
         {repository.relationships.length ? (
-          <ul class="lineage-list">
+          <div class="lineage-graph" role="list" aria-label={`Provenance relationships for ${repository.title}`}>
+            <div class="lineage-root"><span>{repository.kind}</span><strong>{repository.owner_handle}/{repository.slug}</strong></div>
             {repository.relationships.map((relationship) => (
-              <li>
-                <span>{relationship.direction === 'outgoing' ? relationship.relationship_type : `source: ${relationship.relationship_type}`}</span>
-                <a href={relatedPath(relationship)}>{relationship.related_owner} / {relationship.related_slug}</a>
-                {relationship.evidence_url && <a href={relationship.evidence_url} rel="nofollow noreferrer">Evidence</a>}
-              </li>
+              <article class="lineage-edge" role="listitem">
+                <i class:list={['ph', relationship.direction === 'outgoing' ? 'ph-arrow-right' : 'ph-arrow-left']} aria-hidden="true"></i>
+                <div><span>{relationship.direction === 'outgoing' ? relationship.relationship_type : `source: ${relationship.relationship_type}`}</span><a href={relatedPath(relationship)}>{relationship.related_owner} / {relationship.related_slug}</a></div>
+                {relationship.evidence_url && <a class="lineage-evidence" href={relationship.evidence_url} rel="nofollow noreferrer">Evidence</a>}
+              </article>
             ))}
-          </ul>
+          </div>
         ) : <p>No lineage relationship has been declared for this release.</p>}
+        {repository.agent_traces.length > 0 && (
+          <div class="agent-trace-list">
+            <h3>Public agent traces 🤖</h3>
+            <p>Trace payloads stay private. Public records expose bounded metadata and hashes only.</p>
+            {repository.agent_traces.map((trace) => (
+              <article>
+                <div><strong>{trace.agent_name}</strong><span>{trace.status}</span></div>
+                <p>{trace.tool_name ?? 'Unspecified tool'} · {trace.duration_ms === null ? 'duration unavailable' : `${trace.duration_ms} ms`}</p>
+                <code>{trace.trace_id}</code>
+              </article>
+            ))}
+          </div>
+        )}
         {repository.related.length > 0 && (
           <div class="related-repositories">
             <h3>Related models, datasets, and apps 🧭</h3>

@@ -88,6 +88,42 @@ export async function managedRepository(
   }
 }
 
+export async function scopedManagedRepository(
+  sql: NeonQueryFunction<false, false>,
+  repositoryId: string,
+  branchId: string | null = null,
+): Promise<ManagedRepository | null> {
+  try {
+    const rows = await sql`
+      select
+        r.id,
+        r.kind,
+        r.owner_handle,
+        r.slug,
+        r.title,
+        r.summary,
+        r.status,
+        rr.id as revision_id,
+        rr.status as revision_status,
+        b.id as branch_id,
+        b.name as branch_name
+      from app.repositories r
+      join app.repository_branches b
+        on b.repository_id = r.id
+        and (
+          (${branchId}::uuid is null and b.is_default)
+          or b.id = ${branchId}::uuid
+        )
+      join app.repository_revisions rr on rr.id = b.head_revision_id
+      where r.id = ${repositoryId}::uuid
+      limit 1
+    `;
+    return (rows[0] as ManagedRepository | undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function isPlatformAdmin(locals: App.Locals, clerkUserId: string): boolean {
   const configured = runtimeValue(locals, 'SUPERII_ADMIN_USER_IDS');
   if (!configured) return false;

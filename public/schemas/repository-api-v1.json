@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/repository-api-v1.json",
+  "title": "Super ii public repository API contract",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "repository_id",
+    "revision_id",
+    "read_only",
+    "content_negotiation",
+    "resources",
+    "downloads",
+    "authentication"
+  ],
+  "properties": {
+    "schema": { "const": "https://superii.site/schemas/repository-api-v1.json" },
+    "repository_id": { "type": "string", "format": "uuid" },
+    "revision_id": { "type": "string", "format": "uuid" },
+    "read_only": { "const": true },
+    "content_negotiation": {
+      "type": "object",
+      "required": ["url", "accepts"],
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "accepts": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "text/html" },
+            { "const": "text/markdown" },
+            { "const": "application/json" }
+          ],
+          "items": false
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["html", "markdown", "agents", "manifest", "api", "mcp", "mcp_endpoint"],
+      "additionalProperties": { "type": "string", "format": "uri" }
+    },
+    "downloads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size_bytes", "url"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "size_bytes": { "type": ["integer", "string"], "pattern": "^[0-9]+$" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "required": ["public_reads", "state_changes"],
+      "properties": {
+        "public_reads": { "const": "none" },
+        "state_changes": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
