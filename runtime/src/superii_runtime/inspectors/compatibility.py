@@ -196,9 +196,7 @@ def derive_model_compatibility(
     minimum_ram = _round_memory(model_size + overhead)
     discrete_gpu = has_safetensors or has_diffusers
     minimum_vram = (
-        _round_memory(model_size + max(512 * MIB, int(model_size * 0.15)))
-        if discrete_gpu
-        else 0
+        _round_memory(model_size + max(512 * MIB, int(model_size * 0.15))) if discrete_gpu else 0
     )
 
     result: dict[str, Any] = {
