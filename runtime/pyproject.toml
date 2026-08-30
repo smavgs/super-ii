@@ -13,6 +13,7 @@ dependencies = [
   "datasets==5.0.1",
   "fastapi==0.141.1",
   "httpx==0.28.1",
+  "nbformat==5.10.4",
   "pillow==12.3.0",
   "psycopg[binary]==3.3.4",
   "pydantic-settings==2.15.0",
@@ -71,3 +72,4 @@ ignore = ["S101"]
 "src/superii_runtime/spaces.py" = ["S108", "S603"]
 "src/superii_runtime/storage.py" = ["S103"]
 "tests/*" = ["S104"]
+"tests/test_official_notebooks.py" = ["S102"]

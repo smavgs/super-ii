@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
+import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
 
@@ -44,6 +45,8 @@ const compatibilityTargets = repository?.compatibility ? [
   ['llama.cpp', repository.compatibility.llama_cpp_compatible],
   ['Browser', repository.compatibility.browser_compatible],
 ] as const : [];
+const notebooks = repository ? repositoryNotebooks(repository) : [];
+const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
 ---
 
 <BaseLayout
@@ -101,6 +104,7 @@ const compatibilityTargets = repository?.compatibility ? [
       <nav class="repository-tabs" aria-label="Repository sections">
         <a href="#card">{cardTitle}</a>
         <a href="#files">Files</a>
+        {notebooks.length > 0 && <a href="#notebooks">Notebooks</a>}
         <a href="#versions">Versions</a>
         <a href="#analysis">Analysis</a>
         {kind === 'model' && <a href="#compatibility">Compatibility</a>}
@@ -144,7 +148,12 @@ const compatibilityTargets = repository?.compatibility ? [
                   <td>{file.mime_type}</td>
                   <td>{Number(file.size_bytes).toLocaleString()} B</td>
                   <td><code title={file.sha256}>{file.sha256.slice(0, 12)}…</code></td>
-                  <td><a href={`/api/repositories/${repository.id}/files/${file.id}`}>Download</a></td>
+                  <td>
+                    <span class="file-actions">
+                      {notebookPaths.has(file.path) && <a href={repositoryNotebookHref(repository, file.path)}>View notebook</a>}
+                      <a href={`/api/repositories/${repository.id}/files/${file.id}`}>Download</a>
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -152,6 +161,25 @@ const compatibilityTargets = repository?.compatibility ? [
         </div>
         <p class="repository-integrity">Every listed file passed ClamAV, Gitleaks, format policy, immutable manifest verification, and human review before publication.</p>
       </section>
+
+      {notebooks.length > 0 && (
+        <section class="repository-section" id="notebooks">
+          <div class="repository-section__heading">
+            <div><p class="eyebrow">Static reader</p><h2>Notebooks</h2></div>
+            <span>{notebooks.length} validated</span>
+          </div>
+          <p class="repository-integrity">Notebook code is never executed by the viewer. HTML, JavaScript, SVG, widgets, attachments, and unsupported output types are omitted.</p>
+          <div class="repository-notebooks">
+            {notebooks.map((notebook) => (
+              <a href={repositoryNotebookHref(repository, notebook.path)}>
+                <i class="ph ph-notebook" aria-hidden="true"></i>
+                <span><strong>{notebook.path}</strong><small>{notebook.cell_count} cells · {notebook.kernel.display_name ?? notebook.kernel.language ?? 'kernel not declared'}</small></span>
+                <i class="ph ph-arrow-right" aria-hidden="true"></i>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section class="repository-section" id="versions">
         <div class="repository-section__heading"><div><p class="eyebrow">Release history</p><h2>Versions</h2></div></div>

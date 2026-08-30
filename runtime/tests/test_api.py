@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from superii_runtime.api import app
+from superii_runtime.capabilities import capability_report
+from superii_runtime.settings import Settings
 
 
 def test_health_does_not_require_secrets() -> None:
@@ -16,3 +18,10 @@ def test_health_does_not_require_secrets() -> None:
 def test_capabilities_fail_closed_without_runtime_token() -> None:
     response = TestClient(app).get("/v1/capabilities")
     assert response.status_code == 503
+
+
+def test_notebook_capability_reports_static_no_execution_boundary() -> None:
+    notebook = capability_report(Settings())["notebooks"]
+    assert notebook["available"] is True
+    assert notebook["code_execution"] is False
+    assert notebook["active_outputs"] is False

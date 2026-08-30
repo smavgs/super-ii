@@ -26,7 +26,8 @@ Canonical product and operations truth for the Super ii control plane and self-h
 | Immutable repository engine | production | live | Postgres stores repositories, folders by path, revisions, commits, branches, tags, releases, manifests, SHA-256 checksums, and download records. |
 | Creator upload and review pipeline | production | fail-closed | Upload, quarantine, ClamAV, Gitleaks, format policy, offline analysis, immutable manifest, and human review are required; uploads close when runtime gates are unavailable. |
 | Model and dataset analysis pages | production | live when content exists | Public pages render cards, files, versions, licenses, tensor and tokenizer information, bounded dataset previews, statistics, provenance, and discussions from reviewed data only. |
-| Protected Gradio Apps runtime | production | authenticated | Rootless isolated containers, runtime status, logs, controls, iframe proxying, and streaming paths require the self-hosted runtime. |
+| Protected Gradio Apps runtime | production | authenticated | Non-root, capability-dropped, read-only containers, runtime status, logs, controls, iframe proxying, and streaming paths require the self-hosted runtime. Rootless Docker remains the dedicated-host target, not a current host claim. |
+| Static Jupyter notebook reader | production | live for official tutorials; reviewed repository notebooks when content exists | Pinned nbformat validation, bounded parsing, safe MIME allowlists, raw-HTML suppression, immutable downloads, and zero cell execution are enforced. |
 | Community and discovery | production | live | Search, filters, trending, downloads, likes, follows, watches, discussions, comments, notifications, related repositories, collections, papers, posts, and feeds use real Postgres state. |
 | USDC on Ethereum checkout | production | live | NOWPayments creates bounded Pro and Team orders; entitlements require a signed, exact, terminal payment callback. No card collection is enabled. |
 | Repository HTML, Markdown, and JSON representations | production | live when reviewed content exists | Public negotiation and stable README, agents.md, manifest, API, and MCP routes are deployed; the intentionally empty catalog has no repository sample yet. |
@@ -36,7 +37,7 @@ Canonical product and operations truth for the Super ii control plane and self-h
 | Service accounts and scoped access tokens | tested | foundation | Opaque, hash-at-rest, repository-bound, scope-bound, revocable, expiring token behavior passes transactional integration tests. |
 | GitHub Actions trusted publishing | tested | configuration required | The public exchange rejects unauthorized callers and the code verifies issuer, audience, subject, workflow, repository, lifetime, signature, and scopes; a successful live exchange awaits the first configured repository and workflow. |
 | Agent traces | implemented | opt-in | Trace metadata is private by default and exposes only hashes and explicitly public records. |
-| Hostile multi-tenant compute isolation | designed | deferred | Current Apps use bounded rootless containers; stronger microVM-grade isolation is required before untrusted multi-tenant compute is advertised. |
+| Hostile multi-tenant compute isolation | designed | deferred | Current Apps use non-root, capability-dropped, read-only containers with no app-network egress. Rootless or stronger microVM-grade host isolation is required before hostile multi-tenant compute is advertised. |
 | Hosted GPU cloud and high-throughput serving | designed | deferred | Super ii does not claim a free GPU cloud. vLLM, dedicated GPU pools, and mountable high-volume storage wait for measured demand and funded capacity. |
 
 ## Release truth rules

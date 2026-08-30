@@ -1,0 +1,44 @@
+[
+  {
+    "slug": "super-ii-api-and-mcp",
+    "path": "notebooks/getting-started/super-ii-api-and-mcp.ipynb",
+    "sha256": "80dc22d4846096295ed55e588b225613d7f91563f3cd3953d89605aeec038420",
+    "title": "Super ii API and MCP quickstart",
+    "summary": "Read production capability truth and complete a public, read-only MCP handshake with Python's standard library.",
+    "category": "Getting started",
+    "level": "Beginner",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "Internet access"],
+    "durationMinutes": 10,
+    "updatedAt": "2026-08-30",
+    "tags": ["API", "MCP", "agents"]
+  },
+  {
+    "slug": "create-and-verify-a-dataset",
+    "path": "notebooks/repositories/create-and-verify-a-dataset.ipynb",
+    "sha256": "6748b480dabea431cf0797d59fb3ad4a967d2ff5eb621c300f8a9875516a7261",
+    "title": "Create and verify a small dataset",
+    "summary": "Create a deterministic CSV, calculate quality checks, write a Data Card, and verify a SHA-256 manifest.",
+    "category": "Repositories",
+    "level": "Beginner",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-08-30",
+    "tags": ["datasets", "checksums", "provenance"]
+  },
+  {
+    "slug": "reproducible-model-evaluation",
+    "path": "notebooks/evaluation/reproducible-model-evaluation.ipynb",
+    "sha256": "0a301a812db91470669de487588609be9c6c84e9a3ab94bff4cee682eca5a876",
+    "title": "A reproducible model-evaluation record",
+    "summary": "Measure a deterministic classifier, expose uncertainty, and produce a bounded provenance record without hidden services.",
+    "category": "Evaluation",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library"],
+    "durationMinutes": 20,
+    "updatedAt": "2026-08-30",
+    "tags": ["evaluation", "metrics", "reproducibility"]
+  }
+]

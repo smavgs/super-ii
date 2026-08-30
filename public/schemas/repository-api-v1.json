@@ -53,6 +53,20 @@
         }
       }
     },
+    "notebooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "static_only", "code_executed", "url"],
+        "properties": {
+          "path": { "type": "string", "pattern": "\\.ipynb$" },
+          "static_only": { "const": true },
+          "code_executed": { "const": false },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
     "authentication": {
       "type": "object",
       "required": ["public_reads", "state_changes"],

@@ -18,6 +18,7 @@ EXPECTED_CATALOGS = {"models", "datasets", "spaces"}
 EXPECTED_PLANS = {"free", "pro", "team", "enterprise"}
 ALLOWED_PLAN_STATUSES = {"available", "beta-waitlist", "proposal"}
 STATUS_LADDER = {"designed", "implemented", "tested", "integrated", "staging", "production", "GA"}
+MAX_WASM_BYTES = 25 * 1024 * 1024
 
 
 def fail(message: str) -> None:
@@ -117,6 +118,13 @@ def main() -> int:
         ROOT / "public" / "schemas" / "repository-api-v1.json",
         ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "compatibility.py",
         ROOT / "database" / "migrations" / "0007_agent_native_foundation.sql",
+        ROOT / "database" / "migrations" / "0008_notebook_foundation.sql",
+        ROOT / "docs" / "architecture" / "notebook-security.md",
+        ROOT / "docs" / "architecture" / "cas-integrity.md",
+        ROOT / "docs" / "architecture" / "performance-baseline.md",
+        ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "notebooks.py",
+        ROOT / "src" / "lib" / "notebook-markdown.ts",
+        ROOT / "src" / "pages" / "notebooks" / "index.astro",
     ]
     missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]
     if missing_machine_files:
@@ -136,6 +144,41 @@ def main() -> int:
         for marker in ("createRemoteJWKSet", "jwtVerify", "token.actions.githubusercontent.com", "sha256Hex", "cache-control': 'no-store"):
             if marker not in trusted_contract:
                 errors.append(f"trusted publishing contract is missing {marker}")
+        notebook_inspector = (
+            ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "notebooks.py"
+        ).read_text(encoding="utf-8")
+        for marker in (
+            "MAX_NOTEBOOK_BYTES",
+            "nbformat.validate",
+            "SAFE_IMAGE_MIME_TYPES",
+            '"code_executed": False',
+            '"javascript_rendered": False',
+        ):
+            if marker not in notebook_inspector:
+                errors.append(f"static notebook inspector is missing {marker}")
+        notebook_markdown = (ROOT / "src" / "lib" / "notebook-markdown.ts").read_text(
+            encoding="utf-8"
+        )
+        for marker in ("html: false", "markdown.disable('image')", "nofollow noreferrer"):
+            if marker not in notebook_markdown:
+                errors.append(f"static notebook renderer is missing {marker}")
+
+    wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
+    if not wasm_files:
+        errors.append("browser inference release must contain checked-in WASM assets")
+    for wasm_file in wasm_files:
+        if wasm_file.stat().st_size > MAX_WASM_BYTES:
+            errors.append(
+                f"browser WASM asset exceeds the 25 MiB release ceiling: {wasm_file.name}"
+            )
+
+    truth_sources = "\n".join(
+        path.read_text(encoding="utf-8", errors="replace")
+        for path in (ROOT / "SYSTEM-STATE.md", ROOT / "src" / "pages" / "docs.astro")
+    ).lower()
+    for unsupported_claim in ("rootless isolated containers", "bounded rootless containers"):
+        if unsupported_claim in truth_sources:
+            errors.append(f"unsupported container claim remains public: {unsupported_claim}")
 
     unbound_clerk_button = re.compile(
         r"<sign(?:in|up)button\b(?![^>]*\baschild\b)[^>]*>\s*<button\b",

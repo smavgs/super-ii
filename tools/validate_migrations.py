@@ -124,6 +124,8 @@ def main() -> int:
         errors.append("resource-group permissions must use a fail-closed PL/pgSQL check")
     if "trusted_publishers" not in lower or "scoped_access_tokens" not in lower:
         errors.append("trusted publishing requires publisher identities and hashed short-lived tokens")
+    if "'notebook'" not in lower or "static validation without code execution" not in lower:
+        errors.append("notebook analysis must be an explicit no-execution database contract")
     for scanner in ("clamav", "gitleaks", "format_policy"):
         if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
             errors.append(f"publish gate must require a passed {scanner} inspection")

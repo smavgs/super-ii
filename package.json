@@ -13,7 +13,7 @@
     "build": "./scripts/build.sh",
     "check": "astro check",
     "preview": "wrangler dev",
-    "validate": "python3 tools/validate_site.py && go run ./tools/releasecheck ./src/content/site.json && node tools/check-routes.mjs",
+    "validate": "python3 tools/validate_site.py && python3 tools/validate_notebooks.py && go run ./tools/releasecheck ./src/content/site.json && node tools/check-routes.mjs",
     "db:check": "python3 tools/validate_migrations.py",
     "db:test": "./scripts/test-postgres.sh",
     "deploy": "./scripts/deploy.sh",
@@ -32,6 +32,7 @@
     "astro": "7.2.8",
     "drizzle-orm": "0.45.2",
     "jose": "6.2.10",
+    "markdown-it": "15.0.1",
     "zod": "4.5.4"
   },
   "devDependencies": {

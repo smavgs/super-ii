@@ -37,6 +37,13 @@ def capability_report(settings: Settings) -> dict[str, Any]:
             "available": _installed("tokenizers"),
             "offline": True,
         },
+        "notebooks": {
+            "phase": "implemented_static",
+            "available": _installed("nbformat"),
+            "nbformat": "4",
+            "code_execution": False,
+            "active_outputs": False,
+        },
         "transformers_js": {
             "phase": "implemented_in_web_control_plane",
             "remote_models": False,

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "fixture": {
+    "size_bytes": 67108864,
+    "sha256": "3bb0afe0a34644ff563a8555509c5e7ec6499e936560e070cc68fa2ae07ef446",
+    "samples": 3
+  },
+  "environment": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "3.12.13"
+  },
+  "measurements": {
+    "full_sha256": {
+      "median_seconds": 0.034834,
+      "bytes_per_second": 1926514970.33
+    },
+    "verify_then_hardlink": {
+      "median_seconds": 0.035483,
+      "bytes_per_second": 1891280661.77,
+      "note": "Current workspace path: full SHA-256 verification followed by a same-volume hardlink."
+    },
+    "copy_fallback": {
+      "median_seconds": 0.015948,
+      "bytes_per_second": 4208056709.22,
+      "note": "Copy-only fallback timing; destination re-verification is measured separately."
+    }
+  },
+  "claim_boundary": "Synthetic local I/O baseline, not a model-loading or inference benchmark."
+}

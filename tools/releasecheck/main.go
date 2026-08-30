@@ -12,6 +12,7 @@ import (
 )
 
 const expectedLogoHash = "b28353284ddd75513d5344684711a2a2f50065197b9510c12b909adbd346f60f"
+const maxWASMBytes int64 = 25 * 1024 * 1024
 
 type plan struct {
 	ID       string   `json:"id"`
@@ -73,7 +74,7 @@ func main() {
 			errors = append(errors, "route must begin with /: "+route)
 		}
 	}
-	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/system-state", "/system-state.json", "/system-state.md"} {
+	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/notebooks", "/system-state", "/system-state.json", "/system-state.md"} {
 		if !routes[requiredRoute] {
 			errors = append(errors, "missing agent-native route: "+requiredRoute)
 		}
@@ -86,6 +87,13 @@ func main() {
 		filepath.Join("public", "schemas", "repository-manifest-v1.json"),
 		filepath.Join("public", "schemas", "repository-api-v1.json"),
 		filepath.Join("database", "migrations", "0007_agent_native_foundation.sql"),
+		filepath.Join("database", "migrations", "0008_notebook_foundation.sql"),
+		filepath.Join("docs", "architecture", "notebook-security.md"),
+		filepath.Join("runtime", "src", "superii_runtime", "inspectors", "notebooks.py"),
+		filepath.Join("src", "content", "notebooks.json"),
+		filepath.Join("notebooks", "getting-started", "super-ii-api-and-mcp.ipynb"),
+		filepath.Join("notebooks", "repositories", "create-and-verify-a-dataset.ipynb"),
+		filepath.Join("notebooks", "evaluation", "reproducible-model-evaluation.ipynb"),
 	} {
 		if info, statErr := os.Stat(filepath.Join(root, requiredFile)); statErr != nil || !info.Mode().IsRegular() {
 			errors = append(errors, "missing agent-native release file: "+requiredFile)
@@ -140,6 +148,21 @@ func main() {
 		hash := sha256.Sum256(logo)
 		if hex.EncodeToString(hash[:]) != expectedLogoHash {
 			errors = append(errors, "supplied logo checksum changed")
+		}
+	}
+
+	wasmFiles, globErr := filepath.Glob(filepath.Join(root, "public", "runtime-assets", "wasm", "*.wasm"))
+	if globErr != nil || len(wasmFiles) == 0 {
+		errors = append(errors, "browser inference release has no WASM assets")
+	}
+	for _, wasmPath := range wasmFiles {
+		info, statErr := os.Stat(wasmPath)
+		if statErr != nil {
+			errors = append(errors, "cannot stat browser WASM asset: "+wasmPath)
+			continue
+		}
+		if info.Size() > maxWASMBytes {
+			errors = append(errors, "browser WASM asset exceeds 25 MiB: "+filepath.Base(wasmPath))
 		}
 	}
 

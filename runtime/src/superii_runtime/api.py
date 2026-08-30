@@ -27,6 +27,7 @@ from .inspectors import (
     inspect_dataset,
     inspect_diffusers,
     inspect_model,
+    inspect_notebooks,
     inspect_tokenizer,
     tokenize_text,
 )
@@ -285,8 +286,38 @@ def inspect_revision(
     if not files or any(file.repository_id != repository_id for file in files):
         raise HTTPException(status_code=404, detail="revision not found")
 
+    has_notebooks = any(file.path.lower().endswith(".ipynb") for file in files)
+    notebook_result: dict[str, Any] | None = None
     try:
         with materialized_revision(database, get_store(), revision_id) as workspace:
+            if has_notebooks:
+                try:
+                    notebook_result = inspect_notebooks(workspace)
+                except (OSError, ValueError, RuntimeError) as error:
+                    database.save_revision_analysis(
+                        repository_id,
+                        revision_id,
+                        "notebook",
+                        "failed",
+                        {
+                            "error": str(error)[:1000],
+                            "static_only": True,
+                            "code_executed": False,
+                        },
+                        {"nbformat": _package_version("nbformat")},
+                    )
+                    raise
+                database.save_revision_analysis(
+                    repository_id,
+                    revision_id,
+                    "notebook",
+                    "passed",
+                    notebook_result,
+                    {
+                        "nbformat": _package_version("nbformat"),
+                        "superii_notebook_contract": "1",
+                    },
+                )
             if payload.kind == "model":
                 result = {"model": None, "gguf": [], "safetensors": []}
                 if (workspace / "config.json").is_file():
@@ -327,6 +358,12 @@ def inspect_revision(
                         "runnable": app_file.exists(),
                     }
                 }
+            if notebook_result is not None:
+                result["notebooks"] = {
+                    "count": notebook_result["notebook_count"],
+                    "static_only": True,
+                    "code_executed": False,
+                }
     except (OSError, ValueError, RuntimeError) as error:
         database.save_revision_analysis(
             repository_id,
@@ -343,6 +380,7 @@ def inspect_revision(
         "safetensors": _package_version("safetensors"),
         "tokenizers": _package_version("tokenizers"),
         "transformers": _package_version("transformers"),
+        "nbformat": _package_version("nbformat"),
         "superii_compatibility": "1",
     }
     database.save_revision_analysis(

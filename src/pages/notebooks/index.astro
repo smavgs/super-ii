@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { officialNotebooks } from '@/lib/notebooks';
+
+export const prerender = true;
+---
+
+<BaseLayout title="Notebooks" description="Official, reproducible Super ii notebooks with a safe static reader and supported Colab paths.">
+  <PageHero
+    eyebrow="Learn by running 🧪"
+    title="Official Super ii notebooks."
+    description="Small, readable tutorials with visible requirements, immutable source checks, and no hidden execution inside Super ii."
+    compact
+  >
+    <div class="button-row">
+      <a class="button button--dark" href="#official-notebooks">Browse notebooks</a>
+      <a class="button button--secondary" href="/docs#notebooks">Read the safety model</a>
+    </div>
+  </PageHero>
+
+  <section class="section shell notebook-library" id="official-notebooks">
+    <div class="section-heading">
+      <p class="eyebrow">Versioned tutorials</p>
+      <h2>Start with the fundamentals.</h2>
+      <p>Each notebook is checked into the public repository, validated in CI, rendered without executing code, and designed to run with zero paid services.</p>
+    </div>
+
+    <div class="notebook-library__grid">
+      {officialNotebooks.map((notebook, index) => (
+        <article class="notebook-card">
+          <div class="notebook-card__topline"><span>{String(index + 1).padStart(2, '0')}</span><span>{notebook.category}</span></div>
+          <div>
+            <p class="eyebrow">{notebook.level} · {notebook.durationMinutes} min</p>
+            <h3><a href={`/notebooks/${notebook.slug}`}>{notebook.title}</a></h3>
+            <p>{notebook.summary}</p>
+          </div>
+          <dl>
+            <div><dt>Runtime</dt><dd>{notebook.runtime}</dd></div>
+            <div><dt>Needs</dt><dd>{notebook.requirements.join(' · ')}</dd></div>
+          </dl>
+          <div class="notebook-card__tags">{notebook.tags.map((tag) => <span>{tag}</span>)}</div>
+          <a class="card-link" href={`/notebooks/${notebook.slug}`}>Read notebook <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="shell notebook-principles">
+      <article><i class="ph ph-shield-check" aria-hidden="true"></i><h3>Static on Super ii</h3><p>Markdown and allowlisted outputs are rendered. HTML, JavaScript, SVG, widgets, attachments, and cell execution stay off.</p></article>
+      <article><i class="ph ph-git-commit" aria-hidden="true"></i><h3>Exact source</h3><p>Every official notebook has a checked SHA-256 digest and a stable GitHub path for review and version history.</p></article>
+      <article><i class="ph ph-arrow-square-out" aria-hidden="true"></i><h3>Clear handoff</h3><p>Colab links are external execution paths, visibly separated from Super ii's static reader and governed by the external provider.</p></article>
+    </div>
+  </section>
+</BaseLayout>

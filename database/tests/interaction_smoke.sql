@@ -273,6 +273,22 @@ begin
     '{"offline":true,"compatibility":{"architecture":"smoke","model_size_bytes":4,"minimum_ram_bytes":1073741824,"minimum_vram_bytes":0,"cpu_compatible":true,"llama_cpp_compatible":false,"confidence":"derived"}}',
     now()
   );
+  insert into app.repository_revision_analyses (
+    repository_id, revision_id, analysis_type, status, result, completed_at
+  ) values (
+    publish_repository_id,
+    revision_row.id,
+    'notebook',
+    'passed',
+    '{"static_only":true,"code_executed":false,"notebook_count":1,"notebooks":[]}',
+    now()
+  );
+  if not exists (
+    select 1 from app.repository_revision_analyses
+    where revision_id = revision_row.id and analysis_type = 'notebook' and status = 'passed'
+  ) then
+    raise exception 'notebook analysis contract was not stored';
+  end if;
   if not exists (
     select 1 from app.repository_compatibility
     where revision_id = revision_row.id

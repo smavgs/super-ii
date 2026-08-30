@@ -15,6 +15,10 @@ from superii_runtime.inspectors.compatibility import derive_model_compatibility
 from superii_runtime.inspectors.datasets import inspect_dataset
 from superii_runtime.inspectors.diffusers import inspect_diffusers
 from superii_runtime.inspectors.gguf import inspect_gguf
+from superii_runtime.inspectors.notebooks import (
+    NotebookInspectionError,
+    inspect_notebooks,
+)
 from superii_runtime.inspectors.safetensors import inspect_safetensors
 
 
@@ -123,3 +127,98 @@ def test_compatibility_accepts_bounded_publisher_declaration(tmp_path: Path) -> 
     assert result["minimum_ram_bytes"] == 8 * 1024**3
     assert result["mlx_compatible"] is True
     assert result["confidence"] == "declared"
+
+
+def test_notebook_inspection_is_static_and_omits_active_outputs(tmp_path: Path) -> None:
+    notebook = {
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "metadata": {
+            "kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"},
+            "language_info": {"name": "python", "version": "3.12"},
+        },
+        "cells": [
+            {
+                "id": "intro",
+                "cell_type": "markdown",
+                "metadata": {},
+                "source": "# Safe title\n<script>alert(1)</script>",
+            },
+            {
+                "id": "code",
+                "cell_type": "code",
+                "metadata": {},
+                "source": "print('hello')",
+                "execution_count": 1,
+                "outputs": [
+                    {"output_type": "stream", "name": "stdout", "text": "hello\n"},
+                    {
+                        "output_type": "display_data",
+                        "metadata": {},
+                        "data": {
+                            "text/plain": "trusted as escaped text",
+                            "text/html": "<img src=x onerror=alert(1)>",
+                            "application/javascript": "alert(1)",
+                            "image/svg+xml": "<svg onload=alert(1)></svg>",
+                        },
+                    },
+                ],
+            },
+        ],
+    }
+    (tmp_path / "safe.ipynb").write_text(json.dumps(notebook), encoding="utf-8")
+
+    result = inspect_notebooks(tmp_path)
+
+    inspected = result["notebooks"][0]
+    assert result["code_executed"] is False
+    assert inspected["safety"]["raw_html_rendered"] is False
+    assert inspected["cells"][0]["source"].endswith("</script>")
+    assert inspected["cells"][1]["outputs"][1]["data"] == [
+        {"mime_type": "text/plain", "text": "trusted as escaped text"}
+    ]
+    assert "text/html" not in json.dumps(inspected["cells"][1]["outputs"])
+
+
+def test_notebook_inspection_rejects_invalid_nbformat(tmp_path: Path) -> None:
+    (tmp_path / "invalid.ipynb").write_text('{"nbformat":4,"cells":[]}', encoding="utf-8")
+    with pytest.raises(NotebookInspectionError, match="failed nbformat validation"):
+        inspect_notebooks(tmp_path)
+
+
+def test_notebook_inspection_rejects_invalid_embedded_image(tmp_path: Path) -> None:
+    notebook = {
+        "nbformat": 4,
+        "nbformat_minor": 5,
+        "metadata": {},
+        "cells": [
+            {
+                "id": "image",
+                "cell_type": "code",
+                "metadata": {},
+                "source": "display(image)",
+                "execution_count": None,
+                "outputs": [
+                    {
+                        "output_type": "display_data",
+                        "metadata": {},
+                        "data": {"image/png": "not-base64"},
+                    }
+                ],
+            }
+        ],
+    }
+    (tmp_path / "bad-image.ipynb").write_text(json.dumps(notebook), encoding="utf-8")
+    with pytest.raises(NotebookInspectionError, match="not valid base64"):
+        inspect_notebooks(tmp_path)
+
+
+def test_notebook_inspection_enforces_file_size_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import superii_runtime.inspectors.notebooks as notebook_inspector
+
+    monkeypatch.setattr(notebook_inspector, "MAX_NOTEBOOK_BYTES", 8)
+    (tmp_path / "large.ipynb").write_text("{}" * 5, encoding="utf-8")
+    with pytest.raises(NotebookInspectionError, match="25 MiB notebook limit"):
+        inspect_notebooks(tmp_path)

@@ -59,6 +59,7 @@
     "/models",
     "/datasets",
     "/spaces",
+    "/notebooks",
     "/pricing",
     "/organizations",
     "/organizations/new",

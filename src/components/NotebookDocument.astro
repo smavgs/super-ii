@@ -1,0 +1,115 @@
+---
+import {
+  type NotebookDocument as NotebookDocumentType,
+  type NotebookImageOutput,
+} from '@/lib/notebooks';
+import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
+
+interface Props {
+  notebook: NotebookDocumentType;
+  backHref: string;
+  backLabel: string;
+  downloadUrl: string;
+  sha256?: string;
+  githubUrl?: string;
+  colabUrl?: string;
+  official?: boolean;
+}
+
+const {
+  notebook,
+  backHref,
+  backLabel,
+  downloadUrl,
+  sha256,
+  githubUrl,
+  colabUrl,
+  official = false,
+} = Astro.props;
+
+function imageSource(output: NotebookImageOutput): string {
+  return `data:${output.mime_type};base64,${output.data}`;
+}
+---
+
+<article class="notebook-reader">
+  <nav class="notebook-reader__back" aria-label="Notebook breadcrumb">
+    <a href={backHref}><i class="ph ph-arrow-left" aria-hidden="true"></i>{backLabel}</a>
+  </nav>
+
+  <header class="notebook-reader__header">
+    <div>
+      <p class="eyebrow">{official ? 'Official Super ii notebook' : 'Reviewed repository notebook'}</p>
+      <h1>{notebook.path.split('/').at(-1)?.replace(/\.ipynb$/i, '')}</h1>
+      <p><code>{notebook.path}</code></p>
+    </div>
+    <div class="button-row notebook-reader__actions">
+      {colabUrl && (
+        <a class="button button--yellow" href={colabUrl} target="_blank" rel="external noreferrer">
+          Open in Colab <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+        </a>
+      )}
+      {githubUrl && <a class="button button--secondary" href={githubUrl} target="_blank" rel="external noreferrer">View source</a>}
+      <a class="button button--secondary" href={downloadUrl}>Download .ipynb</a>
+    </div>
+  </header>
+
+  <section class="notebook-trust" aria-label="Notebook safety and identity">
+    <div><i class="ph ph-shield-check" aria-hidden="true"></i><span><strong>Static reader</strong>No cells executed</span></div>
+    <div><i class="ph ph-code" aria-hidden="true"></i><span><strong>{notebook.cell_count} cells</strong>{notebook.kernel.display_name ?? notebook.kernel.language ?? 'Kernel not declared'}</span></div>
+    <div><i class="ph ph-file-code" aria-hidden="true"></i><span><strong>nbformat {notebook.nbformat}.{notebook.nbformat_minor}</strong>{notebook.size_bytes.toLocaleString()} bytes</span></div>
+    <div><i class="ph ph-lock-key" aria-hidden="true"></i><span><strong>{official ? 'Checked-in source' : 'Reviewed revision'}</strong>{sha256 ? `SHA-256 ${sha256.slice(0, 12)}…` : 'Immutable source file'}</span></div>
+  </section>
+
+  {colabUrl && (
+    <aside class="notebook-external-warning">
+      <i class="ph ph-warning" aria-hidden="true"></i>
+      <p><strong>External execution boundary.</strong> Colab is a separate service. Review every cell before running it and never paste secrets into a notebook you do not fully trust.</p>
+    </aside>
+  )}
+
+  <div class="notebook-cells">
+    {notebook.cells.map((cell) => (
+      <section class:list={['notebook-cell', `notebook-cell--${cell.type}`]} id={`cell-${cell.index + 1}`}>
+        <a class="notebook-cell__anchor" href={`#cell-${cell.index + 1}`} aria-label={`Link to cell ${cell.index + 1}`}>
+          {cell.type === 'code' ? `[${cell.execution_count ?? ' '}]` : cell.type === 'markdown' ? 'M' : 'R'}
+        </a>
+        <div class="notebook-cell__body">
+          {cell.type === 'markdown' ? (
+            <div class="notebook-markdown" set:html={renderNotebookMarkdown(cell.source)} />
+          ) : (
+            <pre class="notebook-source"><code>{cell.source}</code></pre>
+          )}
+          {cell.type === 'code' && cell.outputs && cell.outputs.length > 0 && (
+            <div class="notebook-outputs" aria-label={`Outputs for cell ${cell.index + 1}`}>
+              {cell.outputs.map((output) => (
+                output.type === 'stream' ? (
+                  <pre class:list={['notebook-output', output.name === 'stderr' && 'notebook-output--error']}><code>{output.text}</code></pre>
+                ) : output.type === 'error' ? (
+                  <pre class="notebook-output notebook-output--error"><code>{[`${output.ename}: ${output.evalue}`, ...output.traceback].join('\n')}</code></pre>
+                ) : (
+                  output.data.map((item) => (
+                    item.mime_type === 'text/plain' ? (
+                      <pre class="notebook-output"><code>{item.text}</code></pre>
+                    ) : item.mime_type === 'application/json' ? (
+                      <pre class="notebook-output"><code>{JSON.stringify(item.value, null, 2)}</code></pre>
+                    ) : (
+                      <figure class="notebook-output notebook-output--image">
+                        <img src={imageSource(item)} alt={`Static output from cell ${cell.index + 1}`} loading="lazy" />
+                        <figcaption>{item.mime_type} · {item.size_bytes.toLocaleString()} bytes</figcaption>
+                      </figure>
+                    )
+                  ))
+                )
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    ))}
+  </div>
+
+  {notebook.omitted_outputs > 0 && (
+    <p class="notebook-omitted"><i class="ph ph-eye-slash" aria-hidden="true"></i>{notebook.omitted_outputs} active or unsupported output {notebook.omitted_outputs === 1 ? 'was' : 'were'} deliberately omitted.</p>
+  )}
+</article>

@@ -24,6 +24,7 @@ export const prerender = true;
         <li>Repository files remain quarantined until local ClamAV and Gitleaks scans, format policy, immutable hashing, and applicable offline inspection pass.</li>
         <li>Postgres refuses publication unless every file is available and clean, required scan evidence passed, and a human review approved the revision.</li>
         <li>Published browser-model and download routes resolve only files from the approved immutable revision.</li>
+        <li>Notebook files receive strict nbformat and size validation; the public reader never starts a kernel and drops HTML, JavaScript, SVG, widgets, attachments, and custom output types.</li>
         <li>The public MCP endpoint is read-only, rate limited, Origin-checked for browser clients, and restricted to reviewed public data.</li>
         <li>GitHub Actions trusted publishing validates OIDC signatures and exact claims before issuing a hashed, repository-bound, scope-bound token for no more than 10 minutes.</li>
         <li>Agent traces reject sensitive metadata keys, retain payload hashes instead of raw inputs and outputs, and stay private unless a repository manager explicitly makes a record public.</li>

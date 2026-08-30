@@ -1,0 +1,67 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import NotebookDocument from '@/components/NotebookDocument.astro';
+import type { RepositoryKind } from '@/lib/catalog';
+import { repositoryNotebooks } from '@/lib/notebooks';
+import { getPublicRepository, type RepositoryBundle } from '@/lib/repository';
+
+const kinds: Record<string, RepositoryKind> = {
+  models: 'model',
+  datasets: 'dataset',
+  spaces: 'space',
+};
+const routeKind = Astro.params.kind ?? '';
+const kind = kinds[routeKind];
+const owner = Astro.params.owner ?? '';
+const slug = Astro.params.slug ?? '';
+let notebookPath: string | null = null;
+try {
+  notebookPath = decodeURIComponent(Astro.params.path ?? '');
+} catch {
+  notebookPath = null;
+}
+if (
+  !notebookPath
+  || notebookPath.startsWith('/')
+  || notebookPath.includes('\\')
+  || notebookPath.split('/').some((part) => !part || part === '.' || part === '..')
+  || !notebookPath.toLowerCase().endsWith('.ipynb')
+) notebookPath = null;
+
+let repository: RepositoryBundle | null = null;
+let serviceError = false;
+if (kind && owner && slug && notebookPath) {
+  const result = await getPublicRepository(Astro.locals, kind, owner, slug);
+  repository = result.repository;
+  serviceError = result.state === 'error';
+}
+const notebook = repository && notebookPath
+  ? repositoryNotebooks(repository).find((item) => item.path === notebookPath) ?? null
+  : null;
+const file = repository && notebookPath
+  ? repository.files.find((item) => item.path === notebookPath) ?? null
+  : null;
+if (!notebook || !file) Astro.response.status = serviceError ? 503 : 404;
+const repositoryHref = repository ? `/${routeKind}/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}` : '/';
+---
+
+<BaseLayout
+  title={notebook ? `${notebook.path.split('/').at(-1)} · ${repository?.title}` : 'Notebook unavailable'}
+  description={notebook ? `Safe static notebook reader for ${repository?.owner_handle}/${repository?.slug}.` : 'This reviewed notebook is unavailable.'}
+  noindex={!notebook || !file}
+  className="notebook-page"
+>
+  {notebook && file && repository ? (
+    <div class="shell notebook-page__shell">
+      <NotebookDocument
+        notebook={notebook}
+        backHref={repositoryHref}
+        backLabel={`${repository.owner_handle}/${repository.slug}`}
+        downloadUrl={`/api/repositories/${repository.id}/files/${file.id}`}
+        sha256={file.sha256}
+      />
+    </div>
+  ) : (
+    <section class="section shell"><h1>Notebook unavailable</h1><p>{serviceError ? 'The repository service is temporarily unavailable.' : 'This notebook is not part of a reviewed public revision.'}</p></section>
+  )}
+</BaseLayout>

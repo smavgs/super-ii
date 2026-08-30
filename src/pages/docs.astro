@@ -39,6 +39,10 @@ export const prerender = true;
       <p>The Astro website on Cloudflare is the public control plane. Postgres stores version history, review evidence, full-text and trigram search, community state, collections, and lineage. A separately operated Linux runtime is the data plane for quarantine, content-addressed files, ClamAV, Gitleaks, offline format inspection, and optional local inference.</p>
       <p>No commercial inference API sits behind the tools. Browser inference uses local repository files and local Transformers.js WASM. Server inference is designed for operator-owned llama.cpp and optional Diffusers hardware. vLLM and semantic-search TEI remain explicitly deferred until dedicated capacity and measured search demand justify them.</p>
 
+      <h2 id="notebooks">Notebooks</h2>
+      <p>The <a href="/notebooks">official notebook library</a> contains small, versioned tutorials that run with no paid Super ii service. Every checked-in notebook is valid Jupyter <code>nbformat</code> 4, has a recorded SHA-256 checksum, and is validated in CI.</p>
+      <p>Super ii's reader is static: it never starts a kernel, imports repository code, installs packages, or executes a cell. Markdown renders with raw HTML disabled; code is escaped; and only text, JSON, PNG, JPEG, and WebP outputs can appear. HTML, JavaScript, SVG, widgets, attachments, and custom MIME output are omitted. “Open in Colab” is an explicit handoff to an external service and appears only for official notebooks with stable public source paths.</p>
+
       <h2 id="agent-native">Agent-native access</h2>
       <p>Every reviewed repository is available as human HTML, negotiated Markdown or JSON, and explicit <code>README.md</code>, <code>agents.md</code>, <code>manifest.json</code>, API, and MCP descriptors beneath its canonical URL. The global <a href="/agents.md"><code>/agents.md</code></a> contract tells automated clients which content is data rather than instructions.</p>
       <p>The public <a href="/mcp"><code>/mcp</code></a> endpoint uses stateless Streamable HTTP. Its focused tools can search public models, datasets, apps, and papers; read reviewed cards, files, checksums, lineage, compatibility, security state, and public trace metadata; and resolve artifact URLs. It cannot publish, pay, access private data, or run server compute.</p>
@@ -64,7 +68,7 @@ export const prerender = true;
             <tr><td>6b · llama.cpp GGUF run, chat, settings, and token statistics</td><td>Implemented</td><td>Operator runtime hardware required</td></tr>
             <tr><td>7 · vLLM high-throughput serving</td><td>Deferred as requested</td><td>Only after dedicated GPU capacity</td></tr>
             <tr><td>8 · Offline Diffusers generation</td><td>Implemented</td><td>Optional runtime GPU/CPU dependencies required</td></tr>
-            <tr><td>9 · Gradio repository, isolated container, app iframe</td><td>Implemented</td><td>Rootless Docker runtime required</td></tr>
+            <tr><td>9 · Gradio repository, isolated container, app iframe</td><td>Implemented</td><td>Current containers are non-root, capability-dropped, read-only, and no-egress; rootless Docker remains the dedicated-host target</td></tr>
             <tr><td>10 · Postgres full-text/trigram search and filters</td><td>Implemented</td><td>Active control-plane search</td></tr>
             <tr><td>11 · Text Embeddings Inference semantic search</td><td>Deferred as requested</td><td>Only after measured Postgres search limits</td></tr>
             <tr><td>12 · ClamAV quarantine gate</td><td>Implemented, fail closed</td><td>Fresh scanner service required</td></tr>
@@ -77,6 +81,7 @@ export const prerender = true;
             <tr><td>19 · Hardware compatibility discovery and filters</td><td>Implemented</td><td>Populated by new model analysis</td></tr>
             <tr><td>20 · Service accounts, resource groups, scoped tokens, and agent traces</td><td>Foundation implemented</td><td>Private by default; administration expands later</td></tr>
             <tr><td>21 · GitHub Actions OIDC trusted publishing</td><td>Implemented</td><td>Requires an owner-configured exact trust binding</td></tr>
+            <tr><td>22 · Static Jupyter notebook validation, reader, and official Colab tutorials</td><td>Implemented</td><td>No notebook code executes inside Super ii</td></tr>
           </tbody>
         </table>
       </div>
@@ -105,6 +110,7 @@ export const prerender = true;
         <a href="#account">Create an account</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>
+        <a href="#notebooks">Notebooks</a>
         <a href="#agent-native">Agent-native access</a>
         <a href="#hardware">Hardware compatibility</a>
         <a href="#trusted-publishing">Trusted publishing</a>

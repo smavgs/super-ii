@@ -21,12 +21,14 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Models](https://superii.site/models): Public model catalog and local browser inference tools
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
+- [Notebooks](https://superii.site/notebooks): Official reproducible tutorials in a no-execution static reader
 - [Collections](https://superii.site/collections): Curated public repository lists
 - [Organizations](https://superii.site/organizations): Team collaboration overview
 
 ## Build and verify
 
 - [Documentation](https://superii.site/docs): Architecture, formats, security gates, and capability status
+- [Notebook security](https://superii.site/docs#notebooks): Static rendering boundary and external Colab handoff
 - [Security](https://superii.site/security): Publication controls and responsible disclosure
 - [Status](https://superii.site/status): Request-time control-plane and runtime readiness
 - [System state](https://superii.site/system-state): Evidence-based product status ladder and capability register
