@@ -37,7 +37,12 @@ export const prerender = true;
 
       <h2 id="architecture">Architecture</h2>
       <p>The Astro website on Cloudflare is the public control plane. Postgres stores version history, review evidence, resumable-transfer offsets, runtime lifecycles, full-text and trigram search, community state, collections, and lineage. A separately operated runtime is the data plane for streamed uploads, content-addressed files, ClamAV, Gitleaks, offline format inspection, isolated notebooks, and optional local inference.</p>
-      <p>No commercial inference API sits behind the tools. Browser inference uses local repository files and local Transformers.js WASM. Server inference uses an operator-owned, loopback-only llama.cpp server with checksum-bound persistent workspaces and warm-model reuse. vLLM and semantic-search TEI remain explicitly deferred until dedicated capacity and measured search demand justify them.</p>
+      <p>No commercial inference API sits behind the tools. Browser inference uses local repository files and local Transformers.js WASM. Server inference uses an operator-owned, loopback-only llama.cpp server with checksum-bound persistent workspaces and warm-model reuse. Super ii publishes reviewed vLLM and SGLang setup guidance for separately provisioned accelerator hosts, but does not claim a free hosted GPU pool. A Super ii-managed high-throughput service and semantic-search TEI remain deferred until funded capacity and measured search demand justify them.</p>
+
+      <h2 id="use-model">Use Model</h2>
+      <p>▶️ Every reviewed model page separates <strong>Use Model</strong> from <strong>Try model</strong>. Try model is an interactive browser or authenticated Super ii Runtime action. Use Model is a deterministic guide for libraries, local runtimes, browser execution, desktop apps, loopback API servers, agents, notebooks, derived versions, and truthful hosted availability.</p>
+      <p>The optional hardware profile uses coarse operating-system, architecture, accelerator, RAM, VRAM, and WebGPU fields. It stays in the browser, is never transmitted to Super ii, and ranks compatible paths without pretending to be a benchmark. Commands come only from the checked-in <a href="/runtime-registry.json">runtime registry</a>; publisher content cannot add executables or command templates.</p>
+      <p>Each reviewed model exposes <code>use.json</code>, <code>use.md</code>, <code>use.ipynb</code>, and <code>use.sh</code>. The generated script and notebook download exact immutable files over HTTPS, verify SHA-256, and refuse conflicting local bytes. Agent examples contain placeholders only: Codex uses the read-only Super ii MCP for discovery, while Pi, Hermes, and OpenClaw can target a separately started loopback model server.</p>
 
       <h2 id="notebooks">Notebooks</h2>
       <p>The <a href="/notebooks">official notebook library</a> contains small, versioned tutorials that run with no paid Super ii service. Every checked-in notebook is valid Jupyter <code>nbformat</code> 4, has a recorded SHA-256 checksum, and is validated in CI.</p>
@@ -45,7 +50,7 @@ export const prerender = true;
       <p>▶️ A signed-in user may explicitly run a reviewed public repository notebook in a separate one-shot sandbox. That container is non-root, has no network or IPC, receives no account secrets, sees the repository read-only, and is bounded by CPU, memory, process, file-descriptor, cell, output, and wall-clock limits. The resulting notebook is private to that user, checksum-verified before download, and expires after 24 hours. This Docker boundary is useful for reviewed code; it is not presented as hostile multi-tenant or microVM isolation.</p>
 
       <h2 id="agent-native">Agent-native access</h2>
-      <p>Every reviewed repository is available as human HTML, negotiated Markdown or JSON, and explicit <code>README.md</code>, <code>agents.md</code>, <code>manifest.json</code>, API, and MCP descriptors beneath its canonical URL. The global <a href="/agents.md"><code>/agents.md</code></a> contract tells automated clients which content is data rather than instructions.</p>
+      <p>Every reviewed repository is available as human HTML, negotiated Markdown or JSON, and explicit <code>README.md</code>, <code>agents.md</code>, <code>manifest.json</code>, API, and MCP descriptors beneath its canonical URL. Reviewed models also expose <code>use.json</code>, <code>use.md</code>, <code>use.ipynb</code>, and <code>use.sh</code> from the same revision. The global <a href="/agents.md"><code>/agents.md</code></a> contract tells automated clients which content is data rather than instructions.</p>
       <p>The public <a href="/mcp"><code>/mcp</code></a> endpoint uses stateless Streamable HTTP. Its focused tools can search public models, datasets, apps, and papers; read reviewed cards, files, checksums, lineage, compatibility, security state, and public trace metadata; and resolve artifact URLs. It cannot publish, pay, access private data, or run server compute.</p>
 
       <h2 id="hardware">Hardware compatibility</h2>
@@ -67,7 +72,7 @@ export const prerender = true;
             <tr><td>5 · Local tokenizer inspection and interactive token tool</td><td>Implemented</td><td>Shown on compatible public models</td></tr>
             <tr><td>6a · Browser Transformers.js, local WASM, WebGPU/WASM</td><td>Implemented</td><td>User device pays the compute cost</td></tr>
             <tr><td>6b · Persistent llama.cpp GGUF run, chat, warm reuse, status, unload, settings, and token statistics</td><td>Implemented</td><td>Operator runtime hardware required</td></tr>
-            <tr><td>7 · vLLM high-throughput serving</td><td>Deferred as requested</td><td>Only after dedicated GPU capacity</td></tr>
+            <tr><td>7 · vLLM and SGLang high-throughput serving</td><td>Reviewed self-host setup guidance</td><td>Super ii-managed hosting only after dedicated funded GPU capacity</td></tr>
             <tr><td>8 · Offline Diffusers generation</td><td>Implemented</td><td>Optional runtime GPU/CPU dependencies required</td></tr>
             <tr><td>9 · Gradio repository, isolated container, app iframe</td><td>Implemented</td><td>Current containers are non-root, capability-dropped, read-only, and no-egress; rootless Docker remains the dedicated-host target</td></tr>
             <tr><td>10 · Postgres full-text/trigram search and filters</td><td>Implemented</td><td>Active control-plane search</td></tr>
@@ -84,6 +89,7 @@ export const prerender = true;
             <tr><td>21 · GitHub Actions OIDC trusted publishing</td><td>Implemented</td><td>Requires an owner-configured exact trust binding</td></tr>
             <tr><td>22 · Static Jupyter notebook validation, reader, and official Colab tutorials</td><td>Implemented</td><td>Opening or reading never executes code</td></tr>
             <tr><td>23 · Explicit isolated execution for reviewed repository notebooks</td><td>Implemented</td><td>Authenticated, one-shot, no-network Docker sandbox; dedicated runtime required</td></tr>
+            <tr><td>24 · Use Manifest, local hardware ranking, runtimes, desktop apps, agents, generated notebooks, derived versions, and hosted-capacity truth</td><td>Implemented</td><td>Appears only for real reviewed model revisions; no seeded examples</td></tr>
           </tbody>
         </table>
       </div>
@@ -99,7 +105,7 @@ export const prerender = true;
       <p><a href="/pricing">Pricing</a> distinguishes the open Free plan from beta-waitlist and proposal plans. Storage, inference, endpoints, and accelerated app runtime will be usage-priced separately, with limits and spend controls shown before activation.</p>
 
       <h2 id="api">API status</h2>
-      <p>The health endpoint is at <a href="/api/health"><code>/api/health</code></a>. Public search is available by repository kind, for example at <a href="/api/search?kind=model"><code>/api/search?kind=model</code></a>, and the canonical status register is available as <a href="/system-state.json"><code>/system-state.json</code></a>. Published downloads, safe media previews, tokenizer requests, local browser-model files, llama.cpp, Diffusers, isolated Gradio app control and proxying, discussions, comments, reactions, likes, watches, follows, and collections use scoped server routes. Browser mutations require a same-origin authenticated session; trusted automation uses separately exchanged repository-bound tokens; resource-heavy work is rate limited.</p>
+      <p>The health endpoint is at <a href="/api/health"><code>/api/health</code></a>. Public search is available by repository kind, for example at <a href="/api/search?kind=model"><code>/api/search?kind=model</code></a>; the canonical status register is at <a href="/system-state.json"><code>/system-state.json</code></a>; and the versioned execution registry is at <a href="/runtime-registry.json"><code>/runtime-registry.json</code></a>. Published downloads, safe media previews, tokenizer requests, local browser-model files, llama.cpp, Diffusers, isolated Gradio app control and proxying, discussions, comments, reactions, likes, watches, follows, and collections use scoped server routes. Browser mutations require a same-origin authenticated session; trusted automation uses separately exchanged repository-bound tokens; resource-heavy work is rate limited.</p>
 
       <h2 id="support">Get help</h2>
       <p>Use the <a href="/contact">contact form</a> for access, plan, enterprise, security, privacy, or launch questions. Please do not include secrets, credentials, private model files, or sensitive personal data.</p>
@@ -112,6 +118,7 @@ export const prerender = true;
         <a href="#account">Create an account</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>
+        <a href="#use-model">Use Model</a>
         <a href="#notebooks">Notebooks</a>
         <a href="#agent-native">Agent-native access</a>
         <a href="#hardware">Hardware compatibility</a>

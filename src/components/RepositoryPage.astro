@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
+import UseModel from '@/components/UseModel.astro';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
@@ -73,6 +74,14 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
           {repository.commit_sha && <span title={repository.commit_sha}>commit {repository.commit_sha.slice(0, 10)}</span>}
         </div>
         <div class="repository-actions" data-repository-actions data-repository-id={repository.id}>
+          {kind === 'model' && (
+            <>
+              <button class="button button--yellow button--small" type="button" data-use-model-open aria-expanded="false" aria-controls="use-model">
+                <i class="ph ph-play-circle" aria-hidden="true"></i><span>Use Model</span>
+              </button>
+              <a class="button button--secondary button--small" href="#model-tools">Try model</a>
+            </>
+          )}
           <button class="button button--secondary button--small" type="button" data-like-button data-active="false">
             <i class="ph ph-heart" aria-hidden="true"></i><span>Like</span>
           </button>
@@ -97,9 +106,13 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/README.md`}>README.md</a>
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/agents.md`}>agents.md</a>
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/manifest.json`}>manifest.json</a>
+          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.json`}>use.json</a>}
+          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.md`}>use.md</a>}
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/mcp`}>MCP</a>
         </nav>
       </header>
+
+      {kind === 'model' && <UseModel repository={repository} origin={Astro.url.origin} />}
 
       <nav class="repository-tabs" aria-label="Repository sections">
         <a href="#card">{cardTitle}</a>
@@ -217,7 +230,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
       </section>
 
       {kind === 'model' && (
-        <section class="repository-section model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
+        <section class="repository-section model-tools" id="model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
           <div class="repository-section__heading"><div><p class="eyebrow">Local tools</p><h2>Try this model</h2></div></div>
           <div class="tool-grid">
             <form class="tool-card" data-tokenizer-form>

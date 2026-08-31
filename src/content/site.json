@@ -80,6 +80,7 @@
     "/system-state",
     "/system-state.json",
     "/system-state.md",
+    "/runtime-registry.json",
     "/agents.md",
     "/mcp",
     "/sign-in",

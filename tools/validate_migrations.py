@@ -138,6 +138,11 @@ def main() -> int:
         errors.append("persistent inference and provenance-bound benchmarks require canonical records")
     if "notebook_execution_sessions" not in lower or "transition_notebook_execution" not in lower:
         errors.append("isolated notebook execution requires a bounded transactional lifecycle")
+    if "is_model_derivation" not in lower:
+        errors.append("Use Model lineage requires a fail-closed PL/pgSQL derivation classifier")
+    for relationship in ("adapter-for", "merged-from", "distilled-from"):
+        if f"'{relationship}'" not in lower:
+            errors.append(f"Use Model lineage type is missing: {relationship}")
     if "network_disabled boolean not null default true check (network_disabled)" not in lower:
         errors.append("notebook execution must enforce a no-network database contract")
     for scanner in ("clamav", "gitleaks", "format_policy"):
@@ -151,7 +156,7 @@ def main() -> int:
 
     print(
         f"OK: {len(files)} migration file(s), {len(created)} tables, immutable files, "
-        "search, community, lineage, agent-native access, PL/pgSQL publish gates, RLS, and empty catalog verified"
+        "search, community, lineage, Use Model derivations, agent-native access, PL/pgSQL publish gates, RLS, and empty catalog verified"
     )
     return 0
 

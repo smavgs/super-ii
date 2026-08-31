@@ -116,10 +116,17 @@ def main() -> int:
         ROOT / "src" / "pages" / "system-state.md.ts",
         ROOT / "public" / "schemas" / "repository-manifest-v1.json",
         ROOT / "public" / "schemas" / "repository-api-v1.json",
+        ROOT / "public" / "schemas" / "use-manifest-v1.json",
+        ROOT / "public" / "schemas" / "runtime-registry-v1.json",
+        ROOT / "src" / "content" / "runtime-registry.json",
+        ROOT / "src" / "lib" / "use-model.ts",
+        ROOT / "src" / "components" / "UseModel.astro",
+        ROOT / "src" / "pages" / "runtime-registry.json.ts",
         ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "compatibility.py",
         ROOT / "database" / "migrations" / "0007_agent_native_foundation.sql",
         ROOT / "database" / "migrations" / "0008_notebook_foundation.sql",
         ROOT / "database" / "migrations" / "0009_resumable_runtime.sql",
+        ROOT / "database" / "migrations" / "0010_use_model_foundation.sql",
         ROOT / "docs" / "architecture" / "notebook-security.md",
         ROOT / "docs" / "architecture" / "cas-integrity.md",
         ROOT / "docs" / "architecture" / "performance-baseline.md",
@@ -235,6 +242,24 @@ def main() -> int:
         ):
             if marker not in llama_server:
                 errors.append(f"persistent llama.cpp contract is missing {marker}")
+        use_model_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "src" / "lib" / "use-model.ts",
+                ROOT / "src" / "components" / "UseModel.astro",
+                ROOT / "src" / "lib" / "agent-resources.ts",
+            )
+        )
+        for marker in (
+            "superii-local-deterministic-v1",
+            "transmittedToSuperii: false",
+            "local_files_only=True",
+            "useDownloadScript",
+            "useNotebook",
+            "No free hosted GPU pool",
+        ):
+            if marker not in use_model_contract:
+                errors.append(f"Use Model contract is missing {marker}")
 
     wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
     if not wasm_files:
@@ -265,7 +290,7 @@ def main() -> int:
             fail(error)
         return 1
 
-    print(f"OK: site, agent-native machine contract, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
+    print(f"OK: site, agent-native and Use Model machine contracts, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
     return 0
 
 

@@ -28,13 +28,14 @@ Infrastructure is split deliberately:
 
 The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
-The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, and lineage are implemented. vLLM and Text Embeddings Inference remain deliberately deferred until dedicated GPU capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
+The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, lineage, and deterministic Use Model system are implemented. vLLM and SGLang have reviewed self-host instructions, while a Super ii-managed high-throughput GPU service and Text Embeddings Inference remain deliberately deferred until funded capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
 
 ## Agent-native surface
 
 - [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
 - `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
 - Every reviewed public repository has one source of truth and stable HTML, Markdown, JSON, README, `agents.md`, manifest, API-contract, and MCP representations.
+- Every reviewed model additionally exposes `use.json`, `use.md`, `use.ipynb`, and `use.sh` from a versioned runtime registry; hardware ranking stays local to the browser and generated local APIs stay on loopback.
 - Offline model inspection records architecture, parameter count, quantization, tensor format, size, conservative RAM/VRAM guidance, and CPU/CUDA/ROCm/Metal/MLX/llama.cpp/browser compatibility. Declared, derived, and verified facts remain visibly distinct.
 - GitHub Actions trusted publishing exchanges a matching short-lived OIDC identity for a repository-bound, scope-bound, revocable token. Permanent upload credentials are not required.
 - Agent traces are private by default, size-bounded, metadata-filtered, and expose only hashes unless a profile manager explicitly makes a record public.
@@ -54,9 +55,11 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Validation
 
-`npm run validate` runs three independent checks:
+`npm run validate` runs independent Python, Shell, Go, and JavaScript checks:
 
 - Python validates the product contract, honest empty catalogs, plan states, routes, forbidden legacy claims, and exact SHA-256 of the user-supplied logo.
+- Python also validates the Use Model registry, allowlisted command templates, expiring review evidence, local-only hardware contract, and empty hosted-provider list.
+- Shell reports installed runtime versions without installing, upgrading, downloading, or starting a service; absent software remains unverified.
 - Go independently verifies the route/plan/catalog contract and exact logo hash.
 - JavaScript checks every declared route and internal link against the Astro source tree.
 

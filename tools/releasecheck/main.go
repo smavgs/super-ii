@@ -74,7 +74,7 @@ func main() {
 			errors = append(errors, "route must begin with /: "+route)
 		}
 	}
-	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/notebooks", "/system-state", "/system-state.json", "/system-state.md"} {
+	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/notebooks", "/runtime-registry.json", "/system-state", "/system-state.json", "/system-state.md"} {
 		if !routes[requiredRoute] {
 			errors = append(errors, "missing agent-native route: "+requiredRoute)
 		}
@@ -86,9 +86,16 @@ func main() {
 		filepath.Join("src", "pages", "mcp.ts"),
 		filepath.Join("public", "schemas", "repository-manifest-v1.json"),
 		filepath.Join("public", "schemas", "repository-api-v1.json"),
+		filepath.Join("public", "schemas", "use-manifest-v1.json"),
+		filepath.Join("public", "schemas", "runtime-registry-v1.json"),
+		filepath.Join("src", "content", "runtime-registry.json"),
+		filepath.Join("src", "lib", "use-model.ts"),
+		filepath.Join("src", "components", "UseModel.astro"),
+		filepath.Join("src", "pages", "runtime-registry.json.ts"),
 		filepath.Join("database", "migrations", "0007_agent_native_foundation.sql"),
 		filepath.Join("database", "migrations", "0008_notebook_foundation.sql"),
 		filepath.Join("database", "migrations", "0009_resumable_runtime.sql"),
+		filepath.Join("database", "migrations", "0010_use_model_foundation.sql"),
 		filepath.Join("docs", "architecture", "notebook-security.md"),
 		filepath.Join("docs", "architecture", "resumable-transfers.md"),
 		filepath.Join("docs", "architecture", "persistent-inference.md"),
@@ -132,6 +139,12 @@ func main() {
 		},
 		filepath.Join("src", "pages", "repositories", "[repositoryId]", "edit.astro"): {
 			"TransferResumeError", "sessionStorage", "upload-checksum",
+		},
+		filepath.Join("src", "lib", "use-model.ts"): {
+			"superii-local-deterministic-v1", "transmittedToSuperii: false", "local_files_only=True", "useDownloadScript", "useNotebook",
+		},
+		filepath.Join("src", "components", "UseModel.astro"): {
+			"Hardware profile", "data-use-model-open", "hostedInference.statement",
 		},
 	} {
 		content, readErr := os.ReadFile(filepath.Join(root, relative))

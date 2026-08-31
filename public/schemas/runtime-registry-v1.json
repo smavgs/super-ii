@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/runtime-registry-v1.json",
+  "title": "Super ii deterministic runtime registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "schemaVersion",
+    "publishedAt",
+    "reviewCadenceDays",
+    "allowedTemplateTokens",
+    "integrations",
+    "agents",
+    "notebooks",
+    "hostedProviders"
+  ],
+  "properties": {
+    "schema": { "const": "https://superii.site/schemas/runtime-registry-v1.json" },
+    "schemaVersion": { "const": 1 },
+    "publishedAt": { "type": "string", "format": "date" },
+    "reviewCadenceDays": { "type": "integer", "minimum": 1, "maximum": 365 },
+    "allowedTemplateTokens": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["model_dir", "model_id", "primary_file", "docker_model"] }
+    },
+    "integrations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/integration" }
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/agent" }
+    },
+    "notebooks": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/notebook" }
+    },
+    "hostedProviders": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "status": {
+      "enum": ["verified", "registry-supported", "community", "failing", "unsupported"]
+    },
+    "format": {
+      "enum": ["gguf", "safetensors", "pytorch", "onnx", "mlx", "diffusers", "dduf"]
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "baseUrl", "chatPath"],
+      "properties": {
+        "protocol": { "const": "openai-compatible" },
+        "baseUrl": { "type": "string", "format": "uri", "pattern": "^http://(127\\.0\\.0\\.1|localhost)(:[0-9]+)?/" },
+        "chatPath": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "label", "executable", "args"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "kind": { "enum": ["install", "setup", "run", "serve"] },
+        "label": { "type": "string", "minLength": 1 },
+        "formats": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/format" }
+        },
+        "executable": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "args": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "category", "status", "summary", "documentation",
+        "verifiedAt", "expiresAt", "verification", "platforms", "formats",
+        "accelerators", "capabilities", "priority", "commands", "warnings"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["library", "local-runtime", "browser", "desktop-app", "api-server", "hosted"] },
+        "status": { "$ref": "#/$defs/status" },
+        "summary": { "type": "string", "minLength": 1 },
+        "documentation": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "verifiedAt": { "type": "string", "format": "date" },
+        "expiresAt": { "type": "string", "format": "date" },
+        "verification": { "type": "string", "minLength": 1 },
+        "platforms": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "formats": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/format" } },
+        "accelerators": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "capabilities": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "priority": { "type": "integer", "minimum": 0 },
+        "commands": { "type": "array", "items": { "$ref": "#/$defs/command" } },
+        "api": { "$ref": "#/$defs/api" },
+        "warnings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "status", "documentation", "mode", "summary", "verifiedAt"],
+      "properties": {
+        "id": { "enum": ["codex", "pi", "hermes", "openclaw"] },
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "documentation": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "mode": { "enum": ["mcp-discovery", "openai-compatible"] },
+        "summary": { "type": "string", "minLength": 1 },
+        "verifiedAt": { "type": "string", "format": "date" }
+      }
+    },
+    "notebook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": { "enum": ["jupyter", "colab", "kaggle"] },
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["verified", "external-manual"] },
+        "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "urlTemplate": { "const": "{{use_notebook_url}}" },
+        "warning": { "type": "string", "minLength": 1 }
+      },
+      "oneOf": [
+        { "required": ["urlTemplate"], "not": { "required": ["url"] } },
+        { "required": ["url", "warning"], "not": { "required": ["urlTemplate"] } }
+      ]
+    }
+  }
+}

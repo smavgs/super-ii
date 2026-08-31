@@ -1,0 +1,455 @@
+{
+  "schemaVersion": 1,
+  "publishedAt": "2026-08-31",
+  "reviewCadenceDays": 90,
+  "allowedTemplateTokens": [
+    "model_dir",
+    "model_id",
+    "primary_file",
+    "docker_model"
+  ],
+  "integrations": [
+    {
+      "id": "llama-cpp",
+      "name": "llama.cpp",
+      "category": "local-runtime",
+      "status": "registry-supported",
+      "summary": "Fast local GGUF inference with CPU and accelerator backends.",
+      "documentation": "https://github.com/ggml-org/llama.cpp",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official command contract reviewed; Super ii's separate persistent llama.cpp path is integration-tested.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-arm64", "linux-x64", "windows-x64"],
+      "formats": ["gguf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["quick-start", "local-runtime", "api"],
+      "priority": 20,
+      "commands": [
+        {
+          "id": "run",
+          "kind": "run",
+          "label": "Chat locally",
+          "executable": "llama-cli",
+          "args": ["-m", "{{primary_file}}"]
+        },
+        {
+          "id": "serve",
+          "kind": "serve",
+          "label": "Serve on loopback",
+          "executable": "llama-server",
+          "args": ["-m", "{{primary_file}}", "--host", "127.0.0.1", "--port", "8080"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:8080/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Model chat-template and architecture support still depend on the exact GGUF metadata."]
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "category": "local-runtime",
+      "status": "registry-supported",
+      "summary": "Import a reviewed GGUF into a named local Ollama model.",
+      "documentation": "https://docs.ollama.com/import",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official GGUF import and run commands reviewed; generated Modelfile is deterministic.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-arm64", "linux-x64", "windows-x64"],
+      "formats": ["gguf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["quick-start", "local-runtime", "api", "agent-endpoint"],
+      "priority": 30,
+      "commands": [
+        {
+          "id": "create",
+          "kind": "setup",
+          "label": "Create from generated Modelfile",
+          "executable": "ollama",
+          "args": ["create", "{{model_id}}", "-f", "./Modelfile"]
+        },
+        {
+          "id": "run",
+          "kind": "run",
+          "label": "Run locally",
+          "executable": "ollama",
+          "args": ["run", "{{model_id}}"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:11434/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Ollama architecture support is narrower than the GGUF container format; an import can still be rejected."]
+    },
+    {
+      "id": "mlx-lm",
+      "name": "MLX LM",
+      "category": "local-runtime",
+      "status": "registry-supported",
+      "summary": "Apple-Silicon-native text generation from an MLX model directory.",
+      "documentation": "https://github.com/ml-explore/mlx-lm",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official local-path generation and server command contracts reviewed.",
+      "platforms": ["macos-arm64"],
+      "formats": ["mlx"],
+      "accelerators": ["metal"],
+      "capabilities": ["quick-start", "library", "local-runtime", "api", "agent-endpoint"],
+      "priority": 10,
+      "commands": [
+        {
+          "id": "run",
+          "kind": "run",
+          "label": "Generate locally",
+          "executable": "mlx_lm.generate",
+          "args": ["--model", "{{model_dir}}", "--prompt", "Hello from Super ii"]
+        },
+        {
+          "id": "serve",
+          "kind": "serve",
+          "label": "Serve on loopback",
+          "executable": "mlx_lm.server",
+          "args": ["--model", "{{model_dir}}"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:8080/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["MLX LM documents its server as development-oriented with only basic security checks; keep it on loopback."]
+    },
+    {
+      "id": "transformers",
+      "name": "Transformers",
+      "category": "library",
+      "status": "registry-supported",
+      "summary": "Load a reviewed local Transformers repository from an exact directory.",
+      "documentation": "https://huggingface.co/docs/transformers/installation",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official installation and local from_pretrained contract reviewed.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-arm64", "linux-x64", "windows-x64"],
+      "formats": ["safetensors", "pytorch"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["library"],
+      "priority": 50,
+      "commands": [
+        {
+          "id": "install",
+          "kind": "install",
+          "label": "Install in an active virtual environment",
+          "executable": "uv",
+          "args": ["pip", "install", "transformers[torch]"]
+        }
+      ],
+      "warnings": ["Custom model code is never enabled by generated instructions; review code separately before opting into trust_remote_code."]
+    },
+    {
+      "id": "diffusers",
+      "name": "Diffusers",
+      "category": "library",
+      "status": "registry-supported",
+      "summary": "Load a reviewed local diffusion pipeline without a hosted inference service.",
+      "documentation": "https://huggingface.co/docs/diffusers/installation",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official installation, local-path, and offline-cache contracts reviewed.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-x64", "windows-x64"],
+      "formats": ["diffusers", "dduf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["library"],
+      "priority": 40,
+      "commands": [
+        {
+          "id": "install",
+          "kind": "install",
+          "label": "Install in an active virtual environment",
+          "executable": "uv",
+          "args": ["pip", "install", "diffusers[torch]", "transformers"]
+        }
+      ],
+      "warnings": ["Generated examples load local reviewed files and do not enable custom pipeline code.", "Diffusers has deprecated DDUF loading and documents removal in version 0.41.0; prefer a standard Diffusers directory for a durable workflow."]
+    },
+    {
+      "id": "transformers-js",
+      "name": "Transformers.js",
+      "category": "browser",
+      "status": "verified",
+      "summary": "Run compatible ONNX weights in this browser with WASM or WebGPU.",
+      "documentation": "https://huggingface.co/docs/transformers.js/pipelines",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "The checked-in browser bundle and local-file proxy pass the Super ii release build; a reviewed model is still required.",
+      "platforms": ["any"],
+      "formats": ["onnx"],
+      "accelerators": ["cpu", "webgpu"],
+      "capabilities": ["quick-start", "browser"],
+      "priority": 15,
+      "commands": [],
+      "warnings": ["WebGPU support varies by browser; Super ii falls back to local WASM when available."]
+    },
+    {
+      "id": "lm-studio",
+      "name": "LM Studio",
+      "category": "desktop-app",
+      "status": "registry-supported",
+      "summary": "Import the reviewed model into a local desktop application while keeping the original file.",
+      "documentation": "https://lmstudio.ai/docs/cli/local-models/import",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official lms import CLI contract reviewed; no undocumented deep link is generated.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-x64", "windows-x64"],
+      "formats": ["gguf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["desktop-app", "api", "agent-endpoint"],
+      "priority": 25,
+      "commands": [
+        {
+          "id": "import",
+          "kind": "setup",
+          "label": "Import and keep the reviewed file",
+          "executable": "lms",
+          "args": ["import", "{{primary_file}}", "--copy"]
+        },
+        {
+          "id": "serve",
+          "kind": "serve",
+          "label": "Start the local API server",
+          "executable": "lms",
+          "args": ["server", "start"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:1234/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Select and load the imported model in LM Studio before using its API server."]
+    },
+    {
+      "id": "jan",
+      "name": "Jan",
+      "category": "desktop-app",
+      "status": "registry-supported",
+      "summary": "Import reviewed GGUF files through Jan's local model settings.",
+      "documentation": "https://jan.ai/docs/manage-models",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official local GGUF import and OpenAI-compatible endpoint documentation reviewed; no undocumented deep link is generated.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-x64", "windows-x64"],
+      "formats": ["gguf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["desktop-app", "api", "agent-endpoint"],
+      "priority": 35,
+      "commands": [],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:1337/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Import is an explicit desktop action; Super ii does not claim or invoke an undocumented jan:// deep link."]
+    },
+    {
+      "id": "docker-model-runner",
+      "name": "Docker Model Runner",
+      "category": "desktop-app",
+      "status": "registry-supported",
+      "summary": "Package reviewed local model files as a local OCI model artifact.",
+      "documentation": "https://docs.docker.com/ai/model-runner/",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official package and run CLI contracts reviewed; generated commands do not push an artifact.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-x64", "windows-x64"],
+      "formats": ["gguf", "safetensors", "dduf"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["desktop-app", "local-runtime", "api", "agent-endpoint"],
+      "priority": 45,
+      "commands": [
+        {
+          "id": "package-gguf",
+          "kind": "setup",
+          "label": "Package GGUF locally",
+          "formats": ["gguf"],
+          "executable": "docker",
+          "args": ["model", "package", "--gguf", "{{primary_file}}", "{{docker_model}}"]
+        },
+        {
+          "id": "package-safetensors",
+          "kind": "setup",
+          "label": "Package Safetensors directory locally",
+          "formats": ["safetensors"],
+          "executable": "docker",
+          "args": ["model", "package", "--safetensors-dir", "{{model_dir}}", "{{docker_model}}"]
+        },
+        {
+          "id": "package-dduf",
+          "kind": "setup",
+          "label": "Package DDUF locally",
+          "formats": ["dduf"],
+          "executable": "docker",
+          "args": ["model", "package", "--dduf", "{{primary_file}}", "{{docker_model}}"]
+        },
+        {
+          "id": "run",
+          "kind": "run",
+          "label": "Run the local artifact",
+          "formats": ["gguf", "safetensors"],
+          "executable": "docker",
+          "args": ["model", "run", "{{docker_model}}"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:12434/engines/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["The generated package command is local-only and deliberately omits --push."]
+    },
+    {
+      "id": "vllm",
+      "name": "vLLM",
+      "category": "api-server",
+      "status": "registry-supported",
+      "summary": "High-throughput OpenAI-compatible serving for supported accelerator hosts.",
+      "documentation": "https://docs.vllm.ai/en/latest/serving/online_serving/",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official vllm serve and OpenAI-compatible API contracts reviewed; Super ii does not provide the required GPU host.",
+      "platforms": ["linux-x64"],
+      "formats": ["safetensors", "pytorch"],
+      "accelerators": ["cuda", "rocm"],
+      "capabilities": ["api", "agent-endpoint"],
+      "priority": 70,
+      "commands": [
+        {
+          "id": "serve",
+          "kind": "serve",
+          "label": "Serve on loopback",
+          "executable": "vllm",
+          "args": ["serve", "{{model_dir}}", "--host", "127.0.0.1", "--port", "8000"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:8000/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Requires a separately provisioned compatible accelerator; it is not part of Super ii's zero-cost hosted capacity."]
+    },
+    {
+      "id": "sglang",
+      "name": "SGLang",
+      "category": "api-server",
+      "status": "registry-supported",
+      "summary": "OpenAI-compatible serving for supported Linux accelerator hosts.",
+      "documentation": "https://docs.sglang.io/docs/basic_usage/openai_api_completions",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Official launch_server and OpenAI-compatible API contracts reviewed; Super ii does not provide the required GPU host.",
+      "platforms": ["linux-x64"],
+      "formats": ["safetensors", "pytorch"],
+      "accelerators": ["cuda", "rocm"],
+      "capabilities": ["api", "agent-endpoint"],
+      "priority": 75,
+      "commands": [
+        {
+          "id": "serve",
+          "kind": "serve",
+          "label": "Serve on loopback",
+          "executable": "python3",
+          "args": ["-m", "sglang.launch_server", "--model-path", "{{model_dir}}", "--host", "127.0.0.1", "--port", "30000"]
+        }
+      ],
+      "api": {
+        "protocol": "openai-compatible",
+        "baseUrl": "http://127.0.0.1:30000/v1",
+        "chatPath": "/chat/completions"
+      },
+      "warnings": ["Requires a separately provisioned compatible accelerator; model-specific chat or reasoning parsers may also be required."]
+    },
+    {
+      "id": "superii-runtime",
+      "name": "Super ii Runtime",
+      "category": "hosted",
+      "status": "verified",
+      "summary": "Authenticated operator-owned inference for reviewed compatible models when runtime capacity is ready.",
+      "documentation": "https://superii.site/docs#inference",
+      "verifiedAt": "2026-08-31",
+      "expiresAt": "2026-11-29",
+      "verification": "Control-plane and persistent llama.cpp request paths pass release checks; availability remains runtime- and model-dependent.",
+      "platforms": ["any"],
+      "formats": ["gguf", "diffusers"],
+      "accelerators": ["operator-managed"],
+      "capabilities": ["hosted"],
+      "priority": 90,
+      "commands": [],
+      "warnings": ["No free hosted GPU pool is promised. Sign-in, readiness, rate limits, and available operator capacity are required."]
+    }
+  ],
+  "agents": [
+    {
+      "id": "codex",
+      "name": "Codex",
+      "status": "verified",
+      "documentation": "https://developers.openai.com/codex/mcp/",
+      "mode": "mcp-discovery",
+      "summary": "Connect Codex to Super ii's read-only Streamable HTTP MCP for discovery and verified downloads. This does not replace Codex's own model.",
+      "verifiedAt": "2026-08-31"
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "status": "registry-supported",
+      "documentation": "https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/models.md",
+      "mode": "openai-compatible",
+      "summary": "Generate a models.json provider entry for a loopback OpenAI-compatible server.",
+      "verifiedAt": "2026-08-31"
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes Agent",
+      "status": "registry-supported",
+      "documentation": "https://hermes-agent.nousresearch.com/docs/integrations/providers/",
+      "mode": "openai-compatible",
+      "summary": "Generate a config.yaml model entry for a loopback OpenAI-compatible server.",
+      "verifiedAt": "2026-08-31"
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "status": "registry-supported",
+      "documentation": "https://docs.openclaw.ai/concepts/model-providers",
+      "mode": "openai-compatible",
+      "summary": "Generate an explicit local provider entry with zero-price metadata and a loopback endpoint.",
+      "verifiedAt": "2026-08-31"
+    }
+  ],
+  "notebooks": [
+    {
+      "id": "jupyter",
+      "name": "Download Jupyter notebook",
+      "status": "verified",
+      "urlTemplate": "{{use_notebook_url}}"
+    },
+    {
+      "id": "colab",
+      "name": "Open Google Colab",
+      "status": "external-manual",
+      "url": "https://colab.research.google.com/",
+      "warning": "Download the generated notebook first, then upload and review it in Colab before running any cell."
+    },
+    {
+      "id": "kaggle",
+      "name": "Open Kaggle Notebooks",
+      "status": "external-manual",
+      "url": "https://www.kaggle.com/code",
+      "warning": "Download the generated notebook first, then import and review it in Kaggle before running any cell."
+    }
+  ],
+  "hostedProviders": []
+}

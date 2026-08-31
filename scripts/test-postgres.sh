@@ -55,4 +55,12 @@ if [ "$counts" != "49:0" ]; then
   exit 1
 fi
 
+derivations=$(docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atc \
+  "select app.is_model_derivation('quantized-from') || ':' || app.is_model_derivation('uses-dataset')")
+
+if [ "$derivations" != "true:false" ]; then
+  echo "ERROR: Use Model derivation classifier failed closed: $derivations" >&2
+  exit 1
+fi
+
 echo "OK: PostgreSQL 17 migrations are rerunnable and the transactional integration test passed."

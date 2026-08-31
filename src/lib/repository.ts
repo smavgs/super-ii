@@ -110,6 +110,7 @@ export type RepositoryBundle = {
     related_owner: string;
     related_slug: string;
     related_title: string;
+    related_compatibility: RepositoryCompatibilityView | null;
     evidence_url: string | null;
   }>;
   related: Array<{
@@ -318,6 +319,28 @@ export async function getPublicRepository(
               'related_owner', related.owner_handle,
               'related_slug', related.slug,
               'related_title', related.title,
+              'related_compatibility', (
+                select jsonb_build_object(
+                  'architecture', related_compatibility.architecture,
+                  'parameter_count', related_compatibility.parameter_count,
+                  'quantization', related_compatibility.quantization,
+                  'tensor_format', related_compatibility.tensor_format,
+                  'model_size_bytes', related_compatibility.model_size_bytes,
+                  'minimum_ram_bytes', related_compatibility.minimum_ram_bytes,
+                  'minimum_vram_bytes', related_compatibility.minimum_vram_bytes,
+                  'cpu_compatible', related_compatibility.cpu_compatible,
+                  'cuda_compatible', related_compatibility.cuda_compatible,
+                  'rocm_compatible', related_compatibility.rocm_compatible,
+                  'metal_compatible', related_compatibility.metal_compatible,
+                  'mlx_compatible', related_compatibility.mlx_compatible,
+                  'llama_cpp_compatible', related_compatibility.llama_cpp_compatible,
+                  'browser_compatible', related_compatibility.browser_compatible,
+                  'confidence', related_compatibility.confidence,
+                  'evidence', related_compatibility.evidence
+                )
+                from app.repository_compatibility related_compatibility
+                where related_compatibility.revision_id = related.latest_revision_id
+              ),
               'evidence_url', rel.evidence_url
             ) as relationship
             from app.repository_relationships rel
@@ -333,6 +356,28 @@ export async function getPublicRepository(
               'related_owner', related.owner_handle,
               'related_slug', related.slug,
               'related_title', related.title,
+              'related_compatibility', (
+                select jsonb_build_object(
+                  'architecture', related_compatibility.architecture,
+                  'parameter_count', related_compatibility.parameter_count,
+                  'quantization', related_compatibility.quantization,
+                  'tensor_format', related_compatibility.tensor_format,
+                  'model_size_bytes', related_compatibility.model_size_bytes,
+                  'minimum_ram_bytes', related_compatibility.minimum_ram_bytes,
+                  'minimum_vram_bytes', related_compatibility.minimum_vram_bytes,
+                  'cpu_compatible', related_compatibility.cpu_compatible,
+                  'cuda_compatible', related_compatibility.cuda_compatible,
+                  'rocm_compatible', related_compatibility.rocm_compatible,
+                  'metal_compatible', related_compatibility.metal_compatible,
+                  'mlx_compatible', related_compatibility.mlx_compatible,
+                  'llama_cpp_compatible', related_compatibility.llama_cpp_compatible,
+                  'browser_compatible', related_compatibility.browser_compatible,
+                  'confidence', related_compatibility.confidence,
+                  'evidence', related_compatibility.evidence
+                )
+                from app.repository_compatibility related_compatibility
+                where related_compatibility.revision_id = related.latest_revision_id
+              ),
               'evidence_url', rel.evidence_url
             ) as relationship
             from app.repository_relationships rel
@@ -401,6 +446,4 @@ export async function getPublicRepository(
   }
 }
 
-export function kindPath(kind: RepositoryKind): string {
-  return kind === 'model' ? 'models' : kind === 'dataset' ? 'datasets' : 'spaces';
-}
+export { kindPath } from './repository-path';

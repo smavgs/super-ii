@@ -37,8 +37,8 @@
     },
     "resources": {
       "type": "object",
-      "required": ["html", "markdown", "agents", "manifest", "api", "mcp", "mcp_endpoint"],
-      "additionalProperties": { "type": "string", "format": "uri" }
+      "required": ["html", "markdown", "agents", "manifest", "use_json", "use_markdown", "use_notebook", "use_script", "api", "mcp", "mcp_endpoint"],
+      "additionalProperties": { "type": ["string", "null"], "format": "uri" }
     },
     "downloads": {
       "type": "array",

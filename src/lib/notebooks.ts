@@ -1,6 +1,6 @@
 import officialRegistry from '@/content/notebooks.json';
 import type { RepositoryBundle } from './repository';
-import { kindPath } from './repository';
+import { kindPath } from './repository-path';
 
 import apiMcpSource from '../../notebooks/getting-started/super-ii-api-and-mcp.ipynb?raw';
 import datasetSource from '../../notebooks/repositories/create-and-verify-a-dataset.ipynb?raw';

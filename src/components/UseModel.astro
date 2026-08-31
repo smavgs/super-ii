@@ -1,0 +1,454 @@
+---
+import type { RepositoryBundle } from '@/lib/repository';
+import { buildUseManifest, type IntegrationCategory } from '@/lib/use-model';
+
+interface Props {
+  repository: RepositoryBundle;
+  origin: string;
+}
+
+const { repository, origin } = Astro.props;
+const manifest = buildUseManifest(repository, origin);
+const payloadId = `use-model-payload-${repository.id}`;
+const payload = JSON.stringify({ candidates: manifest.integrations }).replaceAll('<', '\\u003c');
+const categoryOrder: Array<{ id: IntegrationCategory; label: string; icon: string }> = [
+  { id: 'library', label: 'Libraries', icon: '📚' },
+  { id: 'local-runtime', label: 'Local runtimes', icon: '⚡' },
+  { id: 'browser', label: 'Browser', icon: '🌐' },
+  { id: 'desktop-app', label: 'Desktop apps', icon: '🖥️' },
+  { id: 'api-server', label: 'Serve as API', icon: '🔌' },
+  { id: 'hosted', label: 'Hosted inference', icon: '☁️' },
+];
+const categories = categoryOrder.map((category) => ({
+  ...category,
+  candidates: manifest.integrations.filter((candidate) => candidate.category === category.id),
+})).filter((category) => category.candidates.length > 0);
+const firstCandidate = manifest.integrations[0] ?? null;
+const derivedCount = manifest.derivedVersions.length;
+---
+
+<section class="use-model" id="use-model" data-use-model hidden aria-labelledby="use-model-title">
+  <script is:inline type="application/json" id={payloadId} data-use-model-payload set:html={payload}></script>
+
+  <header class="use-model__header">
+    <div>
+      <p class="eyebrow">Deterministic execution guide ✨</p>
+      <h2 id="use-model-title">Use this model</h2>
+      <p>Choose the best reviewed path for your machine. Your hardware profile stays in this browser and is never sent to Super ii.</p>
+    </div>
+    <button class="use-model__close" type="button" data-use-model-close aria-label="Close Use Model"><i class="ph ph-x" aria-hidden="true"></i></button>
+  </header>
+
+  <div class="use-model__recommendation" aria-live="polite">
+    <div class="use-model__recommendation-icon"><i class="ph ph-sparkle" aria-hidden="true"></i></div>
+    <div>
+      <span>Recommended for your machine</span>
+      <strong data-use-best>{firstCandidate?.name ?? 'No compatible execution route identified'}</strong>
+      <p data-use-best-reasons>{firstCandidate ? 'Complete the local hardware profile for a deterministic fit check.' : 'This reviewed revision does not expose a recognized runnable model format.'}</p>
+    </div>
+    <span class="use-status use-status--unknown" data-use-best-status>{firstCandidate ? 'profile needed' : 'unsupported'}</span>
+  </div>
+
+  <div class="use-model__layout">
+    <aside class="use-profile" aria-labelledby="hardware-profile-title">
+      <div class="use-profile__title">
+        <div><p class="eyebrow">Local only 🔒</p><h3 id="hardware-profile-title">Hardware profile</h3></div>
+        <button class="text-button" type="button" data-use-profile-detect>Detect coarse details</button>
+      </div>
+      <p class="use-profile__privacy">Nothing in this form is transmitted. Detection uses only coarse browser signals and does not identify your exact Mac model.</p>
+      <form data-use-profile-form>
+        <label>Operating system
+          <select name="os">
+            <option value="unknown">Choose…</option>
+            <option value="macos">macOS</option>
+            <option value="linux">Linux</option>
+            <option value="windows">Windows</option>
+          </select>
+        </label>
+        <label>Architecture
+          <select name="architecture">
+            <option value="unknown">Choose…</option>
+            <option value="arm64">ARM64 / Apple Silicon</option>
+            <option value="x64">x86-64</option>
+          </select>
+        </label>
+        <label>Primary accelerator
+          <select name="accelerator">
+            <option value="unknown">Choose…</option>
+            <option value="metal">Apple Metal</option>
+            <option value="cuda">NVIDIA CUDA</option>
+            <option value="rocm">AMD ROCm</option>
+            <option value="cpu">CPU only</option>
+          </select>
+        </label>
+        <div class="use-profile__numbers">
+          <label>RAM GiB <input name="ramGiB" type="number" min="1" max="4096" step="1" inputmode="numeric" placeholder="64" /></label>
+          <label>VRAM GiB <input name="vramGiB" type="number" min="0" max="1024" step="1" inputmode="numeric" placeholder="24" /></label>
+        </div>
+        <label class="checkbox-row"><input name="webgpu" type="checkbox" /> Browser exposes WebGPU</label>
+        <div class="button-row">
+          <button class="button button--dark button--small" type="submit">Apply profile</button>
+          <button class="button button--secondary button--small" type="button" data-use-profile-save>Save on this device</button>
+          <button class="text-button" type="button" data-use-profile-reset>Reset</button>
+        </div>
+        <p data-use-profile-status aria-live="polite"></p>
+      </form>
+    </aside>
+
+    <div class="use-model__main">
+      <section class="use-quick-start" aria-labelledby="quick-start-title">
+        <div class="use-model__section-heading">
+          <div><p class="eyebrow">1 · Exact bytes first</p><h3 id="quick-start-title">Quick Start</h3></div>
+          <span>{manifest.assets.length} checksum-bound files</span>
+        </div>
+        <p>Download the immutable reviewed revision, verify every SHA-256 digest, then run only the command for your selected integration. The script refuses to overwrite different existing bytes.</p>
+        <div class="button-row">
+          <a class="button button--yellow button--small" href={manifest.resources.downloadScript} download>Download verified-files script</a>
+          <a class="button button--secondary button--small" href={manifest.resources.useMarkdown}>Read use.md</a>
+          <a class="button button--secondary button--small" href={manifest.resources.useJson}>Open use.json</a>
+        </div>
+        <p class="use-model__trust"><i class="ph ph-shield-check" aria-hidden="true"></i> Review the downloaded script before running <code>sh superii-use-model.sh</code>. Super ii never recommends <code>curl | sh</code>.</p>
+      </section>
+
+      <nav class="use-category-nav" aria-label="Use Model categories">
+        <button type="button" class="is-active" data-use-category="all">All</button>
+        {categories.map((category) => <button type="button" data-use-category={category.id}>{category.icon} {category.label}</button>)}
+      </nav>
+
+      <div class="use-categories">
+        {categories.map((category) => (
+          <section class="use-category" data-use-category-section={category.id}>
+            <div class="use-model__section-heading">
+              <div><p class="eyebrow">{category.icon} {category.id}</p><h3>{category.label}</h3></div>
+              <span>{category.candidates.length}</span>
+            </div>
+            <div class="use-option-list">
+              {category.candidates.map((candidate) => (
+                <article class="use-option" data-use-candidate={candidate.id} data-suitability="unknown">
+                  <div class="use-option__topline">
+                    <div>
+                      <h4>{candidate.name}</h4>
+                      <p>{candidate.summary}</p>
+                    </div>
+                    <span class:list={['use-status', candidate.status === 'verified' ? 'use-status--verified' : 'use-status--reviewed']}>{candidate.status === 'verified' ? '✅ verified path' : '◷ docs reviewed'}</span>
+                  </div>
+                  <div class="use-option__facts">
+                    <span>{candidate.matchedFormats.join(' · ')}</span>
+                    <span>{candidate.platforms.join(' · ')}</span>
+                    <span>{candidate.accelerators.join(' · ')}</span>
+                    {candidate.minimumRamGiB !== null && <span>~{candidate.minimumRamGiB.toFixed(1)} GiB RAM minimum</span>}
+                  </div>
+                  <p class="use-option__fit" data-use-fit>Complete your local profile to rank this path.</p>
+                  {candidate.primaryFile && (
+                    <p class="use-option__asset"><i class="ph ph-file" aria-hidden="true"></i><code>{candidate.primaryFile.path}</code><span>{(Number(candidate.primaryFile.sizeBytes) / 1024 ** 3).toFixed(2)} GiB</span></p>
+                  )}
+                  {candidate.generatedFiles.map((file) => (
+                    <details class="use-code-block">
+                      <summary>Generated {file.path}</summary>
+                      <pre><code>{file.content}</code></pre>
+                      <button type="button" data-copy-code>Copy</button>
+                    </details>
+                  ))}
+                  {candidate.commands.map((command) => (
+                    <details class="use-code-block">
+                      <summary>{command.label}</summary>
+                      <div class="use-code-block__meta"><span>macOS / Linux shell</span><code>sha256:{command.digest.posix.slice(0, 12)}…</code></div>
+                      <pre><code>{command.posix}</code></pre>
+                      <button type="button" data-copy-code>Copy shell command</button>
+                      <details>
+                        <summary>PowerShell</summary>
+                        <pre><code>{command.powershell}</code></pre>
+                        <button type="button" data-copy-code>Copy PowerShell</button>
+                      </details>
+                    </details>
+                  ))}
+                  {candidate.snippets.map((snippet) => (
+                    <details class="use-code-block">
+                      <summary>{snippet.label}</summary>
+                      <pre><code>{snippet.code}</code></pre>
+                      <button type="button" data-copy-code>Copy {snippet.language}</button>
+                    </details>
+                  ))}
+                  {candidate.integrationId === 'transformers-js' && <a class="button button--secondary button--small" href="#model-tools">Open browser Try model</a>}
+                  {candidate.integrationId === 'jan' && <p class="use-model__manual">In Jan, open Settings → Model Providers → Llama.cpp → Import, then select the reviewed GGUF file. No undocumented app link is opened.</p>}
+                  {candidate.integrationId === 'superii-runtime' && <a class="button button--secondary button--small" href="#model-tools">Check Super ii Runtime</a>}
+                  <details class="use-option__evidence">
+                    <summary>Verification and cautions</summary>
+                    <p>{candidate.verification}</p>
+                    <p>Reviewed {candidate.verifiedAt}; review expires {candidate.expiresAt}.</p>
+                    <ul>{candidate.warnings.map((warning) => <li>{warning}</li>)}</ul>
+                  </details>
+                  <a class="use-option__docs" href={candidate.documentation} rel="external noreferrer">Official documentation <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <section class="use-model__section" aria-labelledby="agents-title">
+        <div class="use-model__section-heading">
+          <div><p class="eyebrow">4 · Use with an agent 🤖</p><h3 id="agents-title">Agent configurations</h3></div>
+          <a href={manifest.agents.discovery.mcp}>Super ii MCP</a>
+        </div>
+        <p>Discovery and inference stay separate: Codex receives the public read-only MCP; Pi, Hermes, and OpenClaw receive a loopback OpenAI-compatible endpoint only when this revision has one.</p>
+        <div class="use-agent-grid">
+          {manifest.agents.configurations.map((config) => (
+            <article>
+              <div><h4>{config.name}</h4><span class:list={['use-status', config.status === 'verified' ? 'use-status--verified' : 'use-status--reviewed']}>{config.status}</span></div>
+              <p>{config.summary}</p>
+              {config.content ? (
+                <details class="use-code-block">
+                  <summary>{config.filename}</summary>
+                  <pre><code>{config.content}</code></pre>
+                  <button type="button" data-copy-code>Copy configuration</button>
+                </details>
+              ) : <p class="use-model__manual">No compatible local endpoint was derived.</p>}
+              {config.warning && <p class="use-model__warning">⚠️ {config.warning}</p>}
+              <a href={config.documentation} rel="external noreferrer">Official documentation</a>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="use-model__section" aria-labelledby="notebook-use-title">
+        <div class="use-model__section-heading"><div><p class="eyebrow">7 · Portable workflow 📓</p><h3 id="notebook-use-title">Notebooks</h3></div></div>
+        <div class="use-notebook-grid">
+          {manifest.notebooks.map((notebook) => (
+            <a href={notebook.url} rel={notebook.id === 'jupyter' ? undefined : 'external noreferrer'} download={notebook.id === 'jupyter' ? true : undefined}>
+              <i class:list={['ph', notebook.id === 'jupyter' ? 'ph-download-simple' : 'ph-arrow-up-right']} aria-hidden="true"></i>
+              <span><strong>{notebook.name}</strong><small>{notebook.id === 'jupyter' ? 'Exact assets and SHA-256 verification' : notebook.warning}</small></span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="use-model__section" aria-labelledby="derived-title">
+        <div class="use-model__section-heading">
+          <div><p class="eyebrow">8 · Lineage-aware choices 🧬</p><h3 id="derived-title">Derived versions</h3></div>
+          <span>{derivedCount}</span>
+        </div>
+        {derivedCount > 0 ? (
+          <div class="use-derived-grid">
+            {manifest.derivedVersions.map((derived) => (
+              <a href={derived.url}>
+                <span>{derived.relationship.replaceAll('-', ' ')}</span>
+                <strong>{derived.owner}/{derived.slug}</strong>
+                <small>{derived.compatibility?.quantization ?? derived.compatibility?.tensor_format ?? 'Open compatibility details'}</small>
+              </a>
+            ))}
+          </div>
+        ) : <p>No reviewed quantization, conversion, adapter, fine-tune, merge, or distilled relation has been published for this model yet.</p>}
+      </section>
+
+      <section class="use-model__section use-hosted-truth" aria-labelledby="hosted-title">
+        <div class="use-model__section-heading"><div><p class="eyebrow">6 · Capacity truth ☁️</p><h3 id="hosted-title">Hosted inference</h3></div><span>{manifest.hostedInference.superiiRuntime}</span></div>
+        <p>{manifest.hostedInference.statement}</p>
+        <dl><div><dt>External providers</dt><dd>{manifest.hostedInference.externalProviders.length}</dd></div><div><dt>Published price</dt><dd>Not available</dd></div><div><dt>Published regions</dt><dd>None</dd></div></dl>
+      </section>
+
+      <section class="use-model__section use-provenance" aria-labelledby="use-provenance-title">
+        <div class="use-model__section-heading"><div><p class="eyebrow">Evidence, not guesses 🛡️</p><h3 id="use-provenance-title">Provenance</h3></div></div>
+        <dl>
+          <div><dt>Creator</dt><dd>{repository.owner_handle}</dd></div>
+          <div><dt>License</dt><dd>{repository.license ?? 'Not declared'}</dd></div>
+          <div><dt>Architecture</dt><dd>{manifest.model.architecture ?? 'Not identified'}</dd></div>
+          <div><dt>Quantization</dt><dd>{manifest.model.quantization ?? 'Not identified'}</dd></div>
+          <div><dt>Security scan</dt><dd>Passed ✅</dd></div>
+          <div><dt>Files</dt><dd>{manifest.assets.length} checksum verified</dd></div>
+          <div><dt>Revision</dt><dd>{repository.revision_sequence}</dd></div>
+          <div><dt>Manifest</dt><dd><code>{repository.manifest_sha256.slice(0, 16)}…</code></dd></div>
+        </dl>
+      </section>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { recommendUseOptions, type HardwareProfile, type ModelUseCandidate } from '@/lib/use-model';
+
+  const STORAGE_KEY = 'superii.hardware-profile.v1';
+
+  function numberValue(input: HTMLInputElement | null, maximum: number): number | null {
+    if (!input || input.value.trim() === '') return null;
+    const value = Number(input.value);
+    return Number.isFinite(value) && value >= 0 && value <= maximum ? value : null;
+  }
+
+  function validCapacity(value: unknown, maximum: number): boolean {
+    return value === null
+      || (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= maximum);
+  }
+
+  function validProfile(value: unknown): value is HardwareProfile {
+    if (!value || typeof value !== 'object') return false;
+    const profile = value as Record<string, unknown>;
+    return ['macos', 'linux', 'windows', 'unknown'].includes(String(profile.os))
+      && ['arm64', 'x64', 'unknown'].includes(String(profile.architecture))
+      && ['metal', 'cuda', 'rocm', 'cpu', 'unknown'].includes(String(profile.accelerator))
+      && validCapacity(profile.ramGiB, 4_096)
+      && validCapacity(profile.vramGiB, 1_024)
+      && typeof profile.webgpu === 'boolean';
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-use-model]').forEach((root) => {
+    const payloadElement = root.querySelector<HTMLScriptElement>('[data-use-model-payload]');
+    const form = root.querySelector<HTMLFormElement>('[data-use-profile-form]');
+    if (!payloadElement || !form) return;
+    let candidates: ModelUseCandidate[] = [];
+    try {
+      const parsed = JSON.parse(payloadElement.textContent ?? '{}') as { candidates?: ModelUseCandidate[] };
+      candidates = Array.isArray(parsed.candidates) ? parsed.candidates : [];
+    } catch {
+      candidates = [];
+    }
+
+    const os = form.querySelector('select[name="os"]');
+    const architecture = form.querySelector('select[name="architecture"]');
+    const accelerator = form.querySelector('select[name="accelerator"]');
+    const ram = form.querySelector('input[name="ramGiB"]');
+    const vram = form.querySelector('input[name="vramGiB"]');
+    const webgpu = form.querySelector('input[name="webgpu"]');
+    if (!(os instanceof HTMLSelectElement)
+      || !(architecture instanceof HTMLSelectElement)
+      || !(accelerator instanceof HTMLSelectElement)
+      || !(ram instanceof HTMLInputElement)
+      || !(vram instanceof HTMLInputElement)
+      || !(webgpu instanceof HTMLInputElement)) return;
+    const status = root.querySelector<HTMLElement>('[data-use-profile-status]');
+
+    const readProfile = (): HardwareProfile => ({
+      os: os.value as HardwareProfile['os'],
+      architecture: architecture.value as HardwareProfile['architecture'],
+      accelerator: accelerator.value as HardwareProfile['accelerator'],
+      ramGiB: numberValue(ram, 4_096),
+      vramGiB: numberValue(vram, 1_024),
+      webgpu: webgpu.checked,
+    });
+
+    const writeProfile = (profile: HardwareProfile) => {
+      os.value = profile.os;
+      architecture.value = profile.architecture;
+      accelerator.value = profile.accelerator;
+      ram.value = profile.ramGiB === null ? '' : String(profile.ramGiB);
+      vram.value = profile.vramGiB === null ? '' : String(profile.vramGiB);
+      webgpu.checked = profile.webgpu;
+    };
+
+    const applyProfile = () => {
+      const ranked = recommendUseOptions(candidates, readProfile());
+      const best = ranked[0];
+      const bestCandidate = candidates.find((candidate) => candidate.id === best?.candidateId);
+      const bestName = root.querySelector<HTMLElement>('[data-use-best]');
+      const bestReasons = root.querySelector<HTMLElement>('[data-use-best-reasons]');
+      const bestStatus = root.querySelector<HTMLElement>('[data-use-best-status]');
+      if (bestName) bestName.textContent = bestCandidate?.name ?? 'No compatible execution route identified';
+      if (bestReasons) bestReasons.textContent = best?.reasons.slice(0, 3).join(' ') ?? 'No deterministic match is available.';
+      if (bestStatus) {
+        bestStatus.textContent = best?.suitability ?? 'unsupported';
+        bestStatus.className = `use-status use-status--${best?.suitability ?? 'incompatible'}`;
+      }
+      for (const [index, recommendation] of ranked.entries()) {
+        const card = root.querySelector<HTMLElement>(`[data-use-candidate="${CSS.escape(recommendation.candidateId)}"]`);
+        if (!card) continue;
+        card.dataset.suitability = recommendation.suitability;
+        card.style.order = String(index);
+        const fit = card.querySelector<HTMLElement>('[data-use-fit]');
+        if (fit) fit.textContent = `${recommendation.suitability}: ${recommendation.reasons.join(' ')}`;
+      }
+    };
+
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+      if (validProfile(stored)) {
+        writeProfile(stored);
+        applyProfile();
+        if (status) status.textContent = 'Saved local profile loaded.';
+      }
+    } catch {
+      // Storage can be unavailable in privacy modes; recommendations still work in-memory.
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      applyProfile();
+      if (status) status.textContent = 'Recommendation updated locally.';
+    });
+
+    root.querySelector('[data-use-profile-detect]')?.addEventListener('click', () => {
+      const platform = navigator.platform.toLowerCase();
+      const agent = navigator.userAgent.toLowerCase();
+      if (platform.includes('mac')) os.value = 'macos';
+      else if (platform.includes('win')) os.value = 'windows';
+      else if (platform.includes('linux')) os.value = 'linux';
+      if (/arm64|aarch64/.test(`${platform} ${agent}`)) architecture.value = 'arm64';
+      else if (/x86_64|x64|win64|amd64/.test(`${platform} ${agent}`)) architecture.value = 'x64';
+      if (os.value === 'macos' && architecture.value === 'arm64') accelerator.value = 'metal';
+      const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+      if (typeof memory === 'number' && memory > 0) ram.value = String(memory);
+      webgpu.checked = 'gpu' in navigator;
+      applyProfile();
+      if (status) status.textContent = 'Coarse browser details applied. Confirm RAM, architecture, and accelerator yourself.';
+    });
+
+    root.querySelector('[data-use-profile-save]')?.addEventListener('click', () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(readProfile()));
+      } catch {
+        if (status) status.textContent = 'Browser storage is unavailable; the profile remains in this tab.';
+        applyProfile();
+        return;
+      }
+      applyProfile();
+      if (status) status.textContent = 'Saved only in this browser.';
+    });
+
+    root.querySelector('[data-use-profile-reset]')?.addEventListener('click', () => {
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* No persisted profile to remove. */ }
+      writeProfile({ os: 'unknown', architecture: 'unknown', accelerator: 'unknown', ramGiB: null, vramGiB: null, webgpu: false });
+      applyProfile();
+      if (status) status.textContent = 'Local profile cleared.';
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-use-category]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.useCategory ?? 'all';
+        root.querySelectorAll<HTMLButtonElement>('[data-use-category]').forEach((item) => item.classList.toggle('is-active', item === button));
+        root.querySelectorAll<HTMLElement>('[data-use-category-section]').forEach((section) => {
+          section.hidden = selected !== 'all' && section.dataset.useCategorySection !== selected;
+        });
+      });
+    });
+
+    root.querySelectorAll<HTMLButtonElement>('[data-copy-code]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const container = button.closest('details');
+        const code = container?.querySelector('pre code')?.textContent ?? '';
+        if (!code) return;
+        try {
+          await navigator.clipboard.writeText(code);
+          const original = button.textContent;
+          button.textContent = 'Copied ✓';
+          window.setTimeout(() => { button.textContent = original; }, 1_500);
+        } catch {
+          button.textContent = 'Copy unavailable';
+        }
+      });
+    });
+
+    root.querySelector('[data-use-model-close]')?.addEventListener('click', () => {
+      root.hidden = true;
+      document.querySelectorAll<HTMLButtonElement>('[data-use-model-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-use-model-open]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const root = document.querySelector<HTMLElement>('[data-use-model]');
+      if (!root) return;
+      root.hidden = !root.hidden;
+      button.setAttribute('aria-expanded', String(!root.hidden));
+      if (!root.hidden) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>

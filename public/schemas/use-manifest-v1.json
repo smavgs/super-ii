@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/use-manifest-v1.json",
+  "title": "Super ii Use Model manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "schemaVersion", "registry", "repository", "revision", "model",
+    "assets", "hardwareRecommendation", "integrations", "agents", "notebooks",
+    "derivedVersions", "provenance", "hostedInference", "resources"
+  ],
+  "properties": {
+    "schema": { "const": "https://superii.site/schemas/use-manifest-v1.json" },
+    "schemaVersion": { "const": 1 },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "version", "publishedAt", "reviewCadenceDays", "url"],
+      "properties": {
+        "schema": { "const": "https://superii.site/schemas/runtime-registry-v1.json" },
+        "version": { "const": 1 },
+        "publishedAt": { "type": "string", "format": "date" },
+        "reviewCadenceDays": { "type": "integer", "minimum": 1, "maximum": 365 },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "owner", "slug", "title", "url", "license", "task", "library", "modality"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "owner": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "license": { "type": ["string", "null"] },
+        "task": { "type": ["string", "null"] },
+        "library": { "type": ["string", "null"] },
+        "modality": { "type": ["string", "null"] }
+      }
+    },
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "manifestSha256", "commitSha", "publishedAt", "immutable", "reviewed"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "manifestSha256": { "$ref": "#/$defs/sha256" },
+        "commitSha": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "immutable": { "const": true },
+        "reviewed": { "const": true }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formats", "architecture", "quantization", "parameterCount", "tensorFormat", "minimumRamBytes", "minimumVramBytes", "compatibilityConfidence"],
+      "properties": {
+        "formats": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/modelFormat" } },
+        "architecture": { "type": ["string", "null"] },
+        "quantization": { "type": ["string", "null"] },
+        "parameterCount": { "type": ["string", "null"] },
+        "tensorFormat": { "type": ["string", "null"] },
+        "minimumRamBytes": { "type": ["string", "null"] },
+        "minimumVramBytes": { "type": ["string", "null"] },
+        "compatibilityConfidence": { "type": ["string", "null"] }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/asset" }
+    },
+    "hardwareRecommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "profileRequiredForExactRanking", "collection", "transmittedToSuperii", "fields", "caveat"],
+      "properties": {
+        "policy": { "const": "superii-local-deterministic-v1" },
+        "profileRequiredForExactRanking": { "const": true },
+        "collection": { "const": "local-browser-only" },
+        "transmittedToSuperii": { "const": false },
+        "fields": {
+          "const": ["os", "architecture", "accelerator", "ramGiB", "vramGiB", "webgpu"]
+        },
+        "caveat": { "type": "string", "minLength": 1 }
+      }
+    },
+    "integrations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/integration" }
+    },
+    "agents": { "$ref": "#/$defs/agents" },
+    "notebooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "status", "url"],
+        "properties": {
+          "id": { "enum": ["jupyter", "colab", "kaggle"] },
+          "name": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["verified", "external-manual"] },
+          "url": { "type": "string", "format": "uri" },
+          "warning": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "derivedVersions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relationship", "direction", "owner", "slug", "title", "url", "compatibility", "evidenceUrl"],
+        "properties": {
+          "relationship": { "enum": ["fine-tuned-from", "fine_tuned_from", "quantized-from", "quantized_from", "converted-from", "converted_from", "adapter-for", "adapter_for", "merged-from", "merged_from", "distilled-from", "distilled_from"] },
+          "direction": { "enum": ["incoming", "outgoing"] },
+          "owner": { "type": "string", "minLength": 1 },
+          "slug": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri" },
+          "compatibility": { "type": ["object", "null"] },
+          "evidenceUrl": { "type": ["string", "null"], "format": "uri" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared", "lineage", "security"],
+      "properties": {
+        "declared": { "type": "object" },
+        "lineage": { "type": "array" },
+        "security": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reviewedRevision", "immutableManifest", "fileChecksums"],
+          "properties": {
+            "reviewedRevision": { "const": true },
+            "immutableManifest": { "const": true },
+            "fileChecksums": { "const": "sha256" }
+          }
+        }
+      }
+    },
+    "hostedInference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["superiiRuntime", "externalProviders", "pricing", "regions", "statement"],
+      "properties": {
+        "superiiRuntime": { "enum": ["runtime-dependent", "unsupported-for-this-revision"] },
+        "externalProviders": { "type": "array" },
+        "pricing": { "type": ["object", "null"] },
+        "regions": { "type": "array", "items": { "type": "string" } },
+        "statement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["useJson", "useMarkdown", "useNotebook", "downloadScript", "manifest", "agents", "mcp"],
+      "properties": {
+        "useJson": { "type": "string", "format": "uri" },
+        "useMarkdown": { "type": "string", "format": "uri" },
+        "useNotebook": { "type": "string", "format": "uri" },
+        "downloadScript": { "type": "string", "format": "uri" },
+        "manifest": { "type": "string", "format": "uri" },
+        "agents": { "type": "string", "format": "uri" },
+        "mcp": { "type": "string", "format": "uri" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "enum": ["verified", "registry-supported", "community", "failing", "unsupported"] },
+    "category": { "enum": ["library", "local-runtime", "browser", "desktop-app", "api-server", "hosted"] },
+    "modelFormat": { "enum": ["gguf", "safetensors", "pytorch", "onnx", "mlx", "diffusers", "dduf"] },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sizeBytes", "sha256", "mimeType", "downloadUrl"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sizeBytes": { "type": ["integer", "string"] },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "mimeType": { "type": "string", "minLength": 1 },
+        "downloadUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "api": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "baseUrl", "chatPath"],
+      "properties": {
+        "protocol": { "const": "openai-compatible" },
+        "baseUrl": { "type": "string", "format": "uri", "pattern": "^http://(127\\.0\\.0\\.1|localhost)(:[0-9]+)?/" },
+        "chatPath": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "label", "posix", "powershell", "digest"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["install", "setup", "run", "serve"] },
+        "label": { "type": "string", "minLength": 1 },
+        "posix": { "type": "string", "minLength": 1 },
+        "powershell": { "type": "string", "minLength": 1 },
+        "digest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "posix", "powershell"],
+          "properties": {
+            "algorithm": { "const": "sha256" },
+            "posix": { "$ref": "#/$defs/sha256" },
+            "powershell": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "integrationId", "name", "category", "status", "summary", "documentation",
+        "verifiedAt", "expiresAt", "verification", "platforms", "formats", "matchedFormats",
+        "accelerators", "capabilities", "priority", "minimumRamGiB", "minimumVramGiB",
+        "primaryFile", "commands", "generatedFiles", "snippets", "api", "endpointModelId", "warnings"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "integrationId": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "category": { "$ref": "#/$defs/category" },
+        "status": { "$ref": "#/$defs/status" },
+        "summary": { "type": "string", "minLength": 1 },
+        "documentation": { "type": "string", "format": "uri" },
+        "verifiedAt": { "type": "string", "format": "date" },
+        "expiresAt": { "type": "string", "format": "date" },
+        "verification": { "type": "string", "minLength": 1 },
+        "platforms": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "formats": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/modelFormat" } },
+        "matchedFormats": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/modelFormat" } },
+        "accelerators": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "capabilities": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "priority": { "type": "integer", "minimum": 0 },
+        "minimumRamGiB": { "type": ["number", "null"], "minimum": 0 },
+        "minimumVramGiB": { "type": ["number", "null"], "minimum": 0 },
+        "primaryFile": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "localPath", "sha256", "sizeBytes", "downloadUrl"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "localPath": { "type": "string", "minLength": 1 },
+                "sha256": { "$ref": "#/$defs/sha256" },
+                "sizeBytes": { "type": "string", "pattern": "^[0-9]+$" },
+                "downloadUrl": { "type": "string", "format": "uri" }
+              }
+            }
+          ]
+        },
+        "commands": { "type": "array", "items": { "$ref": "#/$defs/command" } },
+        "generatedFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "content"],
+            "properties": { "path": { "type": "string" }, "content": { "type": "string" } }
+          }
+        },
+        "snippets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["language", "label", "code"],
+            "properties": {
+              "language": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 },
+              "code": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "api": { "anyOf": [{ "$ref": "#/$defs/api" }, { "type": "null" }] },
+        "endpointModelId": { "type": ["string", "null"] },
+        "warnings": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "agentConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "status", "mode", "documentation", "summary", "verifiedAt", "endpointIntegration", "filename", "content", "warning"],
+      "properties": {
+        "id": { "enum": ["codex", "pi", "hermes", "openclaw"] },
+        "name": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "mode": { "enum": ["mcp-discovery", "openai-compatible"] },
+        "documentation": { "type": "string", "format": "uri" },
+        "summary": { "type": "string", "minLength": 1 },
+        "verifiedAt": { "type": "string", "format": "date" },
+        "endpointIntegration": { "type": ["string", "null"] },
+        "filename": { "type": "string" },
+        "content": { "type": "string" },
+        "warning": { "type": ["string", "null"] }
+      }
+    },
+    "agents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discovery", "endpoint", "configurations"],
+      "properties": {
+        "discovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mcp", "repository", "useManifest"],
+          "properties": {
+            "mcp": { "type": "string", "format": "uri" },
+            "repository": { "type": "string", "format": "uri" },
+            "useManifest": { "type": "string", "format": "uri" }
+          }
+        },
+        "endpoint": {
+          "anyOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["integrationId", "baseUrl", "modelId"],
+              "properties": {
+                "integrationId": { "type": "string", "minLength": 1 },
+                "baseUrl": { "type": "string", "format": "uri" },
+                "modelId": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        "configurations": { "type": "array", "minItems": 4, "items": { "$ref": "#/$defs/agentConfig" } }
+      }
+    }
+  }
+}

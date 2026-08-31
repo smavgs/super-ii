@@ -12,8 +12,11 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [System state Markdown](https://superii.site/system-state.md): Human-readable source register
 - [Repository manifest schema](https://superii.site/schemas/repository-manifest-v1.json): Versioned reviewed-release manifest contract
 - [Repository API schema](https://superii.site/schemas/repository-api-v1.json): Versioned machine-resource and download contract
+- [Use Manifest schema](https://superii.site/schemas/use-manifest-v1.json): Per-model deterministic execution contract
+- [Runtime registry](https://superii.site/runtime-registry.json): Reviewed libraries, runtimes, desktop apps, API servers, agents, notebooks, and verification dates
+- [Runtime registry schema](https://superii.site/schemas/runtime-registry-v1.json): Versioned registry validation contract
 
-Every reviewed repository exposes README.md, agents.md, manifest.json, api, and mcp resources beneath its canonical URL. Default repository URLs also negotiate text/markdown and application/json. Public paper pages expose Markdown and JSON representations.
+Every reviewed repository exposes README.md, agents.md, manifest.json, api, and mcp resources beneath its canonical URL. Reviewed models also expose use.json, use.md, use.ipynb, and use.sh from that same immutable revision. Default repository URLs also negotiate text/markdown and application/json. Public paper pages expose Markdown and JSON representations.
 
 ## Explore
 
