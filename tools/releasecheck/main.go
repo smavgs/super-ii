@@ -88,8 +88,23 @@ func main() {
 		filepath.Join("public", "schemas", "repository-api-v1.json"),
 		filepath.Join("database", "migrations", "0007_agent_native_foundation.sql"),
 		filepath.Join("database", "migrations", "0008_notebook_foundation.sql"),
+		filepath.Join("database", "migrations", "0009_resumable_runtime.sql"),
 		filepath.Join("docs", "architecture", "notebook-security.md"),
+		filepath.Join("docs", "architecture", "resumable-transfers.md"),
+		filepath.Join("docs", "architecture", "persistent-inference.md"),
 		filepath.Join("runtime", "src", "superii_runtime", "inspectors", "notebooks.py"),
+		filepath.Join("runtime", "src", "superii_runtime", "notebooks.py"),
+		filepath.Join("runtime", "src", "superii_runtime", "workspace_cache.py"),
+		filepath.Join("runtime", "src", "superii_runtime", "runtimes", "llama_server.py"),
+		filepath.Join("runtime", "notebook-image", "Dockerfile"),
+		filepath.Join("rust", "Cargo.toml"),
+		filepath.Join("rust", "Cargo.lock"),
+		filepath.Join("rust", "src", "transfer.rs"),
+		filepath.Join("rust", "src", "bin", "superii-transferd.rs"),
+		filepath.Join("rust", "src", "bin", "superii.rs"),
+		filepath.Join("src", "lib", "transfer-ticket.ts"),
+		filepath.Join("src", "pages", "api", "transfers", "[transferId].ts"),
+		filepath.Join("src", "pages", "repositories", "[repositoryId]", "edit.astro"),
 		filepath.Join("src", "content", "notebooks.json"),
 		filepath.Join("notebooks", "getting-started", "super-ii-api-and-mcp.ipynb"),
 		filepath.Join("notebooks", "repositories", "create-and-verify-a-dataset.ipynb"),
@@ -97,6 +112,36 @@ func main() {
 	} {
 		if info, statErr := os.Stat(filepath.Join(root, requiredFile)); statErr != nil || !info.Mode().IsRegular() {
 			errors = append(errors, "missing agent-native release file: "+requiredFile)
+		}
+	}
+	for relative, markers := range map[string][]string{
+		filepath.Join("rust", "src", "transfer.rs"): {
+			`TUS_VERSION: &str = "1.0.0"`, "is_loopback()", "ct_eq", "sync_all",
+		},
+		filepath.Join("runtime", "src", "superii_runtime", "notebooks.py"): {
+			`"--network=none"`, `"--ipc=none"`, `"--cap-drop=ALL"`, "result_sha256",
+		},
+		filepath.Join("runtime", "src", "superii_runtime", "runtimes", "llama_server.py"): {
+			`"127.0.0.1"`, `"--cont-batching"`, `"--no-webui"`, "record_model_instance",
+		},
+		filepath.Join("src", "lib", "transfer-ticket.ts"): {
+			"superii-transfer-ticket-v1", "HMAC", "SHA-256",
+		},
+		filepath.Join("src", "pages", "api", "transfers", "[transferId].ts"): {
+			"transfer_runtime_state_missing", "advance_resumable_upload",
+		},
+		filepath.Join("src", "pages", "repositories", "[repositoryId]", "edit.astro"): {
+			"TransferResumeError", "sessionStorage", "upload-checksum",
+		},
+	} {
+		content, readErr := os.ReadFile(filepath.Join(root, relative))
+		if readErr != nil {
+			continue
+		}
+		for _, marker := range markers {
+			if !strings.Contains(string(content), marker) {
+				errors = append(errors, "release contract missing "+marker+" in "+relative)
+			}
 		}
 	}
 

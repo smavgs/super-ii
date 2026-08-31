@@ -20,6 +20,8 @@ declare
   created_commit app.repository_revisions;
   payment_order_id uuid;
   team_payment_order_id uuid;
+  resumable_upload app.repository_uploads;
+  notebook_session_id uuid;
 begin
   alice_id := app.ensure_profile('clerk-alice', 'alice', 'Alice', null);
   bob_id := app.ensure_profile('clerk-bob', 'bob', 'Bob', null);
@@ -69,6 +71,45 @@ begin
   ) then
     raise exception 'default repository branch was not created';
   end if;
+
+  select * into resumable_upload
+  from app.create_resumable_upload(
+    created_repository.repository_id,
+    created_repository.revision_id,
+    alice_id,
+    'large/training-data.parquet',
+    'training-data.parquet',
+    'application/vnd.apache.parquet',
+    8,
+    repeat('1', 64),
+    repeat('2', 64),
+    alice_id::text,
+    now() + interval '1 hour'
+  );
+  select * into resumable_upload
+  from app.advance_resumable_upload(resumable_upload.id, 0, 4);
+  if resumable_upload.offset_bytes <> 4 or resumable_upload.state <> 'uploading' then
+    raise exception 'resumable upload offset was not advanced atomically';
+  end if;
+  begin
+    perform app.advance_resumable_upload(resumable_upload.id, 0, 8);
+    raise exception 'resumable upload accepted a stale offset';
+  exception
+    when serialization_failure then null;
+  end;
+  select * into resumable_upload
+  from app.advance_resumable_upload(resumable_upload.id, 4, 8);
+  if resumable_upload.state <> 'uploaded' then
+    raise exception 'resumable upload did not reach uploaded state';
+  end if;
+  perform app.transition_resumable_upload(
+    resumable_upload.id, array['uploaded'], 'scanning',
+    repeat('1', 64), null, '{"scanner":"pending"}'::jsonb, null
+  );
+  perform app.transition_resumable_upload(
+    resumable_upload.id, array['scanning'], 'rejected',
+    repeat('1', 64), null, '{"scanner":"smoke"}'::jsonb, 'smoke_rejection'
+  );
 
   insert into app.resource_groups (
     organization_id, slug, name, description, created_by_profile_id
@@ -349,6 +390,38 @@ begin
   end if;
   if (select count(*) from app.activity_events) < 5 then
     raise exception 'community activity trail is incomplete';
+  end if;
+
+  insert into app.cas_integrity_events (sha256, event_type, size_bytes, receipt)
+  values (repeat('b', 64), 'verified', 4, '{"source":"smoke"}'::jsonb);
+  insert into app.runtime_benchmark_records (
+    category, repository_id, revision_id, runtime, runtime_version,
+    model_sha256, hardware, parameters, metrics, provenance
+  ) values (
+    'storage', publish_repository_id, revision_row.id, 'superii-rust-cas', '0.1.0',
+    repeat('b', 64), '{"machine":"ci"}'::jsonb, '{"bytes":4}'::jsonb,
+    '{"seconds":0.001}'::jsonb, '{"commit":"smoke","scope":"local"}'::jsonb
+  );
+  insert into app.notebook_execution_sessions (
+    repository_id, revision_id, notebook_path, profile_id,
+    cpu_limit, memory_limit_bytes, pids_limit, timeout_seconds, expires_at
+  ) values (
+    publish_repository_id, revision_row.id, 'evaluation.ipynb', alice_id,
+    1.0, 536870912, 64, 60, now() + interval '5 minutes'
+  ) returning id into notebook_session_id;
+  perform app.transition_notebook_execution(
+    notebook_session_id, array['queued'], 'running', 'superii-notebook-smoke'
+  );
+  perform app.transition_notebook_execution(
+    notebook_session_id, array['running'], 'succeeded',
+    'superii-notebook-smoke', repeat('f', 64), 0, null
+  );
+  if not exists (
+    select 1 from app.notebook_execution_sessions
+    where id = notebook_session_id and status = 'succeeded'
+      and network_disabled and not secrets_injected
+  ) then
+    raise exception 'isolated notebook lifecycle contract was not preserved';
   end if;
 end;
 $$;

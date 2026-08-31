@@ -9,15 +9,18 @@ if [[ ! -f package-lock.json ]]; then
   exit 1
 fi
 
-echo "[1/4] Checking types and Astro templates"
+echo "[1/5] Checking types and Astro templates"
 npm run check
 
-echo "[2/4] Validating content, routes, migrations, and brand asset"
+echo "[2/5] Validating content, routes, migrations, and brand asset"
 npm run validate
 npm run db:check
 
-echo "[3/4] Building the Cloudflare Worker"
+echo "[3/5] Verifying Rust and Python runtime contracts"
+npm run runtime:verify
+
+echo "[4/5] Building the Cloudflare Worker"
 npm run build
 
-echo "[4/4] Deploying the verified build"
+echo "[5/5] Deploying the verified build"
 npx wrangler deploy

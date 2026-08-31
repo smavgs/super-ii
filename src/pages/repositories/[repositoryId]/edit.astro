@@ -167,7 +167,7 @@ const published = repository?.revision_status === 'published';
             <form class="upload-dropzone" data-upload-form>
               <i class="ph ph-upload-simple" aria-hidden="true"></i>
               <h3>Upload repository files</h3>
-              <p>Choose one or more files. Browser folder paths are preserved when available. Each file must currently be 95 MiB or smaller.</p>
+              <p>Choose one or more files up to 10 GiB each. Browser folder paths are preserved when available, 8 MiB chunks resume safely after an interruption, and every completed file is verified and scanned before release.</p>
               <label class="button button--secondary">Choose files <input name="files" type="file" multiple required /></label>
               <button class="button button--dark" type="submit">Upload and scan</button>
               <progress max="100" value="0" hidden data-upload-progress></progress>
@@ -218,6 +218,10 @@ const published = repository?.revision_status === 'published';
 </BaseLayout>
 
 {repository && <script>
+  import { sha256 } from '@noble/hashes/sha2.js';
+  import { bytesToHex } from '@noble/hashes/utils.js';
+
+  const TRANSFER_CHUNK_BYTES = 8 * 1024 * 1024;
   const workspace = document.querySelector('[data-repository-workspace]');
   const repositoryId = workspace instanceof HTMLElement ? workspace.dataset.repositoryId : null;
   const branchId = workspace instanceof HTMLElement ? workspace.dataset.branchId : null;
@@ -236,6 +240,209 @@ const published = repository?.revision_status === 'published';
     return data;
   }
 
+  function base64(bytes: Uint8Array) {
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+  }
+
+  function transferStateKey(file: File, path: string) {
+    return [
+      'superii-transfer-v1',
+      repositoryId,
+      branchId || 'default',
+      path,
+      file.name,
+      file.size,
+      file.lastModified,
+    ].join(':');
+  }
+
+  async function hashFile(file: File, status: Element | null, progress: Element | null) {
+    const digest = sha256.create();
+    let offset = 0;
+    while (offset < file.size) {
+      const end = Math.min(file.size, offset + TRANSFER_CHUNK_BYTES);
+      digest.update(new Uint8Array(await file.slice(offset, end).arrayBuffer()));
+      offset = end;
+      if (status instanceof HTMLElement) {
+        status.textContent = `Hashing ${file.name}… ${Math.round(offset / file.size * 100)}%`;
+      }
+      if (progress instanceof HTMLProgressElement) progress.value = offset / file.size * 40;
+    }
+    return bytesToHex(digest.digest());
+  }
+
+  type BrowserTransfer = {
+    transfer_id: string;
+    upload_url: string;
+    transfer_token: string;
+    source_sha256: string;
+    source_size: number;
+    repository_path: string;
+  };
+
+  class TransferResumeError extends Error {
+    status: number;
+
+    constructor(status: number) {
+      super(`Transfer resume failed with ${status}.`);
+      this.name = 'TransferResumeError';
+      this.status = status;
+    }
+  }
+
+  function readTransferState(key: string, file: File, path: string, sourceSha256: string) {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    try {
+      const value = JSON.parse(raw) as BrowserTransfer;
+      const upload = new URL(value.upload_url, location.origin);
+      if (
+        upload.origin !== location.origin
+        || value.source_sha256 !== sourceSha256
+        || value.source_size !== file.size
+        || value.repository_path !== path
+        || typeof value.transfer_token !== 'string'
+      ) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      return value;
+    } catch {
+      sessionStorage.removeItem(key);
+      return null;
+    }
+  }
+
+  async function createTransfer(file: File, path: string, sourceSha256: string) {
+    const response = await fetch(
+      workspacePath(`/api/repositories/${repositoryId}/transfers`),
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          path,
+          filename: file.name,
+          mime_type: file.type || 'application/octet-stream',
+          length: file.size,
+          sha256: sourceSha256,
+        }),
+      },
+    );
+    const value = await response.json() as Record<string, unknown>;
+    if (!response.ok) {
+      throw new Error(typeof value.error === 'string' ? value.error : 'Transfer could not be created.');
+    }
+    return {
+      transfer_id: String(value.transfer_id),
+      upload_url: String(value.upload_url),
+      transfer_token: String(value.transfer_token),
+      source_sha256: sourceSha256,
+      source_size: file.size,
+      repository_path: path,
+    } satisfies BrowserTransfer;
+  }
+
+  async function confirmedOffset(transfer: BrowserTransfer) {
+    const response = await fetch(transfer.upload_url, {
+      method: 'HEAD',
+      headers: {
+        'tus-resumable': '1.0.0',
+        'x-superii-transfer-token': transfer.transfer_token,
+      },
+    });
+    if (!response.ok) throw new TransferResumeError(response.status);
+    const offset = Number(response.headers.get('upload-offset'));
+    if (!Number.isSafeInteger(offset) || offset < 0 || offset > transfer.source_size) {
+      throw new Error('Transfer returned an invalid offset.');
+    }
+    return offset;
+  }
+
+  async function uploadResumableFile(
+    file: File,
+    path: string,
+    status: Element | null,
+    progress: Element | null,
+  ) {
+    const sourceSha256 = await hashFile(file, status, progress);
+    const stateKey = transferStateKey(file, path);
+    let transfer = readTransferState(stateKey, file, path, sourceSha256);
+    if (!transfer) {
+      transfer = await createTransfer(file, path, sourceSha256);
+      sessionStorage.setItem(stateKey, JSON.stringify(transfer));
+    }
+    let offset: number;
+    try {
+      offset = await confirmedOffset(transfer);
+    } catch (error) {
+      if (!(error instanceof TransferResumeError) || ![404, 410].includes(error.status)) {
+        throw error;
+      }
+      sessionStorage.removeItem(stateKey);
+      transfer = await createTransfer(file, path, sourceSha256);
+      sessionStorage.setItem(stateKey, JSON.stringify(transfer));
+      offset = 0;
+    }
+
+    while (offset < file.size) {
+      const end = Math.min(file.size, offset + TRANSFER_CHUNK_BYTES);
+      const chunk = file.slice(offset, end);
+      const chunkBytes = new Uint8Array(await chunk.arrayBuffer());
+      const checksum = base64(sha256(chunkBytes));
+      if (status instanceof HTMLElement) {
+        status.textContent = `Uploading ${file.name}… ${Math.round(offset / file.size * 100)}%`;
+      }
+      const response = await fetch(transfer.upload_url, {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/offset+octet-stream',
+          'tus-resumable': '1.0.0',
+          'upload-checksum': `sha256 ${checksum}`,
+          'upload-chunk-length': String(chunk.size),
+          'upload-offset': String(offset),
+          'x-superii-transfer-token': transfer.transfer_token,
+        },
+        body: chunk,
+      });
+      if (!response.ok) {
+        const reconciled = await confirmedOffset(transfer);
+        if (reconciled !== offset) {
+          offset = reconciled;
+          continue;
+        }
+        const value = await response.json().catch(() => ({})) as Record<string, unknown>;
+        throw new Error(typeof value.error === 'string' ? value.error : `Chunk upload failed with ${response.status}.`);
+      }
+      const nextOffset = Number(response.headers.get('upload-offset'));
+      if (!Number.isSafeInteger(nextOffset) || nextOffset <= offset || nextOffset > file.size) {
+        throw new Error('Transfer returned an invalid committed offset.');
+      }
+      offset = nextOffset;
+      if (progress instanceof HTMLProgressElement) {
+        progress.value = 40 + offset / file.size * 55;
+      }
+    }
+
+    if (status instanceof HTMLElement) status.textContent = `Scanning ${file.name} in quarantine…`;
+    const commit = await fetch(`${transfer.upload_url}/commit`, {
+      method: 'POST',
+      headers: {
+        'tus-resumable': '1.0.0',
+        'x-superii-transfer-token': transfer.transfer_token,
+      },
+    });
+    const result = await commit.json().catch(() => ({})) as Record<string, unknown>;
+    if (!commit.ok) {
+      if ([404, 410, 422].includes(commit.status)) sessionStorage.removeItem(stateKey);
+      throw new Error(typeof result.error === 'string' ? result.error : `Scan commit failed with ${commit.status}.`);
+    }
+    sessionStorage.removeItem(stateKey);
+    if (progress instanceof HTMLProgressElement) progress.value = 100;
+    return result;
+  }
+
   const uploadForm = workspace?.querySelector('[data-upload-form]');
   uploadForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -246,21 +453,13 @@ const published = repository?.revision_status === 'published';
     const submit = uploadForm.querySelector('button[type="submit"]');
     if (!(input instanceof HTMLInputElement) || !input.files?.length) return;
     if (submit instanceof HTMLButtonElement) submit.disabled = true;
-    if (progress instanceof HTMLProgressElement) { progress.hidden = false; progress.max = input.files.length; }
+    if (progress instanceof HTMLProgressElement) { progress.hidden = false; progress.max = 100; progress.value = 0; }
     try {
-      let completed = 0;
       for (const file of input.files) {
-        if (status instanceof HTMLElement) status.textContent = `Scanning ${file.name}…`;
-        const body = new FormData();
-        body.set('path', file.webkitRelativePath || file.name);
-        body.set('file', file, file.name);
-        const response = await fetch(workspacePath(`/api/repositories/${repositoryId}/files`), { method: 'POST', body });
-        const data = await response.json() as Record<string, unknown>;
-        if (!response.ok) throw new Error(typeof data.error === 'string' ? `${file.name}: ${data.error}` : `${file.name}: upload failed`);
-        completed += 1;
-        if (progress instanceof HTMLProgressElement) progress.value = completed;
+        const path = file.webkitRelativePath || file.name;
+        await uploadResumableFile(file, path, status, progress);
       }
-      if (status instanceof HTMLElement) status.textContent = 'Files passed scanning. Refreshing…';
+      if (status instanceof HTMLElement) status.textContent = 'Files passed checksum and security scanning. Refreshing… ✅';
       location.reload();
     } catch (error) {
       if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Upload failed.'; status.dataset.state = 'error'; }

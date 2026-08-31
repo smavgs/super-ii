@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.metadata
+import json
+from asyncio import to_thread
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
@@ -8,13 +10,25 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 import httpx
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
 from .api_models import (
     CreateRevisionRequest,
+    CreateTransferRequest,
     DiffusionGenerateRequest,
+    ExecuteNotebookRequest,
     InspectRevisionRequest,
     LlamaChatRequest,
     LlamaGenerateRequest,
@@ -33,12 +47,21 @@ from .inspectors import (
 )
 from .inspectors.compatibility import derive_model_compatibility
 from .inspectors.gguf import inspect_gguf
-from .pipeline import UploadHeld, UploadRejected, process_upload
+from .notebooks import NotebookRunner
+from .pipeline import UploadHeld, UploadRejected, process_completed_transfer, process_upload
 from .scanners import scanner_readiness
 from .security import RuntimeAuth
 from .settings import Settings, get_settings
 from .spaces import SpaceRunner
 from .storage import ObjectStore, StorageError, normalize_repository_path
+from .transfers import (
+    TUS_RESPONSE_HEADERS,
+    TUS_VERSION,
+    TransferResponse,
+    request_transfer,
+    request_transfer_sync,
+)
+from .workspace_cache import PersistentWorkspaceCache
 from .workspaces import materialized_revision, revision_manifest, revision_manifest_document
 
 app = FastAPI(
@@ -102,6 +125,23 @@ def get_artifact_store() -> ArtifactStore:
     return ArtifactStore(settings.storage_root, settings.artifact_retention_seconds)
 
 
+@lru_cache
+def get_workspace_cache() -> PersistentWorkspaceCache:
+    return PersistentWorkspaceCache(get_store())
+
+
+@lru_cache
+def get_llama_pool():
+    from .runtimes.llama_server import LlamaServerPool
+
+    return LlamaServerPool()
+
+
+@lru_cache
+def get_notebook_runner() -> NotebookRunner:
+    return NotebookRunner(get_settings(), get_store())
+
+
 def get_database(settings: Settings = Depends(get_settings)) -> RepositoryDatabase:
     try:
         return RepositoryDatabase(settings)
@@ -131,9 +171,190 @@ def _require_public_revision(
         raise HTTPException(status_code=404, detail="published revision not found")
 
 
+def _transfer_response(upstream: TransferResponse) -> Response:
+    headers = {
+        name: value for name, value in upstream.headers.items() if name in TUS_RESPONSE_HEADERS
+    }
+    content_type = upstream.headers.get("content-type")
+    if content_type:
+        headers["content-type"] = content_type
+    return Response(content=upstream.body, status_code=upstream.status_code, headers=headers)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"service": "superii-runtime", "status": "ok", "version": "0.1.0"}
+
+
+@app.options("/v1/transfers")
+async def transfer_options(
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    try:
+        return _transfer_response(await request_transfer(settings, "OPTIONS", "/v1/transfers"))
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+
+
+@app.post("/v1/transfers", status_code=status.HTTP_201_CREATED)
+async def create_transfer(
+    payload: CreateTransferRequest,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    body = json.dumps(payload.model_dump(mode="json"), separators=(",", ":")).encode()
+    try:
+        upstream = await request_transfer(
+            settings,
+            "POST",
+            "/v1/transfers",
+            headers={"content-type": "application/json", "tus-resumable": TUS_VERSION},
+            content=body,
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+    return _transfer_response(upstream)
+
+
+@app.head("/v1/transfers/{transfer_id}")
+async def head_transfer(
+    transfer_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    try:
+        upstream = await request_transfer(
+            settings,
+            "HEAD",
+            f"/v1/transfers/{transfer_id}",
+            headers={"tus-resumable": TUS_VERSION},
+            timeout_seconds=30,
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+    return _transfer_response(upstream)
+
+
+@app.get("/v1/transfers/{transfer_id}")
+async def get_transfer(
+    transfer_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    try:
+        upstream = await request_transfer(
+            settings, "GET", f"/v1/transfers/{transfer_id}", timeout_seconds=30
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+    return _transfer_response(upstream)
+
+
+@app.patch("/v1/transfers/{transfer_id}")
+async def patch_transfer(
+    transfer_id: UUID,
+    request: Request,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    content_length = request.headers.get("content-length") or request.headers.get(
+        "x-superii-chunk-length"
+    )
+    if (
+        request.headers.get("tus-resumable") != TUS_VERSION
+        or request.headers.get("content-type") != "application/offset+octet-stream"
+        or content_length is None
+        or not content_length.isdigit()
+        or int(content_length) < 1
+        or int(content_length) > settings.transfer_max_chunk_bytes
+    ):
+        raise HTTPException(status_code=400, detail="invalid bounded TUS chunk")
+    headers = {
+        "content-length": content_length,
+        "content-type": "application/offset+octet-stream",
+        "tus-resumable": TUS_VERSION,
+        "upload-offset": request.headers.get("upload-offset", ""),
+        "upload-checksum": request.headers.get("upload-checksum", ""),
+    }
+    try:
+        upstream = await request_transfer(
+            settings,
+            "PATCH",
+            f"/v1/transfers/{transfer_id}",
+            headers=headers,
+            content=request.stream(),
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+    return _transfer_response(upstream)
+
+
+@app.delete("/v1/transfers/{transfer_id}")
+async def delete_transfer(
+    transfer_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    try:
+        upstream = await request_transfer(
+            settings,
+            "DELETE",
+            f"/v1/transfers/{transfer_id}",
+            headers={"tus-resumable": TUS_VERSION},
+            timeout_seconds=30,
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="transfer service is unavailable") from error
+    return _transfer_response(upstream)
+
+
+@app.post("/v1/transfers/{transfer_id}/commit")
+async def commit_transfer(
+    transfer_id: UUID,
+    _auth: RuntimeAuth,
+    settings: Settings = Depends(get_settings),
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    try:
+        upstream = await request_transfer(
+            settings, "GET", f"/v1/transfers/{transfer_id}", timeout_seconds=30
+        )
+        if upstream.status_code >= 300:
+            raise HTTPException(status_code=upstream.status_code, detail="transfer is unavailable")
+        record = upstream.json()
+        return await to_thread(
+            process_completed_transfer,
+            record=record,
+            settings=settings,
+            database=database,
+        )
+    except UploadRejected as error:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "upload_rejected",
+                "failed_gates": [
+                    result.scanner for result in error.results if result.status == "failed"
+                ],
+            },
+        ) from error
+    except UploadHeld as error:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "upload_quarantined",
+                "errored_gates": [
+                    result.scanner for result in error.results if result.status == "error"
+                ],
+            },
+        ) from error
+    except HTTPException:
+        raise
+    except (httpx.HTTPError, RuntimeError, ValueError, OSError) as error:
+        raise HTTPException(
+            status_code=503, detail="transfer commit could not be completed"
+        ) from error
 
 
 @app.get("/ready")
@@ -149,11 +370,18 @@ def ready(
         database_ready = False
     store = get_store()
     storage_ready = store.root.is_dir() and store.root.exists()
-    ready_state = database_ready and storage_ready and all(scanners.values())
+    try:
+        transfer_ready = (
+            request_transfer_sync(settings, "GET", "/health", timeout_seconds=3).status_code == 200
+        )
+    except (httpx.HTTPError, RuntimeError, ValueError):
+        transfer_ready = False
+    ready_state = database_ready and storage_ready and transfer_ready and all(scanners.values())
     return {
         "status": "ready" if ready_state else "blocked",
         "database": database_ready,
         "storage": storage_ready,
+        "transfer_service": transfer_ready,
         "required_scanners": scanners,
         "publishing_enabled": ready_state,
     }
@@ -409,6 +637,19 @@ def _model_file(workspace: Path, requested: str | None, suffix: str) -> Path:
     return matches[0]
 
 
+def _model_identity(
+    database: RepositoryDatabase,
+    revision_id: UUID,
+    workspace: Path,
+    model: Path,
+) -> tuple[str, str]:
+    model_path = model.relative_to(workspace).as_posix()
+    for file in database.list_revision_files(revision_id):
+        if file.path == model_path:
+            return model_path, file.sha256
+    raise ValueError("model is not part of the verified revision")
+
+
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/generate")
 def llama_generate(
     repository_id: UUID,
@@ -419,22 +660,93 @@ def llama_generate(
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
     _require_public_revision(database, repository_id, revision_id)
-    from .runtimes.llama_cpp import generate
-
     try:
-        with materialized_revision(database, get_store(), revision_id) as workspace:
-            model = _model_file(workspace, payload.model_path, ".gguf")
-            return generate(
-                model=model,
-                prompt=payload.prompt,
-                max_tokens=payload.max_tokens,
-                temperature=payload.temperature,
-                top_p=payload.top_p,
-                seed=payload.seed,
-                settings=settings,
-            )
-    except (OSError, ValueError, RuntimeError) as error:
+        workspace = get_workspace_cache().materialize(database, revision_id)
+        model = _model_file(workspace, payload.model_path, ".gguf")
+        model_path, model_sha256 = _model_identity(database, revision_id, workspace, model)
+        return get_llama_pool().generate(
+            repository_id=repository_id,
+            revision_id=revision_id,
+            model_path=model_path,
+            model_sha256=model_sha256,
+            model=model,
+            prompt=payload.prompt,
+            max_tokens=payload.max_tokens,
+            temperature=payload.temperature,
+            top_p=payload.top_p,
+            seed=payload.seed,
+            settings=settings,
+            database=database,
+        )
+    except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)[:500]) from error
+    except (OSError, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="llama.cpp runtime unavailable") from error
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/notebooks/execute")
+async def execute_notebook(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: ExecuteNotebookRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    safe_path = normalize_repository_path(payload.notebook_path)
+    if not any(
+        file.path == safe_path and file.path.lower().endswith(".ipynb")
+        for file in database.list_revision_files(revision_id)
+    ):
+        raise HTTPException(status_code=404, detail="reviewed notebook was not found")
+    try:
+        workspace = get_workspace_cache().materialize(database, revision_id)
+        result = await to_thread(
+            get_notebook_runner().execute,
+            repository_id=repository_id,
+            revision_id=revision_id,
+            profile_id=payload.profile_id,
+            notebook_path=safe_path,
+            workspace=workspace,
+            database=database,
+        )
+    except TimeoutError as error:
+        raise HTTPException(status_code=408, detail=str(error)) from error
+    except (OSError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail=str(error)[:500]) from error
+    return {
+        "session_id": str(result.session_id),
+        "status": result.status,
+        "result_sha256": result.result_sha256,
+        "image_digest": result.image_digest,
+        "network_disabled": True,
+        "secrets_injected": False,
+        "download_path": f"/v1/notebooks/{result.session_id}/result",
+    }
+
+
+@app.get("/v1/notebooks/{session_id}/result")
+def executed_notebook_result(
+    session_id: UUID,
+    profile_id: UUID,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> FileResponse:
+    try:
+        path = get_notebook_runner().result(session_id, profile_id, database)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="executed notebook result not found") from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=503, detail="executed notebook result failed verification"
+        ) from error
+    return FileResponse(
+        path,
+        media_type="application/x-ipynb+json",
+        filename=f"superii-executed-{session_id}.ipynb",
+        content_disposition_type="attachment",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/chat")
@@ -447,25 +759,57 @@ def llama_chat(
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
     _require_public_revision(database, repository_id, revision_id)
-    from .runtimes.llama_cpp import generate
-
-    prompt = "\n".join(f"{message.role}: {message.content}" for message in payload.messages)
-    prompt += "\nassistant:"
     try:
-        with materialized_revision(database, get_store(), revision_id) as workspace:
-            model = _model_file(workspace, payload.model_path, ".gguf")
-            return generate(
-                model=model,
-                prompt=prompt,
-                max_tokens=payload.max_tokens,
-                temperature=payload.temperature,
-                top_p=payload.top_p,
-                seed=payload.seed,
-                settings=settings,
-                conversation=True,
-            )
-    except (OSError, ValueError, RuntimeError) as error:
+        workspace = get_workspace_cache().materialize(database, revision_id)
+        model = _model_file(workspace, payload.model_path, ".gguf")
+        model_path, model_sha256 = _model_identity(database, revision_id, workspace, model)
+        return get_llama_pool().generate(
+            repository_id=repository_id,
+            revision_id=revision_id,
+            model_path=model_path,
+            model_sha256=model_sha256,
+            model=model,
+            messages=[message.model_dump() for message in payload.messages],
+            max_tokens=payload.max_tokens,
+            temperature=payload.temperature,
+            top_p=payload.top_p,
+            seed=payload.seed,
+            settings=settings,
+            database=database,
+        )
+    except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)[:500]) from error
+    except (OSError, RuntimeError) as error:
+        raise HTTPException(status_code=503, detail="llama.cpp runtime unavailable") from error
+
+
+@app.get("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/status")
+def llama_status(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    current = get_llama_pool().status()
+    if current.get("revision_id") not in {None, str(revision_id)}:
+        return {"state": "stopped", "persistent": True, "loopback": True}
+    return current
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/llama/unload")
+def llama_unload(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        unloaded = get_llama_pool().unload(database, revision_id)
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"state": "stopped", "unloaded": unloaded, "persistent": True}
 
 
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/diffusers/generate")
@@ -697,8 +1041,8 @@ def tokenizer_tool(
 ) -> dict[str, Any]:
     _require_public_revision(database, repository_id, revision_id)
     try:
-        with materialized_revision(database, get_store(), revision_id) as workspace:
-            return tokenize_text(workspace, payload.text, payload.add_special_tokens)
+        workspace = get_workspace_cache().materialize(database, revision_id)
+        return tokenize_text(workspace, payload.text, payload.add_special_tokens)
     except (OSError, ValueError, RuntimeError) as error:
         raise HTTPException(status_code=422, detail="tokenizer is not compatible") from error
 

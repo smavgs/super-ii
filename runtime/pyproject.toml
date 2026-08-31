@@ -41,6 +41,7 @@ test = [
 
 [project.scripts]
 superii-runtime = "superii_runtime.main:run"
+superii-benchmark = "superii_runtime.benchmarks:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/superii_runtime"]
@@ -66,9 +67,11 @@ ignore = ["S101"]
 "space-image/space_proxy.py" = ["S104"]
 "src/superii_runtime/api.py" = ["B008"]
 "src/superii_runtime/runtimes/llama_cpp.py" = ["S603"]
+"src/superii_runtime/runtimes/llama_server.py" = ["S603", "S607"]
 "src/superii_runtime/scanners.py" = ["S603"]
 "src/superii_runtime/security.py" = ["B008"]
 "src/superii_runtime/settings.py" = ["S104"]
+"src/superii_runtime/notebooks.py" = ["S103", "S603"]
 "src/superii_runtime/spaces.py" = ["S108", "S603"]
 "src/superii_runtime/storage.py" = ["S103"]
 "tests/*" = ["S104"]

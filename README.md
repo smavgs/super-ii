@@ -18,6 +18,7 @@ Every requested language has a real production responsibility:
 | JavaScript | Progressive enhancement for theme, navigation, catalog search, and contact submission |
 | Shell | Reproducible check/build/deploy pipeline |
 | Go | Independent release-contract and supplied-logo verification |
+| Rust | Streamed resumable transfer service and resumable artifact CLI |
 
 Infrastructure is split deliberately:
 
@@ -27,7 +28,7 @@ Infrastructure is split deliberately:
 
 The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
-The requested repository core, safe/offline inspectors, structured dataset and model previews, tokenizer, Transformers.js, llama.cpp, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, and lineage are implemented. vLLM and Text Embeddings Inference remain deliberately deferred until dedicated GPU capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
+The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, and lineage are implemented. vLLM and Text Embeddings Inference remain deliberately deferred until dedicated GPU capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
 
 ## Agent-native surface
 
@@ -65,7 +66,7 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 45-table schema creates the launch records, immutable repository revisions/files, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 49-table schema creates the launch records, immutable repository revisions/files, resumable-transfer state, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 

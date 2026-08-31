@@ -163,19 +163,26 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
       </section>
 
       {notebooks.length > 0 && (
-        <section class="repository-section" id="notebooks">
+        <section class="repository-section" id="notebooks" data-notebook-runtime data-repository-id={repository.id}>
           <div class="repository-section__heading">
             <div><p class="eyebrow">Static reader</p><h2>Notebooks</h2></div>
             <span>{notebooks.length} validated</span>
           </div>
-          <p class="repository-integrity">Notebook code is never executed by the viewer. HTML, JavaScript, SVG, widgets, attachments, and unsupported output types are omitted.</p>
+          <p class="repository-integrity">The static viewer never executes code automatically. Signed-in users can explicitly run a reviewed notebook in a one-shot Docker sandbox with no network, no injected secrets, a read-only repository, and strict CPU, memory, process, output, and time limits. 🔒</p>
           <div class="repository-notebooks">
             {notebooks.map((notebook) => (
-              <a href={repositoryNotebookHref(repository, notebook.path)}>
-                <i class="ph ph-notebook" aria-hidden="true"></i>
-                <span><strong>{notebook.path}</strong><small>{notebook.cell_count} cells · {notebook.kernel.display_name ?? notebook.kernel.language ?? 'kernel not declared'}</small></span>
-                <i class="ph ph-arrow-right" aria-hidden="true"></i>
-              </a>
+              <article class="repository-notebook-item">
+                <a href={repositoryNotebookHref(repository, notebook.path)}>
+                  <i class="ph ph-notebook" aria-hidden="true"></i>
+                  <span><strong>{notebook.path}</strong><small>{notebook.cell_count} cells · {notebook.kernel.display_name ?? notebook.kernel.language ?? 'kernel not declared'}</small></span>
+                  <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </a>
+                <div class="repository-notebook-actions">
+                  <button class="button button--secondary button--small" type="button" data-notebook-execute={notebook.path}>Run isolated</button>
+                  <p data-notebook-status aria-live="polite"></p>
+                  <a data-notebook-result hidden>Download verified result ✅</a>
+                </div>
+              </article>
             ))}
           </div>
         </section>
@@ -242,7 +249,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
             {hasGguf && (
               <form class="tool-card tool-card--wide" data-llama-form>
                 <h3>llama.cpp</h3>
-                <p>Run or chat with the reviewed GGUF model on the operator-owned runtime. Sign-in and rate limits protect the shared machine.</p>
+                <p>Run or chat with the reviewed GGUF model on the operator-owned persistent llama.cpp server. The immutable model stays warm for later requests, then unloads after an idle timeout. Sign-in and rate limits protect the shared machine.</p>
                 <label>Mode <select name="mode"><option value="generate">Generate</option><option value="chat">Chat</option></select></label>
                 <label>System message <textarea name="system" maxlength="100000" placeholder="Optional for chat"></textarea></label>
                 <label>Prompt <textarea name="prompt" maxlength="100000" required placeholder="Ask or prompt this GGUF model"></textarea></label>
@@ -253,6 +260,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
                   <label>Seed <input name="seed" type="number" min="-1" max="2147483647" value="-1" required /></label>
                 </div>
                 <button class="button button--dark button--small" type="submit">Run on Super ii Runtime</button>
+                <button class="button button--secondary button--small" type="button" data-llama-unload>Unload model (owner)</button>
                 <p class="tool-status" data-llama-status></p>
                 <pre data-llama-output hidden></pre>
               </form>
@@ -600,7 +608,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
         const data = await response.json() as Record<string, unknown>;
         const reason = typeof data.error === 'string' ? data.error : typeof data.detail === 'string' ? data.detail : 'llama.cpp unavailable';
         if (!response.ok) throw new Error(reason);
-        if (status instanceof HTMLElement) status.textContent = 'Completed offline on Super ii Runtime.';
+        if (status instanceof HTMLElement) status.textContent = 'Completed offline; this verified model remains warm for the next request. ⚡';
         if (output instanceof HTMLElement) {
           output.hidden = false;
           output.textContent = JSON.stringify(data, null, 2);
@@ -609,6 +617,23 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
         if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'llama.cpp unavailable.';
       } finally {
         if (submit instanceof HTMLButtonElement) submit.disabled = false;
+      }
+    });
+
+    const llamaUnload = tools.querySelector('[data-llama-unload]');
+    llamaUnload?.addEventListener('click', async () => {
+      if (!(llamaUnload instanceof HTMLButtonElement) || !repositoryId) return;
+      const status = llamaForm?.querySelector('[data-llama-status]');
+      llamaUnload.disabled = true;
+      try {
+        const response = await fetch(`/api/repositories/${repositoryId}/llama`, { method: 'DELETE' });
+        const result = await response.json() as Record<string, unknown>;
+        if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : 'Model could not be unloaded.');
+        if (status instanceof HTMLElement) status.textContent = 'Persistent model unloaded and memory released.';
+      } catch (error) {
+        if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Model could not be unloaded.';
+      } finally {
+        llamaUnload.disabled = false;
       }
     });
 
@@ -649,6 +674,54 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
       } finally {
         if (submit instanceof HTMLButtonElement) submit.disabled = false;
       }
+    });
+  }
+</script>}
+
+{repository && notebooks.length > 0 && <script>
+  const notebookRuntime = document.querySelector('[data-notebook-runtime]');
+  if (notebookRuntime instanceof HTMLElement && notebookRuntime.dataset.repositoryId) {
+    const repositoryId = notebookRuntime.dataset.repositoryId;
+    notebookRuntime.querySelectorAll('[data-notebook-execute]').forEach((control) => {
+      control.addEventListener('click', async () => {
+        if (!(control instanceof HTMLButtonElement)) return;
+        const status = control.parentElement?.querySelector('[data-notebook-status]');
+        control.disabled = true;
+        if (status instanceof HTMLElement) {
+          status.textContent = 'Starting a no-network sandbox…';
+          status.dataset.state = '';
+        }
+        try {
+          const response = await fetch(`/api/repositories/${repositoryId}/notebooks/execute`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ notebook_path: control.dataset.notebookExecute }),
+          });
+          const result = await response.json() as Record<string, unknown>;
+          const detail = result.detail;
+          const reason = typeof result.error === 'string'
+            ? result.error
+            : typeof detail === 'string'
+              ? detail
+              : 'Notebook execution failed.';
+          if (!response.ok || typeof result.session_id !== 'string') throw new Error(reason);
+          if (status instanceof HTMLElement) {
+            status.textContent = 'Execution completed with network disabled and no secrets injected.';
+            const link = status.parentElement?.querySelector('[data-notebook-result]');
+            if (link instanceof HTMLAnchorElement) {
+              link.href = `/api/notebooks/${result.session_id}/result`;
+              link.hidden = false;
+            }
+          }
+        } catch (error) {
+          if (status instanceof HTMLElement) {
+            status.textContent = error instanceof Error ? error.message : 'Notebook execution failed.';
+            status.dataset.state = 'error';
+          }
+        } finally {
+          control.disabled = false;
+        }
+      });
     });
   }
 </script>}

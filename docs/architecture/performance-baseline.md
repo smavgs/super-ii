@@ -1,22 +1,30 @@
 # Performance baseline and claim boundary
 
-The first performance baseline records the repository paths that already exist before larger storage, upload, notebook, or inference work is optimized.
+Super ii records measurements with enough provenance to reproduce their scope. A local result is never promoted into a general performance promise.
 
-## Baseline scope
+## Foundation baseline
 
-- Full SHA-256 read of a deterministic local object.
-- Current workspace materialization: verify the complete source, then create a read-only same-volume hardlink.
-- Copy fallback cost when a hardlink is unavailable.
-- Browser WASM release-asset ceiling: every individual checked-in `.wasm` file must stay at or below 25 MiB.
+The existing deterministic benchmark measures:
 
-The reproducible command is:
+- full SHA-256 reads of a local object;
+- first materialization into a read-only workspace;
+- same-volume hardlink reuse and copy fallback;
+- the checked-in 25 MiB per-file browser WASM ceiling.
+
+Run:
 
 ```sh
 uv run --directory runtime python scripts/benchmark-foundation.py --size-mib 64 --samples 3
 ```
 
-Machine, filesystem, cache warmth, storage pressure, and concurrent work affect the result. The checked-in JSON therefore records the environment and synthetic fixture and makes no cross-machine promise.
+## Canonical runtime records
 
-## Not yet benchmarked
+`superii-benchmark` records local storage or transfer measurements with runtime version, hardware description, parameters, metrics, source SHA-256 provenance, measured time, and the fixed claim scope `local measurement only`. Repository/model identifiers are optional and must identify the exact immutable revision when used.
 
-The public catalog intentionally has no seeded artifacts. Until a reviewed model exists, Super ii does not publish claims for cold model load, warm reuse, time-to-first-token, tokens per second, Diffusers generation, accelerator utilization, or concurrent inference. Those benchmarks must name the exact revision, hardware, runtime versions, parameters, prompt or seed, sample count, and warm/cold state.
+Persistent llama.cpp responses may include upstream timing data, while the lifecycle table records cold start and request count for the exact revision, path, and model SHA-256. A publishable comparison must additionally name prompt, parameters, context, warm/cold state, sample count, concurrency, hardware, and runtime version.
+
+Machine, filesystem, cache warmth, storage pressure, model format, quantization, and concurrent work affect every result. A successful smoke run proves the request path, not model quality or fleet capacity.
+
+## Claim boundary
+
+The public catalog intentionally has no seeded artifacts. Until a reviewed model exists, Super ii does not publish general claims for cold model load, warm reuse, time-to-first-token, tokens per second, Diffusers generation, accelerator utilization, concurrent inference, or notebook completion time. Measurements remain local evidence and never establish a hosted GPU service, benchmark leadership, or guaranteed user performance.

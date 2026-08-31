@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
+import { managedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
@@ -96,6 +97,55 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(runtimePayload),
     },
+  );
+  if (!upstream) return Response.json({ error: 'llama.cpp runtime unavailable' }, { status: 503 });
+  return runtimeJsonResponse(upstream);
+};
+
+export const GET: APIRoute = async ({ locals, params }) => {
+  const sql = sqlClient(locals);
+  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  let profile;
+  try {
+    profile = await ensureAuthenticatedProfile(locals, sql);
+  } catch {
+    return Response.json({ error: 'authentication service unavailable' }, { status: 503 });
+  }
+  if (!profile) return Response.json({ error: 'sign in to view runtime status' }, { status: 401 });
+  const repositoryId = params.repositoryId ?? '';
+  const revisionId = await publishedRevisionId(sql, repositoryId, 'model');
+  if (!revisionId) return Response.json({ error: 'model not found' }, { status: 404 });
+  const upstream = await runtimeFetch(
+    locals,
+    `/v1/repositories/${repositoryId}/revisions/${revisionId}/llama/status`,
+    { signal: AbortSignal.timeout(10_000) },
+  );
+  if (!upstream) return Response.json({ error: 'llama.cpp runtime unavailable' }, { status: 503 });
+  return runtimeJsonResponse(upstream);
+};
+
+export const DELETE: APIRoute = async ({ locals, params, request }) => {
+  if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
+  const sql = sqlClient(locals);
+  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  let profile;
+  try {
+    profile = await ensureAuthenticatedProfile(locals, sql);
+  } catch {
+    return Response.json({ error: 'authentication service unavailable' }, { status: 503 });
+  }
+  if (!profile) return Response.json({ error: 'sign in to unload a model' }, { status: 401 });
+  const repositoryId = params.repositoryId ?? '';
+  const managed = await managedRepository(sql, repositoryId, profile.profileId);
+  if (!managed) {
+    return Response.json({ error: 'repository owner or maintainer access required' }, { status: 403 });
+  }
+  const revisionId = await publishedRevisionId(sql, repositoryId, 'model');
+  if (!revisionId) return Response.json({ error: 'model not found' }, { status: 404 });
+  const upstream = await runtimeFetch(
+    locals,
+    `/v1/repositories/${repositoryId}/revisions/${revisionId}/llama/unload`,
+    { method: 'POST', signal: AbortSignal.timeout(30_000) },
   );
   if (!upstream) return Response.json({ error: 'llama.cpp runtime unavailable' }, { status: 503 });
   return runtimeJsonResponse(upstream);

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -52,3 +53,21 @@ class DiffusionGenerateRequest(BaseModel):
     width: int = Field(default=512, ge=128, le=2048, multiple_of=8)
     height: int = Field(default=512, ge=128, le=2048, multiple_of=8)
     seed: int = Field(default=0, ge=0, le=2**32 - 1)
+
+
+class CreateTransferRequest(BaseModel):
+    id: UUID
+    repository_id: UUID
+    revision_id: UUID
+    path: str = Field(min_length=1, max_length=1024)
+    filename: str = Field(min_length=1, max_length=255)
+    mime_type: str = Field(min_length=1, max_length=255)
+    created_by: str = Field(min_length=1, max_length=255)
+    length: int = Field(ge=1, le=10 * 1024**3)
+    expected_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expires_at: datetime
+
+
+class ExecuteNotebookRequest(BaseModel):
+    profile_id: UUID
+    notebook_path: str = Field(min_length=1, max_length=1024, pattern=r"\.ipynb$")

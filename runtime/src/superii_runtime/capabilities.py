@@ -16,6 +16,13 @@ def capability_report(settings: Settings) -> dict[str, Any]:
             "storage": "local_content_addressed_filesystem",
             "xet": False,
         },
+        "resumable_transfers": {
+            "phase": "implemented",
+            "protocol": "tus-1.0.0",
+            "max_upload_bytes": settings.max_upload_bytes,
+            "max_chunk_bytes": settings.transfer_max_chunk_bytes,
+            "service": "rust_loopback_sidecar",
+        },
         "safetensors": {
             "phase": "implemented",
             "available": _installed("safetensors"),
@@ -38,11 +45,13 @@ def capability_report(settings: Settings) -> dict[str, Any]:
             "offline": True,
         },
         "notebooks": {
-            "phase": "implemented_static",
+            "phase": "implemented_isolated_execution",
             "available": _installed("nbformat"),
             "nbformat": "4",
-            "code_execution": False,
-            "active_outputs": False,
+            "code_execution": shutil.which("docker") is not None,
+            "active_outputs": True,
+            "network": "disabled",
+            "secrets_injected": False,
         },
         "transformers_js": {
             "phase": "implemented_in_web_control_plane",
@@ -50,8 +59,10 @@ def capability_report(settings: Settings) -> dict[str, Any]:
             "commercial_api": False,
         },
         "llama_cpp": {
-            "phase": "implemented",
-            "available": shutil.which(settings.llama_cli_command) is not None,
+            "phase": "implemented_persistent",
+            "available": shutil.which(settings.llama_server_command) is not None,
+            "continuous_batching": True,
+            "network": "loopback_only",
             "commercial_api": False,
         },
         "diffusers": {

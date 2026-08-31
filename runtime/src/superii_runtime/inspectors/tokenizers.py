@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -11,11 +12,12 @@ def _offline_environment() -> None:
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 
-def _load(root: Path):
+@lru_cache(maxsize=4)
+def _load_cached(root_value: str):
     _offline_environment()
     from transformers import AutoTokenizer
 
-    resolved = root.resolve(strict=True)
+    resolved = Path(root_value).resolve(strict=True)
     if not resolved.is_dir():
         raise ValueError("tokenizer inspection requires a local directory")
     return AutoTokenizer.from_pretrained(
@@ -24,6 +26,15 @@ def _load(root: Path):
         trust_remote_code=False,
         use_fast=True,
     )
+
+
+def _load(root: Path):
+    return _load_cached(str(root.resolve(strict=True)))
+
+
+def tokenizer_cache_info() -> dict[str, int]:
+    info = _load_cached.cache_info()
+    return {"hits": info.hits, "misses": info.misses, "size": info.currsize, "max_size": 4}
 
 
 def inspect_tokenizer(root: Path) -> dict[str, Any]:

@@ -47,11 +47,14 @@ services:
       SUPERII_STORAGE_ROOT: /data
       SUPERII_DATABASE_URL: ${SUPERII_DATABASE_URL:?set SUPERII_DATABASE_URL}
       SUPERII_RUNTIME_TOKEN: ${SUPERII_RUNTIME_TOKEN:?set SUPERII_RUNTIME_TOKEN}
+      SUPERII_TRANSFER_URL: http://127.0.0.1:8790
+      SUPERII_TRANSFER_TOKEN: ${SUPERII_RUNTIME_TOKEN:?set SUPERII_RUNTIME_TOKEN}
       SUPERII_CLAMAV_COMMAND: clamdscan
       SUPERII_CLAMAV_CONFIG_FILE: /etc/clamav/clamd-client.conf
       SUPERII_GITLEAKS_COMMAND: gitleaks
       SUPERII_LLAMA_CLI_COMMAND: llama-cli
       SUPERII_LLAMA_SERVER_COMMAND: llama-server
+      SUPERII_NOTEBOOK_IMAGE: superii/notebook-executor:0.1.0
       HF_HUB_OFFLINE: "1"
       HF_DATASETS_OFFLINE: "1"
       HF_HUB_DISABLE_TELEMETRY: "1"
@@ -82,6 +85,34 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  transfer:
+    build:
+      context: ../rust
+      dockerfile: Dockerfile
+    image: superii/transfer:0.1.0
+    restart: unless-stopped
+    depends_on:
+      runtime:
+        condition: service_started
+    network_mode: service:runtime
+    environment:
+      SUPERII_TRANSFER_ROOT: /data
+      SUPERII_TRANSFER_TOKEN: ${SUPERII_RUNTIME_TOKEN:?set SUPERII_RUNTIME_TOKEN}
+      SUPERII_TRANSFER_HOST: 127.0.0.1
+      SUPERII_TRANSFER_PORT: 8790
+      SUPERII_MAX_UPLOAD_BYTES: 10737418240
+      SUPERII_TRANSFER_MAX_CHUNK_BYTES: 33554432
+    volumes:
+      - superii-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
 
 volumes:
   superii-data:

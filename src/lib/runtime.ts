@@ -8,17 +8,23 @@ export type RuntimeReadiness = {
   state: 'ready' | 'blocked' | 'unconfigured' | 'error';
   database: boolean;
   storage: boolean;
+  transfer_service: boolean;
   scanners: Record<string, boolean>;
   publishing_enabled: boolean;
 };
 
 export async function pingRuntime(locals: App.Locals): Promise<RuntimeReadiness> {
   if (!runtimeIsConfigured(locals)) {
-    return { state: 'unconfigured', database: false, storage: false, scanners: {}, publishing_enabled: false };
+    return { state: 'unconfigured', database: false, storage: false, transfer_service: false, scanners: {}, publishing_enabled: false };
   }
   try {
     const response = await runtimeFetch(locals, '/ready', { signal: AbortSignal.timeout(2500) });
-    if (!response?.ok) throw new Error('runtime readiness failed');
+    if (!response?.ok) {
+      console.warn('Super ii runtime readiness returned a non-success status', {
+        status: response?.status ?? null,
+      });
+      throw new Error('runtime readiness failed');
+    }
     const payload = await response.json() as Record<string, unknown>;
     const scannerPayload = payload.required_scanners ?? payload.scanners;
     const scanners = typeof scannerPayload === 'object' && scannerPayload
@@ -29,11 +35,16 @@ export async function pingRuntime(locals: App.Locals): Promise<RuntimeReadiness>
       state: publishing ? 'ready' : 'blocked',
       database: payload.database === true,
       storage: payload.storage === true,
+      transfer_service: payload.transfer_service === true,
       scanners,
       publishing_enabled: publishing,
     };
-  } catch {
-    return { state: 'error', database: false, storage: false, scanners: {}, publishing_enabled: false };
+  } catch (error) {
+    console.warn('Super ii runtime readiness request failed', {
+      kind: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message.slice(0, 200) : 'unknown failure',
+    });
+    return { state: 'error', database: false, storage: false, transfer_service: false, scanners: {}, publishing_enabled: false };
   }
 }
 
@@ -57,7 +68,10 @@ export async function runtimeFetch(
   const headers = new Headers(init.headers);
   headers.set('x-superii-runtime-token', token);
   headers.set('accept', headers.get('accept') ?? 'application/json');
-  return fetch(target, { ...init, headers, redirect: init.redirect ?? 'error' });
+  // Cloudflare Workers does not implement Fetch's `error` redirect mode.
+  // `manual` preserves the fail-closed boundary: callers receive the 3xx
+  // response and never send the runtime credential to a redirected origin.
+  return fetch(target, { ...init, headers, redirect: init.redirect ?? 'manual' });
 }
 
 export function proxiedFileResponse(upstream: Response, immutable = true): Response {

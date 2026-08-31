@@ -56,6 +56,10 @@ REQUIRED_TABLES = {
     "trusted_publishers",
     "scoped_access_tokens",
     "agent_traces",
+    "cas_integrity_events",
+    "runtime_model_instances",
+    "runtime_benchmark_records",
+    "notebook_execution_sessions",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -126,6 +130,16 @@ def main() -> int:
         errors.append("trusted publishing requires publisher identities and hashed short-lived tokens")
     if "'notebook'" not in lower or "static validation without code execution" not in lower:
         errors.append("notebook analysis must be an explicit no-execution database contract")
+    if "create_resumable_upload" not in lower or "advance_resumable_upload" not in lower:
+        errors.append("large uploads require transactional TUS session and offset functions")
+    if "transition_resumable_upload" not in lower or "expire_resumable_uploads" not in lower:
+        errors.append("resumable upload promotion, rejection, and expiry must be transactional")
+    if "runtime_model_instances" not in lower or "runtime_benchmark_records" not in lower:
+        errors.append("persistent inference and provenance-bound benchmarks require canonical records")
+    if "notebook_execution_sessions" not in lower or "transition_notebook_execution" not in lower:
+        errors.append("isolated notebook execution requires a bounded transactional lifecycle")
+    if "network_disabled boolean not null default true check (network_disabled)" not in lower:
+        errors.append("notebook execution must enforce a no-network database contract")
     for scanner in ("clamav", "gitleaks", "format_policy"):
         if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
             errors.append(f"publish gate must require a passed {scanner} inspection")

@@ -3278,29 +3278,46 @@ pre {
   border-block: 1px solid var(--line);
 }
 
-.repository-notebooks > a {
+.repository-notebook-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.repository-notebook-item > a {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.9rem;
   padding: 1rem 0.25rem;
-  border-bottom: 1px solid var(--line);
+  flex: 1;
   text-decoration: none;
   transition: color 130ms ease, padding-inline 130ms ease;
 }
 
-.repository-notebooks > a:last-child {
+.repository-notebook-item:last-child {
   border-bottom: 0;
 }
 
-.repository-notebooks > a:hover {
+.repository-notebook-item > a:hover {
   padding-inline: 0.65rem;
   color: var(--blue);
 }
 
-.repository-notebooks > a > i:first-child {
+.repository-notebook-item > a > i:first-child {
   color: var(--muted);
   font-size: 1.4rem;
+}
+
+.repository-notebook-actions {
+  min-width: 13rem;
+  padding: 0.7rem 0.25rem;
+}
+
+.repository-notebook-actions p {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
 }
 
 .repository-notebooks span {

@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (upload.size < 1 || upload.size > MAX_EDGE_UPLOAD) {
     return Response.json({
       error: upload.size > MAX_EDGE_UPLOAD
-        ? 'this file exceeds the current 95 MiB edge-upload limit; multipart object storage is not activated'
+        ? 'this file exceeds the legacy 95 MiB upload route; use the resumable transfer uploader'
         : 'empty files are not accepted',
     }, { status: 413 });
   }

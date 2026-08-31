@@ -1,28 +1,48 @@
-# Static notebook security contract
+# Notebook security contract
 
-Super ii treats every uploaded `.ipynb` file as untrusted publisher data. The public notebook reader is a static document viewer, not a kernel, sandbox, or execution service.
+Super ii treats every uploaded `.ipynb` as untrusted publisher data. Reading and execution are separate capabilities with separate trust boundaries.
 
-## Ingestion boundary
+## Static ingestion and reading
 
 - Accept UTF-8 Jupyter `nbformat` 4 JSON only.
 - Validate with pinned `nbformat` before publication review can pass.
 - Enforce bounded file, notebook, cell, source, output, and embedded-image sizes.
-- Never import repository modules, initialize a kernel, resolve widgets, fetch remote assets, or execute a cell.
 - Store a normalized analysis document separately from the immutable original file.
-
-## Rendering boundary
-
-- Render Markdown with raw HTML disabled.
-- Render code as escaped text; highlighting must not evaluate code.
+- Opening the reader never imports repository modules, initializes a kernel, installs packages, resolves widgets, fetches remote assets, or executes a cell.
+- Render Markdown with raw HTML disabled and code as escaped text.
 - Permit only escaped text, JSON, PNG, JPEG, and WebP output representations.
 - Drop HTML, JavaScript, SVG, widget state, custom MIME types, and Markdown attachments.
-- Preserve the original file only as an explicit attachment download with its reviewed SHA-256 checksum.
-- Keep repository notebooks inside the same content-security, human-review, and immutable-revision boundary as every other file.
+- Preserve the original only as an explicit reviewed attachment with its SHA-256 checksum.
 
-## External execution
+## Explicit execution eligibility
 
-Super ii never labels external notebook execution as isolated Super ii compute. “Open in Colab” is offered only for checked-in official tutorials with stable public GitHub paths. Users leave Super ii, accept the external provider’s terms, and must review code before running it. User-uploaded notebooks do not receive a Colab link unless a future verified source mapping can prove the exact immutable content.
+Execution is never triggered by page load, preview, publication, analysis, MCP, or an automated reader. It requires all of these:
 
-## Deliberate exclusions
+1. an authenticated same-origin request;
+2. a database-backed rate-limit grant;
+3. a published repository and exact published revision;
+4. a reviewed `.ipynb` path from that immutable revision;
+5. a ready trusted runtime and locally pinned executor image.
 
-There is no in-browser kernel, server kernel, arbitrary package installation, widget runtime, custom renderer, iframe output, notebook write-back, or trust flag. Adding any of those requires a new threat model and an isolation boundary stronger than this static reader.
+Official tutorial “Open in Colab” links remain external handoffs. They are not Super ii compute and appear only for checked-in tutorials with stable public source paths.
+
+## One-shot execution boundary
+
+The trusted host launches one disposable container per run with:
+
+- an exact image digest recorded in Postgres;
+- UID and GID `65532:65532`;
+- no network namespace connectivity and no shared IPC;
+- a read-only root filesystem and read-only immutable repository workspace;
+- all Linux capabilities dropped and `no-new-privileges` enabled;
+- no runtime, transfer, database, Clerk, payment, or user secrets in its environment;
+- explicit CPU, memory, PID, open-file, per-cell, result-size, and wall-clock limits;
+- a bounded writable `/tmp` and a session-scoped output mount only.
+
+The executor validates the notebook again, refuses more than 200 code cells, fails on cell errors, truncates oversized text items, omits oversized rich items, limits total outputs, and rejects an oversized final notebook. The host verifies the result receipt and complete SHA-256 digest, locks the output read-only, and records the terminal session state transactionally.
+
+Only the requesting profile can retrieve a successful result. Results are integrity-checked again before download and expire after 24 hours. Failed, missing, oversized, timed-out, or receipt-mismatched results remain unavailable.
+
+## Claim boundary
+
+This boundary materially reduces risk for reviewed public notebooks, but a same-kernel Docker container is not a hostile multi-tenant security boundary. Super ii does not advertise arbitrary package installation, privileged containers, user-selected images, notebook write-back, background kernels, widgets, custom renderers, or microVM-grade isolation. Hostile public-code execution requires a dedicated host plus a stronger sandbox such as a reviewed microVM design.

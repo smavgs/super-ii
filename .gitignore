@@ -25,6 +25,7 @@ __pycache__/
 # Super ii Runtime local state (uploads and generated artifacts never enter Git)
 runtime/data/
 runtime/workspaces/
+rust/target/
 
 
 # environment variables

@@ -119,10 +119,27 @@ def main() -> int:
         ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "compatibility.py",
         ROOT / "database" / "migrations" / "0007_agent_native_foundation.sql",
         ROOT / "database" / "migrations" / "0008_notebook_foundation.sql",
+        ROOT / "database" / "migrations" / "0009_resumable_runtime.sql",
         ROOT / "docs" / "architecture" / "notebook-security.md",
         ROOT / "docs" / "architecture" / "cas-integrity.md",
         ROOT / "docs" / "architecture" / "performance-baseline.md",
+        ROOT / "docs" / "architecture" / "resumable-transfers.md",
+        ROOT / "docs" / "architecture" / "persistent-inference.md",
         ROOT / "runtime" / "src" / "superii_runtime" / "inspectors" / "notebooks.py",
+        ROOT / "runtime" / "src" / "superii_runtime" / "notebooks.py",
+        ROOT / "runtime" / "src" / "superii_runtime" / "transfers.py",
+        ROOT / "runtime" / "src" / "superii_runtime" / "workspace_cache.py",
+        ROOT / "runtime" / "src" / "superii_runtime" / "runtimes" / "llama_server.py",
+        ROOT / "runtime" / "notebook-image" / "Dockerfile",
+        ROOT / "runtime" / "notebook-image" / "execute_notebook.py",
+        ROOT / "rust" / "Cargo.toml",
+        ROOT / "rust" / "Cargo.lock",
+        ROOT / "rust" / "src" / "transfer.rs",
+        ROOT / "rust" / "src" / "bin" / "superii-transferd.rs",
+        ROOT / "rust" / "src" / "bin" / "superii.rs",
+        ROOT / "src" / "lib" / "transfer-ticket.ts",
+        ROOT / "src" / "lib" / "transfers.ts",
+        ROOT / "src" / "pages" / "api" / "transfers" / "[transferId].ts",
         ROOT / "src" / "lib" / "notebook-markdown.ts",
         ROOT / "src" / "pages" / "notebooks" / "index.astro",
     ]
@@ -162,6 +179,62 @@ def main() -> int:
         for marker in ("html: false", "markdown.disable('image')", "nofollow noreferrer"):
             if marker not in notebook_markdown:
                 errors.append(f"static notebook renderer is missing {marker}")
+        transfer_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "rust" / "src" / "transfer.rs",
+                ROOT / "src" / "lib" / "transfer-ticket.ts",
+                ROOT / "src" / "lib" / "transfers.ts",
+                ROOT / "src" / "pages" / "api" / "transfers" / "[transferId].ts",
+                ROOT / "src" / "pages" / "repositories" / "[repositoryId]" / "edit.astro",
+            )
+        )
+        for marker in (
+            'TUS_VERSION: &str = "1.0.0"',
+            "bind.ip().is_loopback()",
+            "ct_eq",
+            "sync_all",
+            "DEFAULT_MAX_UPLOAD_BYTES",
+            "superii-transfer-ticket-v1",
+            "request.body",
+            "advance_resumable_upload",
+            "transfer_runtime_state_missing",
+            "TransferResumeError",
+        ):
+            if marker not in transfer_contract:
+                errors.append(f"resumable transfer contract is missing {marker}")
+        runtime_proxy = (ROOT / "src" / "lib" / "runtime.ts").read_text(encoding="utf-8")
+        if "redirect: init.redirect ?? 'manual'" not in runtime_proxy:
+            errors.append("runtime proxy must reject redirects with Cloudflare-compatible manual handling")
+        notebook_runner = (
+            ROOT / "runtime" / "src" / "superii_runtime" / "notebooks.py"
+        ).read_text(encoding="utf-8")
+        for marker in (
+            '"--network=none"',
+            '"--ipc=none"',
+            '"--read-only"',
+            '"--cap-drop=ALL"',
+            '"--security-opt=no-new-privileges:true"',
+            '"--user=65532:65532"',
+            '"--ulimit=nofile=256:256"',
+            "result_sha256",
+            "_docker_environment",
+        ):
+            if marker not in notebook_runner:
+                errors.append(f"isolated notebook runner is missing {marker}")
+        llama_server = (
+            ROOT / "runtime" / "src" / "superii_runtime" / "runtimes" / "llama_server.py"
+        ).read_text(encoding="utf-8")
+        for marker in (
+            '"127.0.0.1"',
+            '"--cont-batching"',
+            '"--no-webui"',
+            "model_sha256",
+            "record_model_instance",
+            "llama_server_idle_seconds",
+        ):
+            if marker not in llama_server:
+                errors.append(f"persistent llama.cpp contract is missing {marker}")
 
     wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
     if not wasm_files:
