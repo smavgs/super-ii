@@ -16,7 +16,7 @@ export type ManagedRepository = {
 };
 
 export const repositorySlugPattern = /^[a-z0-9](?:[a-z0-9._-]{0,95}[a-z0-9])?$/;
-export const repositoryPathPattern = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\\)[^\0]{1,1024}$/;
+export const repositoryPathPattern = /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))(?!.*\\)(?!.*[\u0000-\u001f\u007f]).{1,1024}$/;
 
 export function textValue(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';

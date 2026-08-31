@@ -45,8 +45,8 @@ def normalize_repository_path(raw_path: str) -> str:
         raise StorageError("repository path exceeds 1024 UTF-8 bytes")
     if any(part in {"", ".", ".."} for part in candidate.parts):
         raise StorageError("repository path contains an unsafe segment")
-    if "\x00" in normalized:
-        raise StorageError("repository path contains a NUL byte")
+    if any(ord(character) < 32 or ord(character) == 127 for character in normalized):
+        raise StorageError("repository path contains an ASCII control character")
     canonical = candidate.as_posix()
     if canonical != normalized:
         raise StorageError("repository path is not canonical")

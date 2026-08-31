@@ -22,6 +22,13 @@ declare
   team_payment_order_id uuid;
   resumable_upload app.repository_uploads;
   notebook_session_id uuid;
+  bridge_identity_id uuid;
+  bridge_job_id uuid;
+  bridge_item app.bridge_import_items;
+  bridge_repository_id uuid;
+  bridge_revision_id uuid;
+  bridge_already_imported boolean;
+  bridge_organization_id uuid;
 begin
   alice_id := app.ensure_profile('clerk-alice', 'alice', 'Alice', null);
   bob_id := app.ensure_profile('clerk-bob', 'bob', 'Bob', null);
@@ -43,6 +50,140 @@ begin
     where organization_id = new_organization_id and profile_id = alice_id and role = 'owner'
   ) then
     raise exception 'organization owner was not created';
+  end if;
+
+  insert into app.external_identities (
+    profile_id, provider, provider_subject, provider_username, scopes, organizations
+  ) values (
+    alice_id,
+    'huggingface',
+    'hf-user-alice',
+    'alice',
+    array['openid', 'profile', 'read-memberships'],
+    '[{"sub":"hf-org-admins","name":"HF Admins","preferred_username":"hf-admins","role_in_org":"admin","securityRestrictions":["mfa-required"]}]'::jsonb
+  ) returning id into bridge_identity_id;
+  begin
+    perform app.claim_bridge_organization(
+      alice_id,
+      bridge_identity_id,
+      'hf-org-admins',
+      'hf-admins',
+      'community'
+    );
+    raise exception 'Bridge organization claim ignored provider security restrictions';
+  exception
+    when insufficient_privilege then null;
+  end;
+  update app.external_identities
+  set organizations = '[{"sub":"hf-org-admins","name":"HF Admins","preferred_username":"hf-admins","role_in_org":"admin","security_restrictions":[]}]'::jsonb
+  where id = bridge_identity_id;
+  bridge_organization_id := app.claim_bridge_organization(
+    alice_id,
+    bridge_identity_id,
+    'hf-org-admins',
+    'hf-admins',
+    'community'
+  );
+  if not exists (
+    select 1 from app.organization_members
+    where organization_id = bridge_organization_id
+      and profile_id = alice_id
+      and role = 'owner'
+  ) or not exists (
+    select 1 from app.namespace_claims
+    where organization_id = bridge_organization_id
+      and namespace_kind = 'organization'
+      and provider_role = 'admin'
+      and status = 'verified'
+  ) then
+    raise exception 'Bridge organization administrator claim was not preserved';
+  end if;
+
+  bridge_job_id := app.create_bridge_import(
+    alice_id,
+    'huggingface',
+    bridge_identity_id,
+    'https://huggingface.co/alice/bridge-smoke',
+    jsonb_build_array(jsonb_build_object(
+      'provider_repo_id', 'alice/bridge-smoke',
+      'source_revision', repeat('a', 40),
+      'source_url', 'https://huggingface.co/datasets/alice/bridge-smoke',
+      'kind', 'dataset',
+      'title', 'Bridge smoke',
+      'summary', 'Exact source revision test',
+      'license', 'mit',
+      'source_visibility', 'public',
+      'file_count', 1,
+      'total_size_bytes', 4,
+      'largest_file_bytes', 4,
+      'blocked_reason', null,
+      'source_metadata', '{}'::jsonb,
+      'source_manifest', jsonb_build_array(jsonb_build_object(
+        'path', 'README.md',
+        'size_bytes', 4,
+        'source_oid', null,
+        'source_sha256', repeat('b', 64)
+      ))
+    )),
+    true
+  );
+  if app.claim_next_bridge_import() <> bridge_job_id then
+    raise exception 'Bridge import was not claimed transactionally';
+  end if;
+  select * into bridge_item from app.claim_next_bridge_item(bridge_job_id);
+  select repository_id, revision_id, already_imported
+  into bridge_repository_id, bridge_revision_id, bridge_already_imported
+  from app.prepare_bridge_item(bridge_item.id);
+  if bridge_repository_id is null or bridge_revision_id is null or bridge_already_imported then
+    raise exception 'Bridge destination revision was not prepared';
+  end if;
+  insert into app.repository_files (
+    repository_id, revision_id, path, size_bytes, mime_type, sha256,
+    storage_key, storage_state, scan_status, created_by
+  ) values (
+    bridge_repository_id, bridge_revision_id, 'README.md', 4, 'text/markdown',
+    repeat('b', 64), 'objects/sha256/bb/' || repeat('b', 64),
+    'available', 'clean', 'bridge-smoke'
+  ) returning id into file_id;
+  insert into app.repository_file_inspections (
+    repository_file_id, inspector, status, tool_version, completed_at
+  ) values
+    (file_id, 'clamav', 'passed', 'smoke', now()),
+    (file_id, 'gitleaks', 'passed', 'smoke', now()),
+    (file_id, 'format_policy', 'passed', 'smoke', now());
+  insert into app.repository_revision_analyses (
+    repository_id, revision_id, analysis_type, status, result, completed_at
+  ) values (
+    bridge_repository_id, bridge_revision_id, 'dataset', 'passed',
+    '{"offline":true}'::jsonb, now()
+  );
+  update app.repository_revisions
+  set status = 'review', manifest_sha256 = repeat('c', 64),
+      commit_sha = repeat('d', 64), file_count = 1, total_size_bytes = 4,
+      manifest = jsonb_build_array(jsonb_build_object(
+        'path', 'README.md', 'size_bytes', 4, 'sha256', repeat('b', 64)
+      ))
+  where id = bridge_revision_id;
+  perform app.complete_bridge_item(
+    bridge_item.id,
+    '# Bridge smoke',
+    jsonb_build_array(jsonb_build_object(
+      'path', 'README.md',
+      'size_bytes', 4,
+      'source_sha256', repeat('b', 64),
+      'imported_sha256', repeat('b', 64)
+    ))
+  );
+  perform app.set_bridge_sync(alice_id, bridge_repository_id, true);
+  if not exists (
+    select 1 from app.repository_sources
+    where repository_id = bridge_repository_id
+      and source_revision = repeat('a', 40)
+  ) or not exists (
+    select 1 from app.bridge_sync_subscriptions
+    where repository_id = bridge_repository_id and enabled
+  ) then
+    raise exception 'Bridge provenance or public sync contract was not stored';
   end if;
 
   select * into created_repository

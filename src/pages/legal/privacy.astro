@@ -3,7 +3,7 @@ import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 export const prerender = true;
-const effectiveDate = 'August 29, 2026';
+const effectiveDate = 'August 31, 2026';
 ---
 
 <BaseLayout title="Privacy Policy" description="How Super ii collects, uses, shares, protects, and retains personal information." noindex>
@@ -36,7 +36,7 @@ const effectiveDate = 'August 29, 2026';
         <li>A local theme preference stored in your browser. Super ii does not use advertising cookies at launch.</li>
       </ul>
       <h3>Information from connected services</h3>
-      <p>If you continue with Google or GitHub, we receive the identity data that provider shares for authentication, such as your account identifier, name, email address, and profile image. The provider’s own privacy policy governs its processing.</p>
+      <p>If you continue with Google or GitHub, we receive the identity data that provider shares for authentication, such as your account identifier, name, email address, and profile image. If you use Bring my work, we receive the external identity, profile, organization membership and role information, authorization scopes, repository metadata, exact source revisions, file manifests, and content you choose to import. Private, gated, and organization data is requested only after a separate permission choice. Provider access tokens are encrypted at rest, used server-side, never shown in the website, and cleared when you disconnect. The provider’s own privacy policy governs its processing.</p>
 
       <h2 id="use">3. How we use information</h2>
       <ul>
@@ -44,6 +44,7 @@ const effectiveDate = 'August 29, 2026';
         <li>Create accounts, authenticate sessions, manage organizations, and respond to requests.</li>
         <li>Operate plan waitlists, subscriptions, usage limits, and billing if paid services are activated.</li>
         <li>Review and publish submitted content when creator access opens.</li>
+        <li>Discover user-selected source repositories, verify identity or administrator claims, copy exact revisions, scan imports, preserve provenance, and perform opt-in public-source update checks.</li>
         <li>Detect abuse, enforce terms, investigate incidents, and protect users and the public.</li>
         <li>Understand aggregate service performance and prioritize product improvements.</li>
         <li>Meet legal, tax, accounting, and regulatory obligations.</li>
@@ -57,6 +58,7 @@ const effectiveDate = 'August 29, 2026';
         <li><strong>Clerk</strong> for authentication, account management, organizations, and optional subscription management.</li>
         <li><strong>Neon</strong> for application database hosting.</li>
         <li><strong>NOWPayments</strong> for USDC payment creation, blockchain payment monitoring, transaction status, and payment support.</li>
+        <li><strong>User-connected source providers</strong> when you authorize Bridge to verify an identity or request repository metadata and files. Hugging Face is the first supported source.</li>
         <li>Professional advisers and authorities when reasonably necessary to comply with law, protect rights and safety, or investigate misuse.</li>
         <li>A successor in a merger, financing, reorganization, acquisition, or sale, subject to applicable notice requirements.</li>
       </ul>
@@ -64,11 +66,11 @@ const effectiveDate = 'August 29, 2026';
       <p>Ethereum transactions and wallet addresses are recorded on a public blockchain and may remain publicly visible independently of Super ii or NOWPayments.</p>
 
       <h2 id="retention">5. Retention</h2>
-      <p>We keep personal information only as long as reasonably needed for the purposes above. Account records generally remain while the account is active. Contact submissions are reviewed and periodically deleted when no longer needed. Security and audit records may be retained longer to protect the Service, resolve disputes, or meet legal obligations. Backup copies may persist for a limited period before rotating out.</p>
+      <p>We keep personal information only as long as reasonably needed for the purposes above. Account records generally remain while the account is active. Connected-provider tokens remain encrypted until expiry or disconnection; disconnecting clears the stored token but does not delete repositories you already imported. Import provenance, manifests, and security evidence remain with imported revisions for integrity and audit purposes. Contact submissions are reviewed and periodically deleted when no longer needed. Security and audit records may be retained longer to protect the Service, resolve disputes, or meet legal obligations. Backup copies may persist for a limited period before rotating out.</p>
 
       <h2 id="choices">6. Your choices and rights</h2>
       <p>Depending on where you live, you may have rights to access, correct, delete, restrict, object to, or obtain a copy of personal information, and to withdraw consent where processing relies on consent. You may also have the right to complain to a local data-protection authority.</p>
-      <p>Use account settings for available self-service changes or submit a <a href="/contact?interest=privacy">privacy request</a>. We may need to verify that you control the relevant account. We will not discriminate against you for exercising a legal privacy right.</p>
+      <p>Use account settings for available self-service changes, use Bring my work to disconnect an external identity or pause public-source checks, or submit a <a href="/contact?interest=privacy">privacy request</a>. We may need to verify that you control the relevant account. We will not discriminate against you for exercising a legal privacy right.</p>
 
       <h2 id="transfers">7. International processing</h2>
       <p>Super ii and its providers may process information in countries other than yours. Those countries may have different data-protection rules. Where required, providers and Super ii use contractual or other approved safeguards for international transfers.</p>

@@ -4676,3 +4676,633 @@ pre {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Super ii Bridge */
+.bridge-body main {
+  background: var(--paper);
+}
+
+.bridge-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  background:
+    radial-gradient(circle at 83% 18%, rgb(255 255 255 / 0.8), transparent 24rem),
+    var(--yellow);
+}
+
+.bridge-hero::after {
+  position: absolute;
+  inset: auto -8vw -14rem auto;
+  width: 34rem;
+  height: 34rem;
+  border: 1px solid rgb(7 26 47 / 0.12);
+  border-radius: 50%;
+  content: '';
+}
+
+.bridge-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: clamp(27rem, 58svh, 42rem);
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 27rem);
+  align-items: center;
+  gap: clamp(2rem, 7vw, 8rem);
+  padding-block: clamp(4rem, 9vw, 8rem);
+}
+
+.bridge-hero h1 {
+  max-width: 13ch;
+  margin: 0.3rem 0 1.25rem;
+  color: var(--ink);
+  font-size: clamp(3.4rem, 8vw, 7.5rem);
+  font-weight: 760;
+  letter-spacing: -0.07em;
+  line-height: 0.88;
+  animation: bridge-rise 620ms cubic-bezier(.2,.7,.2,1) both;
+}
+
+.bridge-hero p:not(.eyebrow) {
+  max-width: 38rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.5;
+  animation: bridge-rise 620ms 90ms cubic-bezier(.2,.7,.2,1) both;
+}
+
+.bridge-hero__mark {
+  position: relative;
+  transform: rotate(3deg);
+  animation: bridge-mark 700ms 120ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.bridge-workspace {
+  padding-block: clamp(2.5rem, 6vw, 5rem) 7rem;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.notice--success {
+  border-color: color-mix(in srgb, var(--green) 28%, var(--line));
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.notice--warning {
+  border-color: color-mix(in srgb, var(--yellow-strong) 55%, var(--line));
+  background: var(--yellow-soft);
+}
+
+.notice--error {
+  border-color: color-mix(in srgb, var(--red) 32%, var(--line));
+  background: color-mix(in srgb, var(--red) 8%, var(--paper));
+  color: var(--red);
+}
+
+.bridge-auth-gate {
+  max-width: 40rem;
+  padding-block: clamp(3rem, 9vw, 8rem);
+}
+
+.bridge-auth-gate h2 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+}
+
+.bridge-auth-gate p {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.bridge-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 21rem);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+
+.bridge-main {
+  min-width: 0;
+}
+
+.bridge-step {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 1.25rem;
+  padding-block: 1rem 3.5rem;
+  scroll-margin-top: 7rem;
+}
+
+.bridge-step + .bridge-step {
+  padding-top: 3.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.bridge-step__number {
+  font-family: var(--font-mono);
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+}
+
+.bridge-step__content > h2,
+.bridge-results-heading h2 {
+  margin: 0.2rem 0 0.75rem;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.bridge-step__content > p:not(.eyebrow, .form-status) {
+  max-width: 44rem;
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.bridge-url-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.bridge-url-control:focus-within {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 52%, transparent);
+}
+
+.bridge-url-control > i {
+  margin-left: 0.5rem;
+  color: var(--muted);
+  font-size: 1.2rem;
+}
+
+.bridge-url-control input {
+  min-width: 0;
+  padding: 0.75rem 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.bridge-connection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.bridge-connection-actions details {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bridge-connection-actions summary {
+  cursor: pointer;
+}
+
+.bridge-scope-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.bridge-scope-actions button,
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.bridge-scope-actions button + button::before {
+  margin-right: 0.5rem;
+  color: var(--line-strong);
+  content: '·';
+}
+
+.bridge-results-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.bridge-results-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.bridge-repository-list {
+  border-block: 1px solid var(--line);
+}
+
+.bridge-repository {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(9rem, auto);
+  align-items: center;
+  gap: 1rem;
+  min-height: 4.8rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: padding 160ms ease, background 160ms ease;
+}
+
+.bridge-repository:last-child {
+  border-bottom: 0;
+}
+
+.bridge-repository:not(.bridge-repository--blocked):hover {
+  padding-inline: 0.5rem;
+  background: var(--surface);
+}
+
+.bridge-repository input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--ink);
+}
+
+.bridge-repository__main {
+  display: grid;
+  min-width: 0;
+}
+
+.bridge-repository__main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bridge-repository__main small {
+  color: var(--muted);
+}
+
+.bridge-repository__ready,
+.bridge-repository__blocked {
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-align: right;
+}
+
+.bridge-repository__ready {
+  color: var(--green);
+}
+
+.bridge-repository__blocked {
+  color: var(--muted);
+}
+
+.bridge-repository--blocked {
+  opacity: 0.68;
+  cursor: not-allowed;
+}
+
+.bridge-attestation {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  margin: 1.25rem 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.bridge-attestation input {
+  margin-top: 0.2rem;
+  accent-color: var(--ink);
+}
+
+.bridge-import-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+}
+
+.bridge-import-bar > div {
+  display: grid;
+}
+
+.bridge-import-bar span {
+  color: rgb(255 255 255 / 0.66);
+  font-size: 0.85rem;
+}
+
+.bridge-import-bar .button--dark {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+.bridge-job-list {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.bridge-job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.bridge-job > div:first-child {
+  display: grid;
+}
+
+.bridge-job span:not(.status-badge) {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.bridge-job__state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.status-badge--running,
+.status-badge--queued {
+  background: var(--yellow-soft);
+  color: var(--ink);
+}
+
+.status-badge--review,
+.status-badge--complete {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.status-badge--failed,
+.status-badge--cancelled {
+  background: color-mix(in srgb, var(--red) 8%, var(--paper));
+  color: var(--red);
+}
+
+.bridge-empty-jobs {
+  color: var(--muted);
+}
+
+.bridge-sidebar {
+  position: sticky;
+  top: 6rem;
+  border-left: 1px solid var(--line);
+  padding-left: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.bridge-sidebar section {
+  padding-block: 1.25rem 1.75rem;
+}
+
+.bridge-sidebar section + section {
+  border-top: 1px solid var(--line);
+}
+
+.bridge-sidebar p:not(.eyebrow) {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.bridge-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.8rem 0 1rem;
+}
+
+.bridge-disconnect {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.bridge-organization-claims {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.bridge-organization-claim {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.bridge-organization-claim > div {
+  display: grid;
+}
+
+.bridge-organization-claim span {
+  color: var(--green);
+  font-size: 0.78rem;
+}
+
+.bridge-organization-claim select {
+  min-height: 2.5rem;
+  padding-inline: 0.65rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.bridge-source-list > div {
+  flex-wrap: wrap;
+}
+
+.bridge-identity img,
+.bridge-identity__avatar {
+  display: grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 50%;
+  place-items: center;
+  background: var(--surface);
+  object-fit: cover;
+}
+
+.bridge-identity > div {
+  display: grid;
+}
+
+.bridge-identity span {
+  color: var(--green);
+  font-size: 0.8rem;
+}
+
+.bridge-guarantees {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+
+.bridge-guarantees i {
+  margin-right: 0.35rem;
+  color: var(--green);
+}
+
+.bridge-limits {
+  margin: 0.65rem 0 0;
+}
+
+.bridge-limits div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.45rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.bridge-limits dt {
+  color: var(--muted);
+}
+
+.bridge-limits dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+@keyframes bridge-rise {
+  from { opacity: 0; transform: translateY(1.4rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bridge-mark {
+  from { opacity: 0; transform: rotate(8deg) scale(0.86); }
+  to { opacity: 1; transform: rotate(3deg) scale(1); }
+}
+
+@media (max-width: 900px) {
+  .bridge-hero__inner {
+    min-height: auto;
+    grid-template-columns: 1fr minmax(8rem, 13rem);
+  }
+
+  .bridge-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .bridge-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .bridge-sidebar section + section {
+    border-top: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .bridge-hero__inner {
+    grid-template-columns: 1fr;
+    padding-block: 3.5rem;
+  }
+
+  .bridge-hero__mark {
+    display: none;
+  }
+
+  .bridge-step {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .bridge-step__number {
+    color: var(--blue);
+  }
+
+  .bridge-url-control {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .bridge-url-control .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .bridge-repository {
+    grid-template-columns: auto 1fr;
+  }
+
+  .bridge-repository__ready,
+  .bridge-repository__blocked {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .bridge-import-bar,
+  .bridge-job {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bridge-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .bridge-sidebar section + section {
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bridge-hero h1,
+  .bridge-hero p,
+  .bridge-hero__mark {
+    animation: none;
+  }
+}

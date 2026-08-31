@@ -27,6 +27,11 @@ export const prerender = true;
       </ol>
       <p>The free plan requires no payment card. Authentication is provided through a dedicated Super ii application; account credentials are not stored in the website source.</p>
 
+      <h2 id="bring-my-work">Bring my work</h2>
+      <p><a href="/bring-my-work">Bring my work</a> accepts a supported profile or repository URL, detects the provider, and previews models, datasets, and compatible apps before anything is copied. Hugging Face is the first connector. Public URLs work without a copied token; private, gated, and organization membership access each require a separate OAuth permission.</p>
+      <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and stops for human review. It never deletes or changes the source, never copies provider secrets, and never publishes automatically.</p>
+      <p>Matching personal namespaces require an explicit verified identity claim. Organization namespaces require the membership scope plus provider administrator role evidence and an available Super ii handle. Opt-in update checks support public sources only; a new source revision becomes a new reviewable Super ii revision instead of overwriting existing work.</p>
+
       <h2 id="catalog">Explore the hub</h2>
       <p>The three public catalogs are separated by the kind of work they contain:</p>
       <ul>
@@ -116,6 +121,7 @@ export const prerender = true;
       <nav>
         <a href="#start">Start here</a>
         <a href="#account">Create an account</a>
+        <a href="#bring-my-work">Bring my work</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>
         <a href="#use-model">Use Model</a>

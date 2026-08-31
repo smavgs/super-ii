@@ -803,3 +803,329 @@ class RepositoryDatabase:
             if row is None:
                 raise RuntimeError("revision manifest was not stored")
             return str(row["commit_sha"])
+
+    def recover_stale_bridge_imports(self) -> int:
+        """Recover only work that has no partially-created destination revision."""
+
+        with self.connect() as connection, connection.transaction():
+            stale = connection.execute(
+                """
+                select id, retry_count from app.bridge_import_jobs
+                where status = 'running' and updated_at < now() - interval '5 minutes'
+                for update
+                """
+            ).fetchall()
+            for job in stale:
+                connection.execute(
+                    """
+                    update app.bridge_import_items
+                    set status = case
+                          when repository_id is null then 'queued' else 'failed'
+                        end,
+                        error_code = case
+                          when repository_id is null then null else 'worker_interrupted'
+                        end,
+                        error_detail = case
+                          when repository_id is null then null
+                          else 'Bridge stopped after destination preparation; review is required.'
+                        end,
+                        completed_at = case
+                          when repository_id is null then null else now()
+                        end,
+                        updated_at = now()
+                    where job_id = %s and status in ('downloading', 'scanning')
+                    """,
+                    (job["id"],),
+                )
+                if int(job["retry_count"]) >= 5:
+                    connection.execute(
+                        """
+                        update app.bridge_import_items
+                        set status = 'failed', error_code = 'retry_exhausted',
+                            error_detail = 'Bridge recovery limit reached; review is required.',
+                            completed_at = now(), updated_at = now()
+                        where job_id = %s and status = 'queued'
+                        """,
+                        (job["id"],),
+                    )
+                    connection.execute("select app.refresh_bridge_import(%s)", (job["id"],))
+                else:
+                    connection.execute(
+                        "select app.refresh_bridge_import(%s)",
+                        (job["id"],),
+                    )
+                    connection.execute(
+                        """
+                        update app.bridge_import_jobs
+                        set status = 'queued', retry_count = retry_count + 1,
+                            next_attempt_at = now(), completed_at = null, updated_at = now()
+                        where id = %s and status = 'running'
+                          and exists (
+                            select 1 from app.bridge_import_items
+                            where job_id = %s and status = 'queued'
+                          )
+                          and not exists (
+                            select 1 from app.bridge_import_items
+                            where job_id = %s and status in ('downloading', 'scanning')
+                          )
+                        """,
+                        (job["id"], job["id"], job["id"]),
+                    )
+            return len(stale)
+
+    def requeue_bridge_item(self, item_id: UUID) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                update app.bridge_import_items
+                set status = 'queued', started_at = null, updated_at = now()
+                where id = %s and status = 'downloading'
+                  and repository_id is null and revision_id is null
+                returning id
+                """,
+                (item_id,),
+            ).fetchone()
+            return row is not None
+
+    def release_bridge_import(self, job_id: UUID) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                update app.bridge_import_jobs
+                set status = 'queued', next_attempt_at = now(), updated_at = now()
+                where id = %s and status = 'running'
+                  and exists (
+                    select 1 from app.bridge_import_items
+                    where job_id = %s and status = 'queued'
+                  )
+                  and not exists (
+                    select 1 from app.bridge_import_items
+                    where job_id = %s and status in ('downloading', 'scanning')
+                  )
+                returning id
+                """,
+                (job_id, job_id, job_id),
+            ).fetchone()
+            return row is not None
+
+    def bridge_heartbeat(self, job_id: UUID) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                update app.bridge_import_jobs set updated_at = now()
+                where id = %s and status = 'running'
+                """,
+                (job_id,),
+            )
+
+    def claim_next_bridge_import(self) -> UUID | None:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute("select app.claim_next_bridge_import() as id").fetchone()
+            return row["id"] if row and row["id"] else None
+
+    def bridge_job(self, job_id: UUID) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "select * from app.bridge_import_jobs where id = %s",
+                (job_id,),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def refresh_bridge_import(self, job_id: UUID) -> str:
+        with self.connect() as connection:
+            row = connection.execute(
+                "select app.refresh_bridge_import(%s) as status",
+                (job_id,),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Bridge import status was not refreshed")
+            return str(row["status"])
+
+    def claim_next_bridge_item(self, job_id: UUID) -> dict[str, Any] | None:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                "select (app.claim_next_bridge_item(%s)).*",
+                (job_id,),
+            ).fetchone()
+            return dict(row) if row and row.get("id") else None
+
+    def prepare_bridge_item(self, item_id: UUID) -> tuple[UUID, UUID, bool]:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                "select * from app.prepare_bridge_item(%s)",
+                (item_id,),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Bridge item could not prepare a destination repository")
+            return row["repository_id"], row["revision_id"], bool(row["already_imported"])
+
+    def bridge_identity_credential(
+        self,
+        identity_id: UUID | None,
+        profile_id: UUID,
+    ) -> dict[str, Any] | None:
+        if identity_id is None:
+            return None
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                select id, provider, provider_username, scopes,
+                       access_token_ciphertext, access_token_nonce, token_expires_at
+                from app.external_identities
+                where id = %s and profile_id = %s and revoked_at is null
+                """,
+                (identity_id, profile_id),
+            ).fetchone()
+            return dict(row) if row else None
+
+    def bridge_cancel_requested(self, job_id: UUID) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                select cancel_requested_at is not null as cancelled
+                from app.bridge_import_jobs where id = %s
+                """,
+                (job_id,),
+            ).fetchone()
+            return bool(row and row["cancelled"])
+
+    def update_bridge_item_progress(self, item_id: UUID, progress_bytes: int) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                update app.bridge_import_items
+                set progress_bytes = greatest(0, least(%s, total_size_bytes)), updated_at = now()
+                where id = %s and status in ('downloading', 'scanning')
+                """,
+                (progress_bytes, item_id),
+            )
+            connection.execute(
+                """
+                update app.bridge_import_jobs job
+                set progress_bytes = (
+                  select coalesce(sum(least(progress_bytes, total_size_bytes)), 0)
+                  from app.bridge_import_items where job_id = job.id
+                ), updated_at = now()
+                where id = (select job_id from app.bridge_import_items where id = %s)
+                """,
+                (item_id,),
+            )
+
+    def set_bridge_item_state(
+        self,
+        item_id: UUID,
+        status: str,
+        progress_bytes: int,
+        error_code: str | None = None,
+        error_detail: str | None = None,
+    ) -> str:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                "select app.set_bridge_item_state(%s, %s, %s, %s, %s) as status",
+                (item_id, status, progress_bytes, error_code, error_detail),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Bridge item state was not updated")
+            return str(row["status"])
+
+    def complete_bridge_item(
+        self,
+        item_id: UUID,
+        card_markdown: str,
+        source_manifest: list[dict[str, Any]],
+    ) -> str:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                "select app.complete_bridge_item(%s, %s, %s) as status",
+                (item_id, card_markdown[:100_000], Jsonb(source_manifest)),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Bridge item was not completed")
+            return str(row["status"])
+
+    def claim_due_bridge_sync(self) -> dict[str, Any] | None:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                """
+                select * from app.bridge_sync_subscriptions
+                where enabled and next_check_at <= now()
+                order by next_check_at
+                for update skip locked
+                limit 1
+                """
+            ).fetchone()
+            if row is None:
+                return None
+            connection.execute(
+                """
+                update app.bridge_sync_subscriptions
+                set next_check_at = now() + make_interval(secs => check_interval_seconds),
+                    last_checked_at = now(), updated_at = now()
+                where id = %s
+                """,
+                (row["id"],),
+            )
+            return dict(row)
+
+    def record_bridge_sync_result(
+        self,
+        subscription_id: UUID,
+        source_revision: str | None,
+        error_code: str | None,
+    ) -> None:
+        with self.connect() as connection:
+            if error_code:
+                connection.execute(
+                    """
+                    update app.bridge_sync_subscriptions
+                    set consecutive_failures = least(consecutive_failures + 1, 20),
+                        last_error_code = %s,
+                        next_check_at = now() + make_interval(
+                          secs => least(check_interval_seconds * (consecutive_failures + 1), 86400)
+                        ),
+                        updated_at = now()
+                    where id = %s
+                    """,
+                    (error_code[:120], subscription_id),
+                )
+            else:
+                connection.execute(
+                    """
+                    update app.bridge_sync_subscriptions
+                    set last_seen_revision = coalesce(%s, last_seen_revision),
+                        consecutive_failures = 0, last_error_code = null,
+                        updated_at = now()
+                    where id = %s
+                    """,
+                    (source_revision, subscription_id),
+                )
+
+    def create_bridge_sync_import(
+        self,
+        subscription: dict[str, Any],
+        preview: dict[str, Any],
+    ) -> UUID:
+        with self.connect() as connection, connection.transaction():
+            row = connection.execute(
+                """
+                select app.create_bridge_import(%s, %s, %s, %s, %s, true) as id
+                """,
+                (
+                    subscription["profile_id"],
+                    subscription["provider"],
+                    None,
+                    subscription["source_url"],
+                    Jsonb([preview]),
+                ),
+            ).fetchone()
+            if row is None:
+                raise RuntimeError("Bridge sync import could not be queued")
+            connection.execute(
+                """
+                update app.bridge_sync_subscriptions
+                set last_import_job_id = %s, updated_at = now()
+                where id = %s
+                """,
+                (row["id"], subscription["id"]),
+            )
+            return row["id"]

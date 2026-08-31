@@ -60,6 +60,14 @@ REQUIRED_TABLES = {
     "runtime_model_instances",
     "runtime_benchmark_records",
     "notebook_execution_sessions",
+    "external_identities",
+    "bridge_oauth_states",
+    "namespace_claims",
+    "bridge_import_jobs",
+    "bridge_import_items",
+    "repository_sources",
+    "bridge_sync_subscriptions",
+    "bridge_events",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -140,6 +148,16 @@ def main() -> int:
         errors.append("isolated notebook execution requires a bounded transactional lifecycle")
     if "is_model_derivation" not in lower:
         errors.append("Use Model lineage requires a fail-closed PL/pgSQL derivation classifier")
+    if "create_bridge_import" not in lower or "claim_next_bridge_import" not in lower:
+        errors.append("Bridge imports require transactional, idempotent job creation and claiming")
+    if "prepare_bridge_item" not in lower or "complete_bridge_item" not in lower:
+        errors.append("Bridge imports must join source snapshots to reviewed immutable revisions")
+    if "claim_personal_namespace" not in lower or "namespace_identity_mismatch" not in lower:
+        errors.append("Bridge namespace claims must require a matching verified external identity")
+    if "claim_bridge_organization" not in lower or "organization_admin_required" not in lower:
+        errors.append("Bridge organization claims must require verified provider administrator evidence")
+    if "request_bridge_import_cancel" not in lower or "set_bridge_sync" not in lower:
+        errors.append("Bridge jobs require cancellation and opt-in immutable synchronization")
     for relationship in ("adapter-for", "merged-from", "distilled-from"):
         if f"'{relationship}'" not in lower:
             errors.append(f"Use Model lineage type is missing: {relationship}")

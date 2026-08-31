@@ -149,6 +149,11 @@ def main() -> int:
         ROOT / "src" / "pages" / "api" / "transfers" / "[transferId].ts",
         ROOT / "src" / "lib" / "notebook-markdown.ts",
         ROOT / "src" / "pages" / "notebooks" / "index.astro",
+        ROOT / "database" / "migrations" / "0011_bridge_foundation.sql",
+        ROOT / "docs" / "architecture" / "bridge.md",
+        ROOT / "src" / "lib" / "bridge.ts",
+        ROOT / "src" / "pages" / "bring-my-work.astro",
+        ROOT / "runtime" / "src" / "superii_runtime" / "bridge.py",
     ]
     missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]
     if missing_machine_files:
@@ -260,6 +265,29 @@ def main() -> int:
         ):
             if marker not in use_model_contract:
                 errors.append(f"Use Model contract is missing {marker}")
+        bridge_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "src" / "lib" / "bridge.ts",
+                ROOT / "src" / "pages" / "bring-my-work.astro",
+                ROOT / "runtime" / "src" / "superii_runtime" / "bridge.py",
+                ROOT / "database" / "migrations" / "0011_bridge_foundation.sql",
+            )
+        )
+        for marker in (
+            "BRIDGE_CLIENT_ID",
+            "createRemoteJWKSet",
+            "AES-GCM",
+            "redirect: 'manual'",
+            "ownership_attested: true",
+            "bridgeInitialized",
+            "MutationObserver",
+            "snapshot_download",
+            "process_upload",
+            "item.awaiting_review",
+        ):
+            if marker not in bridge_contract:
+                errors.append(f"Bridge contract is missing {marker}")
 
     wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
     if not wasm_files:

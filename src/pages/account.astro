@@ -13,6 +13,15 @@ let organizations: Array<{ handle: string; full_name: string; role: string }> = 
 let notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }> = [];
 let subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }> = [];
 let payments: Array<{ id: string; plan_id: string; price_amount_cents: number; status: string; created_at: string }> = [];
+let bridgeSources: Array<{
+  repository_id: string;
+  provider_repo_id: string;
+  source_url: string;
+  source_revision: string;
+  source_visibility: string;
+  imported_at: string;
+  sync_enabled: boolean;
+}> = [];
 if (sql) {
   try {
     const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
@@ -65,6 +74,22 @@ if (sql) {
         from app.payment_orders where profile_id = ${profile.profileId}::uuid
         order by created_at desc limit 10
       ` as typeof payments;
+      bridgeSources = await sql`
+        select distinct on (source.repository_id)
+          source.repository_id, source.provider_repo_id, source.source_url,
+          source.source_revision, item.source_visibility, source.imported_at,
+          coalesce(subscription.enabled, false) as sync_enabled
+        from app.repository_sources source
+        join app.repositories repository on repository.id = source.repository_id
+        join app.bridge_import_items item on item.revision_id = source.revision_id
+        left join app.bridge_sync_subscriptions subscription
+          on subscription.repository_id = source.repository_id
+          and subscription.provider = source.provider
+          and subscription.provider_repo_id = source.provider_repo_id
+        where source.destination_profile_id = ${profile.profileId}::uuid
+          and repository.owner_profile_id = ${profile.profileId}::uuid
+        order by source.repository_id, source.imported_at desc
+      ` as typeof bridgeSources;
     }
   } catch {
     repositories = [];
@@ -77,6 +102,7 @@ if (sql) {
   <section class="shell account-shell">
     <nav class="account-nav" aria-label="Account sections">
       <a href="/account" aria-current="page">Profile</a>
+      <a href="/bring-my-work">Bring my work</a>
       <a href="/new">Repositories</a>
       <a href="/organizations">Organizations</a>
       <a href="/pricing">Plans</a>
@@ -98,12 +124,26 @@ if (sql) {
             <div class="account-workspace">
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
-                {repositories.length ? <div class="account-list">{repositories.map((repository) => <a href={`/repositories/${repository.id}/edit`}><span><strong>{repository.owner_handle}/{repository.slug}</strong><small>{repository.kind} · {repository.revision_status}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <p>Create your first real model, dataset, or app repository.</p>}
+                {repositories.length ? <div class="account-list">{repositories.map((repository) => <a href={`/repositories/${repository.id}/edit`}><span><strong>{repository.owner_handle}/{repository.slug}</strong><small>{repository.kind} · {repository.revision_status}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <div><p>You do not have a repository yet. Start fresh or bring work you already built.</p><div class="button-row"><a class="button button--dark button--small" href="/bring-my-work">Bring my work</a><a class="button button--secondary button--small" href="/new">Create from scratch</a></div></div>}
               </section>
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Teams 🏢</p><h2>Organizations</h2></div><a class="button button--secondary button--small" href="/organizations/new">New organization</a></div>
                 {organizations.length ? <div class="account-list">{organizations.map((organization) => <a href={`/organizations/${organization.handle}`}><span><strong>{organization.full_name}</strong><small>@{organization.handle} · {organization.role}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <p>You do not belong to an organization yet.</p>}
               </section>
+              {bridgeSources.length > 0 && <section class="account-card">
+                <div class="repository-section__heading"><div><p class="eyebrow">Bridge sync 🌉</p><h2>Imported sources</h2></div><a class="button button--secondary button--small" href="/bring-my-work">Open Bridge</a></div>
+                <p>Public-source checks are opt-in. A detected revision is copied through quarantine and still waits for your review.</p>
+                <div class="account-list account-list--static bridge-source-list">
+                  {bridgeSources.map((source) => <div>
+                    <span>
+                      <strong>{source.provider_repo_id}</strong>
+                      <small>{source.source_visibility} · revision {source.source_revision.slice(0, 8)} · imported {new Date(source.imported_at).toLocaleDateString('en', { dateStyle: 'medium' })}</small>
+                    </span>
+                    {source.source_visibility === 'public' ? <button class:list={['button', 'button--small', source.sync_enabled ? 'button--secondary' : 'button--dark']} type="button" data-bridge-sync={source.repository_id} data-enabled={String(source.sync_enabled)}>{source.sync_enabled ? 'Pause checks' : 'Check for updates'}</button> : <span class="status-badge">manual only</span>}
+                  </div>)}
+                </div>
+                <p class="form-status" data-bridge-sync-status aria-live="polite"></p>
+              </section>}
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Notifications 🔔</p><h2>Recent activity</h2></div></div>
                 {notifications.length ? <div class="notification-list">{notifications.map((notification) => <article data-notification={notification.id} data-read={String(Boolean(notification.read_at))}><div><strong>{notification.title}</strong><p>{notification.body}</p><time datetime={notification.created_at}>{new Date(notification.created_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time></div>{notification.href && <a href={notification.href}>Open</a>}{!notification.read_at && <button class="text-button" type="button" data-mark-read>Mark read</button>}</article>)}</div> : <p>No notifications yet.</p>}
@@ -153,6 +193,31 @@ if (sql) {
       } else {
         button.disabled = false;
       }
+    });
+  });
+
+  const syncStatus = document.querySelector('[data-bridge-sync-status]');
+  document.querySelectorAll('[data-bridge-sync]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const enabled = button.dataset.enabled !== 'true';
+      button.disabled = true;
+      if (syncStatus) syncStatus.textContent = enabled ? 'Enabling public-source checks…' : 'Pausing source checks…';
+      const response = await fetch('/api/bridge/sync', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ repository_id: button.dataset.bridgeSync, enabled }),
+      });
+      if (response.ok) {
+        button.dataset.enabled = String(enabled);
+        button.textContent = enabled ? 'Pause checks' : 'Check for updates';
+        button.classList.toggle('button--dark', !enabled);
+        button.classList.toggle('button--secondary', enabled);
+        if (syncStatus) syncStatus.textContent = enabled ? 'Public-source checks are on. New revisions will still require review.' : 'Source checks are paused.';
+      } else {
+        if (syncStatus) syncStatus.textContent = 'This source could not be changed. Only public imported sources can sync.';
+      }
+      button.disabled = false;
     });
   });
 </script>

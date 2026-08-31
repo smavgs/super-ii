@@ -10,8 +10,11 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }
 dependencies = [
+  "cryptography==50.0.1",
   "datasets==5.0.1",
   "fastapi==0.141.1",
+  "hf-xet==1.6.0",
+  "huggingface-hub==1.29.0",
   "httpx==0.28.1",
   "nbformat==5.10.4",
   "pillow==12.3.0",
@@ -42,13 +45,10 @@ test = [
 [project.scripts]
 superii-runtime = "superii_runtime.main:run"
 superii-benchmark = "superii_runtime.benchmarks:main"
+superii-bridge = "superii_runtime.bridge:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/superii_runtime"]
-
-[tool.uv]
-# Super ii uses its own content-addressed object directory; Xet is intentionally absent.
-exclude-dependencies = ["hf-xet"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -74,5 +74,6 @@ ignore = ["S101"]
 "src/superii_runtime/notebooks.py" = ["S103", "S603"]
 "src/superii_runtime/spaces.py" = ["S108", "S603"]
 "src/superii_runtime/storage.py" = ["S103"]
+"src/superii_runtime/bridge.py" = ["S103", "S324"]
 "tests/*" = ["S104"]
 "tests/test_official_notebooks.py" = ["S102"]

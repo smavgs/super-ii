@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     storage_root: Path = Path("data")
     database_url: SecretStr | None = None
     runtime_token: SecretStr | None = None
+    bridge_token_encryption_key: SecretStr | None = None
+    bridge_poll_seconds: float = Field(default=2.0, ge=0.5, le=60)
+    bridge_max_repository_bytes: int = Field(default=20 * 1024**3, ge=1)
+    bridge_max_import_bytes: int = Field(default=25 * 1024**3, ge=1)
+    bridge_max_files: int = Field(default=5_000, ge=1, le=20_000)
+    bridge_runtime_url: str = "http://127.0.0.1:8788"
     transfer_url: str = "http://127.0.0.1:8790"
     transfer_token: SecretStr | None = None
     transfer_max_chunk_bytes: int = Field(default=32 * 1024**2, ge=1, le=32 * 1024**2)
@@ -70,6 +76,18 @@ class Settings(BaseSettings):
             raise ValueError("SUPERII_TRANSFER_URL cannot contain credentials, query, or fragment")
         return value.rstrip("/")
 
+    @field_validator("bridge_runtime_url")
+    @classmethod
+    def loopback_bridge_runtime_url(cls, value: str) -> str:
+        parsed = urlsplit(value.rstrip("/"))
+        if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError("SUPERII_BRIDGE_RUNTIME_URL must use loopback HTTP")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError(
+                "SUPERII_BRIDGE_RUNTIME_URL cannot contain credentials, query, or fragment"
+            )
+        return value.rstrip("/")
+
     @model_validator(mode="after")
     def block_accidental_wildcard_bind(self) -> Settings:
         # Container binding needs an explicit opt-in; host ports still bind localhost.
@@ -95,6 +113,14 @@ class Settings(BaseSettings):
                 "at least 32 characters"
             )
         return configured.get_secret_value()
+
+    def require_bridge_token_encryption_key(self) -> str:
+        if self.bridge_token_encryption_key is None:
+            raise RuntimeError("SUPERII_BRIDGE_TOKEN_ENCRYPTION_KEY is required")
+        value = self.bridge_token_encryption_key.get_secret_value()
+        if len(value) < 43:
+            raise RuntimeError("SUPERII_BRIDGE_TOKEN_ENCRYPTION_KEY is invalid")
+        return value
 
 
 @lru_cache

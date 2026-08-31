@@ -1,0 +1,562 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import LogoMark from '@/components/LogoMark.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { bridgeIsConfigured } from '@/lib/bridge';
+import { sqlClient } from '@/lib/db';
+import { authIsConfigured } from '@/lib/site';
+
+const authConfigured = authIsConfigured(Astro.locals);
+const configured = bridgeIsConfigured(Astro.locals);
+const sql = sqlClient(Astro.locals);
+let profile: { id: string; handle: string } | null = null;
+let connections: Array<{
+  id: string;
+  provider: string;
+  provider_username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  scopes: string[];
+  organizations: Array<Record<string, unknown>>;
+  token_expires_at: string | null;
+}> = [];
+let claimedOrganizationSubjects = new Set<string>();
+let jobs: Array<{
+  id: string;
+  status: string;
+  selected_count: number;
+  total_size_bytes: string;
+  progress_bytes: string;
+  created_at: string;
+}> = [];
+
+if (sql) {
+  try {
+    const authenticated = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (authenticated) {
+      const profiles = await sql`select id, handle from app.profiles where id = ${authenticated.profileId}::uuid`;
+      if (profiles[0]) profile = { id: String(profiles[0].id), handle: String(profiles[0].handle) };
+      connections = await sql`
+        select id, provider, provider_username, display_name, avatar_url, scopes,
+               organizations, token_expires_at
+        from app.external_identities
+        where profile_id = ${authenticated.profileId}::uuid and revoked_at is null
+        order by last_verified_at desc
+      ` as typeof connections;
+      jobs = await sql`
+        select id, status, selected_count, total_size_bytes, progress_bytes, created_at
+        from app.bridge_import_jobs
+        where profile_id = ${authenticated.profileId}::uuid
+        order by created_at desc limit 8
+      ` as typeof jobs;
+      const claims = await sql`
+        select evidence->>'provider_subject' as provider_subject
+        from app.namespace_claims
+        where namespace_kind = 'organization' and status = 'verified'
+          and external_identity_id in (
+            select id from app.external_identities
+            where profile_id = ${authenticated.profileId}::uuid
+          )
+      `;
+      claimedOrganizationSubjects = new Set(claims.map((claim) => String(claim.provider_subject ?? '')).filter(Boolean));
+    }
+  } catch {
+    profile = null;
+    connections = [];
+    jobs = [];
+  }
+}
+
+const connected = Astro.url.searchParams.get('connected');
+const bridgeError = Astro.url.searchParams.get('bridge_error');
+const welcome = Astro.url.searchParams.get('welcome') === '1';
+const activeJob = jobs.find((job) => ['queued', 'running'].includes(job.status));
+const organizationHandlePattern = /^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$/;
+const claimableOrganizations = connections.flatMap((connection) => {
+  if (!connection.scopes.includes('read-memberships')) return [];
+  return connection.organizations.flatMap((organization) => {
+    const subject = typeof organization.sub === 'string' ? organization.sub : '';
+    const handleValue = organization.preferred_username ?? organization.username ?? organization.name;
+    const handle = typeof handleValue === 'string' ? handleValue.trim().toLowerCase() : '';
+    const roleValue = organization.role_in_org ?? organization.roleInOrg ?? organization.role;
+    const role = typeof roleValue === 'string' ? roleValue.toLowerCase() : '';
+    const restrictions = organization.security_restrictions ?? organization.securityRestrictions;
+    if (!subject || !organizationHandlePattern.test(handle) || role !== 'admin' || (Array.isArray(restrictions) && restrictions.length > 0) || claimedOrganizationSubjects.has(subject)) return [];
+    return [{ identityId: connection.id, subject, handle, name: typeof organization.name === 'string' ? organization.name : handle }];
+  });
+});
+---
+
+<BaseLayout title="Bring my work" description="Bring existing AI models, datasets, and compatible apps to Super ii without changing the source." noindex className="bridge-body">
+  <section class="bridge-hero">
+    <div class="shell bridge-hero__inner">
+      <div>
+        <p class="eyebrow">Super ii Bridge 🌉</p>
+        <h1>Bring your work.<br />Keep your freedom.</h1>
+        <p>Import existing models, datasets, and compatible apps. Your original account and files stay exactly where they are.</p>
+      </div>
+      <div class="bridge-hero__mark" aria-hidden="true">
+        <LogoMark size="large" priority />
+      </div>
+    </div>
+  </section>
+
+  <section class="shell bridge-workspace" data-bridge-workspace data-active-job={activeJob?.id ?? ''}>
+    {!configured && (
+      <div class="notice notice--warning" role="status">
+        <i class="ph ph-warning" aria-hidden="true"></i>
+        Bridge is installed but its production credential vault is not configured. Imports remain closed.
+      </div>
+    )}
+    {welcome && <div class="notice notice--success">Welcome to Super ii 👋 You can bring existing work before creating anything from scratch.</div>}
+    {connected && <div class="notice notice--success">Connected Hugging Face account @{connected}. Your source was not changed.</div>}
+    {bridgeError && <div class="notice notice--error">The external account connection was not completed. You can retry safely.</div>}
+
+    {authConfigured ? (
+      <>
+        <Show when="signed-out">
+          <div class="bridge-auth-gate">
+            <p class="eyebrow">One account first</p>
+            <h2>Log in, then bring your work.</h2>
+            <p>Super ii needs a destination profile before it can prepare an import.</p>
+            <SignInButton asChild mode="modal">
+              <button class="button button--dark" type="button">Log in to continue</button>
+            </SignInButton>
+          </div>
+        </Show>
+        <Show when="signed-in">
+          <div class="bridge-layout">
+            <div class="bridge-main">
+              <section class="bridge-step" aria-labelledby="bridge-source-heading">
+                <div class="bridge-step__number">01</div>
+                <div class="bridge-step__content">
+                  <p class="eyebrow">Choose a source</p>
+                  <h2 id="bridge-source-heading">Paste a profile or repository link</h2>
+                  <p>Hugging Face is the first supported connector. GitHub, GitLab, S3, and local Bridge paths follow the same interface.</p>
+                  <form class="bridge-source-form" data-bridge-source-form>
+                    <label class="sr-only" for="bridge-source-url">Profile or repository URL</label>
+                    <div class="bridge-url-control">
+                      <i class="ph ph-link" aria-hidden="true"></i>
+                      <input id="bridge-source-url" name="source_url" type="url" inputmode="url" autocomplete="url" placeholder="https://huggingface.co/your-name" value={connections[0] ? `https://huggingface.co/${connections[0].provider_username}` : ''} required />
+                      <button class="button button--dark" type="submit" disabled={!configured}>Find my work</button>
+                    </div>
+                    <p class="form-status" data-bridge-source-status aria-live="polite"></p>
+                  </form>
+
+                  <div class="bridge-connection-actions">
+                    <button class="button button--secondary button--small" type="button" data-bridge-connect="public" disabled={!configured}>
+                      <i class="ph ph-plugs-connected" aria-hidden="true"></i> Connect account
+                    </button>
+                    <details>
+                      <summary>Need private, gated, or organization access?</summary>
+                      <div class="bridge-scope-actions">
+                        <button type="button" data-bridge-connect="private">Private repositories</button>
+                        <button type="button" data-bridge-connect="gated">Gated repositories</button>
+                        <button type="button" data-bridge-connect="organizations">Organization memberships</button>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              </section>
+
+              <section class="bridge-step" data-bridge-results hidden aria-labelledby="bridge-results-heading">
+                <div class="bridge-step__number">02</div>
+                <div class="bridge-step__content">
+                  <p class="eyebrow">Review before copying</p>
+                  <div class="bridge-results-heading">
+                    <div>
+                      <h2 id="bridge-results-heading">Your work</h2>
+                      <p data-bridge-counts></p>
+                    </div>
+                    <button class="text-button" type="button" data-bridge-select-ready>Select all ready</button>
+                  </div>
+                  <div class="bridge-repository-list" data-bridge-repository-list></div>
+                  <label class="bridge-attestation">
+                    <input type="checkbox" data-bridge-attestation />
+                    <span>I own this work or have permission under its license to copy it to Super ii. I understand every file will be quarantined and reviewed.</span>
+                  </label>
+                  <div class="bridge-import-bar">
+                    <div><strong data-bridge-selected-count>0 selected</strong><span data-bridge-selected-size>0 B</span></div>
+                    <button class="button button--dark" type="button" data-bridge-import disabled>Import selected</button>
+                  </div>
+                  <p class="form-status" data-bridge-import-status aria-live="polite"></p>
+                </div>
+              </section>
+
+              <section class="bridge-step" aria-labelledby="bridge-progress-heading">
+                <div class="bridge-step__number">03</div>
+                <div class="bridge-step__content">
+                  <p class="eyebrow">Verified arrival</p>
+                  <h2 id="bridge-progress-heading">Import activity</h2>
+                  <p>Bridge pins the source revision, downloads through the operator runtime, scans every file, creates an immutable manifest, then stops for human review.</p>
+                  <div class="bridge-job-list" data-bridge-job-list>
+                    {jobs.length ? jobs.map((job) => (
+                      <article class="bridge-job" data-job-row={job.id}>
+                        <div>
+                          <strong>{job.selected_count} {job.selected_count === 1 ? 'repository' : 'repositories'}</strong>
+                          <span>{new Date(job.created_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        </div>
+                        <div class="bridge-job__state">
+                          <span class:list={['status-badge', `status-badge--${job.status}`]} data-job-status>{job.status}</span>
+                          {['queued', 'running'].includes(job.status) && <button class="text-button" type="button" data-bridge-cancel={job.id}>Cancel</button>}
+                        </div>
+                      </article>
+                    )) : <p class="bridge-empty-jobs">No imports yet. Your first verified import will appear here.</p>}
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="bridge-sidebar" aria-label="Bridge account and safeguards">
+              <section>
+                <p class="eyebrow">Connected identities</p>
+                {connections.length ? connections.map((connection) => (
+                  <div class="bridge-identity" data-identity-id={connection.id}>
+                    {connection.avatar_url ? <img src={connection.avatar_url} alt="" width="42" height="42" loading="lazy" referrerpolicy="no-referrer" /> : <span class="bridge-identity__avatar"><i class="ph ph-user" aria-hidden="true"></i></span>}
+                    <div><strong>@{connection.provider_username}</strong><span>Hugging Face linked ✓</span></div>
+                    <button class="text-button bridge-disconnect" type="button" data-bridge-disconnect={connection.id} aria-label={`Disconnect @${connection.provider_username}`}>Disconnect</button>
+                  </div>
+                )) : <p>No external account connected. Public links still work where the license permits.</p>}
+                {connections[0] && profile && connections[0].provider_username.toLowerCase() !== profile.handle.toLowerCase() && (
+                  <button class="button button--secondary button--small button--block" type="button" data-bridge-claim={connections[0].id} data-bridge-handle={connections[0].provider_username}>
+                    Claim @{connections[0].provider_username}
+                  </button>
+                )}
+                {claimableOrganizations.length > 0 && <div class="bridge-organization-claims">
+                  <p class="eyebrow">Verified admin claims</p>
+                  {claimableOrganizations.map((organization) => <div class="bridge-organization-claim" data-bridge-organization={organization.subject} data-bridge-identity={organization.identityId} data-bridge-handle={organization.handle}>
+                    <div><strong>{organization.name}</strong><span>@{organization.handle} · administrator verified</span></div>
+                    <select aria-label={`Organization type for ${organization.name}`} data-bridge-organization-type>
+                      <option value="company">Company</option>
+                      <option value="university">University</option>
+                      <option value="classroom">Classroom</option>
+                      <option value="non-profit">Non-profit</option>
+                      <option value="government">Government</option>
+                      <option value="community">Community</option>
+                    </select>
+                    <button class="button button--secondary button--small button--block" type="button" data-bridge-organization-claim>Claim organization</button>
+                  </div>)}
+                </div>}
+              </section>
+              <section>
+                <p class="eyebrow">Bridge guarantees</p>
+                <ul class="bridge-guarantees">
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Source remains unchanged</li>
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Exact revision recorded</li>
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Checksums and provenance kept</li>
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Secrets are never copied</li>
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Human review before publishing</li>
+                </ul>
+              </section>
+              <section>
+                <p class="eyebrow">Launch limits</p>
+                <dl class="bridge-limits">
+                  <div><dt>One file</dt><dd>10 GiB</dd></div>
+                  <div><dt>One repository</dt><dd>20 GiB</dd></div>
+                  <div><dt>One import</dt><dd>25 GiB</dd></div>
+                  <div><dt>Concurrent jobs</dt><dd>1</dd></div>
+                </dl>
+              </section>
+            </aside>
+          </div>
+        </Show>
+      </>
+    ) : (
+      <div class="bridge-auth-gate"><h2>Account service unavailable</h2><p>Bridge fails closed until authentication is configured.</p></div>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  const setupBridge = () => {
+  type Preview = {
+    provider_repo_id: string;
+    source_revision: string;
+    source_url: string;
+    kind: 'model' | 'dataset' | 'space';
+    title: string;
+    license: string | null;
+    file_count: number;
+    total_size_bytes: number;
+    largest_file_bytes: number;
+    blocked_reason: string | null;
+  };
+
+  const workspace = document.querySelector('[data-bridge-workspace]');
+  const sourceForm = document.querySelector('[data-bridge-source-form]');
+  const sourceStatus = document.querySelector('[data-bridge-source-status]');
+  const results = document.querySelector('[data-bridge-results]');
+  const repositoryList = document.querySelector('[data-bridge-repository-list]');
+  const counts = document.querySelector('[data-bridge-counts]');
+  const importButton = document.querySelector('[data-bridge-import]');
+  const importStatus = document.querySelector('[data-bridge-import-status]');
+  const attestation = document.querySelector('[data-bridge-attestation]');
+  const selectedCount = document.querySelector('[data-bridge-selected-count]');
+  const selectedSize = document.querySelector('[data-bridge-selected-size]');
+  let discovered: Preview[] = [];
+  let activeIdentityId = document.querySelector('[data-identity-id]')?.getAttribute('data-identity-id') ?? null;
+  const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
+  const isPreview = (value: unknown): value is Preview => isRecord(value)
+    && typeof value.provider_repo_id === 'string'
+    && typeof value.source_revision === 'string'
+    && typeof value.source_url === 'string'
+    && ['model', 'dataset', 'space'].includes(String(value.kind))
+    && typeof value.title === 'string'
+    && typeof value.file_count === 'number'
+    && typeof value.total_size_bytes === 'number';
+
+  const formatBytes = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+    const unit = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / 1024 ** unit).toFixed(unit ? 1 : 0)} ${units[unit]}`;
+  };
+  const reason = (value: string | null) => ({
+    file_over_10_gib: 'A file exceeds the current 10 GiB limit',
+    repository_over_20_gib: 'Repository exceeds the current 20 GiB limit',
+    too_many_files: 'Repository has more than 5,000 files',
+    license_review_required: 'A source license must be declared first',
+    gated_authorization_required: 'Gated access requires separate authorization',
+    private_authorization_required: 'Private access requires separate authorization',
+    space_runtime_unsupported: 'This app runtime is not supported yet',
+    metadata_incomplete: 'The source did not return complete file metadata',
+    empty_repository: 'The source repository has no files',
+  }[value ?? ''] ?? (value ? value.replaceAll('_', ' ') : 'Ready to import'));
+
+  const setStatus = (element: Element | null, message: string, state = '') => {
+    if (!(element instanceof HTMLElement)) return;
+    element.textContent = message;
+    element.dataset.state = state;
+  };
+
+  const selectedRepositories = () => Array.from(document.querySelectorAll<HTMLInputElement>('[data-bridge-repository]:checked'))
+    .map((input) => discovered[Number(input.dataset.index)])
+    .filter(Boolean);
+
+  const updateSelection = () => {
+    const selected = selectedRepositories();
+    if (selectedCount) selectedCount.textContent = `${selected.length} selected`;
+    if (selectedSize) selectedSize.textContent = formatBytes(selected.reduce((sum, repository) => sum + repository.total_size_bytes, 0));
+    if (importButton instanceof HTMLButtonElement) {
+      importButton.disabled = !selected.length || !(attestation instanceof HTMLInputElement && attestation.checked);
+    }
+  };
+
+  const renderRepositories = () => {
+    if (!repositoryList) return;
+    repositoryList.replaceChildren();
+    discovered.forEach((repository, index) => {
+      const row = document.createElement('label');
+      row.className = `bridge-repository${repository.blocked_reason ? ' bridge-repository--blocked' : ''}`;
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.bridgeRepository = '';
+      input.dataset.index = String(index);
+      input.disabled = Boolean(repository.blocked_reason);
+      input.addEventListener('change', updateSelection);
+      const main = document.createElement('span');
+      main.className = 'bridge-repository__main';
+      const title = document.createElement('strong');
+      title.textContent = repository.provider_repo_id;
+      const meta = document.createElement('small');
+      meta.textContent = `${repository.kind} · ${repository.file_count} files · ${formatBytes(repository.total_size_bytes)} · ${repository.license ?? 'license unknown'}`;
+      main.appendChild(title);
+      main.appendChild(meta);
+      const state = document.createElement('span');
+      state.className = repository.blocked_reason ? 'bridge-repository__blocked' : 'bridge-repository__ready';
+      state.textContent = reason(repository.blocked_reason);
+      row.appendChild(input);
+      row.appendChild(main);
+      row.appendChild(state);
+      repositoryList.appendChild(row);
+    });
+    updateSelection();
+  };
+
+  document.querySelectorAll('[data-bridge-connect]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/bridge/oauth/start', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ access: button.dataset.bridgeConnect ?? 'public' }),
+        });
+        const payload = await response.json() as Record<string, unknown>;
+        if (!response.ok || typeof payload.authorization_url !== 'string') throw new Error(typeof payload.error === 'string' ? payload.error : 'Connection could not be started.');
+        location.assign(payload.authorization_url);
+      } catch (error) {
+        setStatus(sourceStatus, error instanceof Error ? error.message : 'Connection could not be started.', 'error');
+        button.disabled = false;
+      }
+    });
+  });
+
+  sourceForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(sourceForm instanceof HTMLFormElement)) return;
+    const submit = sourceForm.querySelector('button[type="submit"]');
+    if (submit instanceof HTMLButtonElement) submit.disabled = true;
+    setStatus(sourceStatus, 'Detecting the source and reading repository manifests…');
+    try {
+      const values = new FormData(sourceForm);
+      const response = await fetch('/api/bridge/discover', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ source_url: values.get('source_url'), identity_id: activeIdentityId }),
+      });
+      const payload = await response.json() as Record<string, unknown>;
+      if (!response.ok || !Array.isArray(payload.repositories)) throw new Error(typeof payload.error === 'string' ? payload.error : 'Work could not be discovered.');
+      discovered = payload.repositories.filter(isPreview);
+      if (results instanceof HTMLElement) results.hidden = false;
+      const sourceCounts = isRecord(payload.counts) ? payload.counts : {};
+      if (counts) counts.textContent = `${typeof sourceCounts.total === 'number' ? sourceCounts.total : discovered.length} found · ${typeof sourceCounts.ready === 'number' ? sourceCounts.ready : 0} ready now`;
+      renderRepositories();
+      setStatus(sourceStatus, discovered.length ? 'Source detected. Review what is ready before importing.' : 'No repositories were found for this source.', discovered.length ? 'success' : '');
+      results?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    } catch (error) {
+      setStatus(sourceStatus, error instanceof Error ? error.message : 'Work could not be discovered.', 'error');
+    } finally {
+      if (submit instanceof HTMLButtonElement) submit.disabled = false;
+    }
+  });
+
+  document.querySelector('[data-bridge-select-ready]')?.addEventListener('click', () => {
+    document.querySelectorAll<HTMLInputElement>('[data-bridge-repository]:not(:disabled)').forEach((input) => { input.checked = true; });
+    updateSelection();
+  });
+  attestation?.addEventListener('change', updateSelection);
+
+  importButton?.addEventListener('click', async () => {
+    if (!(sourceForm instanceof HTMLFormElement) || !(importButton instanceof HTMLButtonElement)) return;
+    const selected = selectedRepositories();
+    importButton.disabled = true;
+    setStatus(importStatus, 'Re-checking the source revision before queuing the import…');
+    try {
+      const sourceUrl = String(new FormData(sourceForm).get('source_url') ?? '');
+      const response = await fetch('/api/bridge/imports', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          source_url: sourceUrl,
+          identity_id: activeIdentityId,
+          ownership_attested: true,
+          repositories: selected.map((repository) => ({ source_url: repository.source_url, source_revision: repository.source_revision })),
+        }),
+      });
+      const payload = await response.json() as Record<string, unknown>;
+      if (!response.ok || typeof payload.job_id !== 'string') throw new Error(typeof payload.error === 'string' ? payload.error : 'Import could not be queued.');
+      setStatus(importStatus, 'Import queued. Bridge is downloading the exact source revision in the background.', 'success');
+      location.assign(`/bring-my-work?job=${encodeURIComponent(payload.job_id)}`);
+    } catch (error) {
+      setStatus(importStatus, error instanceof Error ? error.message : 'Import could not be queued.', 'error');
+      updateSelection();
+    }
+  });
+
+  document.querySelectorAll('[data-bridge-cancel]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const jobId = button.getAttribute('data-bridge-cancel');
+      if (!jobId) return;
+      const response = await fetch(`/api/bridge/imports/${encodeURIComponent(jobId)}`, { method: 'DELETE' });
+      if (response.ok) location.reload();
+    });
+  });
+
+  document.querySelector('[data-bridge-claim]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = true;
+    const response = await fetch('/api/bridge/claim', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ identity_id: button.dataset.bridgeClaim, handle: button.dataset.bridgeHandle }),
+    });
+    if (response.ok) location.reload();
+    else {
+      const payload = await response.json() as Record<string, unknown>;
+      setStatus(sourceStatus, typeof payload.error === 'string' ? payload.error : 'Namespace could not be claimed.', 'error');
+      button.disabled = false;
+    }
+  });
+
+  document.querySelectorAll('[data-bridge-disconnect]').forEach((element) => {
+    element.addEventListener('click', async () => {
+      if (!(element instanceof HTMLButtonElement)) return;
+      element.disabled = true;
+      const response = await fetch('/api/bridge/connections', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ identity_id: element.dataset.bridgeDisconnect }),
+      });
+      if (response.ok) location.reload();
+      else {
+        setStatus(sourceStatus, 'The account could not be disconnected. Please retry.', 'error');
+        element.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-bridge-organization-claim]').forEach((element) => {
+    element.addEventListener('click', async () => {
+      if (!(element instanceof HTMLButtonElement)) return;
+      const claim = element.closest('[data-bridge-organization]');
+      const type = claim?.querySelector('[data-bridge-organization-type]');
+      if (!(claim instanceof HTMLElement) || !(type instanceof HTMLSelectElement)) return;
+      element.disabled = true;
+      const response = await fetch('/api/bridge/claim-organization', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          identity_id: claim.dataset.bridgeIdentity,
+          provider_organization_id: claim.dataset.bridgeOrganization,
+          handle: claim.dataset.bridgeHandle,
+          organization_type: type.value,
+        }),
+      });
+      const payload = await response.json() as Record<string, unknown>;
+      if (response.ok && typeof payload.href === 'string') location.assign(payload.href);
+      else {
+        setStatus(sourceStatus, typeof payload.error === 'string' ? payload.error : 'Organization could not be claimed.', 'error');
+        element.disabled = false;
+      }
+    });
+  });
+
+  const pollJob = async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/bridge/imports/${encodeURIComponent(jobId)}`, { headers: { accept: 'application/json' } });
+      if (!response.ok) return;
+      const payload = await response.json() as Record<string, unknown>;
+      const job = isRecord(payload.job) ? payload.job : {};
+      const status = String(job.status ?? '');
+      const badge = document.querySelector(`[data-job-row="${CSS.escape(jobId)}"] [data-job-status]`);
+      if (badge) badge.textContent = status;
+      if (['queued', 'running'].includes(status)) setTimeout(() => pollJob(jobId), 3000);
+      else location.reload();
+    } catch {
+      setTimeout(() => pollJob(jobId), 8000);
+    }
+  };
+  const activeJobId = workspace?.getAttribute('data-active-job');
+  if (activeJobId) setTimeout(() => pollJob(activeJobId), 1500);
+
+  };
+
+  const initializeBridge = () => {
+    const sourceForm = document.querySelector<HTMLFormElement>('[data-bridge-source-form]');
+    if (!sourceForm || sourceForm.dataset.bridgeInitialized === 'true') return false;
+    sourceForm.dataset.bridgeInitialized = 'true';
+    setupBridge();
+    return true;
+  };
+
+  if (!initializeBridge()) {
+    const bridgeObserver = new MutationObserver(() => {
+      if (initializeBridge()) bridgeObserver.disconnect();
+    });
+    bridgeObserver.observe(document.documentElement, { childList: true, subtree: true });
+  }
+</script>

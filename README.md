@@ -26,7 +26,7 @@ Infrastructure is split deliberately:
 - **Super ii Runtime** is the self-hosted Linux data plane for files, scanning, offline inspection, llama.cpp, Diffusers, and isolated Gradio Spaces.
 - **Postgres** stores immutable repository history, search, review evidence, community data, collections, and lineage.
 
-The website talks only to the Super ii Runtime; it does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
+The website does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Super ii Bridge uses explicit provider OAuth and repository APIs only to identify and copy user-authorized source work; analysis and inference remain on the self-hosted runtime. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
 The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, lineage, and deterministic Use Model system are implemented. vLLM and SGLang have reviewed self-host instructions, while a Super ii-managed high-throughput GPU service and Text Embeddings Inference remain deliberately deferred until funded capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
 
@@ -69,7 +69,7 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 49-table schema creates the launch records, immutable repository revisions/files, resumable-transfer state, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 57-table schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 
@@ -86,6 +86,7 @@ Required deployment secrets:
 - `CONTACT_HASH_SALT`
 - `RUNTIME_URL`
 - `RUNTIME_TOKEN`
+- `BRIDGE_TOKEN_ENCRYPTION_KEY`
 - `NOWPAYMENTS_API_KEY`
 - `NOWPAYMENTS_IPN_SECRET`
 - `SUPERII_ADMIN_USER_IDS`

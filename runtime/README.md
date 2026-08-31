@@ -18,7 +18,7 @@ Missing, timed-out, or errored scanners leave a file quarantined. A positive mal
 
 ## Implemented capabilities
 
-- Content-addressed local filesystem storage under `objects/sha256/`; Xet is intentionally absent.
+- Content-addressed local filesystem storage under `objects/sha256/`; Xet is used only by the isolated Bridge downloader for compatible inbound provider transfer and is not the internal storage format.
 - Repository revisions, manifests, files, releases, tags, downloads, reviews, and inspection evidence in Postgres.
 - Offline `safetensors`, Datasets, Transformers, Tokenizers, GGUF, and optional Diffusers inspection.
 - Conservative model compatibility inspection for architecture, parameters, quantization, tensor format, size, RAM, VRAM, CPU, CUDA, ROCm, Metal/MLX, llama.cpp, and browser use. Publisher declarations remain labeled and are never promoted to benchmark evidence.
@@ -30,6 +30,7 @@ Missing, timed-out, or errored scanners leave a file quarantined. A positive mal
 - Gradio-only Spaces in read-only, no-egress, capability-dropped, resource-limited containers, streamed through the authenticated website into a sandboxed app iframe.
 - Local browser inference assets for Transformers.js, with remote models disabled in the website.
 - Postgres full-text/trigram discovery plus community, collections, social, and lineage tables.
+- A separate online Bridge worker for exact-revision Hugging Face imports through Xet-aware downloads, source checksum verification, quarantine scanning, offline analysis, immutable provenance, cancellation, recovery, and review-only completion.
 
 vLLM is deliberately disabled until Super ii owns dedicated GPU capacity. Text Embeddings Inference is deliberately disabled until measured Postgres search scale warrants semantic search.
 
@@ -70,6 +71,27 @@ ClamAV from Compose and the authenticated runtime through
 localhost, so the antivirus container never receives a host filesystem path.
 Runtime credentials are read from macOS Keychain and never stored in the
 repository or a launch-agent property list.
+
+The Bridge worker is deliberately a separate launch service. The main runtime
+keeps `HF_HUB_OFFLINE=1`; only `run-bridge-macos.sh` can reach the provider. It
+reads the database URL, runtime service token, and AES-256-GCM Bridge key from
+macOS Keychain, never logs provider tokens, downloads an exact provider commit,
+verifies its advertised Git/LFS checksums, and sends verified files through the
+same quarantine and offline analysis gates as direct uploads. Imports stop in
+review. Automatic checks are opt-in and limited to public provider sources.
+
+Preserve the production inference and Spaces extras when installing or updating
+the shared host environment:
+
+```sh
+uv sync --frozen --no-dev --extra diffusion --extra spaces
+```
+
+Run it directly on a configured development host with:
+
+```sh
+uv run superii-bridge
+```
 
 The dedicated `runtime.superii.site` connector runs from
 `run-cloudflared-macos.sh` under the checked-in launch-agent definition. Its
