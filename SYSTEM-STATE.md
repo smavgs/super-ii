@@ -2,7 +2,7 @@
 
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
-- Snapshot: 2026-08-31
+- Snapshot: 2026-09-01
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
 - Empty-catalog rule: no model, dataset, or app is seeded or presented as community content.
@@ -23,6 +23,7 @@ Canonical product and operations truth for the Super ii control plane and self-h
 | --- | --- | --- | --- |
 | Astro and Cloudflare public control plane | production | live | Server-rendered routes, security headers, health checks, and the canonical domains are deployed. |
 | Email, Google, and GitHub authentication | production | live | Clerk-backed sign-in and sign-up use the production application and same-origin server routes. |
+| Agent Starter onboarding | production | live for signed-in users | The unchanged public homepage now leads through a concise activation band and signup story into the authenticated Workspace. OS-aware commands, manual device-local progress, completion/reset, clipboard controls, free-cloud limit disclosure, OpenCode guidance, and public read-only Super ii MCP configuration passed desktop, mobile, and authenticated production checks. The homepage exposes no setup commands or external Ollama links. |
 | Immutable repository engine | production | live | Postgres stores repositories, folders by path, revisions, commits, branches, tags, releases, manifests, SHA-256 checksums, and download records. |
 | Creator upload and review pipeline | production | fail-closed | Upload, quarantine, ClamAV, Gitleaks, format policy, offline analysis, immutable manifest, and human review are required; uploads close when runtime gates are unavailable. |
 | Super ii Bridge imports | integrated | live discovery and account connection; first reviewed import pending | Authenticated production discovery resolves a real public Hugging Face repository; CIMD, PKCE, encrypted token storage, the 57-table database, and the isolated online worker are deployed. Exact-revision download, Git/LFS verification, quarantine, offline analysis, cancellation, recovery, provenance, review-only completion, and public-only sync pass repeatable tests. No repository is seeded solely to manufacture a production import. |

@@ -154,6 +154,7 @@ def main() -> int:
         ROOT / "src" / "lib" / "bridge.ts",
         ROOT / "src" / "pages" / "bring-my-work.astro",
         ROOT / "runtime" / "src" / "superii_runtime" / "bridge.py",
+        ROOT / "src" / "components" / "AgentStarter.astro",
     ]
     missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]
     if missing_machine_files:
@@ -288,6 +289,30 @@ def main() -> int:
         ):
             if marker not in bridge_contract:
                 errors.append(f"Bridge contract is missing {marker}")
+        agent_starter_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "src" / "components" / "AgentStarter.astro",
+                ROOT / "src" / "pages" / "index.astro",
+                ROOT / "src" / "pages" / "account.astro",
+                ROOT / "src" / "pages" / "sign-up.astro",
+            )
+        )
+        for marker in (
+            "curl -fsSL https://ollama.com/install.sh | sh",
+            "irm https://ollama.com/install.ps1 | iex",
+            "ollama signin",
+            "ollama launch opencode",
+            "gpt-oss:20b-cloud",
+            "Free cloud usage has session and weekly limits.",
+            "superii-agent-starter-v1",
+            "opencode mcp add",
+            "opencode mcp list",
+            "oauth: false",
+            "/account?welcome=agent-starter#agent-starter",
+        ):
+            if marker not in agent_starter_contract:
+                errors.append(f"Agent Starter contract is missing {marker}")
 
     wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
     if not wasm_files:
@@ -318,7 +343,7 @@ def main() -> int:
             fail(error)
         return 1
 
-    print(f"OK: site, agent-native and Use Model machine contracts, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
+    print(f"OK: site, Agent Starter, agent-native and Use Model machine contracts, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
     return 0
 
 

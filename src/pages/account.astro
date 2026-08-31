@@ -1,5 +1,6 @@
 ---
 import { Show, SignInButton, UserProfile } from '@clerk/astro/components';
+import AgentStarter from '@/components/AgentStarter.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
@@ -97,10 +98,11 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="Account" description="Manage your Super ii account, security, organizations, and plan preferences." noindex>
-  <PageHero eyebrow="Your workspace" title="Account" description="Manage your identity, security, organizations, and launch access." compact />
+<BaseLayout title="Workspace" description="Start your first AI agent and manage your Super ii repositories, organizations, security, and plan." noindex>
+  <PageHero eyebrow="Your workspace" title="Workspace" description="Start your first agent, then manage the work and teams you connect to Super ii." compact />
   <section class="shell account-shell">
     <nav class="account-nav" aria-label="Account sections">
+      <a href="#agent-starter">Agent Starter</a>
       <a href="/account" aria-current="page">Profile</a>
       <a href="/bring-my-work">Bring my work</a>
       <a href="/new">Repositories</a>
@@ -122,6 +124,7 @@ if (sql) {
           </Show>
           <Show when="signed-in">
             <div class="account-workspace">
+              <AgentStarter />
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
                 {repositories.length ? <div class="account-list">{repositories.map((repository) => <a href={`/repositories/${repository.id}/edit`}><span><strong>{repository.owner_handle}/{repository.slug}</strong><small>{repository.kind} · {repository.revision_status}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <div><p>You do not have a repository yet. Start fresh or bring work you already built.</p><div class="button-row"><a class="button button--dark button--small" href="/bring-my-work">Bring my work</a><a class="button button--secondary button--small" href="/new">Create from scratch</a></div></div>}

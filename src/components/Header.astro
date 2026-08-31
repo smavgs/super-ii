@@ -2,7 +2,6 @@
 import {
   Show,
   SignInButton,
-  SignUpButton,
   UserButton,
 } from '@clerk/astro/components';
 import { authIsConfigured } from '@/lib/site';
@@ -58,14 +57,12 @@ const nav = [
               <SignInButton asChild mode="modal">
                 <button class="button button--ghost button--small" type="button">Log in</button>
               </SignInButton>
-              <SignUpButton asChild mode="modal">
-                <button class="button button--dark button--small" type="button">Join free</button>
-              </SignUpButton>
+              <a class="button button--dark button--small" href="/sign-up">Join free</a>
             </Show>
             <Show when="signed-in">
               <a class="button button--ghost button--small header-bridge-link" href="/bring-my-work">Bring my work</a>
               <a class="button button--dark button--small" href="/new">Create</a>
-              <a class="button button--ghost button--small" href="/account">Workspace</a>
+              <a class="button button--ghost button--small" href="/account#agent-starter">Workspace</a>
               <UserButton
                 appearance={{
                   elements: { avatarBox: 'sii-clerk-avatar' },
@@ -113,7 +110,7 @@ const nav = [
           <Show when="signed-in">
             <a class="button button--secondary" href="/bring-my-work">Bring my work</a>
             <a class="button button--secondary" href="/new">Create repository</a>
-            <a class="button button--dark" href="/account">Open workspace</a>
+            <a class="button button--dark" href="/account#agent-starter">Open workspace</a>
           </Show>
         </>
       ) : (

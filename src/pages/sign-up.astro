@@ -7,7 +7,7 @@ import { authIsConfigured } from '@/lib/site';
 const authConfigured = authIsConfigured(Astro.locals);
 ---
 
-<BaseLayout title="Join free" description="Create a free Super ii account with email, Google, or GitHub." noindex className="auth-body">
+<BaseLayout title="Run your first agent" description="Create a free Super ii account, then launch your first OpenCode AI agent with Ollama Cloud." noindex className="auth-body">
   <div class="auth-page">
     <AuthStory mode="sign-up" />
     <section class="auth-panel">
@@ -19,7 +19,7 @@ const authConfigured = authIsConfigured(Astro.locals);
             routing="path"
             path="/sign-up"
             signInUrl="/sign-in"
-            fallbackRedirectUrl="/bring-my-work?welcome=1"
+            fallbackRedirectUrl="/account?welcome=agent-starter#agent-starter"
             appearance={{
               elements: {
                 rootBox: 'sii-clerk-root',

@@ -6,7 +6,14 @@ import { getPublicRepository } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
 import { getPublicPaper, paperDocument, paperMarkdown } from '@/lib/papers';
 
-const withClerk = clerkMiddleware();
+const withClerk = clerkMiddleware(async (_auth, _context, next) => {
+  const response = await next();
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: new Headers(response.headers),
+  });
+});
 
 const csp = [
   "default-src 'self'",

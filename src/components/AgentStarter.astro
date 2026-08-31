@@ -1,0 +1,364 @@
+---
+import { absoluteUrl } from '@/lib/site';
+
+const mcpEndpoint = absoluteUrl('/mcp');
+const mcpConfig = JSON.stringify({
+  $schema: 'https://opencode.ai/config.json',
+  mcp: {
+    superii: {
+      type: 'remote',
+      url: mcpEndpoint,
+      enabled: true,
+      oauth: false,
+    },
+  },
+}, null, 2);
+
+const installCommands = {
+  macos: 'curl -fsSL https://ollama.com/install.sh | sh',
+  windows: 'irm https://ollama.com/install.ps1 | iex',
+  linux: 'curl -fsSL https://ollama.com/install.sh | sh',
+};
+---
+
+<section class="agent-starter" id="agent-starter" data-agent-starter>
+  <header class="agent-starter__header">
+    <div>
+      <p class="eyebrow">Agent Starter</p>
+      <h2>Your first AI agent</h2>
+      <p>Never used an AI agent before? We’ll help you get one running on your computer.</p>
+    </div>
+    <span class="agent-starter__badge"><i class="ph ph-cloud" aria-hidden="true"></i> Your first agent · Free</span>
+  </header>
+
+  <div class="agent-starter__progress" aria-label="Agent Starter progress">
+    <div>
+      <strong data-agent-progress-label>0 of 4 complete</strong>
+      <span>Saved on this device</span>
+    </div>
+    <div class="agent-starter__progress-track" aria-hidden="true"><span data-agent-progress-bar></span></div>
+    <button class="text-button" type="button" data-agent-reset hidden>Start again</button>
+  </div>
+
+  <ol class="agent-starter__steps">
+    <li class="agent-starter__step" data-agent-step="install">
+      <div class="agent-starter__step-number">01</div>
+      <div class="agent-starter__step-content">
+        <p class="eyebrow">Install</p>
+        <h3>Install Ollama</h3>
+        <p>Choose the computer where you want to run OpenCode. We’ll show the current official installer command.</p>
+
+        <div class="agent-os-picker" role="group" aria-label="Choose your computer operating system">
+          <button type="button" data-agent-os="macos" aria-pressed="true"><i class="ph ph-apple-logo" aria-hidden="true"></i> Mac</button>
+          <button type="button" data-agent-os="windows" aria-pressed="false"><i class="ph ph-windows-logo" aria-hidden="true"></i> Windows</button>
+          <button type="button" data-agent-os="linux" aria-pressed="false"><i class="ph ph-linux-logo" aria-hidden="true"></i> Linux</button>
+        </div>
+        <p class="agent-os-status" data-agent-os-status aria-live="polite">Mac instructions selected.</p>
+
+        <div class="agent-command">
+          <span data-agent-shell-label>Terminal</span>
+          <code
+            data-command-id="install"
+            data-command-macos={installCommands.macos}
+            data-command-windows={installCommands.windows}
+            data-command-linux={installCommands.linux}
+          >{installCommands.macos}</code>
+          <button type="button" data-copy-command="install" aria-label="Copy Ollama installation command">
+            <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+          </button>
+        </div>
+        <div class="agent-starter__support-row">
+          <a href="https://ollama.com/download/mac" target="_blank" rel="noreferrer" data-agent-install-link>Open official Ollama download</a>
+          <span>Review the official installer before running a remote script.</span>
+        </div>
+        <button class="agent-step-complete" type="button" data-agent-complete="install" aria-pressed="false">
+          <i class="ph ph-circle" aria-hidden="true"></i><span>Mark installed</span>
+        </button>
+      </div>
+    </li>
+
+    <li class="agent-starter__step" data-agent-step="signin">
+      <div class="agent-starter__step-number">02</div>
+      <div class="agent-starter__step-content">
+        <p class="eyebrow">Cloud access</p>
+        <h3>Sign in to Ollama</h3>
+        <p>This opens Ollama’s browser sign-in flow and connects the CLI to the cloud models available on your account.</p>
+        <div class="agent-command">
+          <span>Terminal</span>
+          <code data-command-id="signin">ollama signin</code>
+          <button type="button" data-copy-command="signin" aria-label="Copy Ollama sign-in command">
+            <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+          </button>
+        </div>
+        <button class="agent-step-complete" type="button" data-agent-complete="signin" aria-pressed="false">
+          <i class="ph ph-circle" aria-hidden="true"></i><span>Mark signed in</span>
+        </button>
+      </div>
+    </li>
+
+    <li class="agent-starter__step" data-agent-step="launch">
+      <div class="agent-starter__step-number">03</div>
+      <div class="agent-starter__step-content">
+        <p class="eyebrow">Launch</p>
+        <h3>Start OpenCode</h3>
+        <p>Ollama starts the OpenCode setup and opens its model picker. No API key configuration is required.</p>
+        <div class="agent-command">
+          <span>Terminal</span>
+          <code data-command-id="launch">ollama launch opencode</code>
+          <button type="button" data-copy-command="launch" aria-label="Copy OpenCode launch command">
+            <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+          </button>
+        </div>
+        <button class="agent-step-complete" type="button" data-agent-complete="launch" aria-pressed="false">
+          <i class="ph ph-circle" aria-hidden="true"></i><span>Mark OpenCode opened</span>
+        </button>
+      </div>
+    </li>
+
+    <li class="agent-starter__step" data-agent-step="model">
+      <div class="agent-starter__step-number">04</div>
+      <div class="agent-starter__step-content">
+        <p class="eyebrow">Model</p>
+        <h3>Choose a free cloud model</h3>
+        <p>In the picker, start with the lowest-usage coding-capable cloud model available to your Free account.</p>
+        <div class="agent-model-recommendation">
+          <div>
+            <span class="status-badge status-badge--complete">Recommended now</span>
+            <strong>gpt-oss:20b-cloud</strong>
+            <small>A current lower-usage cloud starting point. Availability can change.</small>
+          </div>
+          <button type="button" data-copy-plain="gpt-oss:20b-cloud" aria-label="Copy recommended model name">
+            <i class="ph ph-copy" aria-hidden="true"></i><span>Copy model</span>
+          </button>
+        </div>
+        <div class="agent-starter__support-row">
+          <a href="https://ollama.com/search?c=cloud" target="_blank" rel="noreferrer">See current cloud models</a>
+          <span>Free cloud usage has session and weekly limits.</span>
+        </div>
+        <button class="agent-step-complete" type="button" data-agent-complete="model" aria-pressed="false">
+          <i class="ph ph-circle" aria-hidden="true"></i><span>Mark model selected</span>
+        </button>
+      </div>
+    </li>
+  </ol>
+
+  <section class="agent-starter__success" data-agent-success aria-live="polite" hidden>
+    <div class="agent-starter__success-mark"><i class="ph ph-confetti" aria-hidden="true"></i></div>
+    <div>
+      <p class="eyebrow">You did it 🎉</p>
+      <h3>Your first AI agent is running.</h3>
+      <p>Open a project folder, then try asking:</p>
+      <blockquote>“Look at this folder and explain what this project does.”</blockquote>
+      <p class="agent-usage">Usage remaining: <a href="https://ollama.com/settings" target="_blank" rel="noreferrer">check Ollama</a></p>
+    </div>
+  </section>
+
+  <section class="agent-connect" id="connect-super-ii">
+    <div class="agent-connect__intro">
+      <p class="eyebrow">Next · Connect Super ii</p>
+      <h3>Your agent is working. Give it a trusted discovery layer.</h3>
+      <p>Connect Super ii’s public, read-only MCP so OpenCode can discover reviewed models, datasets, apps, papers, and verified files.</p>
+    </div>
+
+    <div class="agent-connect__flow">
+      <div>
+        <span>1</span>
+        <p>In a new terminal, run:</p>
+        <div class="agent-command agent-command--light">
+          <code data-command-id="mcp-add">opencode mcp add</code>
+          <button type="button" data-copy-command="mcp-add" aria-label="Copy OpenCode MCP add command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+        </div>
+      </div>
+      <div>
+        <span>2</span>
+        <p>Choose <strong>Remote</strong>, name it <strong>superii</strong>, and use this URL:</p>
+        <div class="agent-command agent-command--light">
+          <code data-command-id="mcp-url">{mcpEndpoint}</code>
+          <button type="button" data-copy-command="mcp-url" aria-label="Copy Super ii MCP URL"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+        </div>
+      </div>
+      <div>
+        <span>3</span>
+        <p>Confirm the connection:</p>
+        <div class="agent-command agent-command--light">
+          <code data-command-id="mcp-list">opencode mcp list</code>
+          <button type="button" data-copy-command="mcp-list" aria-label="Copy OpenCode MCP list command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+        </div>
+      </div>
+    </div>
+
+    <details class="agent-connect__config">
+      <summary>Prefer to edit OpenCode configuration?</summary>
+      <p>Add the <code>mcp.superii</code> entry below to <code>~/.config/opencode/opencode.json</code>. Preserve any settings already in that file.</p>
+      <pre><code data-command-id="mcp-config">{mcpConfig}</code></pre>
+      <button class="button button--secondary button--small" type="button" data-copy-command="mcp-config"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy configuration</span></button>
+    </details>
+
+    <div class="agent-connect__finish">
+      <div><i class="ph ph-check-circle" aria-hidden="true"></i><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
+      <p>Try: “Use Super ii to show its system state and explain what it can discover.”</p>
+    </div>
+  </section>
+
+  <footer class="agent-starter__future">
+    <span>OpenCode · Default beginner path</span>
+    <p>More guided paths can follow for Codex, Claude Code, Qwen Code, Hermes, OpenClaw, and others.</p>
+  </footer>
+</section>
+
+<script>
+  type StarterStep = 'install' | 'signin' | 'launch' | 'model';
+  type StarterOs = 'macos' | 'windows' | 'linux';
+
+  const STORAGE_KEY = 'superii-agent-starter-v1';
+  const STEP_KEYS: StarterStep[] = ['install', 'signin', 'launch', 'model'];
+  const INSTALL_LINKS: Record<StarterOs, string> = {
+    macos: 'https://ollama.com/download/mac',
+    windows: 'https://ollama.com/download/windows',
+    linux: 'https://ollama.com/download/linux',
+  };
+  const OS_LABELS: Record<StarterOs, string> = {
+    macos: 'Mac',
+    windows: 'Windows',
+    linux: 'Linux',
+  };
+
+  interface StarterState {
+    os: StarterOs;
+    complete: StarterStep[];
+  }
+
+  function detectedOs(): StarterOs {
+    const value = `${navigator.platform || ''} ${navigator.userAgent || ''}`.toLowerCase();
+    if (value.includes('win')) return 'windows';
+    if (value.includes('mac')) return 'macos';
+    if (value.includes('linux') && !value.includes('android')) return 'linux';
+    return 'macos';
+  }
+
+  function readState(): StarterState {
+    const fallback: StarterState = { os: detectedOs(), complete: [] };
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (!stored || !['macos', 'windows', 'linux'].includes(stored.os) || !Array.isArray(stored.complete)) return fallback;
+      return {
+        os: stored.os,
+        complete: stored.complete.filter((step: string): step is StarterStep => STEP_KEYS.includes(step as StarterStep)),
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  async function copyText(value: string, button: HTMLButtonElement) {
+    const label = button.querySelector('span');
+    try {
+      await navigator.clipboard.writeText(value);
+      if (label) label.textContent = 'Copied';
+      button.dataset.copied = 'true';
+      window.setTimeout(() => {
+        if (label) label.textContent = button.dataset.originalLabel || 'Copy';
+        delete button.dataset.copied;
+      }, 1800);
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      const source = button.closest('.agent-command, .agent-model-recommendation, .agent-connect__config')?.querySelector('code, strong');
+      if (source) {
+        range.selectNodeContents(source);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+      if (label) label.textContent = 'Select text';
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-agent-starter]').forEach((starter) => {
+    if (starter.dataset.initialized === 'true') return;
+    starter.dataset.initialized = 'true';
+    starter.dataset.enhanced = 'true';
+    let state = readState();
+
+    const progressLabel = starter.querySelector<HTMLElement>('[data-agent-progress-label]');
+    const progressBar = starter.querySelector<HTMLElement>('[data-agent-progress-bar]');
+    const resetButton = starter.querySelector<HTMLButtonElement>('[data-agent-reset]');
+    const success = starter.querySelector<HTMLElement>('[data-agent-success]');
+    const installCommand = starter.querySelector<HTMLElement>('[data-command-id="install"]');
+    const installLink = starter.querySelector<HTMLAnchorElement>('[data-agent-install-link]');
+    const shellLabel = starter.querySelector<HTMLElement>('[data-agent-shell-label]');
+    const osStatus = starter.querySelector<HTMLElement>('[data-agent-os-status]');
+
+    const save = () => {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    };
+
+    const render = () => {
+      starter.querySelectorAll<HTMLButtonElement>('[data-agent-os]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.agentOs === state.os));
+      });
+      if (installCommand) installCommand.textContent = installCommand.dataset[`command${state.os[0].toUpperCase()}${state.os.slice(1)}`] || '';
+      if (installLink) installLink.href = INSTALL_LINKS[state.os];
+      if (shellLabel) shellLabel.textContent = state.os === 'windows' ? 'PowerShell' : 'Terminal';
+      if (osStatus) osStatus.textContent = `${OS_LABELS[state.os]} instructions selected.`;
+
+      starter.querySelectorAll<HTMLButtonElement>('[data-agent-complete]').forEach((button) => {
+        const step = button.dataset.agentComplete as StarterStep;
+        const complete = state.complete.includes(step);
+        button.setAttribute('aria-pressed', String(complete));
+        const icon = button.querySelector('i');
+        if (icon) icon.className = complete ? 'ph ph-check-circle' : 'ph ph-circle';
+        button.closest<HTMLElement>('[data-agent-step]')?.toggleAttribute('data-complete', complete);
+      });
+
+      const count = state.complete.length;
+      if (progressLabel) progressLabel.textContent = `${count} of ${STEP_KEYS.length} complete`;
+      if (progressBar) progressBar.style.width = `${(count / STEP_KEYS.length) * 100}%`;
+      if (resetButton) resetButton.hidden = count === 0;
+      if (success) success.hidden = count !== STEP_KEYS.length;
+    };
+
+    starter.querySelectorAll<HTMLButtonElement>('[data-agent-os]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.os = button.dataset.agentOs as StarterOs;
+        save();
+        render();
+      });
+    });
+
+    starter.querySelectorAll<HTMLButtonElement>('[data-agent-complete]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const step = button.dataset.agentComplete as StarterStep;
+        state.complete = state.complete.includes(step)
+          ? state.complete.filter((value) => value !== step)
+          : [...state.complete, step];
+        save();
+        render();
+      });
+    });
+
+    resetButton?.addEventListener('click', () => {
+      state = { os: detectedOs(), complete: [] };
+      save();
+      render();
+      starter.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+
+    starter.querySelectorAll<HTMLButtonElement>('[data-copy-command]').forEach((button) => {
+      const label = button.querySelector('span');
+      button.dataset.originalLabel = label?.textContent || 'Copy';
+      button.addEventListener('click', () => {
+        const id = button.dataset.copyCommand;
+        const source = id ? starter.querySelector<HTMLElement>(`[data-command-id="${CSS.escape(id)}"]`) : null;
+        if (source?.textContent) void copyText(source.textContent.trim(), button);
+      });
+    });
+
+    starter.querySelectorAll<HTMLButtonElement>('[data-copy-plain]').forEach((button) => {
+      const label = button.querySelector('span');
+      button.dataset.originalLabel = label?.textContent || 'Copy';
+      button.addEventListener('click', () => void copyText(button.dataset.copyPlain || '', button));
+    });
+
+    render();
+  });
+</script>
