@@ -1,4 +1,11 @@
 import type { APIRoute } from 'astro';
+import {
+  existingAgentReceipt,
+  jsonSha256,
+  recordAgentReceipt,
+  validIdempotencyKey,
+  type AgentActor,
+} from '@/lib/agent-auth';
 import { managedRepository, scopedManagedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
@@ -16,6 +23,41 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branchId)
     : await scopedManagedRepository(sql, repositoryId, branchId);
   if (!repository) return Response.json({ error: 'repository not found or access denied' }, { status: 404 });
+  const idempotencyKey = authorization.actor.kind === 'agent-token'
+    ? validIdempotencyKey(request.headers.get('idempotency-key'))
+    : null;
+  if (authorization.actor.kind === 'agent-token' && !idempotencyKey) {
+    return Response.json({ error: 'agent submissions require an Idempotency-Key with 16-200 safe characters' }, { status: 422 });
+  }
+  const agentActor: AgentActor | null = authorization.actor.kind === 'agent-token'
+    ? {
+        kind: 'agent-token',
+        tokenId: authorization.actor.tokenId ?? '',
+        agentIdentityId: authorization.actor.agentIdentityId ?? '',
+        profileId: authorization.actor.profileId,
+        organizationId: authorization.actor.organizationId ?? '',
+        grantedScopes: ['repository:submit'],
+        boundRepositoryId: repository.id,
+        createdBy: authorization.actor.createdBy,
+      }
+    : null;
+  const requestSha256 = agentActor
+    ? await jsonSha256({
+        action: 'revision.submit', repository_id: repository.id,
+        revision_id: repository.revision_id, branch_id: repository.branch_id,
+      })
+    : null;
+  if (agentActor && idempotencyKey && requestSha256) {
+    try {
+      const previous = await existingAgentReceipt(
+        sql, agentActor, idempotencyKey, 'revision.submit', requestSha256,
+      );
+      if (previous.conflict) return Response.json({ error: 'idempotency key conflicts with an earlier action' }, { status: 409 });
+      if (previous.receipt) return Response.json({ ok: true, replayed: true, receipt: previous.receipt, ...previous.receipt.detail });
+    } catch {
+      return Response.json({ error: 'agent receipt service unavailable' }, { status: 503 });
+    }
+  }
   if (!runtimeIsConfigured(locals)) {
     return Response.json({ error: 'secure review runtime is not connected yet' }, { status: 503 });
   }
@@ -61,6 +103,38 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ error: 'revision is not ready for human review', detail: finalized.detail }, { status: finalize.status });
   }
 
+  const detail = {
+    status: 'review',
+    repository_id: repository.id,
+    revision_id: repository.revision_id,
+    human_review_required: true,
+    revision: finalized,
+    analysis: inspectionPayload,
+  };
+  let receipt: unknown = null;
+  if (agentActor && idempotencyKey && requestSha256) {
+    try {
+      receipt = await recordAgentReceipt(sql, agentActor, {
+        idempotencyKey,
+        action: 'revision.submit',
+        targetType: 'revision',
+        targetId: repository.revision_id,
+        targetRef: repository.id,
+        requestedScopes: ['repository:submit'],
+        requestSha256,
+        resultSha256: await jsonSha256(detail),
+        status: 'succeeded',
+        reviewBoundary: 'human-review-required',
+        detail,
+      });
+    } catch {
+      return Response.json({
+        error: 'submission reached review but its immutable receipt could not be recorded; retry with the same Idempotency-Key',
+        revision_id: repository.revision_id,
+        retryable: true,
+      }, { status: 503 });
+    }
+  }
   try {
     await sql`
       insert into app.notifications (profile_id, event_type, title, body, href, metadata)
@@ -74,7 +148,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
       )
     `;
   } catch {
-    // Submission is complete even when the optional notification write fails.
+    // Submission and its receipt are complete even when the optional notification write fails.
   }
-  return Response.json({ ok: true, status: 'review', revision: finalized, analysis: inspectionPayload });
+  return Response.json({ ok: true, replayed: false, receipt, ...detail });
 };

@@ -1,0 +1,85 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getPublicAgentProfile, type PublicAgentProfile } from '@/lib/agent-profile';
+import { sqlClient } from '@/lib/db';
+
+const handle = Astro.params.handle ?? '';
+const sql = sqlClient(Astro.locals);
+let profile: PublicAgentProfile | null = null;
+if (sql) {
+  try { profile = await getPublicAgentProfile(sql, handle); }
+  catch { profile = null; }
+}
+if (!profile) Astro.response.status = 404;
+
+function repositoryHref(contribution: PublicAgentProfile['contributions'][number]) {
+  if (!contribution.repository_owner || !contribution.repository_slug || !contribution.repository_kind) return null;
+  const prefix = contribution.repository_kind === 'model' ? 'models' : contribution.repository_kind === 'dataset' ? 'datasets' : 'spaces';
+  return `/${prefix}/${encodeURIComponent(contribution.repository_owner)}/${encodeURIComponent(contribution.repository_slug)}`;
+}
+---
+
+<BaseLayout
+  title={profile ? `${profile.display_name} · Agent` : 'Agent not found'}
+  description={profile?.description || 'Public Super ii agent identity.'}
+  noindex={!profile}
+  className="agent-profile-page"
+>
+  {profile ? (
+    <>
+      <section class="agent-profile-hero">
+        <div class="shell agent-profile-hero__inner">
+          <div class="agent-profile-mark" aria-hidden="true"><i class="ph ph-robot"></i></div>
+          <div>
+            <p class="eyebrow">Public agent identity</p>
+            <h1>{profile.display_name}</h1>
+            <p class="agent-profile-handle">@{profile.handle} · {profile.framework}</p>
+            <p class="agent-profile-description">{profile.description || 'No public description supplied.'}</p>
+            <div class="button-row">
+              {profile.agent_card_url && <a class="button button--yellow" href={profile.agent_card_url} rel="noreferrer">Agent Card <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>}
+              <a class="button agents-button--ghost" href={`/agents/${encodeURIComponent(profile.handle)}/profile.json`}>profile.json</a>
+              <a class="button agents-button--ghost" href={`/agents/${encodeURIComponent(profile.handle)}/README.md`}>README.md</a>
+            </div>
+          </div>
+          <dl class="agent-profile-operator">
+            <div><dt>Operator</dt><dd><a href={`/organizations/${encodeURIComponent(profile.organization_handle)}`}>{profile.organization_name}</a></dd></div>
+            <div><dt>Status</dt><dd><span class="agents-status">Active</span></dd></div>
+            <div><dt>Verified</dt><dd>{profile.verified_at ? new Date(profile.verified_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'Operator-declared'}</dd></div>
+            <div><dt>Last seen</dt><dd>{profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'No recorded work yet'}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="agent-profile-metrics" aria-label="Agent reputation">
+        <div class="shell">
+          <div><strong>{profile.reputation_score}</strong><span>Reputation</span></div>
+          <div><strong>{profile.accepted_contributions}</strong><span>Accepted contributions</span></div>
+          <div><strong>{profile.successful_actions}</strong><span>Receipt-backed actions</span></div>
+          <p>Reputation changes only after a human accepts a contribution. It is not a general trust or quality score.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="shell agent-profile-grid">
+          <div>
+            <p class="eyebrow">Human-reviewed work</p>
+            <h2>Accepted contributions</h2>
+          </div>
+          <div class="agent-contribution-list">
+            {profile.contributions.length ? profile.contributions.map((contribution) => {
+              const href = repositoryHref(contribution);
+              return <article>
+                <div><span>{contribution.job_type}</span><time datetime={contribution.reviewed_at ?? undefined}>{contribution.reviewed_at ? new Date(contribution.reviewed_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'Accepted'}</time></div>
+                <h3>{href ? <a href={href}>{contribution.title}</a> : contribution.title}</h3>
+                <p>{contribution.reward_label}</p>
+                <code>sha256:{contribution.result_sha256}</code>
+              </article>;
+            }) : <div class="agent-profile-empty"><i class="ph ph-seal-check" aria-hidden="true"></i><p>No accepted contributions yet. Empty means no human-reviewed work has been credited.</p></div>}
+          </div>
+        </div>
+      </section>
+    </>
+  ) : (
+    <section class="section"><div class="shell empty-state"><p class="eyebrow">404</p><h1>Agent identity not found</h1><p>This handle is not public, active, or available.</p><a class="button button--dark" href="/agents">Browse agent access</a></div></section>
+  )}
+</BaseLayout>

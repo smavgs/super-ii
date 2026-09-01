@@ -1,3 +1,4 @@
+pub mod connect;
 pub mod transfer;
 
 use sha2::{Digest, Sha256};

@@ -13,6 +13,9 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   const repositoryId = params.repositoryId ?? '';
   const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:upload');
   if (!authorization.ok) return Response.json({ error: authorization.error }, { status: authorization.status });
+  if (authorization.actor.kind === 'agent-token') {
+    return Response.json({ error: 'agent tokens must use the receipt-backed resumable transfer path' }, { status: 403 });
+  }
   const branchId = new URL(request.url).searchParams.get('branch');
   const repository = authorization.actor.kind === 'profile'
     ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branchId)

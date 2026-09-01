@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "name": "superii",
+  "version": "1.0.0",
+  "issued_at": "2026-09-01T00:00:00Z",
+  "integrity": "sha256",
+  "signature_algorithm": "Ed25519",
+  "signed_bytes": "exact UTF-8 bytes of this manifest.json file",
+  "files": [
+    {
+      "path": "SKILL.md",
+      "sha256": "5ad937da84d692ab13fc30c7cbddbbb86fbc55c16ecd1afc68348eb3306eeaf2"
+    },
+    {
+      "path": "references/public-discovery.md",
+      "sha256": "bfa315a8715a1b08f8582eff69bf216125b5bf71ed8d3eb0cbfe858ec94b11d2"
+    },
+    {
+      "path": "references/safe-publishing.md",
+      "sha256": "7d7718aa269d6318396d16a026c6ec5ca6a98632c9c2043d2e8109a23103af36"
+    },
+    {
+      "path": "references/contracts.md",
+      "sha256": "f7e1e4f18509c08ece506bde371d505fe7f2743e5fad46b5338397ef93e5e7a2"
+    }
+  ]
+}

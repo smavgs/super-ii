@@ -7,6 +7,7 @@ const site = JSON.parse(await readFile(resolve(root, 'src/content/site.json'), '
 
 function candidates(route) {
   if (route === '/') return ['src/pages/index.astro'];
+  if (route.startsWith('/a2a/v1/')) return ['src/pages/a2a/v1/[...operation].ts'];
   const clean = route.replace(/^\//, '');
   if (clean.startsWith('api/')) return [`src/pages/${clean}.ts`];
   return [`src/pages/${clean}.astro`, `src/pages/${clean}.ts`, `src/pages/${clean}/index.astro`, `src/pages/${clean}/index.ts`];

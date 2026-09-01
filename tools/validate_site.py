@@ -155,6 +155,23 @@ def main() -> int:
         ROOT / "src" / "pages" / "bring-my-work.astro",
         ROOT / "runtime" / "src" / "superii_runtime" / "bridge.py",
         ROOT / "src" / "components" / "AgentStarter.astro",
+        ROOT / "database" / "migrations" / "0012_agent_participation.sql",
+        ROOT / "docs" / "architecture" / "agent-participation.md",
+        ROOT / "src" / "content" / "agent-connectors.json",
+        ROOT / "public" / "schemas" / "agent-connector-registry-v1.json",
+        ROOT / "public" / "skills" / "superii" / "SKILL.md",
+        ROOT / "public" / "skills" / "superii" / "manifest.json",
+        ROOT / "public" / "skills" / "superii" / "signature.json",
+        ROOT / "public" / "skills" / "superii" / "public-key.json",
+        ROOT / "src" / "lib" / "a2a.ts",
+        ROOT / "src" / "lib" / "agent-auth.ts",
+        ROOT / "src" / "lib" / "agent-profile.ts",
+        ROOT / "src" / "lib" / "work-mcp-server.ts",
+        ROOT / "src" / "pages" / ".well-known" / "agent-card.json.ts",
+        ROOT / "src" / "pages" / "a2a" / "v1" / "[...operation].ts",
+        ROOT / "src" / "pages" / "mcp" / "work.ts",
+        ROOT / "src" / "components" / "AgentWorkspace.astro",
+        ROOT / "rust" / "src" / "connect.rs",
     ]
     missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]
     if missing_machine_files:
@@ -313,6 +330,64 @@ def main() -> int:
         ):
             if marker not in agent_starter_contract:
                 errors.append(f"Agent Starter contract is missing {marker}")
+        agent_participation_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "database" / "migrations" / "0012_agent_participation.sql",
+                ROOT / "src" / "lib" / "agent-auth.ts",
+                ROOT / "src" / "lib" / "work-mcp-server.ts",
+                ROOT / "src" / "components" / "AgentWorkspace.astro",
+            )
+        )
+        for marker in (
+            "spend_limit_cents = 0",
+            "agent_action_receipts_immutable",
+            "consume_agent_access_token",
+            "agent_create_repository_with_receipt",
+            "review_agent_contribution",
+            "createMcpHandler",
+            "create_draft_repository",
+            "create_revision",
+            "prepare_resumable_upload",
+            "submit_revision_for_review",
+            "claim_contribution_job",
+            "submit_contribution_job",
+            "get_action_receipt",
+            "This tool cannot publish",
+        ):
+            if marker not in agent_participation_contract:
+                errors.append(f"agent participation contract is missing {marker}")
+        connector_contract = json.loads(
+            (ROOT / "src" / "content" / "agent-connectors.json").read_text(encoding="utf-8")
+        )
+        if connector_contract.get("public_mcp_url") != "https://superii.site/mcp":
+            errors.append("connector registry public MCP URL changed")
+        if connector_contract.get("work_mcp_url") != "https://superii.site/mcp/work":
+            errors.append("connector registry Work MCP URL changed")
+        connector_policy = connector_contract.get("connector_policy", {})
+        if connector_policy != {
+            "default_access": "public-read-only",
+            "write_access": "explicit-workspace-token",
+            "installer_behavior": "dry-run-first",
+            "secrets_in_commands": False,
+        }:
+            errors.append("connector registry safety policy changed")
+        verified_connectors = {
+            item.get("id") for item in connector_contract.get("connectors", [])
+            if item.get("status") == "verified"
+        }
+        if not {"codex", "opencode-v1", "opencode-v2", "claude-code"}.issubset(verified_connectors):
+            errors.append("connector registry is missing a verified first-party setup")
+        connect_cli = (ROOT / "rust" / "src" / "connect.rs").read_text(encoding="utf-8")
+        for marker in (
+            'PUBLIC_MCP_URL: &str = "https://superii.site/mcp"',
+            "atomic_replace",
+            "configuration changed since connect; rollback refused",
+            "mode(0o600)",
+            "already exists with a different URL; no file was changed",
+        ):
+            if marker not in connect_cli:
+                errors.append(f"safe connector CLI is missing {marker}")
 
     wasm_files = sorted((ROOT / "public" / "runtime-assets" / "wasm").glob("*.wasm"))
     if not wasm_files:

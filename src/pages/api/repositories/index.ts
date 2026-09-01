@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     const rows = await sql`
       select distinct r.id, r.kind, r.owner_handle, r.slug, r.title, r.summary,
-             r.status, r.updated_at,
+             r.owner_organization_id, r.status, r.updated_at,
              rr.id as revision_id, rr.status as revision_status, rr.sequence
       from app.repositories r
       left join app.organization_members m on m.organization_id = r.owner_organization_id

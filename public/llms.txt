@@ -6,8 +6,16 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 
 ## Agent access
 
+- [Agents](https://superii.site/agents): Human-facing connection, governance, and interoperability hub
 - [MCP](https://superii.site/mcp): Stateless, public, read-only Streamable HTTP tools
+- [Work MCP](https://superii.site/mcp/work): Authenticated, scope-limited draft repository work with receipts
+- [A2A Agent Card](https://superii.site/.well-known/agent-card.json): A2A v1.0 discovery for bounded public tasks
+- [Connector registry](https://superii.site/agent-connectors.json): Versioned, source-linked client configuration profiles
+- [Super ii Agent Skill](https://superii.site/skills/superii/SKILL.md): Portable public discovery and governed-work instructions
 - [Agent contract](https://superii.site/agents.md): Global automation rules and safety boundaries
+- [Full machine guide](https://superii.site/llms-full.txt): Bounded consolidated service documentation
+- [OpenAPI](https://superii.site/openapi.json): Versioned HTTP interface contract
+- [Documentation index](https://superii.site/docs.json): Canonical documents and representations
 - [System state JSON](https://superii.site/system-state.json): Canonical capability and availability register
 - [System state Markdown](https://superii.site/system-state.md): Human-readable source register
 - [Repository manifest schema](https://superii.site/schemas/repository-manifest-v1.json): Versioned reviewed-release manifest contract
@@ -24,6 +32,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Models](https://superii.site/models): Public model catalog and local browser inference tools
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
+- [Agents](https://superii.site/agents): Connect agents through verified, least-privilege interfaces
 - [Notebooks](https://superii.site/notebooks): Official reproducible tutorials in a no-execution static reader
 - [Collections](https://superii.site/collections): Curated public repository lists
 - [Organizations](https://superii.site/organizations): Team collaboration overview

@@ -6,7 +6,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::net::IpAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use superii_data_plane::connect::{
+    ConnectorKind, apply_connect, apply_rollback, default_receipt_dir, load_receipt, plan_connect,
+    plan_rollback,
+};
 use superii_data_plane::{sha256_file, valid_sha256};
 use url::Url;
 use uuid::Uuid;
@@ -23,10 +29,34 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    Connect(Connect),
+    Rollback(Rollback),
     Push(Push),
     Pull(Pull),
     Verify(Verify),
     Inspect(Inspect),
+}
+
+#[derive(Debug, Args)]
+struct Connect {
+    #[arg(long, default_value = "codex")]
+    agent: String,
+    #[arg(long)]
+    config: Option<PathBuf>,
+    #[arg(long)]
+    receipt_dir: Option<PathBuf>,
+    #[arg(long)]
+    apply: bool,
+}
+
+#[derive(Debug, Args)]
+struct Rollback {
+    #[arg(long)]
+    receipt: PathBuf,
+    #[arg(long)]
+    receipt_dir: Option<PathBuf>,
+    #[arg(long)]
+    apply: bool,
 }
 
 #[derive(Debug, Args)]
@@ -84,6 +114,8 @@ struct CreateUpload<'a> {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct UploadState {
+    schema_version: u8,
+    request_sha256: String,
     transfer_id: Uuid,
     upload_url: Url,
     transfer_token: String,
@@ -103,6 +135,8 @@ struct CreateResponse {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match cli.command {
+        Command::Connect(arguments) => connect(arguments)?,
+        Command::Rollback(arguments) => rollback(arguments)?,
         Command::Push(arguments) => push(arguments).await?,
         Command::Pull(arguments) => pull(arguments).await?,
         Command::Verify(arguments) => verify(arguments)?,
@@ -111,30 +145,89 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn connect(arguments: Connect) -> Result<(), Box<dyn std::error::Error>> {
+    let connector = ConnectorKind::from_str(&arguments.agent)?;
+    let plan = plan_connect(connector, arguments.config)?;
+    if !arguments.apply {
+        println!("{}", serde_json::to_string_pretty(&plan)?);
+        return Ok(());
+    }
+    let receipt_dir = arguments
+        .receipt_dir
+        .map(Ok)
+        .unwrap_or_else(default_receipt_dir)?;
+    let result = apply_connect(plan, receipt_dir)?;
+    println!("{}", serde_json::to_string_pretty(&result)?);
+    Ok(())
+}
+
+fn rollback(arguments: Rollback) -> Result<(), Box<dyn std::error::Error>> {
+    let receipt = load_receipt(&arguments.receipt)?;
+    if !arguments.apply {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&plan_rollback(&receipt)?)?
+        );
+        return Ok(());
+    }
+    let receipt_dir = arguments
+        .receipt_dir
+        .map(Ok)
+        .unwrap_or_else(default_receipt_dir)?;
+    let (plan, rollback_receipt) = apply_rollback(&receipt, receipt_dir)?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&serde_json::json!({
+            "applied": true,
+            "verified": true,
+            "plan": plan,
+            "rollback_receipt": rollback_receipt,
+        }))?
+    );
+    Ok(())
+}
+
 async fn push(arguments: Push) -> Result<(), Box<dyn std::error::Error>> {
     if arguments.chunk_bytes == 0 || arguments.chunk_bytes > MAX_CHUNK_BYTES {
         return Err(format!("chunk size must be between 1 and {MAX_CHUNK_BYTES} bytes").into());
     }
     let source = arguments.file.canonicalize()?;
+    ensure_secure_remote(&arguments.base_url)?;
     let filename = source
         .file_name()
         .and_then(|value| value.to_str())
         .ok_or("source filename is invalid")?;
     let (sha256, length) = sha256_file(&source)?;
+    let idempotency_material = format!(
+        "{}\0{}\0{}\0{}",
+        arguments.repository,
+        arguments
+            .branch
+            .map(|value| value.to_string())
+            .unwrap_or_else(|| "default".into()),
+        arguments.path,
+        sha256
+    );
+    let request_sha256 = hex::encode(Sha256::digest(idempotency_material.as_bytes()));
+    let idempotency_key = format!("push-{request_sha256}");
     let state_path = arguments
         .state_file
-        .unwrap_or_else(|| source.with_extension("superii-upload.json"));
+        .unwrap_or_else(|| source.with_file_name(format!("{filename}.superii-upload.json")));
     let client = reqwest::Client::builder()
         .https_only(arguments.base_url.scheme() == "https")
         .build()?;
     let state = if state_path.is_file() {
         let existing: UploadState = serde_json::from_slice(&fs::read(&state_path)?)?;
-        if existing.source_sha256 != sha256
+        if existing.schema_version != 1
+            || existing.request_sha256 != request_sha256
+            || existing.source_sha256 != sha256
             || existing.source_size != length
             || existing.source_path != source
         {
-            return Err("upload state belongs to different source bytes".into());
+            return Err("upload state belongs to a different source or repository request".into());
         }
+        ensure_secure_remote(&existing.upload_url)?;
+        ensure_same_origin(&arguments.base_url, &existing.upload_url)?;
         existing
     } else {
         let mut endpoint = arguments.base_url.join(&format!(
@@ -153,6 +246,7 @@ async fn push(arguments: Push) -> Result<(), Box<dyn std::error::Error>> {
         let response = client
             .post(endpoint)
             .bearer_auth(&arguments.token)
+            .header("idempotency-key", &idempotency_key)
             .json(&CreateUpload {
                 path: &arguments.path,
                 filename,
@@ -166,7 +260,11 @@ async fn push(arguments: Push) -> Result<(), Box<dyn std::error::Error>> {
             return Err(format!("transfer creation failed: {}", response.text().await?).into());
         }
         let created: CreateResponse = response.json().await?;
+        ensure_secure_remote(&created.upload_url)?;
+        ensure_same_origin(&arguments.base_url, &created.upload_url)?;
         let state = UploadState {
+            schema_version: 1,
+            request_sha256,
             transfer_id: created.transfer_id,
             upload_url: created.upload_url,
             transfer_token: created.transfer_token,
@@ -258,7 +356,10 @@ async fn pull(arguments: Pull) -> Result<(), Box<dyn std::error::Error>> {
     if !valid_sha256(&arguments.sha256) {
         return Err("expected SHA-256 must be lowercase hexadecimal".into());
     }
-    let client = reqwest::Client::builder().build()?;
+    ensure_secure_remote(&arguments.url)?;
+    let client = reqwest::Client::builder()
+        .https_only(arguments.url.scheme() == "https")
+        .build()?;
     let offset = arguments
         .output
         .metadata()
@@ -360,4 +461,67 @@ fn write_private_json(
         file.sync_all()?;
     }
     Ok(())
+}
+
+fn ensure_secure_remote(url: &Url) -> Result<(), String> {
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err("URLs containing embedded credentials are not allowed".into());
+    }
+    if url.scheme() == "https" {
+        return Ok(());
+    }
+    let loopback = url.scheme() == "http"
+        && url.host_str().is_some_and(|host| {
+            host.eq_ignore_ascii_case("localhost")
+                || host
+                    .parse::<IpAddr>()
+                    .is_ok_and(|address| address.is_loopback())
+        });
+    if loopback {
+        Ok(())
+    } else {
+        Err("remote URLs must use HTTPS; HTTP is allowed only for loopback testing".into())
+    }
+}
+
+fn ensure_same_origin(base: &Url, target: &Url) -> Result<(), String> {
+    if base.scheme() == target.scheme()
+        && base.host_str().map(str::to_ascii_lowercase)
+            == target.host_str().map(str::to_ascii_lowercase)
+        && base.port_or_known_default() == target.port_or_known_default()
+    {
+        Ok(())
+    } else {
+        Err("transfer URL origin does not match the requested Super ii origin".into())
+    }
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::*;
+
+    #[test]
+    fn remote_urls_are_https_or_loopback_only() {
+        assert!(ensure_secure_remote(&Url::parse("https://superii.site/mcp").unwrap()).is_ok());
+        assert!(ensure_secure_remote(&Url::parse("http://127.0.0.1:4321/api").unwrap()).is_ok());
+        assert!(ensure_secure_remote(&Url::parse("http://superii.site/api").unwrap()).is_err());
+        assert!(
+            ensure_secure_remote(&Url::parse("https://token@example.test/api").unwrap()).is_err()
+        );
+    }
+
+    #[test]
+    fn transfer_origin_must_match() {
+        let base = Url::parse("https://superii.site").unwrap();
+        assert!(
+            ensure_same_origin(
+                &base,
+                &Url::parse("https://superii.site/api/transfers/1").unwrap()
+            )
+            .is_ok()
+        );
+        assert!(
+            ensure_same_origin(&base, &Url::parse("https://uploads.example/api").unwrap()).is_err()
+        );
+    }
 }

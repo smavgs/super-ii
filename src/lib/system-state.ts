@@ -59,6 +59,9 @@ export const systemState = {
   capabilities: parseCapabilities(systemStateMarkdown),
   source: '/system-state.md',
   mcp: '/mcp',
+  workMcp: '/mcp/work',
+  agents: '/agents',
+  a2a: '/.well-known/agent-card.json',
 } as const;
 
 export { systemStateMarkdown };

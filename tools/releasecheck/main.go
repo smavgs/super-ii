@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -30,6 +32,89 @@ type siteContract struct {
 	Catalog map[string][]json.RawMessage `json:"catalog"`
 	Plans   []plan                       `json:"plans"`
 	Routes  []string                     `json:"routes"`
+}
+
+type skillManifest struct {
+	SchemaVersion string `json:"schema_version"`
+	Name          string `json:"name"`
+	Version       string `json:"version"`
+	Files         []struct {
+		Path   string `json:"path"`
+		SHA256 string `json:"sha256"`
+	} `json:"files"`
+}
+
+type skillPublicKey struct {
+	KeyID     string `json:"key_id"`
+	Algorithm string `json:"algorithm"`
+	PublicKey string `json:"public_key"`
+}
+
+type skillSignature struct {
+	SignedFile string `json:"signed_file"`
+	Algorithm  string `json:"algorithm"`
+	KeyID      string `json:"key_id"`
+	Signature  string `json:"signature"`
+}
+
+func verifyAgentSkill(root string) []string {
+	errors := make([]string, 0)
+	skillRoot := filepath.Join(root, "public", "skills", "superii")
+	manifestBytes, err := os.ReadFile(filepath.Join(skillRoot, "manifest.json"))
+	if err != nil {
+		return []string{"cannot read signed Agent Skill manifest"}
+	}
+	var manifest skillManifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return []string{"Agent Skill manifest is invalid JSON"}
+	}
+	if manifest.SchemaVersion != "1.0.0" || manifest.Name != "superii" || manifest.Version == "" {
+		errors = append(errors, "Agent Skill manifest identity changed")
+	}
+	if len(manifest.Files) == 0 {
+		errors = append(errors, "Agent Skill manifest contains no files")
+	}
+	seen := map[string]bool{}
+	for _, file := range manifest.Files {
+		clean := filepath.Clean(file.Path)
+		if clean == "." || clean == ".." || filepath.IsAbs(clean) || strings.HasPrefix(clean, ".."+string(filepath.Separator)) || seen[clean] {
+			errors = append(errors, "Agent Skill manifest contains unsafe or duplicate path: "+file.Path)
+			continue
+		}
+		seen[clean] = true
+		bytes, readErr := os.ReadFile(filepath.Join(skillRoot, clean))
+		if readErr != nil {
+			errors = append(errors, "Agent Skill manifest file missing: "+clean)
+			continue
+		}
+		hash := sha256.Sum256(bytes)
+		if hex.EncodeToString(hash[:]) != file.SHA256 {
+			errors = append(errors, "Agent Skill file checksum changed: "+clean)
+		}
+	}
+
+	keyBytes, keyErr := os.ReadFile(filepath.Join(skillRoot, "public-key.json"))
+	signatureBytes, signatureErr := os.ReadFile(filepath.Join(skillRoot, "signature.json"))
+	if keyErr != nil || signatureErr != nil {
+		return append(errors, "Agent Skill public key or signature is missing")
+	}
+	var key skillPublicKey
+	var signature skillSignature
+	if json.Unmarshal(keyBytes, &key) != nil || json.Unmarshal(signatureBytes, &signature) != nil {
+		return append(errors, "Agent Skill public key or signature JSON is invalid")
+	}
+	if key.Algorithm != "Ed25519" || signature.Algorithm != "Ed25519" || signature.SignedFile != "manifest.json" || key.KeyID != signature.KeyID {
+		return append(errors, "Agent Skill signature contract changed")
+	}
+	publicKey, publicKeyErr := base64.StdEncoding.DecodeString(key.PublicKey)
+	detachedSignature, detachedErr := base64.StdEncoding.DecodeString(signature.Signature)
+	if publicKeyErr != nil || detachedErr != nil || len(publicKey) != ed25519.PublicKeySize || len(detachedSignature) != ed25519.SignatureSize {
+		return append(errors, "Agent Skill signature material is malformed")
+	}
+	if !ed25519.Verify(ed25519.PublicKey(publicKey), manifestBytes, detachedSignature) {
+		errors = append(errors, "Agent Skill Ed25519 signature verification failed")
+	}
+	return errors
 }
 
 func main() {
@@ -74,7 +159,7 @@ func main() {
 			errors = append(errors, "route must begin with /: "+route)
 		}
 	}
-	for _, requiredRoute := range []string{"/agents.md", "/mcp", "/notebooks", "/runtime-registry.json", "/system-state", "/system-state.json", "/system-state.md"} {
+	for _, requiredRoute := range []string{"/agents", "/agents.md", "/agent-connectors.json", "/llms-full.txt", "/openapi.json", "/docs.json", "/.well-known/agent-card.json", "/a2a/v1/message:send", "/mcp", "/mcp/work", "/notebooks", "/runtime-registry.json", "/system-state", "/system-state.json", "/system-state.md"} {
 		if !routes[requiredRoute] {
 			errors = append(errors, "missing agent-native route: "+requiredRoute)
 		}
@@ -84,6 +169,23 @@ func main() {
 		filepath.Join("src", "lib", "agent-resources.ts"),
 		filepath.Join("src", "lib", "mcp-server.ts"),
 		filepath.Join("src", "pages", "mcp.ts"),
+		filepath.Join("src", "pages", "agents.astro"),
+		filepath.Join("src", "content", "agent-connectors.json"),
+		filepath.Join("public", "schemas", "agent-connector-registry-v1.json"),
+		filepath.Join("public", "skills", "superii", "SKILL.md"),
+		filepath.Join("public", "skills", "superii", "manifest.json"),
+		filepath.Join("public", "skills", "superii", "signature.json"),
+		filepath.Join("public", "skills", "superii", "public-key.json"),
+		filepath.Join("src", "pages", ".well-known", "agent-card.json.ts"),
+		filepath.Join("src", "pages", "a2a", "v1", "[...operation].ts"),
+		filepath.Join("src", "lib", "a2a.ts"),
+		filepath.Join("src", "lib", "agent-auth.ts"),
+		filepath.Join("src", "lib", "agent-profile.ts"),
+		filepath.Join("src", "lib", "work-mcp-server.ts"),
+		filepath.Join("src", "pages", "mcp", "work.ts"),
+		filepath.Join("src", "components", "AgentWorkspace.astro"),
+		filepath.Join("database", "migrations", "0012_agent_participation.sql"),
+		filepath.Join("docs", "architecture", "agent-participation.md"),
 		filepath.Join("public", "schemas", "repository-manifest-v1.json"),
 		filepath.Join("public", "schemas", "repository-api-v1.json"),
 		filepath.Join("public", "schemas", "use-manifest-v1.json"),
@@ -109,6 +211,7 @@ func main() {
 		filepath.Join("rust", "src", "transfer.rs"),
 		filepath.Join("rust", "src", "bin", "superii-transferd.rs"),
 		filepath.Join("rust", "src", "bin", "superii.rs"),
+		filepath.Join("rust", "src", "connect.rs"),
 		filepath.Join("src", "lib", "transfer-ticket.ts"),
 		filepath.Join("src", "pages", "api", "transfers", "[transferId].ts"),
 		filepath.Join("src", "pages", "repositories", "[repositoryId]", "edit.astro"),
@@ -121,6 +224,7 @@ func main() {
 			errors = append(errors, "missing agent-native release file: "+requiredFile)
 		}
 	}
+	errors = append(errors, verifyAgentSkill(root)...)
 	for relative, markers := range map[string][]string{
 		filepath.Join("rust", "src", "transfer.rs"): {
 			`TUS_VERSION: &str = "1.0.0"`, "is_loopback()", "ct_eq", "sync_all",
@@ -145,6 +249,19 @@ func main() {
 		},
 		filepath.Join("src", "components", "UseModel.astro"): {
 			"Hardware profile", "data-use-model-open", "hostedInference.statement",
+		},
+		filepath.Join("src", "lib", "work-mcp-server.ts"): {
+			"createMcpHandler", "create_draft_repository", "create_revision", "prepare_resumable_upload",
+			"submit_revision_for_review", "claim_contribution_job", "submit_contribution_job", "get_action_receipt",
+			"This tool cannot publish",
+		},
+		filepath.Join("database", "migrations", "0012_agent_participation.sql"): {
+			"spend_limit_cents = 0", "consume_agent_access_token", "agent_create_repository_with_receipt",
+			"agent_action_receipts_immutable", "review_agent_contribution",
+		},
+		filepath.Join("rust", "src", "connect.rs"): {
+			`PUBLIC_MCP_URL: &str = "https://superii.site/mcp"`, "atomic_replace", "mode(0o600)",
+			"configuration changed since connect; rollback refused", "already exists with a different URL; no file was changed",
 		},
 	} {
 		content, readErr := os.ReadFile(filepath.Join(root, relative))

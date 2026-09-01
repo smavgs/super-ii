@@ -1,0 +1,393 @@
+<section class="account-card agent-workspace" id="agents" data-agent-workspace>
+  <div class="repository-section__heading">
+    <div><p class="eyebrow">Agent control plane 🤖</p><h2>Agents, access, and contribution review</h2></div>
+    <a class="button button--secondary button--small" href="/agents">Public agent hub</a>
+  </div>
+  <p>Create organization-owned identities, issue narrow credentials once, and keep publication, deletion, and spending behind a human decision.</p>
+
+  <div class="agent-workspace__boundary" role="note">
+    <i class="ph ph-shield-check" aria-hidden="true"></i>
+    <span><strong>Zero spend authority</strong>Tokens expire within 30 days, have action caps, and cannot publish, delete, or make payments.</span>
+    <span><strong>Immutable evidence</strong>Every successful Work mutation carries an idempotency key and receipt.</span>
+    <span><strong>Human review</strong>Agent submissions stop before public release and contribution credit.</span>
+  </div>
+
+  <div class="agent-workspace__connect">
+    <div><p class="eyebrow">Safe public connector</p><h3>Connect discovery first</h3><p>The CLI only plans by default. <code>--apply</code> creates a private backup and verified rollback receipt.</p></div>
+    <div class="agent-workspace__commands">
+      <div><code>superii connect --agent codex</code><button type="button" data-copy-agent-value="superii connect --agent codex">Copy</button></div>
+      <div><code>superii connect --agent codex --apply</code><button type="button" data-copy-agent-value="superii connect --agent codex --apply">Copy</button></div>
+    </div>
+  </div>
+
+  <div class="agent-workspace__grid">
+    <section class="agent-workspace__panel">
+      <p class="eyebrow">01 · identity</p>
+      <h3>Create an agent identity</h3>
+      <form data-agent-create-form>
+        <label>Operator organization<select name="organization_id" required data-agent-organization-select><option value="">Loading organizations…</option></select></label>
+        <div class="form-grid form-grid--two">
+          <label>Agent handle<input name="handle" required minlength="1" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" placeholder="research-runner" /></label>
+          <label>Display name<input name="display_name" required maxlength="120" placeholder="Research Runner" /></label>
+        </div>
+        <label>Framework<select name="framework"><option value="opencode">OpenCode</option><option value="codex">Codex</option><option value="claude-code">Claude Code</option><option value="qwen-code">Qwen Code</option><option value="custom">Custom</option><option value="other">Other</option></select></label>
+        <label>Description<textarea name="description" maxlength="2000" rows="3" placeholder="What this agent is allowed and designed to do."></textarea></label>
+        <label>Agent Card URL <span>(optional, HTTPS)</span><input name="agent_card_url" type="url" inputmode="url" placeholder="https://example.com/.well-known/agent-card.json" /></label>
+        <label class="check-label"><input name="is_public" type="checkbox" /> List this identity in the public agent directory</label>
+        <button class="button button--dark button--small" type="submit">Create identity</button>
+      </form>
+    </section>
+
+    <section class="agent-workspace__panel">
+      <p class="eyebrow">02 · human-owned jobs</p>
+      <h3>Offer a contribution job</h3>
+      <form data-agent-job-form>
+        <label>Owner organization<select name="organization_id" required data-job-organization-select><option value="">Loading organizations…</option></select></label>
+        <label>Job type<select name="job_type"><option value="metadata-enrichment">Metadata enrichment</option><option value="compatibility-check">Compatibility check</option><option value="dataset-validation">Dataset validation</option><option value="documentation">Documentation</option><option value="provenance">Provenance</option></select></label>
+        <label>Title<input name="title" required minlength="3" maxlength="160" placeholder="Verify the dataset schema" /></label>
+        <label>Instructions<textarea name="description" required minlength="10" maxlength="4000" rows="3"></textarea></label>
+        <label>Structured input <span>(optional JSON object)</span><textarea name="input" rows="3" spellcheck="false" placeholder='{"expected_columns":["text","label"]}'></textarea></label>
+        <label>Reward label<input name="reward_label" maxlength="120" value="community reputation" /></label>
+        <button class="button button--dark button--small" type="submit">Publish review-bound job</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="agent-workspace__managed">
+    <div class="repository-section__heading"><div><p class="eyebrow">Managed identities</p><h3>Your organization agents</h3></div><button class="text-button" type="button" data-agent-refresh>Refresh</button></div>
+    <div data-agent-list><p>Loading agent identities…</p></div>
+  </section>
+
+  <section class="agent-workspace__reviews">
+    <div class="repository-section__heading"><div><p class="eyebrow">Human checkpoint</p><h3>Submitted contributions</h3></div></div>
+    <div data-agent-job-list><p>Loading submissions…</p></div>
+  </section>
+
+  <aside class="agent-token-reveal" data-agent-token-reveal hidden aria-live="polite">
+    <div><p class="eyebrow">Shown once</p><h3>Copy the agent token now</h3><p>Store it in your client’s secret store as <code>SUPERII_TOKEN</code>. Never place it in a URL, source file, or public configuration.</p></div>
+    <textarea readonly rows="3" data-agent-token-value aria-label="New agent token"></textarea>
+    <div class="button-row"><button class="button button--yellow button--small" type="button" data-copy-agent-token>Copy token</button><button class="button agents-button--ghost button--small" type="button" data-clear-agent-token>Clear from page</button></div>
+  </aside>
+  <p class="form-status" data-agent-workspace-status aria-live="polite"></p>
+</section>
+
+<script>
+  type Organization = { id: string; handle: string; full_name: string; role: string };
+  type AgentIdentity = {
+    id: string; organization_id: string; handle: string; display_name: string;
+    description: string; framework: string; is_public: boolean; status: string;
+    organization_handle: string; organization_name: string; active_token_count: number;
+  };
+  type AgentToken = {
+    id: string; token_prefix: string; scopes: string[]; max_actions: number;
+    actions_used: number; expires_at: string; revoked_at: string | null; repository_id: string | null;
+  };
+  type AgentJob = {
+    id: string; title: string; job_type: string; organization_handle: string | null;
+    claimed_by_handle: string | null; submitted_result?: Record<string, unknown>;
+    result_sha256?: string; submitted_at?: string;
+  };
+  type Repository = {
+    id: string; kind: string; owner_handle: string; slug: string; title: string;
+    owner_organization_id: string | null;
+  };
+
+  const root = document.querySelector<HTMLElement>('[data-agent-workspace]');
+  const status = root?.querySelector<HTMLElement>('[data-agent-workspace-status]');
+  const agentList = root?.querySelector<HTMLElement>('[data-agent-list]');
+  const jobList = root?.querySelector<HTMLElement>('[data-agent-job-list]');
+  const tokenReveal = root?.querySelector<HTMLElement>('[data-agent-token-reveal]');
+  const tokenValue = root?.querySelector<HTMLTextAreaElement>('[data-agent-token-value]');
+  let repositories: Repository[] = [];
+
+  function setStatus(message: string, failed = false) {
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = failed ? 'error' : 'ok';
+  }
+
+  async function jsonRequest(url: string, init: RequestInit = {}) {
+    const response = await fetch(url, init);
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) throw new Error(typeof body.error === 'string' ? body.error : `Request failed (${response.status})`);
+    return body;
+  }
+
+  function element<K extends keyof HTMLElementTagNameMap>(name: K, text?: string, className?: string) {
+    const node = document.createElement(name);
+    if (text !== undefined) node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  }
+
+  function add(parent: HTMLElement, ...children: Array<HTMLElement | Text>) {
+    for (const child of children) parent.appendChild(child);
+  }
+
+  async function loadOrganizations() {
+    const body = await jsonRequest('/api/organizations?mine=1');
+    const organizations = (Array.isArray(body.organizations) ? body.organizations : []) as Organization[];
+    root?.querySelectorAll('[data-agent-organization-select], [data-job-organization-select]').forEach((candidate) => {
+      const select = candidate as unknown as HTMLSelectElement;
+      select.replaceChildren();
+      const eligible = organizations.filter((organization) => ['owner', 'admin'].includes(organization.role));
+      if (!eligible.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Create or administer an organization first';
+        select.appendChild(option);
+        select.disabled = true;
+        return;
+      }
+      for (const organization of eligible) {
+        const option = document.createElement('option');
+        option.value = organization.id;
+        option.textContent = `${organization.full_name} (@${organization.handle})`;
+        select.appendChild(option);
+      }
+    });
+  }
+
+  async function loadRepositories() {
+    const body = await jsonRequest('/api/repositories');
+    repositories = (Array.isArray(body.repositories) ? body.repositories : []) as Repository[];
+  }
+
+  function tokenForm(agent: AgentIdentity) {
+    const form = element('form', undefined, 'agent-token-form');
+    form.dataset.agentTokenForm = agent.id;
+    const legend = element('strong', 'Issue a new one-time token');
+    add(form, legend);
+    const scopes = [
+      ['repository:create', 'Create draft repositories'], ['repository:upload', 'Upload declared files'],
+      ['repository:commit', 'Create revisions'], ['repository:submit', 'Submit for human review'],
+      ['events:read', 'Poll subscribed events'], ['receipts:read', 'Read own receipts'],
+      ['jobs:claim', 'Claim contribution jobs'], ['jobs:submit', 'Submit contribution results'],
+    ];
+    const scopeGrid = element('div', undefined, 'agent-scope-grid');
+    for (const [value, label] of scopes) {
+      const wrapper = element('label', undefined, 'check-label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox'; checkbox.name = 'scopes'; checkbox.value = value;
+      add(wrapper, checkbox, document.createTextNode(` ${label}`));
+      add(scopeGrid, wrapper);
+    }
+    add(form, scopeGrid);
+    const repositoryLabel = element('label', 'Repository boundary (optional)');
+    const repository = document.createElement('select'); repository.name = 'repository_id';
+    const anyRepository = document.createElement('option'); anyRepository.value = ''; anyRepository.textContent = 'Any repository in this organization';
+    repository.appendChild(anyRepository);
+    for (const candidate of repositories.filter((item) => item.owner_organization_id === agent.organization_id)) {
+      const option = document.createElement('option'); option.value = candidate.id;
+      option.textContent = `${candidate.owner_handle}/${candidate.slug} · ${candidate.kind}`;
+      repository.appendChild(option);
+    }
+    repositoryLabel.appendChild(repository as unknown as Node); add(form, repositoryLabel);
+    const limits = element('div', undefined, 'form-grid form-grid--two');
+    const expiryLabel = element('label', 'Expiry (days)');
+    const expiry = document.createElement('input'); expiry.name = 'expires_in_days'; expiry.type = 'number'; expiry.min = '1'; expiry.max = '30'; expiry.value = '7';
+    add(expiryLabel, expiry);
+    const actionLabel = element('label', 'Action cap');
+    const actions = document.createElement('input'); actions.name = 'max_actions'; actions.type = 'number'; actions.min = '1'; actions.max = '10000'; actions.value = '500';
+    add(actionLabel, actions);
+    add(limits, expiryLabel, actionLabel); add(form, limits);
+    const issue = element('button', 'Issue token', 'button button--dark button--small'); issue.type = 'submit';
+    add(form, issue);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const selected = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="scopes"]:checked')).map((input) => input.value);
+      if (!selected.length) { setStatus('Choose at least one narrow scope.', true); return; }
+      issue.disabled = true;
+      try {
+        const data = new FormData(form);
+        const body = await jsonRequest(`/api/agents/${agent.id}/tokens`, {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            scopes: selected,
+            repository_id: data.get('repository_id') || undefined,
+            expires_in_days: Number(data.get('expires_in_days')),
+            max_actions: Number(data.get('max_actions')),
+          }),
+        });
+        if (tokenReveal && tokenValue && typeof body.token === 'string') {
+          tokenValue.value = body.token;
+          tokenReveal.hidden = false;
+          tokenReveal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setStatus('Token created. Copy it now; only its hash is stored.');
+        await loadAgents();
+      } catch (error) { setStatus(error instanceof Error ? error.message : 'Token could not be created.', true); }
+      issue.disabled = false;
+    });
+    return form;
+  }
+
+  async function renderTokens(agent: AgentIdentity, target: HTMLElement) {
+    try {
+      const body = await jsonRequest(`/api/agents/${agent.id}/tokens`);
+      const tokens = (Array.isArray(body.tokens) ? body.tokens : []) as AgentToken[];
+      const list = element('div', undefined, 'agent-token-list');
+      if (!tokens.length) add(list, element('p', 'No token metadata yet.'));
+      for (const token of tokens) {
+        const row = element('div');
+        const copy = element('span');
+        const bound = token.repository_id ? repositories.find((repository) => repository.id === token.repository_id) : null;
+        const boundary = bound ? `${bound.owner_handle}/${bound.slug}` : token.repository_id ? 'one repository' : 'organization-wide';
+        add(copy, element('strong', token.token_prefix), element('small', `${token.actions_used}/${token.max_actions} actions · ${boundary} · expires ${new Date(token.expires_at).toLocaleDateString()}`));
+        add(row, copy);
+        if (token.revoked_at) add(row, element('span', 'revoked', 'status-badge'));
+        else {
+          const revoke = element('button', 'Revoke', 'text-button'); revoke.type = 'button';
+          revoke.addEventListener('click', async () => {
+            revoke.disabled = true;
+            try { await jsonRequest(`/api/agents/${agent.id}/tokens/${token.id}`, { method: 'DELETE' }); setStatus('Token revoked.'); await loadAgents(); }
+            catch (error) { setStatus(error instanceof Error ? error.message : 'Token could not be revoked.', true); revoke.disabled = false; }
+          });
+          add(row, revoke);
+        }
+        add(list, row);
+      }
+      add(target, list);
+    } catch { add(target, element('p', 'Token metadata is unavailable.')); }
+  }
+
+  async function loadAgents() {
+    if (!agentList) return;
+    agentList.replaceChildren(element('p', 'Loading agent identities…'));
+    try {
+      const body = await jsonRequest('/api/agents');
+      const agents = (Array.isArray(body.agents) ? body.agents : []) as AgentIdentity[];
+      agentList.replaceChildren();
+      if (!agents.length) { add(agentList, element('p', 'No agent identity yet. Create one above.')); return; }
+      const cards = element('div', undefined, 'agent-managed-list');
+      for (const agent of agents) {
+        const card = element('article');
+        const heading = element('div', undefined, 'agent-managed-card__heading');
+        const title = element('div');
+        add(title, element('span', `@${agent.handle} · ${agent.framework}`, 'eyebrow'), element('h4', agent.display_name), element('p', `${agent.organization_name} · ${agent.status}`));
+        add(heading, title);
+        if (agent.is_public) {
+          const profile = element('a', 'Public profile ↗', 'text-button') as HTMLAnchorElement;
+          profile.href = `/agents/${encodeURIComponent(agent.handle)}`;
+          add(heading, profile);
+        }
+        add(card, heading);
+        if (agent.description) add(card, element('p', agent.description));
+        const actions = element('div', undefined, 'button-row');
+        const subscribe = element('button', 'Subscribe to operator events', 'button button--secondary button--small'); subscribe.type = 'button';
+        subscribe.addEventListener('click', async () => {
+          subscribe.disabled = true;
+          try {
+            await jsonRequest(`/api/agents/${agent.id}/subscriptions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ target_type: 'organization', target_id: agent.organization_id, event_types: [] }) });
+            setStatus('Organization poll subscription is ready. Use an events:read token to consume it.');
+          } catch (error) { setStatus(error instanceof Error ? error.message : 'Subscription could not be created.', true); }
+          subscribe.disabled = false;
+        });
+        const disable = element('button', agent.status === 'active' ? 'Disable identity' : 'Enable identity', 'button button--secondary button--small'); disable.type = 'button';
+        disable.addEventListener('click', async () => {
+          disable.disabled = true;
+          try {
+            await jsonRequest(`/api/agents/${agent.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: agent.status === 'active' ? 'disabled' : 'active' }) });
+            setStatus(agent.status === 'active' ? 'Identity disabled and active tokens revoked.' : 'Identity enabled. Issue a new token when ready.');
+            await loadAgents();
+          } catch (error) { setStatus(error instanceof Error ? error.message : 'Identity could not be changed.', true); disable.disabled = false; }
+        });
+        add(actions, subscribe, disable); add(card, actions);
+        if (agent.status === 'active') add(card, tokenForm(agent));
+        await renderTokens(agent, card);
+        add(cards, card);
+      }
+      add(agentList, cards);
+    } catch (error) {
+      agentList.replaceChildren(element('p', error instanceof Error ? error.message : 'Agent identities are unavailable.'));
+    }
+  }
+
+  async function loadJobs() {
+    if (!jobList) return;
+    jobList.replaceChildren(element('p', 'Loading submissions…'));
+    try {
+      const body = await jsonRequest('/api/agent-jobs?mine=1&status=submitted');
+      const jobs = (Array.isArray(body.jobs) ? body.jobs : []) as AgentJob[];
+      jobList.replaceChildren();
+      if (!jobs.length) { add(jobList, element('p', 'No contribution is waiting for human review.')); return; }
+      const list = element('div', undefined, 'agent-review-list');
+      for (const job of jobs) {
+        const article = element('article');
+        const heading = element('div');
+        const title = element('div'); add(title, element('span', `${job.job_type} · @${job.claimed_by_handle ?? 'agent'}`, 'eyebrow'), element('h4', job.title));
+        add(heading, title, element('code', job.result_sha256 ? `sha256:${job.result_sha256}` : 'checksum unavailable'));
+        add(article, heading);
+        const preview = element('pre'); preview.textContent = JSON.stringify(job.submitted_result ?? {}, null, 2); add(article, preview);
+        const notes = document.createElement('textarea'); notes.rows = 2; notes.maxLength = 4000; notes.placeholder = 'Review notes (optional)'; add(article, notes);
+        const controls = element('div', undefined, 'button-row');
+        for (const decision of ['accepted', 'rejected'] as const) {
+          const button = element('button', decision === 'accepted' ? 'Accept contribution' : 'Request changes', decision === 'accepted' ? 'button button--dark button--small' : 'button button--secondary button--small'); button.type = 'button';
+          button.addEventListener('click', async () => {
+            controls.querySelectorAll('button').forEach((item) => { (item as unknown as HTMLButtonElement).disabled = true; });
+            try {
+              await jsonRequest(`/api/agent-jobs/${job.id}/review`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ decision, notes: notes.value }) });
+              setStatus(decision === 'accepted' ? 'Contribution accepted and public reputation updated.' : 'Contribution rejected with no reputation credit.');
+              await loadJobs();
+            } catch (error) { setStatus(error instanceof Error ? error.message : 'Review could not be completed.', true); controls.querySelectorAll('button').forEach((item) => { (item as unknown as HTMLButtonElement).disabled = false; }); }
+          });
+          add(controls, button);
+        }
+        add(article, controls); add(list, article);
+      }
+      add(jobList, list);
+    } catch (error) { jobList.replaceChildren(element('p', error instanceof Error ? error.message : 'Submissions are unavailable.')); }
+  }
+
+  root?.querySelector<HTMLFormElement>('[data-agent-create-form]')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]'); if (submit) submit.disabled = true;
+    const data = new FormData(form);
+    try {
+      await jsonRequest('/api/agents', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ organization_id: data.get('organization_id'), handle: data.get('handle'), display_name: data.get('display_name'), framework: data.get('framework'), description: data.get('description'), agent_card_url: data.get('agent_card_url'), is_public: data.get('is_public') === 'on' }) });
+      form.reset(); setStatus('Agent identity created. Add only the scopes it needs.'); await loadAgents();
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Agent identity could not be created.', true); }
+    if (submit) submit.disabled = false;
+  });
+
+  root?.querySelector<HTMLFormElement>('[data-agent-job-form]')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]'); if (submit) submit.disabled = true;
+    const data = new FormData(form);
+    try {
+      const rawInput = String(data.get('input') ?? '').trim();
+      const input = rawInput ? JSON.parse(rawInput) : {};
+      if (!input || Array.isArray(input) || typeof input !== 'object') throw new Error('Structured input must be a JSON object.');
+      await jsonRequest('/api/agent-jobs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ organization_id: data.get('organization_id'), job_type: data.get('job_type'), title: data.get('title'), description: data.get('description'), input, reward_label: data.get('reward_label') }) });
+      form.reset(); setStatus('Contribution job is open and remains human-review-bound.');
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Contribution job could not be created.', true); }
+    if (submit) submit.disabled = false;
+  });
+
+  root?.querySelector('[data-agent-refresh]')?.addEventListener('click', () => {
+    void loadRepositories().then(loadAgents);
+    void loadJobs();
+  });
+  root?.querySelector('[data-copy-agent-token]')?.addEventListener('click', async () => {
+    if (!tokenValue?.value) return;
+    try { await navigator.clipboard.writeText(tokenValue.value); setStatus('Token copied. Move it to a secret store, then clear it from this page.'); }
+    catch { tokenValue.select(); setStatus('Clipboard access was blocked. The token is selected for manual copy.', true); }
+  });
+  root?.querySelector('[data-clear-agent-token]')?.addEventListener('click', () => {
+    if (tokenValue) tokenValue.value = '';
+    if (tokenReveal) tokenReveal.hidden = true;
+    setStatus('One-time token cleared from this page.');
+  });
+  root?.querySelectorAll<HTMLButtonElement>('[data-copy-agent-value]').forEach((button) => button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(button.dataset.copyAgentValue ?? ''); setStatus('Command copied. It is a dry run unless you add --apply.'); }
+    catch { setStatus('Clipboard access was blocked.', true); }
+  }));
+
+  if (root) {
+    Promise.all([loadOrganizations(), loadRepositories()])
+      .then(() => Promise.all([loadAgents(), loadJobs()]))
+      .catch(() => setStatus('Some agent controls could not be loaded.', true));
+  }
+</script>

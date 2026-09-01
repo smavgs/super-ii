@@ -68,6 +68,13 @@ REQUIRED_TABLES = {
     "repository_sources",
     "bridge_sync_subscriptions",
     "bridge_events",
+    "agent_identities",
+    "agent_access_tokens",
+    "agent_action_receipts",
+    "agent_events",
+    "agent_subscriptions",
+    "agent_contribution_jobs",
+    "agent_contribution_submissions",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -93,6 +100,7 @@ def main() -> int:
         errors.append("PL/pgSQL functions must pin search_path")
 
     created = set(re.findall(r"create\s+table\s+if\s+not\s+exists\s+app\.([a-z_]+)", lower))
+    views = set(re.findall(r"create\s+(?:or\s+replace\s+)?view\s+app\.([a-z_]+)", lower))
     missing = REQUIRED_TABLES - created
     if missing:
         errors.append(f"required tables missing: {sorted(missing)}")
@@ -158,6 +166,18 @@ def main() -> int:
         errors.append("Bridge organization claims must require verified provider administrator evidence")
     if "request_bridge_import_cancel" not in lower or "set_bridge_sync" not in lower:
         errors.append("Bridge jobs require cancellation and opt-in immutable synchronization")
+    if "spend_limit_cents integer not null default 0 check (spend_limit_cents = 0)" not in lower:
+        errors.append("agent access tokens must enforce a zero-spend database boundary")
+    if "consume_agent_access_token" not in lower or "and p_scope = any(token.scopes)" not in lower:
+        errors.append("agent access tokens require transactional exact-scope authorization")
+    if "agent_create_repository_with_receipt" not in lower or "agent_create_revision_with_receipt" not in lower:
+        errors.append("agent repository writes must be transactional and receipt-backed")
+    if "agent_action_receipts_immutable" not in lower or "agent_ledger_is_immutable" not in lower:
+        errors.append("agent action receipts and events must be append-only")
+    if "claim_agent_contribution_job_with_receipt" not in lower or "submit_agent_contribution_with_receipt" not in lower:
+        errors.append("agent contribution claims and submissions must be receipt-backed")
+    if "review_agent_contribution" not in lower or "review_required boolean not null default true check (review_required)" not in lower:
+        errors.append("agent contributions must stay behind explicit human review")
     for relationship in ("adapter-for", "merged-from", "distilled-from"):
         if f"'{relationship}'" not in lower:
             errors.append(f"Use Model lineage type is missing: {relationship}")
@@ -167,13 +187,21 @@ def main() -> int:
         if f"i.inspector = '{scanner}' and i.status = 'passed'" not in lower:
             errors.append(f"publish gate must require a passed {scanner} inspection")
 
+    expected_relations = len(created) + len(views)
+    migration_runner = (ROOT / "tools" / "apply_migrations.py").read_text(encoding="utf-8")
+    postgres_test = (ROOT / "scripts" / "test-postgres.sh").read_text(encoding="utf-8")
+    if f"table_count != {expected_relations}" not in migration_runner:
+        errors.append("production migration verification count is stale")
+    if f'"$counts" != "{expected_relations}:0"' not in postgres_test:
+        errors.append("PostgreSQL integration relation count is stale")
+
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
 
     print(
-        f"OK: {len(files)} migration file(s), {len(created)} tables, immutable files, "
+        f"OK: {len(files)} migration file(s), {len(created)} tables, {len(views)} view(s), immutable files, "
         "search, community, lineage, Use Model derivations, agent-native access, PL/pgSQL publish gates, RLS, and empty catalog verified"
     )
     return 0

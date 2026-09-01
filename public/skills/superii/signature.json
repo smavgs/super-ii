@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "signed_file": "manifest.json",
+  "signed_bytes": "exact UTF-8 bytes",
+  "algorithm": "Ed25519",
+  "key_id": "superii-agent-skill-ed25519-v1-2b150801",
+  "public_key_url": "https://superii.site/skills/superii/public-key.json",
+  "signature_encoding": "base64",
+  "signature": "rcaF/Pw+h6pZdo/OD3tYElpZiqQ6dP/RrOC5WYSswj6qImTFDdpvgozx6vLHADsRfCBocMebLtd1n2QU7JIQCw=="
+}

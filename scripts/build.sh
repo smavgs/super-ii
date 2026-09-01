@@ -30,6 +30,11 @@ npm run validate
 node tools/copy-browser-ai-assets.mjs
 npx astro build
 
+# Astro copies public/ verbatim. Finder can recreate this harmless local file
+# at any time, so remove it only from the generated release tree before the
+# fail-closed metadata and secret scan.
+find "$project_dir/dist" -type f -name '.DS_Store' -delete
+
 if [[ -n "$dev_vars_backup" ]]; then
   python3 tools/validate_release_secrets.py dist "$dev_vars_backup"
 else

@@ -1287,3 +1287,171 @@ export const bridgeEvents = app.table(
   },
   (table) => [index('bridge_events_job_idx').on(table.jobId, table.occurredAt)],
 );
+
+export const agentIdentities = app.table(
+  'agent_identities',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    serviceAccountId: uuid('service_account_id').notNull().references(() => serviceAccounts.id, { onDelete: 'cascade' }).unique(),
+    organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+    handle: text('handle').notNull().unique(),
+    displayName: text('display_name').notNull(),
+    description: text('description').notNull().default(''),
+    framework: text('framework').notNull().default('other'),
+    agentCardUrl: text('agent_card_url'),
+    createdByProfileId: uuid('created_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    isPublic: boolean('is_public').notNull().default(false),
+    status: text('status').notNull().default('active'),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_identities_handle_lower_idx').on(table.handle),
+    index('agent_identities_organization_idx').on(table.organizationId, table.status, table.createdAt),
+  ],
+);
+
+export const agentAccessTokens = app.table(
+  'agent_access_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    agentIdentityId: uuid('agent_identity_id').notNull().references(() => agentIdentities.id, { onDelete: 'cascade' }),
+    createdByProfileId: uuid('created_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    tokenPrefix: text('token_prefix').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    scopes: text('scopes').array().notNull(),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+    resourceGroupId: uuid('resource_group_id').references(() => resourceGroups.id, { onDelete: 'cascade' }),
+    maxActions: integer('max_actions').notNull().default(500),
+    actionsUsed: integer('actions_used').notNull().default(0),
+    spendLimitCents: integer('spend_limit_cents').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_access_tokens_active_idx').on(table.tokenHash, table.expiresAt),
+    index('agent_access_tokens_identity_idx').on(table.agentIdentityId, table.createdAt),
+  ],
+);
+
+export const agentActionReceipts = app.table(
+  'agent_action_receipts',
+  {
+    sequence: bigint('sequence', { mode: 'bigint' }).notNull().unique(),
+    id: uuid('id').defaultRandom().primaryKey(),
+    agentIdentityId: uuid('agent_identity_id').notNull().references(() => agentIdentities.id, { onDelete: 'restrict' }),
+    tokenId: uuid('token_id').references(() => agentAccessTokens.id, { onDelete: 'set null' }),
+    operatorProfileId: uuid('operator_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    operatorOrganizationId: uuid('operator_organization_id').notNull().references(() => organizations.id, { onDelete: 'restrict' }),
+    idempotencyKey: text('idempotency_key').notNull(),
+    action: text('action').notNull(),
+    targetType: text('target_type').notNull(),
+    targetId: uuid('target_id'),
+    targetRef: text('target_ref'),
+    requestedScopes: text('requested_scopes').array().notNull(),
+    requestSha256: text('request_sha256').notNull(),
+    resultSha256: text('result_sha256'),
+    status: text('status').notNull(),
+    reviewBoundary: text('review_boundary').notNull().default('human-review-required'),
+    detail: jsonb('detail').$type<Record<string, unknown>>().notNull().default({}),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_action_receipts_idempotency_idx').on(table.agentIdentityId, table.idempotencyKey),
+    index('agent_action_receipts_identity_idx').on(table.agentIdentityId, table.sequence),
+    index('agent_action_receipts_target_idx').on(table.targetType, table.targetId, table.sequence),
+  ],
+);
+
+export const agentEvents = app.table(
+  'agent_events',
+  {
+    cursor: bigint('cursor', { mode: 'bigint' }).primaryKey(),
+    id: uuid('id').defaultRandom().notNull().unique(),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+    agentIdentityId: uuid('agent_identity_id').references(() => agentIdentities.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    visibility: text('visibility').notNull().default('operator'),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_events_organization_cursor_idx').on(table.organizationId, table.cursor),
+    index('agent_events_repository_cursor_idx').on(table.repositoryId, table.cursor),
+    index('agent_events_agent_cursor_idx').on(table.agentIdentityId, table.cursor),
+  ],
+);
+
+export const agentSubscriptions = app.table(
+  'agent_subscriptions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    agentIdentityId: uuid('agent_identity_id').notNull().references(() => agentIdentities.id, { onDelete: 'cascade' }),
+    createdByProfileId: uuid('created_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    targetType: text('target_type').notNull().default('organization'),
+    targetId: uuid('target_id').notNull(),
+    eventTypes: text('event_types').array().notNull(),
+    delivery: text('delivery').notNull().default('poll'),
+    acknowledgedCursor: bigint('acknowledged_cursor', { mode: 'bigint' }).notNull().default(0n),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_subscriptions_target_idx').on(table.agentIdentityId, table.targetType, table.targetId),
+    index('agent_subscriptions_enabled_idx').on(table.agentIdentityId, table.enabled, table.updatedAt),
+  ],
+);
+
+export const agentContributionJobs = app.table(
+  'agent_contribution_jobs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    createdByProfileId: uuid('created_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+    jobType: text('job_type').notNull(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    input: jsonb('input').$type<Record<string, unknown>>().notNull().default({}),
+    inputSha256: text('input_sha256').notNull(),
+    rewardLabel: text('reward_label').notNull().default('community reputation'),
+    status: text('status').notNull().default('open'),
+    claimedByAgentId: uuid('claimed_by_agent_id').references(() => agentIdentities.id, { onDelete: 'set null' }),
+    claimedAt: timestamp('claimed_at', { withTimezone: true }),
+    reviewRequired: boolean('review_required').notNull().default(true),
+    deadlineAt: timestamp('deadline_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_contribution_jobs_open_idx').on(table.status, table.createdAt),
+    index('agent_contribution_jobs_agent_idx').on(table.claimedByAgentId, table.status, table.updatedAt),
+  ],
+);
+
+export const agentContributionSubmissions = app.table(
+  'agent_contribution_submissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    jobId: uuid('job_id').notNull().references(() => agentContributionJobs.id, { onDelete: 'cascade' }),
+    agentIdentityId: uuid('agent_identity_id').notNull().references(() => agentIdentities.id, { onDelete: 'restrict' }),
+    receiptId: uuid('receipt_id').notNull().references(() => agentActionReceipts.id, { onDelete: 'restrict' }),
+    result: jsonb('result').$type<Record<string, unknown>>().notNull(),
+    resultSha256: text('result_sha256').notNull(),
+    status: text('status').notNull().default('submitted'),
+    reviewedByProfileId: uuid('reviewed_by_profile_id').references(() => profiles.id, { onDelete: 'restrict' }),
+    reviewNotes: text('review_notes'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('agent_contribution_submissions_job_agent_idx').on(table.jobId, table.agentIdentityId),
+    index('agent_contribution_submissions_agent_idx').on(table.agentIdentityId, table.status, table.submittedAt),
+  ],
+);

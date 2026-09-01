@@ -1,4 +1,11 @@
 import type { APIRoute } from 'astro';
+import {
+  existingAgentReceipt,
+  jsonSha256,
+  recordAgentReceipt,
+  validIdempotencyKey,
+  type AgentActor,
+} from '@/lib/agent-auth';
 import { managedRepository, safeRepositoryPath, scopedManagedRepository, textValue } from '@/lib/creator';
 import { runtimeValue, sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
@@ -40,6 +47,12 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   );
   if (!authorization.ok) {
     return Response.json({ error: authorization.error }, { status: authorization.status });
+  }
+  const idempotencyKey = authorization.actor.kind === 'agent-token'
+    ? validIdempotencyKey(request.headers.get('idempotency-key'))
+    : null;
+  if (authorization.actor.kind === 'agent-token' && !idempotencyKey) {
+    return Response.json({ error: 'agent uploads require an Idempotency-Key with 16-200 safe characters' }, { status: 422 });
   }
   const branchId = new URL(request.url).searchParams.get('branch');
   const repository = authorization.actor.kind === 'profile'
@@ -89,6 +102,75 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     return Response.json({
       error: 'safe path, filename, size from 1 byte to 10 GiB, and lowercase SHA-256 are required',
     }, { status: 422 });
+  }
+
+  const agentActor: AgentActor | null = authorization.actor.kind === 'agent-token'
+    ? {
+        kind: 'agent-token',
+        tokenId: authorization.actor.tokenId ?? '',
+        agentIdentityId: authorization.actor.agentIdentityId ?? '',
+        profileId: authorization.actor.profileId,
+        organizationId: authorization.actor.organizationId ?? '',
+        grantedScopes: ['repository:upload'],
+        boundRepositoryId: null,
+        createdBy: authorization.actor.createdBy,
+      }
+    : null;
+  const requestSha256 = agentActor
+    ? await jsonSha256({
+        action: 'transfer.create', repository_id: repository.id,
+        revision_id: repository.revision_id, path, filename, mime_type: mimeType,
+        length, sha256: expectedSha256,
+      })
+    : null;
+  if (agentActor && idempotencyKey && requestSha256) {
+    try {
+      const previous = await existingAgentReceipt(
+        sql, agentActor, idempotencyKey, 'transfer.create', requestSha256,
+      );
+      if (previous.conflict) {
+        return Response.json({ error: 'idempotency key conflicts with an earlier action' }, { status: 409 });
+      }
+      if (previous.receipt?.target_id) {
+        const uploads = await sql`
+          select id, repository_id, revision_id, uploader_profile_id,
+                 expected_size_bytes, expected_sha256, expires_at, offset_bytes, state
+          from app.repository_uploads
+          where id = ${previous.receipt.target_id}::uuid and expires_at > now()
+          limit 1
+        `;
+        const upload = uploads[0];
+        if (!upload?.id) {
+          return Response.json({ error: 'the earlier transfer expired; use a new idempotency key' }, { status: 409 });
+        }
+        const replayToken = await signTransferTicket(ticketSecret, {
+          version: 1,
+          transferId: String(upload.id),
+          repositoryId: String(upload.repository_id),
+          revisionId: String(upload.revision_id),
+          profileId: String(upload.uploader_profile_id),
+          sizeBytes: Number(upload.expected_size_bytes),
+          sha256: String(upload.expected_sha256),
+          expires: Math.floor(new Date(String(upload.expires_at)).getTime() / 1000),
+        });
+        const uploadUrl = new URL('/api/transfers/' + String(upload.id), request.url).toString();
+        return Response.json({
+          replayed: true,
+          receipt: previous.receipt,
+          transfer_id: upload.id,
+          upload_url: uploadUrl,
+          transfer_token: replayToken,
+          expires_at: upload.expires_at,
+          upload_offset: Number(upload.offset_bytes),
+          upload_length: Number(upload.expected_size_bytes),
+          state: upload.state,
+          max_chunk_bytes: MAX_TRANSFER_CHUNK_BYTES,
+          protocol: 'tus-1.0.0',
+        }, { status: 200, headers: { 'cache-control': 'private, no-store' } });
+      }
+    } catch {
+      return Response.json({ error: 'agent receipt service unavailable' }, { status: 503 });
+    }
   }
 
   const transferId = crypto.randomUUID();
@@ -169,6 +251,44 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ error: 'secure transfer runtime is unavailable' }, { status: 503 });
   }
 
+  let agentReceipt: unknown = null;
+  if (agentActor && idempotencyKey && requestSha256) {
+    const detail = {
+      transfer_id: transferId,
+      repository_id: repository.id,
+      revision_id: repository.revision_id,
+      path,
+      length,
+      sha256: expectedSha256,
+      expires_at: expiresAt,
+      protocol: 'tus-1.0.0',
+    };
+    try {
+      agentReceipt = await recordAgentReceipt(sql, agentActor, {
+        idempotencyKey,
+        action: 'transfer.create',
+        targetType: 'transfer',
+        targetId: transferId,
+        targetRef: path,
+        requestedScopes: ['repository:upload'],
+        requestSha256,
+        resultSha256: await jsonSha256(detail),
+        status: 'succeeded',
+        reviewBoundary: 'human-review-required',
+        detail,
+      });
+    } catch {
+      await sql`
+        update app.repository_uploads
+        set state = 'aborted', error_code = 'agent_receipt_unavailable',
+            completed_at = now(), updated_at = now()
+        where id = ${transferId}::uuid
+      `.catch(() => undefined);
+      await runtimeFetch(locals, `/v1/transfers/${transferId}`, { method: 'DELETE' }).catch(() => null);
+      return Response.json({ error: 'transfer was cancelled because its immutable receipt could not be recorded' }, { status: 503 });
+    }
+  }
+
   const uploadUrl = new URL('/api/transfers/' + transferId, request.url).toString();
   const headers = new Headers({
     'cache-control': 'no-store',
@@ -178,6 +298,8 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     'upload-offset': '0',
   });
   return Response.json({
+    replayed: false,
+    receipt: agentReceipt,
     transfer_id: transferId,
     upload_url: uploadUrl,
     transfer_token: transferToken,

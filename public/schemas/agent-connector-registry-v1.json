@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/agent-connector-registry-v1.json",
+  "title": "Super ii agent connector registry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "registry_updated", "public_mcp_url", "work_mcp_url", "connector_policy", "connectors"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "registry_updated": { "type": "string", "format": "date" },
+    "public_mcp_url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "work_mcp_url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "connector_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_access", "write_access", "installer_behavior", "secrets_in_commands"],
+      "properties": {
+        "default_access": { "const": "public-read-only" },
+        "write_access": { "const": "explicit-workspace-token" },
+        "installer_behavior": { "const": "dry-run-first" },
+        "secrets_in_commands": { "const": false }
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/connector" }
+    }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "connector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "vendor", "status", "status_label", "transport", "configuration_family", "configuration_version", "command", "verify_command", "config_path", "config_example", "notes", "source_url", "source_label"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "vendor": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "status": { "enum": ["verified", "compatible", "planned"] },
+        "status_label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "transport": { "enum": ["streamable-http", "unknown"] },
+        "configuration_family": { "enum": ["toml", "json", "url", "unknown"] },
+        "configuration_version": { "$ref": "#/$defs/nullableString" },
+        "command": { "$ref": "#/$defs/nullableString" },
+        "verify_command": { "$ref": "#/$defs/nullableString" },
+        "config_path": { "$ref": "#/$defs/nullableString" },
+        "config_example": { "$ref": "#/$defs/nullableString" },
+        "notes": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "source_url": { "type": ["string", "null"], "format": "uri" },
+        "source_label": { "$ref": "#/$defs/nullableString" }
+      }
+    }
+  }
+}

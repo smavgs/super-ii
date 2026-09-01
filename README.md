@@ -34,6 +34,11 @@ The requested repository core, safe/offline inspectors, structured dataset and m
 
 - [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
 - `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
+- `/mcp/work` is a separately authenticated Streamable HTTP MCP server for organization-owned draft creation, revision creation, checksum-bound resumable uploads, review submission, contribution jobs, and immutable receipt lookup. It cannot publish, delete, pay, or expand its own authority.
+- A2A v1.0 discovery and bounded public tasks are exposed through `/.well-known/agent-card.json` and `/a2a/v1/message:send`; streaming, persistent tasks, and push callbacks are not claimed.
+- Public Agent Skill files are individually SHA-256 recorded and the canonical manifest has a detached Ed25519 signature. The private signing key is outside the repository.
+- Agent identities, one-time hash-at-rest credentials, poll subscriptions, cursor events, review-bound contribution jobs, human-reviewed reputation, and opt-in HTML/JSON/Markdown profiles use the production Postgres contract.
+- The Rust CLI safely connects Codex or OpenCode in dry-run mode by default, refuses conflicting entries, preserves unrelated configuration, creates private backups and receipts on `--apply`, verifies written bytes, and supports guarded rollback.
 - Every reviewed public repository has one source of truth and stable HTML, Markdown, JSON, README, `agents.md`, manifest, API-contract, and MCP representations.
 - Every reviewed model additionally exposes `use.json`, `use.md`, `use.ipynb`, and `use.sh` from a versioned runtime registry; hardware ranking stays local to the browser and generated local APIs stay on loopback.
 - Offline model inspection records architecture, parameter count, quantization, tensor format, size, conservative RAM/VRAM guidance, and CPU/CUDA/ROCm/Metal/MLX/llama.cpp/browser compatibility. Declared, derived, and verified facts remain visibly distinct.
@@ -69,7 +74,7 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 57-table schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, and agent traces. It does not create model, dataset, app, user, or organization records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 64-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest agent credentials, immutable action receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 

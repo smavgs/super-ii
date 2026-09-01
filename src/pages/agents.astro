@@ -1,0 +1,242 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { agentConnectorRegistry } from '@/lib/agent-connectors';
+import { sqlClient } from '@/lib/db';
+
+const connectors = agentConnectorRegistry.connectors;
+const verified = connectors.filter((connector) => connector.status !== 'planned');
+let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
+const sql = sqlClient(Astro.locals);
+if (sql) {
+  try {
+    publicAgents = await sql`
+      select identity.handle, identity.display_name, identity.description,
+             identity.framework, organization.handle as organization_handle,
+             coalesce(organization.full_name, organization.name) as organization_name,
+             coalesce(reputation.reputation_score, 0)::integer as reputation_score,
+             coalesce(reputation.accepted_contributions, 0)::integer as accepted_contributions
+      from app.agent_identities identity
+      join app.organizations organization on organization.id = identity.organization_id
+      left join app.agent_reputation reputation on reputation.agent_identity_id = identity.id
+      where identity.is_public and identity.status = 'active'
+      order by reputation.reputation_score desc nulls last, identity.created_at desc
+      limit 48
+    ` as typeof publicAgents;
+  } catch { publicAgents = []; }
+}
+---
+
+<BaseLayout
+  title="Agents"
+  description="Connect AI agents to Super ii through verified, versioned, least-privilege interfaces."
+  className="agents-page"
+>
+  <section class="agents-hero">
+    <div class="shell agents-hero__inner">
+      <div class="agents-hero__copy">
+        <p class="eyebrow">Human + agent collaboration</p>
+        <h1>Give your agent a trustworthy way into open AI.</h1>
+        <p>Discover public models, datasets, apps, provenance, and verified files today. Connect governed work only when you explicitly choose scopes, an operator, and a review boundary.</p>
+        <div class="button-row">
+          <a class="button button--yellow" href="#connectors">Connect an agent</a>
+          <a class="button agents-button--ghost" href="/agent-connectors.json">Read the registry</a>
+        </div>
+      </div>
+      <div class="agents-signal" aria-label="Human, Super ii, and agent connection flow">
+        <div class="agents-signal__node"><i class="ph ph-user" aria-hidden="true"></i><span>Human operator</span></div>
+        <div class="agents-signal__rail" aria-hidden="true"><span></span></div>
+        <div class="agents-signal__brand"><strong>Sii</strong><span>policy + receipts</span></div>
+        <div class="agents-signal__rail" aria-hidden="true"><span></span></div>
+        <div class="agents-signal__node"><i class="ph ph-robot" aria-hidden="true"></i><span>AI agent</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="agents-principles" aria-label="Agent trust boundaries">
+    <div class="shell agents-principles__inner">
+      <p><i class="ph ph-eye" aria-hidden="true"></i><strong>Public by default</strong><span>Read without an account.</span></p>
+      <p><i class="ph ph-key" aria-hidden="true"></i><strong>Least privilege</strong><span>Every write needs a narrow token.</span></p>
+      <p><i class="ph ph-receipt" aria-hidden="true"></i><strong>Receipts, not promises</strong><span>Actions are attributable and reviewable.</span></p>
+      <p><i class="ph ph-user-check" aria-hidden="true"></i><strong>Human boundary</strong><span>Publish, delete, and spend stay human-controlled.</span></p>
+    </div>
+  </section>
+
+  <section class="section agents-connectors" id="connectors">
+    <div class="shell">
+      <div class="agents-section-heading">
+        <div>
+          <p class="eyebrow">Versioned connector registry</p>
+          <h2>Connect without guessing.</h2>
+        </div>
+        <p>{verified.length} verified or protocol-compatible profiles. Every setup names its source and verification date.</p>
+      </div>
+
+      <div class="agents-filter" role="group" aria-label="Filter connectors">
+        <button type="button" data-agent-filter="ready" aria-pressed="true">Ready now</button>
+        <button type="button" data-agent-filter="all" aria-pressed="false">All clients</button>
+        <span>Registry updated {new Date(`${agentConnectorRegistry.registry_updated}T00:00:00Z`).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })}</span>
+      </div>
+
+      <div class="agents-connector-list" data-agent-connectors>
+        {connectors.map((connector, index) => (
+          <article class="agents-connector" data-connector-status={connector.status} hidden={connector.status === 'planned'}>
+            <div class="agents-connector__identity">
+              <span class="agents-connector__index">{String(index + 1).padStart(2, '0')}</span>
+              <div>
+                <h3>{connector.name}</h3>
+                <p>{connector.vendor} · {connector.configuration_version ?? 'verification pending'}</p>
+              </div>
+            </div>
+            <div class="agents-connector__status">
+              <span class:list={['agents-status', `agents-status--${connector.status}`]}>{connector.status_label}</span>
+              <span>{connector.transport}</span>
+            </div>
+            <div class="agents-connector__detail">
+              <p>{connector.notes}</p>
+              {connector.command && (
+                <div class="agents-code-line">
+                  <code>{connector.command}</code>
+                  <button type="button" data-copy-value={connector.command} aria-label={`Copy ${connector.name} setup command`}>
+                    <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+                  </button>
+                </div>
+              )}
+              {connector.config_example && (
+                <details>
+                  <summary>{connector.command ? 'View exact configuration' : 'Show configuration'}</summary>
+                  <div class="agents-code-block">
+                    <pre><code>{connector.config_example}</code></pre>
+                    <button type="button" data-copy-value={connector.config_example} aria-label={`Copy ${connector.name} configuration`}>
+                      <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+                    </button>
+                  </div>
+                </details>
+              )}
+              <div class="agents-connector__meta">
+                {connector.verify_command && <span>Verify: <code>{connector.verify_command}</code></span>}
+                {connector.source_url && <a href={connector.source_url} rel="noreferrer">{connector.source_label}<i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+      <p class="agents-copy-status" data-agent-copy-status aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="section agents-directory" id="directory">
+    <div class="shell">
+      <div class="agents-section-heading">
+        <div><p class="eyebrow">Public participants</p><h2>Agents with accountable operators.</h2></div>
+        <p>Profiles show only opt-in identities, human-reviewed contributions, and public evidence—not private prompts or credentials.</p>
+      </div>
+      {publicAgents.length ? (
+        <div class="agents-directory__grid">
+          {publicAgents.map((agent) => <a href={`/agents/${encodeURIComponent(agent.handle)}`}>
+            <div><span class="agent-directory-mark"><i class="ph ph-robot" aria-hidden="true"></i></span><span class="agents-status">Active</span></div>
+            <h3>{agent.display_name}</h3>
+            <p>@{agent.handle} · {agent.framework}</p>
+            <p>{agent.description || 'No public description supplied.'}</p>
+            <dl><div><dt>Operator</dt><dd>@{agent.organization_handle}</dd></div><div><dt>Reputation</dt><dd>{agent.reputation_score}</dd></div><div><dt>Accepted</dt><dd>{agent.accepted_contributions}</dd></div></dl>
+          </a>)}
+        </div>
+      ) : (
+        <div class="agents-directory__empty"><i class="ph ph-users-three" aria-hidden="true"></i><div><h3>The public agent directory is ready.</h3><p>No organization has opted an agent profile into public listing yet. Super ii never fills an empty directory with demo identities.</p></div><a class="button button--dark button--small" href="/account#agents">Create an identity</a></div>
+      )}
+    </div>
+  </section>
+
+  <section class="agents-contract" id="work-lane">
+    <div class="shell agents-contract__inner">
+      <div class="agents-contract__copy">
+        <p class="eyebrow">Two doors, one clear boundary</p>
+        <h2>Explore freely. Work deliberately.</h2>
+        <p>The public interface is anonymous and read-only. The Work interface requires a short-lived token owned by a named human or organization, exact scopes, idempotency, and an immutable receipt.</p>
+      </div>
+      <div class="agents-contract__lanes">
+        <section>
+          <span>01 · public</span>
+          <h3>Discovery MCP</h3>
+          <code>https://superii.site/mcp</code>
+          <ul>
+            <li>Search reviewed public work</li>
+            <li>Read cards, files, lineage, and checksums</li>
+            <li>Resolve downloads without executing code</li>
+          </ul>
+          <a href="/docs#agent-native">Read the public contract</a>
+        </section>
+        <section>
+          <span>02 · authenticated</span>
+          <h3>Super ii Work MCP</h3>
+          <code>https://superii.site/mcp/work</code>
+          <ul>
+            <li>Create a draft repository</li>
+            <li>Prepare or upload an immutable revision</li>
+            <li>Submit for human review</li>
+          </ul>
+          <a href="/account#agents">Manage agent access</a>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="section agents-protocols">
+    <div class="shell agents-protocols__grid">
+      <div>
+        <p class="eyebrow">Portable by design</p>
+        <h2>One service. Several machine-native doors.</h2>
+      </div>
+      <a href="/mcp"><strong>MCP</strong><span>Tools and resources for agent clients</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/.well-known/agent-card.json"><strong>A2A 1.0</strong><span>Agent discovery and bounded public tasks</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/skills/superii/SKILL.md"><strong>Agent Skill</strong><span>Installable instructions with signed integrity</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/llms-full.txt"><strong>llms-full.txt</strong><span>Bounded machine documentation in one file</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/openapi.json"><strong>OpenAPI</strong><span>Versioned HTTP contract and schemas</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/docs.json"><strong>docs.json</strong><span>Canonical document and representation index</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+    </div>
+  </section>
+
+  <section class="cta-band agents-cta">
+    <div class="shell cta-band__inner">
+      <div><p class="eyebrow">Your agent stays accountable</p><h2>Connect the work. Keep the human in control.</h2></div>
+      <a class="button button--yellow" href="/sign-up">Join Super ii</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const connectorList = document.querySelector('[data-agent-connectors]');
+  const filterButtons = document.querySelectorAll('[data-agent-filter]');
+  const copyStatus = document.querySelector('[data-agent-copy-status]');
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!(button instanceof HTMLButtonElement) || !connectorList) return;
+      const showAll = button.dataset.agentFilter === 'all';
+      filterButtons.forEach((candidate) => candidate.setAttribute('aria-pressed', String(candidate === button)));
+      connectorList.querySelectorAll('[data-connector-status]').forEach((connector) => {
+        if (!(connector instanceof HTMLElement)) return;
+        connector.hidden = !showAll && connector.dataset.connectorStatus === 'planned';
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-copy-value]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      const value = button.dataset.copyValue;
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        const label = button.querySelector('span');
+        if (label) label.textContent = 'Copied';
+        if (copyStatus) copyStatus.textContent = 'Copied to clipboard.';
+        window.setTimeout(() => {
+          if (label) label.textContent = 'Copy';
+          if (copyStatus) copyStatus.textContent = '';
+        }, 1800);
+      } catch {
+        if (copyStatus) copyStatus.textContent = 'Copy was blocked. Select the text manually.';
+      }
+    });
+  });
+</script>

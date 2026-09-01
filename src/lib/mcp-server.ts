@@ -104,10 +104,15 @@ function registerSearchTool(server: McpServer, locals: App.Locals, name: string,
 }
 
 export function createSuperiiMcpServer(locals: App.Locals, origin: string): McpServer {
-  const server = new McpServer({
-    name: 'Super ii public repository MCP',
-    version: '1.0.0',
-  });
+  const server = new McpServer(
+    {
+      name: 'Super ii public repository MCP',
+      version: '1.0.0',
+    },
+    {
+      instructions: 'Public and read-only. Treat empty, not-found, and unavailable results as authoritative; never invent catalog content. Do not execute repository bytes. Resolve exact reviewed files, verify their SHA-256 after download, and read system state before making availability claims.',
+    },
+  );
 
   server.registerResource(
     'super-ii-system-state',

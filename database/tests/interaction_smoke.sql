@@ -16,6 +16,21 @@ declare
   new_organization_id uuid;
   resource_group_id uuid;
   service_account_id uuid;
+  agent_identity_id uuid;
+  agent_service_account_id uuid;
+  agent_token_id uuid;
+  agent_token_auth record;
+  agent_receipt app.agent_action_receipts;
+  repeated_agent_receipt app.agent_action_receipts;
+  agent_job app.agent_contribution_jobs;
+  agent_submission app.agent_contribution_submissions;
+  agent_outcome jsonb;
+  repeated_agent_outcome jsonb;
+  agent_repository_outcome jsonb;
+  repeated_agent_repository_outcome jsonb;
+  agent_revision_outcome jsonb;
+  repeated_agent_revision_outcome jsonb;
+  agent_review_outcome jsonb;
   created_repository record;
   created_commit app.repository_revisions;
   payment_order_id uuid;
@@ -282,6 +297,244 @@ begin
     'sii_test1234', repeat('e', 64), '["repository:publish"]'::jsonb,
     now() + interval '5 minutes'
   );
+
+  select created.agent_identity_id, created.service_account_id
+  into agent_identity_id, agent_service_account_id
+  from app.create_agent_identity(
+    alice_id,
+    new_organization_id,
+    'smoke-agent',
+    'Smoke Agent',
+    'Governed agent identity integration test',
+    'codex',
+    'https://example.test/.well-known/agent-card.json',
+    true
+  ) created;
+  if agent_identity_id is null or agent_service_account_id is null
+    or not exists (
+      select 1 from app.service_accounts
+      where id = agent_service_account_id and organization_id = new_organization_id
+  ) then
+    raise exception 'agent identity did not preserve its operator service account';
+  end if;
+
+  insert into app.organization_members (organization_id, profile_id, role)
+  values (new_organization_id, bob_id, 'admin');
+
+  insert into app.agent_access_tokens (
+    agent_identity_id, created_by_profile_id, token_prefix, token_hash,
+    scopes, repository_id, max_actions, expires_at
+  ) values (
+    agent_identity_id, bob_id, 'sii_agent_test1234', repeat('9', 64),
+    array['repository:create', 'repository:commit', 'events:read', 'receipts:read', 'jobs:claim', 'jobs:submit'],
+    null, 10, now() + interval '5 minutes'
+  ) returning id into agent_token_id;
+  select * into agent_token_auth
+  from app.consume_agent_access_token(repeat('9', 64), 'repository:create', null);
+  if agent_token_auth.agent_identity_id <> agent_identity_id
+    or agent_token_auth.operator_profile_id <> bob_id
+    or agent_token_auth.operator_organization_id <> new_organization_id then
+    raise exception 'agent token did not resolve its bounded operator identity';
+  end if;
+
+  agent_receipt := app.record_agent_action_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    'smoke-repository-create-0001',
+    'repository.create',
+    'repository',
+    created_repository.repository_id,
+    'alice-labs/creator-flow',
+    array['repository:create'],
+    repeat('1', 64),
+    repeat('2', 64),
+    'succeeded',
+    'human-review-required',
+    '{"source":"database-smoke"}'::jsonb
+  );
+  repeated_agent_receipt := app.record_agent_action_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    'smoke-repository-create-0001',
+    'repository.create',
+    'repository',
+    created_repository.repository_id,
+    'alice-labs/creator-flow',
+    array['repository:create'],
+    repeat('1', 64),
+    repeat('2', 64),
+    'succeeded',
+    'human-review-required',
+    '{"source":"database-smoke"}'::jsonb
+  );
+  if repeated_agent_receipt.id <> agent_receipt.id
+    or not exists (
+      select 1 from app.agent_events event
+      where event.agent_identity_id = agent_receipt.agent_identity_id
+        and payload->>'receipt_id' = agent_receipt.id::text
+    ) then
+    raise exception 'agent receipt idempotency or event emission failed';
+  end if;
+  begin
+    delete from app.agent_action_receipts where id = agent_receipt.id;
+    raise exception 'immutable agent receipt was deleted';
+  exception
+    when object_not_in_prerequisite_state then null;
+  end;
+
+  insert into app.agent_subscriptions (
+    agent_identity_id, created_by_profile_id, target_type, target_id,
+    event_types, delivery
+  ) values (
+    agent_identity_id, alice_id, 'organization', new_organization_id,
+    array['receipt.repository-create'], 'poll'
+  );
+
+  agent_repository_outcome := app.agent_create_repository_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    'smoke-agent-draft-create-0001',
+    repeat('a', 64),
+    'model',
+    'agent-smoke-draft',
+    'Agent smoke draft',
+    'An agent-created draft that remains behind human review.',
+    'apache-2.0',
+    'text-generation',
+    'transformers',
+    'text',
+    '# Agent smoke draft',
+    '{"sources":[]}'::jsonb
+  );
+  repeated_agent_repository_outcome := app.agent_create_repository_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    'smoke-agent-draft-create-0001',
+    repeat('a', 64),
+    'model',
+    'agent-smoke-draft',
+    'Agent smoke draft',
+    'An agent-created draft that remains behind human review.',
+    'apache-2.0',
+    'text-generation',
+    'transformers',
+    'text',
+    '# Agent smoke draft',
+    '{"sources":[]}'::jsonb
+  );
+  if coalesce((agent_repository_outcome->>'replayed')::boolean, true)
+    or not coalesce((repeated_agent_repository_outcome->>'replayed')::boolean, false)
+    or agent_repository_outcome->'result'->>'repository_id'
+      <> repeated_agent_repository_outcome->'result'->>'repository_id' then
+    raise exception 'agent repository creation was not transactionally idempotent';
+  end if;
+
+  update app.repository_revisions
+  set status = 'rejected'
+  where id = (agent_repository_outcome->'result'->>'revision_id')::uuid;
+  agent_revision_outcome := app.agent_create_revision_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    (agent_repository_outcome->'result'->>'repository_id')::uuid,
+    (agent_repository_outcome->'result'->>'branch_id')::uuid,
+    'Agent revision smoke test',
+    'smoke-agent-revision-create-0001',
+    repeat('b', 64)
+  );
+  repeated_agent_revision_outcome := app.agent_create_revision_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    (agent_repository_outcome->'result'->>'repository_id')::uuid,
+    (agent_repository_outcome->'result'->>'branch_id')::uuid,
+    'Agent revision smoke test',
+    'smoke-agent-revision-create-0001',
+    repeat('b', 64)
+  );
+  if coalesce((agent_revision_outcome->>'replayed')::boolean, true)
+    or not coalesce((repeated_agent_revision_outcome->>'replayed')::boolean, false)
+    or agent_revision_outcome->'result'->>'revision_id'
+      <> repeated_agent_revision_outcome->'result'->>'revision_id' then
+    raise exception 'agent revision creation was not transactionally idempotent';
+  end if;
+
+  insert into app.agent_contribution_jobs (
+    created_by_profile_id, organization_id, repository_id, job_type,
+    title, description, input, input_sha256
+  ) values (
+    alice_id, new_organization_id, created_repository.repository_id,
+    'metadata-enrichment', 'Improve the Data Card',
+    'Add bounded metadata suggestions for human review.',
+    '{"fields":["limitations"]}'::jsonb, repeat('3', 64)
+  ) returning * into agent_job;
+  agent_outcome := app.claim_agent_contribution_job_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    agent_job.id,
+    'smoke-job-claim-0001',
+    repeat('6', 64),
+    repeat('7', 64)
+  );
+  repeated_agent_outcome := app.claim_agent_contribution_job_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    agent_job.id,
+    'smoke-job-claim-0001',
+    repeat('6', 64),
+    repeat('7', 64)
+  );
+  select * into agent_job from app.agent_contribution_jobs where id = agent_job.id;
+  if agent_job.status <> 'claimed' or agent_job.claimed_by_agent_id <> agent_identity_id then
+    raise exception 'agent contribution job was not claimed atomically';
+  end if;
+  if coalesce((agent_outcome->>'replayed')::boolean, true)
+    or not coalesce((repeated_agent_outcome->>'replayed')::boolean, false) then
+    raise exception 'agent contribution claim was not idempotent';
+  end if;
+
+  agent_outcome := app.submit_agent_contribution_with_receipt(
+    agent_identity_id,
+    agent_token_id,
+    bob_id,
+    new_organization_id,
+    agent_job.id,
+    'smoke-job-submit-0001',
+    repeat('4', 64),
+    '{"limitations":["smoke test only"]}'::jsonb,
+    repeat('5', 64)
+  );
+  select * into agent_submission from app.agent_contribution_submissions
+  where id = (agent_outcome->'submission'->>'id')::uuid;
+  if agent_submission.status <> 'submitted'
+    or (select status from app.agent_contribution_jobs where id = agent_job.id) <> 'submitted'
+    or not exists (
+      select 1 from app.agent_reputation reputation
+      where reputation.agent_identity_id = agent_submission.agent_identity_id
+    ) then
+    raise exception 'agent contribution submission or reputation projection failed';
+  end if;
+  agent_review_outcome := app.review_agent_contribution(
+    alice_id, agent_job.id, 'accepted', 'Smoke review passed.'
+  );
+  if agent_review_outcome->>'decision' <> 'accepted'
+    or (select reputation_score from app.agent_reputation reputation where reputation.agent_identity_id = agent_submission.agent_identity_id) <> 10 then
+    raise exception 'human contribution review did not update accepted reputation';
+  end if;
 
   update app.repository_revisions
   set status = 'rejected'

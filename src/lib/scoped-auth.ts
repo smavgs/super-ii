@@ -11,12 +11,14 @@ export const repositoryScopes = [
 export type RepositoryScope = (typeof repositoryScopes)[number];
 
 export type RepositoryActor = {
-  kind: 'profile' | 'scoped-token';
+  kind: 'profile' | 'scoped-token' | 'agent-token';
   profileId: string;
   createdBy: string;
   tokenId: string | null;
   trustedPublisherId: string | null;
   serviceAccountId: string | null;
+  agentIdentityId: string | null;
+  organizationId: string | null;
 };
 
 export type RepositoryAuthorization =
@@ -28,6 +30,13 @@ function bearerToken(request: Request): string | null {
   if (!authorization?.startsWith('Bearer ')) return null;
   const token = authorization.slice('Bearer '.length).trim();
   return /^sii_[a-z0-9]{40,128}$/.test(token) ? token : null;
+}
+
+function agentBearerToken(request: Request): string | null {
+  const authorization = request.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) return null;
+  const token = authorization.slice('Bearer '.length).trim();
+  return /^sii_agent_[a-z0-9]{40,128}$/.test(token) ? token : null;
 }
 
 export async function sha256Hex(value: string): Promise<string> {
@@ -44,8 +53,41 @@ export async function authorizeRepositoryRequest(
 ): Promise<RepositoryAuthorization> {
   const authorizationHeader = request.headers.get('authorization');
   const token = bearerToken(request);
-  if (authorizationHeader && !token) {
+  const agentToken = agentBearerToken(request);
+  if (authorizationHeader && !token && !agentToken) {
     return { ok: false, status: 401, error: 'invalid scoped access token' };
+  }
+
+  if (agentToken) {
+    const tokenHash = await sha256Hex(agentToken);
+    try {
+      const rows = await sql`
+        select * from app.consume_agent_access_token(
+          ${tokenHash},
+          ${scope},
+          ${repositoryId}::uuid
+        )
+      `;
+      const row = rows[0];
+      if (!row?.token_id) {
+        return { ok: false, status: 403, error: 'agent token is expired, revoked, exhausted, out of scope, or bound elsewhere' };
+      }
+      return {
+        ok: true,
+        actor: {
+          kind: 'agent-token',
+          profileId: String(row.operator_profile_id),
+          createdBy: `agent:${String(row.agent_identity_id)}`,
+          tokenId: String(row.token_id),
+          trustedPublisherId: null,
+          serviceAccountId: null,
+          agentIdentityId: String(row.agent_identity_id),
+          organizationId: String(row.operator_organization_id),
+        },
+      };
+    } catch {
+      return { ok: false, status: 503, error: 'agent authorization service unavailable' };
+    }
   }
 
   if (token) {
@@ -102,6 +144,8 @@ export async function authorizeRepositoryRequest(
           tokenId: String(row.id),
           trustedPublisherId: row.trusted_publisher_id ? String(row.trusted_publisher_id) : null,
           serviceAccountId: row.service_account_id ? String(row.service_account_id) : null,
+          agentIdentityId: null,
+          organizationId: null,
         },
       };
     } catch {
@@ -121,6 +165,8 @@ export async function authorizeRepositoryRequest(
       tokenId: null,
       trustedPublisherId: null,
       serviceAccountId: null,
+      agentIdentityId: null,
+      organizationId: null,
     },
   };
 }

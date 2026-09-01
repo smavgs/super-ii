@@ -1,0 +1,9 @@
+{
+  "key_id": "superii-agent-skill-ed25519-v1-2b150801",
+  "algorithm": "Ed25519",
+  "encoding": "raw-base64",
+  "public_key": "4AtP32+OvogDzTlmjH8W82XO01ez29RIe2pPphet8IM=",
+  "sha256": "2b150801e1c4a36b9fdf02ee3621b7fa0ae192ea63bc2b593e1cc202f8cb03f0",
+  "status": "active",
+  "created_at": "2026-09-01T00:00:00Z"
+}
