@@ -1,0 +1,99 @@
+<div class="super-assistant" data-super-assistant>
+  <button
+    class="super-assistant__launcher"
+    type="button"
+    aria-controls="super-assistant-panel"
+    aria-expanded="false"
+    data-super-assistant-launcher
+  >
+    <span class="super-assistant__presence" aria-hidden="true"></span>
+    <span>Super ii</span>
+    <span aria-hidden="true">👾</span>
+  </button>
+
+  <section
+    class="super-assistant__panel"
+    id="super-assistant-panel"
+    role="dialog"
+    aria-labelledby="super-assistant-title"
+    aria-modal="false"
+    data-super-assistant-panel
+    hidden
+  >
+    <header class="super-assistant__header">
+      <div>
+        <strong id="super-assistant-title">Super ii <span aria-hidden="true">👾</span></strong>
+        <span class="super-assistant__status" role="status" data-super-assistant-status>Ready when you are</span>
+      </div>
+      <button class="super-assistant__close" type="button" aria-label="Close Super ii" data-super-assistant-close>
+        <i class="ph ph-x" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div
+      class="super-assistant__messages"
+      aria-live="polite"
+      aria-relevant="additions text"
+      data-super-assistant-messages
+    >
+      <article class="super-assistant__message super-assistant__message--assistant">
+        <span class="sr-only">Super ii:</span>
+        <p>Hi. Ask me anything.</p>
+      </article>
+    </div>
+
+    <div class="super-assistant__notice" data-super-assistant-notice hidden>
+      <p data-super-assistant-notice-copy></p>
+      <div class="super-assistant__auth-actions" data-super-assistant-auth-actions hidden>
+        <a class="button button--dark button--small" href="/sign-up">Join free</a>
+        <a class="button button--ghost button--small" href="/sign-in">Log in</a>
+      </div>
+      <button class="super-assistant__retry" type="button" data-super-assistant-retry hidden>Try again</button>
+    </div>
+
+    <form class="super-assistant__composer" data-super-assistant-form aria-busy="true">
+      <label class="sr-only" for="super-assistant-input">Type your message</label>
+      <textarea
+        id="super-assistant-input"
+        name="message"
+        rows="1"
+        maxlength="2000"
+        placeholder="Type your message…"
+        autocomplete="off"
+        data-super-assistant-input
+        disabled
+      ></textarea>
+      <button type="submit" aria-label="Send message" data-super-assistant-send disabled>
+        <i class="ph ph-arrow-up" aria-hidden="true"></i>
+      </button>
+    </form>
+
+    <p class="super-assistant__privacy">Session-only chat · <a href="/legal/privacy#share">Privacy</a></p>
+  </section>
+</div>
+
+<script>
+  document.querySelectorAll('[data-super-assistant]').forEach((element) => {
+    if (!(element instanceof HTMLElement)) return;
+    const launcher = element.querySelector('[data-super-assistant-launcher]');
+    const status = element.querySelector('[data-super-assistant-status]');
+    if (!(launcher instanceof HTMLButtonElement)) return;
+
+    let controllerPromise: Promise<import('../scripts/super-assistant').SuperAssistantController> | null = null;
+
+    launcher.addEventListener('click', async () => {
+      launcher.disabled = true;
+      try {
+        controllerPromise ??= import('../scripts/super-assistant')
+          .then(({ createSuperAssistant }) => createSuperAssistant(element));
+        const controller = await controllerPromise;
+        controller.toggle();
+      } catch {
+        controllerPromise = null;
+        if (status instanceof HTMLElement) status.textContent = 'Could not load. Try again.';
+      } finally {
+        launcher.disabled = false;
+      }
+    });
+  });
+</script>

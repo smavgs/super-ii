@@ -8,7 +8,12 @@ import sys
 from pathlib import Path
 
 
-PRIVATE_KEYS = {"CLERK_SECRET_KEY", "DATABASE_URL", "CONTACT_HASH_SALT"}
+PRIVATE_KEYS = {
+    "CLERK_SECRET_KEY",
+    "DATABASE_URL",
+    "CONTACT_HASH_SALT",
+    "GEMINI_API_KEY",
+}
 
 
 def parse_private_values(env_file: Path) -> dict[str, str]:

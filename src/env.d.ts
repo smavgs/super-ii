@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   readonly NOWPAYMENTS_IPN_SECRET?: string;
   readonly SUPERII_ADMIN_USER_IDS?: string;
   readonly BRIDGE_TOKEN_ENCRYPTION_KEY?: string;
+  readonly GEMINI_API_KEY?: string;
 }
 
 interface ImportMeta {
