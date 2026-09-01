@@ -23,35 +23,35 @@
       "price": "$0",
       "unit": "forever",
       "status": "available",
-      "summary": "For exploring and contributing in public.",
-      "features": ["Public profile and organizations", "Public models, datasets, and apps", "Community discussions", "Basic version history"]
+      "summary": "For exploring, publishing and building in public.",
+      "features": ["Public profile and organizations", "Unlimited public repositories", "Public models, datasets and apps", "5 GB public storage", "Public notebooks", "Browser WebGPU and WASM execution", "Local AI with Ollama, llama.cpp, MLX and compatible runtimes", "Basic hardware compatibility", "Basic Verified Use", "Public MCP and API access", "Agent-readable repositories", "Provenance and lineage", "Community discussions", "Proposals and voting", "Super ii AI", "Bring My Work", "Community processing priority"]
     },
     {
       "id": "pro",
       "name": "Pro",
       "price": "$9",
-      "unit": "per month",
+      "unit": "/ 30 days",
       "status": "available",
-      "summary": "For independent builders shipping more.",
-      "features": ["Everything in Free", "Private repositories", "Higher storage and compute limits", "Advanced publishing controls", "Priority build queue"]
+      "summary": "For independent builders who need privacy, more capacity and advanced tools.",
+      "features": ["Everything in Free, plus:", "Private repositories", "25 GB total hosted storage", "Private models, datasets and apps", "Private notebooks", "Advanced hardware profiles", "Advanced Verified Use", "Advanced MCP and API access", "Scoped agent tokens", "Advanced publishing controls", "Priority inspection and review", "Priority build queue", "Higher platform-processing allowance", "Usage and spend controls"]
     },
     {
       "id": "team",
       "name": "Team",
       "price": "$20",
-      "unit": "per member / month",
+      "unit": "/ member / 30 days",
       "status": "available",
-      "summary": "For teams collaborating with control.",
-      "features": ["Everything in Pro", "Role-based access", "Audit history", "Team billing", "Shared resource groups"]
+      "summary": "For teams collaborating with shared control and governance.",
+      "features": ["Everything in Pro, plus:", "Organizations", "Advanced role-based access control", "Audit history", "Shared resource groups", "Service accounts", "Scoped team tokens", "Team agent and MCP access", "Shared notebooks", "Repository analytics", "Central team billing", "Priority processing", "50 GB pooled storage per paid member", "SSO available as an add-on"]
     },
     {
       "id": "enterprise",
       "name": "Enterprise",
       "price": "Custom",
-      "unit": "annual agreement",
+      "unit": "/ annual agreement",
       "status": "proposal",
-      "summary": "For governed AI at organizational scale.",
-      "features": ["Everything in Team", "SSO and directory sync options", "Regional deployment proposals", "Custom support plan", "Security and procurement review"]
+      "summary": "For organizations that need governed AI at scale.",
+      "features": ["Everything in Team, plus:", "SSO with SAML/OIDC", "SCIM directory sync", "Advanced identity policies", "Extended audit retention", "Regional deployment options", "Dedicated runtime options", "Customer-supplied cloud or hardware", "Security and procurement review", "Custom support plan", "Service-level agreement options", "Custom storage and compute", "Managed infrastructure options"]
     }
   ],
   "routes": [

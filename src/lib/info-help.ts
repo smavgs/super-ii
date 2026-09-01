@@ -240,6 +240,11 @@ export const infoHelp = {
     text: 'Shows practical ways to use this exact reviewed model—locally, through supported software, scripts, notebooks or APIs.',
     learnMore: '/docs#use-model',
   },
+  verifiedUse: {
+    label: 'Verified Use',
+    text: 'Verified Use provides reviewed instructions for running a model with supported software and compatible hardware.',
+    learnMore: '/docs#use-model',
+  },
   recommendedRuntime: {
     label: 'Recommended runtime',
     text: 'A runtime is the software that actually loads and runs the model. Super ii recommends one based on the model and available hardware.',
@@ -396,6 +401,50 @@ export const infoHelp = {
     label: 'Availability',
     text: 'Status tells you how mature the capability is. Availability tells you whether you can actually use it now.',
   },
+  thirtyDayAccess: {
+    label: '30-day access',
+    text: 'Your paid plan stays active for 30 days from payment. Renew whenever you want.',
+  },
+  unlimitedPublicRepositories: {
+    label: 'Unlimited public repositories',
+    text: 'Create as many public repositories as you need. Included hosted storage is limited to 5 GB.',
+  },
+  hostedStorage25: {
+    label: '25 GB hosted storage',
+    text: 'Your Pro account includes up to 25 GB of hosted Super ii storage across your repositories. Additional storage can be purchased separately.',
+  },
+  pooledStorage: {
+    label: 'Pooled storage',
+    text: "Each paid Team member adds 50 GB to the organization's shared storage pool. Five paid members provide 250 GB total.",
+  },
+  ssoAddOn: {
+    label: 'SSO add-on',
+    text: 'Single Sign-On can be added separately for organizations that need managed identity access.',
+  },
+  customerSuppliedInfrastructure: {
+    label: 'Customer-supplied infrastructure',
+    text: 'Run Super ii Runtime on your own AWS, Google Cloud, Azure, GPU servers, datacenter or compatible infrastructure while Super ii provides the control and governance layer.',
+  },
+  browserLocalExecution: {
+    label: 'Browser / local execution',
+    text: 'The model runs on your device or infrastructure instead of requiring Super ii hosted compute. This keeps execution private, portable and inexpensive.',
+  },
+  byocHardware: {
+    label: 'BYOC / BYO hardware',
+    text: 'BYOC means Bring Your Own Cloud. BYO hardware means using infrastructure you already own or rent directly.',
+  },
+  storage: {
+    label: 'Storage',
+    text: "Storage measures the actual hosted data attached to your Super ii account or organization. Identical content may be stored efficiently through Super ii's content-addressed storage system.",
+  },
+  highlights: {
+    label: 'Highlights',
+    text: 'Creators can purchase clearly marked promotional placement without changing organic rankings or community voting.',
+  },
+  usdcEthereum: {
+    label: 'USDC on Ethereum',
+    text: 'Send USDC using the Ethereum network shown during checkout. Sending another asset or using the wrong network can result in loss of funds.',
+  },
   freePlan: {
     label: 'Free plan',
     text: 'Free public participation. Paid infrastructure is not automatically started by using the Free plan.',
@@ -426,7 +475,7 @@ export const infoHelp = {
   },
   usageInfrastructure: {
     label: 'Usage-based infrastructure',
-    text: 'Compute, hosted inference and storage can have separate usage charges. Subscription price alone does not imply unlimited infrastructure.',
+    text: 'Your subscription gives you the Super ii platform and included allowances. Infrastructure with substantial storage or compute cost is measured separately.',
   },
   compute: {
     label: 'Compute',

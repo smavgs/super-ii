@@ -1,8 +1,10 @@
 ---
 import PageHero from '@/components/PageHero.astro';
+import InfoTip from '@/components/InfoTip.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
+import type { InfoHelpKey } from '@/lib/info-help';
 import { plans } from '@/lib/site';
 
 let signedIn = false;
@@ -38,27 +40,57 @@ const planCta = {
   enterprise: { label: 'Request a proposal', href: '/contact?interest=enterprise', featured: false },
 } as const;
 
-const comparison = [
-  { feature: 'Public repositories', values: ['Unlimited', 'Unlimited', 'Unlimited', 'Unlimited'] },
-  { feature: 'Private repositories', values: ['—', 'Included', 'Included', 'Custom'] },
-  { feature: 'Organization members', values: ['Community', 'Small teams', 'Per seat', 'Custom'] },
-  { feature: 'Role-based access', values: ['—', 'Basic', 'Advanced', 'Custom'] },
+const featureHelp: Partial<Record<string, InfoHelpKey>> = {
+  'Unlimited public repositories': 'unlimitedPublicRepositories',
+  '5 GB public storage': 'storage',
+  'Browser WebGPU and WASM execution': 'browserWebgpu',
+  'Basic Verified Use': 'verifiedUse',
+  '25 GB total hosted storage': 'hostedStorage25',
+  'Advanced Verified Use': 'verifiedUse',
+  'Scoped agent tokens': 'scopedAccess',
+  'Scoped team tokens': 'scopedAccess',
+  '50 GB pooled storage per paid member': 'pooledStorage',
+  'SSO available as an add-on': 'ssoAddOn',
+  'Customer-supplied cloud or hardware': 'customerSuppliedInfrastructure',
+};
+
+const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelpKey }> = [
+  { feature: 'Public repositories', values: ['Unlimited', 'Unlimited', 'Unlimited', 'Unlimited'], helpTerm: 'unlimitedPublicRepositories' },
+  { feature: 'Private repositories', values: ['—', 'Included', 'Included', 'Included'] },
+  { feature: 'Included hosted storage', values: ['5 GB public', '25 GB', '50 GB/member pooled', 'Custom'], helpTerm: 'storage' },
+  { feature: 'Browser / local execution', values: ['Included', 'Included', 'Included', 'Included'], helpTerm: 'browserLocalExecution' },
+  { feature: 'Hardware matching', values: ['Basic', 'Advanced', 'Advanced', 'Custom'] },
+  { feature: 'Verified Use', values: ['Basic', 'Advanced', 'Advanced', 'Custom'], helpTerm: 'verifiedUse' },
+  { feature: 'Notebooks', values: ['Public', 'Public + private', 'Shared + private', 'Governed'] },
+  { feature: 'MCP / API access', values: ['Basic', 'Advanced', 'Team', 'Enterprise'] },
+  { feature: 'Agent access', values: ['Basic', 'Advanced', 'Team', 'Enterprise'] },
+  { feature: 'Advanced publishing', values: ['—', 'Included', 'Included', 'Policy controlled'] },
+  { feature: 'Processing priority', values: ['Community', 'Priority', 'Higher priority', 'SLA'] },
+  { feature: 'Organizations', values: ['Included', 'Included', 'Included', 'Included'] },
+  { feature: 'Role-based access', values: ['—', '—', 'Advanced', 'Custom'] },
   { feature: 'Audit history', values: ['—', '—', 'Included', 'Extended'] },
-  { feature: 'SSO and directory sync', values: ['—', '—', 'Option', 'Proposal'] },
-  { feature: 'Storage and compute', values: ['Community limits', 'Higher limits', 'Pooled limits', 'Negotiated'] },
-  { feature: 'Support', values: ['Community', 'Standard', 'Priority', 'Custom plan'] },
+  { feature: 'Service accounts', values: ['—', '—', 'Included', 'Included'] },
+  { feature: 'SSO', values: ['—', '—', 'Add-on', 'Included'] },
+  { feature: 'SCIM', values: ['—', '—', '—', 'Included'] },
+  { feature: 'Dedicated runtime', values: ['—', '—', 'Optional', 'Available'] },
+  { feature: 'BYOC / BYO hardware', values: ['Local', 'Supported', 'Supported', 'Major feature'], helpTerm: 'byocHardware' },
+  { feature: 'Additional storage', values: ['Usage based', 'Usage based', 'Usage based', 'Negotiated'] },
+  { feature: 'Hosted notebook execution', values: ['Usage based', 'Usage based', 'Usage based', 'BYOC / negotiated'], helpTerm: 'usageInfrastructure' },
+  { feature: 'Hosted app runtime', values: ['Usage based', 'Usage based', 'Usage based', 'BYOC / negotiated'], helpTerm: 'usageInfrastructure' },
+  { feature: 'Managed inference / GPU', values: ['Usage based', 'Usage based', 'Usage based', 'BYOC / negotiated'], helpTerm: 'usageInfrastructure' },
+  { feature: 'Support', values: ['Community', 'Standard', 'Priority', 'Custom'] },
 ];
 ---
 
-<BaseLayout title="Pricing" description="Transparent Super ii plans for individuals, teams, and enterprises—with a real free tier and no card required to start.">
+<BaseLayout title="Pricing" description="Start free with Super ii, then pay for privacy, control and scale when you need them.">
   <PageHero
     eyebrow="Simple, transparent plans"
-    title="Start in public for free. Pay when control and scale matter."
-    description="Free accounts are open now. Pro and Team activate for 30 days after a verified USDC payment on Ethereum; Enterprise remains a written proposal."
+    title="Start free. Pay for privacy, control and scale."
+    description="Explore, publish and run open AI for free. Upgrade when you need private work, larger storage, advanced agent access, team governance or enterprise control."
   >
     <div class="pricing-notice">
       <i class="ph ph-info" aria-hidden="true"></i>
-      <p><strong>Crypto-only launch:</strong> no card is required. Pro and Team use a single USDC payment on Ethereum through NOWPayments; network and processor fees may apply.</p>
+      <p><strong>Pro and Team activate for 30 days after a verified USDC payment on Ethereum. No card required.</strong> <InfoTip term="thirtyDayAccess" /></p>
     </div>
   </PageHero>
 
@@ -69,9 +101,6 @@ const comparison = [
         const cta = planCta[plan.id as keyof typeof planCta];
         return (
           <article class:list={['price-card', cta.featured && 'price-card--featured']}>
-            {plan.status === 'available' && <span class="price-badge">Available now</span>}
-            {plan.status === 'beta-waitlist' && <span class="price-badge">Beta waitlist</span>}
-            {plan.status === 'proposal' && <span class="price-badge">By proposal</span>}
             <h2>{plan.name}</h2>
             <p class="price-card__summary">{plan.summary}</p>
             <div class="price">
@@ -79,9 +108,10 @@ const comparison = [
               <span>{plan.unit}</span>
             </div>
             <ul>
-              {plan.features.map((feature) => (
-                <li><i class="ph ph-check" aria-hidden="true"></i>{feature}</li>
-              ))}
+              {plan.features.map((feature) => {
+                const helpTerm = featureHelp[feature];
+                return <li><i class="ph ph-check" aria-hidden="true"></i><span>{feature}</span>{helpTerm && <InfoTip term={helpTerm} />}</li>;
+              })}
             </ul>
             {cta.href ? (
               <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>{cta.label}</a>
@@ -104,9 +134,7 @@ const comparison = [
   <section class="pricing-detail section--soft">
     <div class="shell">
       <div class="section-heading">
-        <p class="eyebrow">Plan coverage</p>
-        <h2>A full path from first project to governed AI.</h2>
-        <p>Paid activation is manual-renewal for 30 days. Enterprise capabilities are scoped in writing and never implied by a badge alone.</p>
+        <h2>Compare plans</h2>
       </div>
 
       <div class="comparison-scroll">
@@ -123,7 +151,7 @@ const comparison = [
           <tbody>
             {comparison.map((row) => (
               <tr>
-                <th scope="row">{row.feature}</th>
+                <th scope="row">{row.feature} {row.helpTerm && <InfoTip term={row.helpTerm} />}</th>
                 {row.values.map((value) => <td>{value}</td>)}
               </tr>
             ))}
@@ -136,27 +164,104 @@ const comparison = [
   <section class="section">
     <div class="shell feature-rows">
       <article class="feature-row">
-        <h2>Usage-based infrastructure</h2>
+        <h2>Powerful AI without paying for unnecessary compute</h2>
         <div>
-          <p>Inference, hosted endpoints, accelerated app runtime, and storage are separate from subscriptions. When released, each service will show its unit price, included allowance, and spend controls before use.</p>
+          <p><strong>Super ii is local-first.</strong></p>
+          <p>Run compatible models using your own:</p>
           <ul>
-            <li><i class="ph ph-check" aria-hidden="true"></i> No surprise activation</li>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Usage visibility and budget controls</li>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Customer-supplied infrastructure proposals for larger workloads</li>
+            {['Browser', 'Mac', 'PC', 'GPU', 'Ollama', 'llama.cpp', 'MLX', 'LM Studio', 'Jan', 'local agents', 'Jupyter', 'Colab', 'Kaggle', 'cloud infrastructure'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
           </ul>
+          <p>Your hardware does the compute whenever possible. <InfoTip term="browserLocalExecution" /></p>
         </div>
       </article>
+
+      <article class="feature-row">
+        <h2>Usage-based infrastructure</h2>
+        <div>
+          <p>Pay only when you use infrastructure that creates a direct operating cost.</p>
+          <p><strong>Available separately:</strong></p>
+          <ul>
+            {['Additional storage', 'Hosted notebook execution', 'Persistent app runtime', 'CPU processing', 'GPU inference', 'Hosted model endpoints', 'Accelerated workloads', 'Managed compute'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <p><strong>Before activation, Super ii shows:</strong></p>
+          <ul>
+            {['unit price', 'included allowance', 'current usage', 'estimated cost', 'spend controls'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <p><strong>No surprise activation.</strong> <InfoTip term="usageInfrastructure" label="Usage based" /></p>
+        </div>
+      </article>
+
+      <article class="feature-row">
+        <h2>Bring your own infrastructure</h2>
+        <div>
+          <p>Use Super ii without moving expensive compute into Super ii.</p>
+          <p><strong>Connect:</strong></p>
+          <ul>
+            {['your computer', 'your GPU server', 'AWS', 'Google Cloud', 'Microsoft Azure', 'private cloud', 'datacenter infrastructure'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <p>Super ii provides the AI hub, repositories, governance, agents, provenance and control layer. <InfoTip term="byocHardware" /></p>
+        </div>
+      </article>
+
+      <article class="feature-row">
+        <h2>Storage that scales with your work</h2>
+        <div>
+          <p>Every plan includes a clear hosted-storage allowance.</p>
+          <ul>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Free: 5 GB public</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Pro: 25 GB</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Team: 50 GB per paid member, pooled</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i>Enterprise: custom</li>
+          </ul>
+          <p>Additional storage is available separately.</p>
+          <p>Repository count and storage capacity are different: you can create unlimited public repositories while staying within your storage allowance. <InfoTip term="storage" /></p>
+        </div>
+      </article>
+
       <article class="feature-row">
         <h2>Creator monetization</h2>
         <div>
-          <p>Creator programs, paid apps, compute sponsorship, and revenue-sharing are planned surfaces—not active promises. Terms, fees, eligibility, and payout mechanics will be published before enrollment.</p>
+          <p>Creators can build an audience and earn through Super ii.</p>
+          <p><strong>Available creator opportunities include:</strong></p>
+          <ul>
+            {['promoted Highlights', 'paid apps and services', 'creator programs', 'compute sponsorship', 'revenue sharing'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <p>Terms, fees and payout details are shown before participation. <InfoTip term="highlights" /></p>
         </div>
       </article>
+
       <article class="feature-row">
-        <h2>Enterprise proposals</h2>
+        <h2>Enterprise</h2>
         <div>
-          <p>Organizations can request a written proposal covering access controls, identity, support, regional requirements, deployment architecture, and commercial terms.</p>
-          <a class="button button--secondary" href="/enterprise">Explore enterprise</a>
+          <p><strong>Your models. Your infrastructure. Super ii manages the AI Hub layer.</strong></p>
+          <p>Enterprise deployments can combine Super ii with customer-owned cloud, GPU and datacenter infrastructure.</p>
+          <p><strong>Enterprise agreements can cover:</strong></p>
+          <ul>
+            {['identity and access', 'SSO and SCIM', 'audit and governance', 'regional requirements', 'dedicated runtimes', 'security requirements', 'procurement', 'support', 'storage', 'compute', 'deployment architecture'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <a class="button button--secondary" href="/contact?interest=enterprise">Request a proposal</a>
+        </div>
+      </article>
+
+      <article class="feature-row">
+        <h2>Payment</h2>
+        <div>
+          <p>Pro and Team are activated with USDC on Ethereum.</p>
+          <ul>
+            {['No card required', 'One payment activates 30 days', 'Renew manually when you want', 'Network and processor fees may apply', 'Your plan and infrastructure usage remain separate'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+          </ul>
+          <p><InfoTip term="usdcEthereum" /></p>
+        </div>
+      </article>
+
+      <article class="feature-row">
+        <h2>Pricing principle</h2>
+        <div>
+          <p><strong>Clear before you pay.</strong></p>
+          <p>Super ii separates:</p>
+          <p><strong>Subscription</strong><br />Access, privacy, advanced tools, governance and included allowances.</p>
+          <p><strong>Infrastructure</strong><br />Storage, CPU, GPU and persistent hosted execution that create measurable operating costs.</p>
+          <p>You always see what is included and what is usage based before you use it.</p>
         </div>
       </article>
     </div>
