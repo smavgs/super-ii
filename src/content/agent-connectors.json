@@ -24,7 +24,7 @@
       "config_path": "~/.codex/config.toml",
       "config_example": "[mcp_servers.superii]\nurl = \"https://superii.site/mcp\"\ndefault_tools_approval_mode = \"prompt\"",
       "notes": "Shared by the Codex app, CLI, and IDE extension on the same Codex host.",
-      "source_url": "https://learn.chatgpt.com/docs/extend/mcp",
+      "source_url": "https://developers.openai.com/codex/mcp",
       "source_label": "OpenAI Codex MCP documentation"
     },
     {
