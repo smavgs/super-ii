@@ -1,4 +1,5 @@
 ---
+import InfoTip from '@/components/InfoTip.astro';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 
 interface Props {
@@ -7,9 +8,23 @@ interface Props {
 
 const { kind } = Astro.props;
 const meta = catalogMeta[kind];
+const emptyState = {
+  models: {
+    title: 'No reviewed public models yet.',
+    copy: 'Super ii does not seed fake community content. The first model appears here when a real creator publishes a release that passes review.',
+  },
+  datasets: {
+    title: 'No reviewed public datasets yet.',
+    copy: 'The first dataset appears here when a creator publishes it and the release passes review.',
+  },
+  spaces: {
+    title: 'No reviewed public apps yet.',
+    copy: 'The first public app appears here after its release passes review.',
+  },
+}[kind];
 ---
 
-<section class="catalog-shell shell" data-catalog data-kind={kind}>
+<section class="catalog-shell shell" data-catalog data-kind={kind} data-empty-default={emptyState.copy}>
   <aside class="catalog-sidebar">
     <div class="catalog-filter-title">
       <span>Filter</span>
@@ -52,10 +67,11 @@ const meta = catalogMeta[kind];
         <i class:list={['ph', meta.icon]} aria-hidden="true"></i>
       </div>
       <p class="eyebrow">A clean start</p>
-      <h2>No public {meta.title.toLowerCase()} yet</h2>
-      <p data-empty-copy>
-        No reviewed public {meta.singular} has been published yet. A real release appears here immediately after approval.
-      </p>
+      <div class="heading-with-help empty-state__heading">
+        <h2>{emptyState.title}</h2>
+        <InfoTip term="reviewFirst" />
+      </div>
+      <p data-empty-copy>{emptyState.copy}</p>
       <div class="button-row">
         <a class="button button--dark" href="/sign-up">Create your account</a>
         <a class="button button--secondary" href="/bring-my-work">Bring existing work</a>

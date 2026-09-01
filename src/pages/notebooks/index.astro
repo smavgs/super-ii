@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
 import { officialNotebooks } from '@/lib/notebooks';
 
@@ -8,9 +9,10 @@ export const prerender = true;
 
 <BaseLayout title="Notebooks" description="Official, reproducible Super ii notebooks with a safe static reader and supported Colab paths.">
   <PageHero
-    eyebrow="Learn by running 🧪"
-    title="Official Super ii notebooks."
-    description="Small, readable tutorials with visible requirements, immutable source checks, and no hidden execution inside Super ii."
+    eyebrow="Official notebooks 🧪"
+    title="Learn by doing."
+    titleHelp="notebook"
+    description="Official Super ii notebooks explain how the platform works through small, reproducible examples. On Super ii, notebooks are safe to read without executing code. When execution is available, running code is always an explicit action."
     compact
   >
     <div class="button-row">
@@ -48,8 +50,8 @@ export const prerender = true;
 
   <section class="section section--soft">
     <div class="shell notebook-principles">
-      <article><i class="ph ph-shield-check" aria-hidden="true"></i><h3>Static on Super ii</h3><p>Markdown and allowlisted outputs are rendered. HTML, JavaScript, SVG, widgets, attachments, and cell execution stay off.</p></article>
-      <article><i class="ph ph-git-commit" aria-hidden="true"></i><h3>Exact source</h3><p>Every official notebook has a checked SHA-256 digest and a stable GitHub path for review and version history.</p></article>
+      <article><i class="ph ph-shield-check" aria-hidden="true"></i><div class="heading-with-help"><h3>Static on Super ii</h3><InfoTip term="staticNotebook" /></div><p>Markdown and allowlisted outputs are rendered. HTML, JavaScript, SVG, widgets, attachments, and cell execution stay off.</p></article>
+      <article><i class="ph ph-git-commit" aria-hidden="true"></i><div class="heading-with-help"><h3>Exact source</h3><InfoTip term="checksum" /></div><p>Every official notebook has a checked SHA-256 digest and a stable GitHub path for review and version history.</p></article>
       <article><i class="ph ph-arrow-square-out" aria-hidden="true"></i><h3>Clear handoff</h3><p>Colab links are external execution paths, visibly separated from Super ii's static reader and governed by the external provider.</p></article>
     </div>
   </section>

@@ -1,4 +1,5 @@
 ---
+import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -8,10 +9,31 @@ export const prerender = true;
 <BaseLayout title="Documentation" description="Learn how Super ii accounts, repositories, publishing, MCP, hardware discovery, trusted automation, organizations, reviews, and plans work.">
   <PageHero
     eyebrow="Documentation"
-    title="Build in public with verifiable release paths."
-    description="The documentation separates live capabilities from runtime-dependent paths, foundations, and deliberately deferred infrastructure."
+    title="Build with evidence."
+    description="Super ii separates what is designed, implemented, tested, integrated and production-verified so developers and agents can understand what actually works today."
     compact
-  />
+  >
+    <div class="docs-overview">
+      <p class="docs-status-language">
+        <span>Designed <InfoTip term="designed" /></span>
+        <span>Implemented <InfoTip term="implemented" /></span>
+        <span>Tested <InfoTip term="tested" /></span>
+        <span>Integrated <InfoTip term="integrated" /></span>
+        <span>Production <InfoTip term="production" /></span>
+        <span>Availability <InfoTip term="availability" /></span>
+      </p>
+      <div class="docs-quick-start">
+        <strong>New here? Start with:</strong>
+        <ol>
+          <li><a href="/sign-up">Create an account</a></li>
+          <li><a href="/models">Explore models</a> and <a href="/datasets">datasets</a></li>
+          <li><a href="/notebooks">Read a notebook</a></li>
+          <li><a href="/bring-my-work">Bring existing work</a></li>
+          <li><a href="/new">Publish when ready</a></li>
+        </ol>
+      </div>
+    </div>
+  </PageHero>
 
   <div class="shell content-shell">
     <article class="prose">

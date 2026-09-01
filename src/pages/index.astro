@@ -1,4 +1,5 @@
 ---
+import InfoTip from '@/components/InfoTip.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -7,28 +8,36 @@ export const prerender = true;
 const capabilities = [
   {
     title: 'Models',
-    copy: 'Version, document, discuss, and share machine-learning models with a clear path from experiment to release.',
+    copy: 'Find, inspect, run and build on AI models.',
+    details: 'Every reviewed model can show its files, versions, license, architecture, provenance, hardware requirements and ways to use it.',
+    helpTerm: 'model' as const,
     href: '/models',
     icon: 'ph-cube',
     cta: 'Explore models',
   },
   {
     title: 'Datasets',
-    copy: 'Publish data with licenses, schemas, previews, lineage, and the context people need to use it responsibly.',
+    copy: 'Find and publish data with the information needed to understand and reuse it responsibly.',
+    details: 'License · schema · preview · provenance · lineage · versions',
+    helpTerm: 'dataset' as const,
     href: '/datasets',
     icon: 'ph-database',
     cta: 'Explore datasets',
   },
   {
     title: 'Apps',
-    copy: 'Turn ideas into interactive AI demos that anyone can try, inspect, and learn from in the browser.',
+    copy: 'Try AI projects directly in the browser.',
+    details: 'See what they do, inspect how they were built and discover the models and datasets behind them.',
+    helpTerm: 'app' as const,
     href: '/spaces',
     icon: 'ph-browser',
     cta: 'Explore apps',
   },
   {
     title: 'Organizations',
-    copy: 'Give teams a shared home with roles, review paths, activity history, and room to grow into governed workflows.',
+    copy: 'Give your team one shared home for its AI work.',
+    details: 'Manage members, repositories, permissions, reviews and activity while keeping public work open to the wider community.',
+    helpTerm: 'organization' as const,
     href: '/organizations',
     icon: 'ph-users-three',
     cta: 'Build together',
@@ -40,24 +49,36 @@ const capabilities = [
   <section class="hero">
     <div class="shell hero-inner">
       <div class="hero-copy">
-        <div class="launch-pill"><span></span> Public beta · Publishing is review-first</div>
+        <div class="launch-pill">
+          <span class="launch-pill__dot" aria-hidden="true"></span>
+          <span>Public beta <InfoTip term="publicBeta" /></span>
+          <span aria-hidden="true">·</span>
+          <span>Every public release is reviewed <InfoTip term="reviewFirst" /></span>
+        </div>
         <h1>Open intelligence, built together.</h1>
         <p class="hero-lead">
-          Super ii is a fast, public home for people building with AI—models, datasets, apps, and the communities around them.
+          Super ii is an open home for AI models, datasets, apps, agents, research and the people building them.
+          <span>Discover existing work. Understand how it was made. Build on it. Share what you create.</span>
         </p>
         <div class="button-row">
-          <a class="button button--dark" href="/sign-up">
-            Join Super ii
-            <i class="ph ph-arrow-right" aria-hidden="true"></i>
-          </a>
-          <a class="button button--secondary" href="/bring-my-work">
-            Bring my work
-            <i class="ph ph-bridge" aria-hidden="true"></i>
-          </a>
+          <span class="button-with-info">
+            <a class="button button--dark" href="/sign-up">
+              Join Super ii
+              <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            </a>
+            <InfoTip term="joinFree" label="joining Super ii" />
+          </span>
+          <span class="button-with-info">
+            <a class="button button--secondary" href="/bring-my-work">
+              Bring my work
+              <i class="ph ph-bridge" aria-hidden="true"></i>
+            </a>
+            <InfoTip term="bringMyWork" />
+          </span>
         </div>
         <p class="hero-note">
           <i class="ph ph-credit-card" aria-hidden="true"></i>
-          Start free. No card required. <a href="/models">Explore the hub</a>
+          No card required. <a href="/models">Explore the hub</a>
         </p>
       </div>
 
@@ -95,25 +116,37 @@ const capabilities = [
     <div class="shell">
       <div class="section-heading">
         <p class="eyebrow">One place to make progress</p>
-        <h2>From raw idea to useful AI.</h2>
-        <p>Discover work, understand how it was built, and collaborate without losing the decisions that made it trustworthy.</p>
+        <h2>From an idea to something others can use.</h2>
+        <p>Discover work, understand how it was built, improve it together and keep the important evidence attached:</p>
+        <p class="help-term-list">
+          <span>versions <InfoTip term="version" /></span>
+          <span>licenses <InfoTip term="license" /></span>
+          <span>provenance <InfoTip term="provenance" /></span>
+          <span>compatibility <InfoTip term="hardwareCompatibility" /></span>
+          <span>review <InfoTip term="reviewFirst" /></span>
+          <span>lineage <InfoTip term="lineage" /></span>
+        </p>
       </div>
 
       <div class="capability-grid">
         {capabilities.map((capability) => (
-          <a class="capability-card" href={capability.href}>
+          <article class="capability-card">
             <div class="capability-card__icon">
               <i class:list={['ph', capability.icon]} aria-hidden="true"></i>
             </div>
             <div>
-              <h3>{capability.title}</h3>
+              <div class="heading-with-help">
+                <h3>{capability.title}</h3>
+                <InfoTip term={capability.helpTerm} />
+              </div>
               <p>{capability.copy}</p>
+              <p class="capability-card__details">{capability.details}</p>
             </div>
-            <span class="card-link">
+            <a class="card-link" href={capability.href}>
               {capability.cta}
               <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-            </span>
-          </a>
+            </a>
+          </article>
         ))}
       </div>
     </div>
@@ -123,10 +156,13 @@ const capabilities = [
     <div class="shell zero-state-panel">
       <div class="zero-state-copy">
         <p class="eyebrow">A clean beginning</p>
-        <h2>No demo models. No inflated numbers.</h2>
-        <p>
-          The old sample catalog is gone. Super ii starts with an honest empty hub, then grows only when real creators publish reviewed work.
-        </p>
+        <div class="heading-with-help">
+          <h2>You are early.</h2>
+          <InfoTip term="emptyCatalog" />
+        </div>
+        <p>Super ii starts with an honest catalog.</p>
+        <p class="zero-state-copy__facts">No fake repositories.<br />No fabricated downloads.<br />No demo content pretending to be community work.</p>
+        <p>The catalog grows when real creators publish reviewed work.</p>
         <div class="button-row">
           <a class="button button--dark" href="/models">See the empty catalog</a>
           <a class="button button--secondary" href="/docs#publish">How publishing works</a>
@@ -160,17 +196,17 @@ const capabilities = [
         <article class="principle">
           <span class="principle__number">01</span>
           <h3>Evidence over hype</h3>
-          <p>Model and dataset pages are designed to show licenses, limitations, versions, and provenance alongside performance.</p>
+          <p>Performance numbers are more useful when you can also see the model, version, hardware, license, provenance, limitations and verification. Super ii keeps those facts close to the claim.<InfoTip term="provenance" /></p>
         </article>
         <article class="principle">
           <span class="principle__number">02</span>
-          <h3>Useful access</h3>
-          <p>Public work stays easy to discover. Private collaboration and governance are paid capabilities, not barriers to learning.</p>
+          <h3>Open where possible. Controlled where necessary.</h3>
+          <p>Public knowledge stays easy to discover. Private repositories and complete team-governance controls remain in development; Enterprise requirements are agreed in writing.<InfoTip term="privateRepository" /></p>
         </article>
         <article class="principle">
           <span class="principle__number">03</span>
-          <h3>Honest growth</h3>
-          <p>Plans and limits are visible before purchase. Usage-priced infrastructure will be explained before it is activated.</p>
+          <h3>Clear before you pay.</h3>
+          <p>Plan prices and payment terms are shown before purchase. When metered compute or storage becomes available, Super ii will show its price and usage controls before it starts.<InfoTip term="usageInfrastructure" /></p>
         </article>
       </div>
     </div>

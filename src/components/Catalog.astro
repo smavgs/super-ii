@@ -1,4 +1,5 @@
 ---
+import InfoTip from '@/components/InfoTip.astro';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 import {
   repositoryPath,
@@ -36,16 +37,30 @@ const filters: CatalogFilters = {
 };
 const result = await searchCatalog(Astro.locals, repositoryKind, filters);
 const hasFilters = Object.values(filters).some((value) => value !== undefined && value !== '');
+const emptyState = {
+  models: {
+    title: 'No reviewed public models yet.',
+    copy: 'Super ii does not seed fake community content. The first model appears here when a real creator publishes a release that passes review.',
+  },
+  datasets: {
+    title: 'No reviewed public datasets yet.',
+    copy: 'The first dataset appears here when a creator publishes it and the release passes review.',
+  },
+  spaces: {
+    title: 'No reviewed public apps yet.',
+    copy: 'The first public app appears here after its release passes review.',
+  },
+}[kind];
 ---
 
-<form class="catalog-shell shell" method="get" data-catalog data-kind={kind}>
+<form class="catalog-shell shell" method="get" data-catalog data-kind={kind} data-empty-default={emptyState.copy}>
   <aside class="catalog-sidebar">
     <div class="catalog-filter-title">
       <span>Filter</span>
       <span class="count-badge">{result.items.length}</span>
     </div>
     <fieldset>
-      <legend>Repository</legend>
+      <legend>Repository <InfoTip term="repository" /></legend>
       <label class="catalog-field">Task <input name="task" value={filters.task} /></label>
       <label class="catalog-field">Library <input name="library" value={filters.library} /></label>
       <label class="catalog-field">License <input name="license" value={filters.license} /></label>
@@ -56,7 +71,7 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
     </fieldset>
     {repositoryKind === 'model' && (
       <fieldset>
-        <legend>Runs on 🧠</legend>
+        <legend>Runs on 🧠 <InfoTip term="hardwareCompatibility" /></legend>
         <label class="catalog-field">Hardware
           <select name="hardware">
             <option value="">Any reviewed hardware</option>
@@ -142,13 +157,16 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
       <div class="empty-state" aria-live="polite">
         <div class="empty-state__icon"><i class:list={['ph', meta.icon]} aria-hidden="true"></i></div>
         <p class="eyebrow">{result.state === 'error' ? 'Temporarily unavailable' : 'A clean start'}</p>
-        <h2>{hasFilters ? `No matching ${meta.title.toLowerCase()}` : `No public ${meta.title.toLowerCase()} yet`}</h2>
+        <div class="heading-with-help empty-state__heading">
+          <h2>{hasFilters ? `No matching ${meta.title.toLowerCase()}` : emptyState.title}</h2>
+          {!hasFilters && result.state !== 'error' && <InfoTip term="reviewFirst" />}
+        </div>
         <p data-empty-copy>
           {result.state === 'error'
             ? 'Search is temporarily unavailable. No placeholder results are shown.'
             : hasFilters
               ? 'No reviewed public repository matches every selected filter.'
-              : `No reviewed public ${meta.singular} has been published yet. A real release appears here immediately after its files and human review pass.`}
+              : emptyState.copy}
         </p>
         <div class="button-row">
           <a class="button button--dark" href="/sign-up">Create your account</a>

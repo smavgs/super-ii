@@ -1,4 +1,5 @@
 ---
+import InfoTip from './InfoTip.astro';
 import LogoMark from './LogoMark.astro';
 
 interface Props {
@@ -12,14 +13,18 @@ const signingUp = mode === 'sign-up';
 <section class="auth-story">
   <div class="auth-story__inner">
     <LogoMark size="medium" priority />
-    <h1>{signingUp ? 'Run your first AI agent.' : 'Welcome back.'}</h1>
-    <p>{signingUp ? 'Join Super ii, then launch OpenCode with free cloud AI. No GPU or API key setup required.' : 'Return to your Super ii profile, organizations, and Agent Starter progress.'}</p>
+    <div class="heading-with-help auth-story__title">
+      <h1>{signingUp ? 'Join Super ii.' : 'Welcome back.'}</h1>
+      {signingUp && <InfoTip term="joinFree" label="joining Super ii" />}
+    </div>
+    <p>{signingUp ? 'Explore, build, publish and collaborate around open intelligence.' : 'Return to your Super ii profile, organizations, and Agent Starter progress.'}</p>
     <div class="auth-points">
       {signingUp ? (
         <>
-          <div class="auth-point"><i class="ph ph-desktop" aria-hidden="true"></i> Mac, Windows, and Linux guidance</div>
-          <div class="auth-point"><i class="ph ph-cloud" aria-hidden="true"></i> Free cloud model starter path</div>
-          <div class="auth-point"><i class="ph ph-plugs-connected" aria-hidden="true"></i> Connect your agent to Super ii</div>
+          <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Continue with email</div>
+          <div class="auth-point"><i class="ph ph-google-logo" aria-hidden="true"></i> Continue with Google</div>
+          <div class="auth-point"><i class="ph ph-github-logo" aria-hidden="true"></i> Continue with GitHub</div>
+          <div class="auth-point"><i class="ph ph-credit-card" aria-hidden="true"></i> Free to join. No card required.</div>
         </>
       ) : (
         <>

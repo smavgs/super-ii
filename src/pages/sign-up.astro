@@ -7,13 +7,13 @@ import { authIsConfigured } from '@/lib/site';
 const authConfigured = authIsConfigured(Astro.locals);
 ---
 
-<BaseLayout title="Run your first agent" description="Create a free Super ii account, then launch your first OpenCode AI agent with Ollama Cloud." noindex className="auth-body">
+<BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">
   <div class="auth-page">
     <AuthStory mode="sign-up" />
     <section class="auth-panel">
       <div class="auth-panel__inner">
         <h2>Create your free account</h2>
-        <p>No payment card. Choose email, Google, or GitHub.</p>
+        <p>Email · Google · GitHub. Free to join. No card required.</p>
         {authConfigured ? (
           <SignUp
             routing="path"

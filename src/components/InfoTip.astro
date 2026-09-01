@@ -1,0 +1,56 @@
+---
+import { getInfoHelp, type InfoHelpKey } from '@/lib/info-help';
+
+interface Props {
+  term: InfoHelpKey;
+  label?: string;
+  learnMore?: boolean | string;
+}
+
+const { term, label, learnMore = true } = Astro.props;
+const entry = getInfoHelp(term);
+const accessibleLabel = label ?? entry.label;
+const learnMoreHref = typeof learnMore === 'string'
+  ? learnMore
+  : learnMore
+    ? entry.learnMore
+    : undefined;
+---
+
+<span class="info-tip" data-info-tip data-info-term={term}>
+  <button
+    class="info-tip__trigger"
+    type="button"
+    aria-label={`About ${accessibleLabel}`}
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    data-info-trigger
+  >
+    <span aria-hidden="true">ℹ</span>
+  </button>
+  <span
+    class="info-tip__popover"
+    role="dialog"
+    aria-label={`${accessibleLabel} information`}
+    data-info-panel
+    hidden
+  >
+    <span class="info-tip__heading">
+      <strong>{entry.label}</strong>
+      <button
+        class="info-tip__close"
+        type="button"
+        aria-label={`Close ${accessibleLabel} information`}
+        data-info-close
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </span>
+    <span class="info-tip__copy">{entry.text}</span>
+    {learnMoreHref && (
+      <a class="info-tip__link" href={learnMoreHref}>
+        Learn more <span aria-hidden="true">→</span>
+      </a>
+    )}
+  </span>
+</span>

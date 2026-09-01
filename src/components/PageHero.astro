@@ -1,18 +1,25 @@
 ---
+import InfoTip from '@/components/InfoTip.astro';
+import type { InfoHelpKey } from '@/lib/info-help';
+
 interface Props {
   eyebrow?: string;
   title: string;
   description: string;
   compact?: boolean;
+  titleHelp?: InfoHelpKey;
 }
 
-const { eyebrow, title, description, compact = false } = Astro.props;
+const { eyebrow, title, description, compact = false, titleHelp } = Astro.props;
 ---
 
 <section class:list={['page-hero', compact && 'page-hero--compact']}>
   <div class="shell page-hero__inner">
     {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-    <h1>{title}</h1>
+    <div class="heading-with-help page-hero__title-row">
+      <h1>{title}</h1>
+      {titleHelp && <InfoTip term={titleHelp} />}
+    </div>
     <p>{description}</p>
     <slot />
   </div>
