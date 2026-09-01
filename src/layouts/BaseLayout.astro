@@ -2,8 +2,6 @@
 import '@fontsource-variable/source-sans-3';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/600.css';
-import { getImage } from 'astro:assets';
-import superIiLogo from '@/assets/super-ii-logo.png';
 import '@/styles/global.css';
 import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
@@ -13,6 +11,10 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageType?: string;
   noindex?: boolean;
   className?: string;
 }
@@ -20,7 +22,11 @@ interface Props {
 const {
   title,
   description = site.brand.description,
-  image = '/brand/super-ii-logo.png',
+  image = '/brand/super-ii-social-card.png',
+  imageAlt = 'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.',
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageType = 'image/png',
   noindex = false,
   className = '',
 } = Astro.props;
@@ -28,13 +34,8 @@ const {
 const pageTitle = title ? `${title} · ${site.brand.name}` : `${site.brand.name} · ${site.brand.tagline}`;
 const canonical = absoluteUrl(Astro.url.pathname);
 const imageUrl = absoluteUrl(image);
-const favicon = await getImage({
-  src: superIiLogo,
-  width: 256,
-  height: 256,
-  format: 'webp',
-  quality: 90,
-});
+const imageWidthContent = String(imageWidth);
+const imageHeightContent = String(imageHeight);
 ---
 
 <!doctype html>
@@ -48,19 +49,27 @@ const favicon = await getImage({
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/webp" href={favicon.src} />
-    <link rel="apple-touch-icon" href="/brand/super-ii-logo.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" content={site.brand.name} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:secure_url" content={imageUrl} />
+    <meta property="og:image:type" content={imageType} />
+    <meta property="og:image:width" content={imageWidthContent} />
+    <meta property="og:image:height" content={imageHeightContent} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <title>{pageTitle}</title>
     <script is:inline>
       (() => {
