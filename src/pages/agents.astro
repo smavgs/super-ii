@@ -4,7 +4,6 @@ import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
 
 const connectors = agentConnectorRegistry.connectors;
-const verified = connectors.filter((connector) => connector.status !== 'planned');
 let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -36,7 +35,7 @@ if (sql) {
       <div class="agents-hero__copy">
         <p class="eyebrow">Human + agent collaboration</p>
         <h1>Give your agent a trustworthy way into open AI.</h1>
-        <p>Discover public models, datasets, apps, provenance, and verified files today. Connect governed work only when you explicitly choose scopes, an operator, and a review boundary.</p>
+        <p>Let your agent discover public models, datasets, apps and verified files. If you give it permission to do more, you choose exactly what it can access and what actions it can take.</p>
         <div class="button-row">
           <a class="button button--yellow" href="#connectors">Connect an agent</a>
           <a class="button agents-button--ghost" href="/agent-connectors.json">Read the registry</a>
@@ -55,9 +54,9 @@ if (sql) {
   <section class="agents-principles" aria-label="Agent trust boundaries">
     <div class="shell agents-principles__inner">
       <p><i class="ph ph-eye" aria-hidden="true"></i><strong>Public by default</strong><span>Read without an account.</span></p>
-      <p><i class="ph ph-key" aria-hidden="true"></i><strong>Least privilege</strong><span>Every write needs a narrow token.</span></p>
-      <p><i class="ph ph-receipt" aria-hidden="true"></i><strong>Receipts, not promises</strong><span>Actions are attributable and reviewable.</span></p>
-      <p><i class="ph ph-user-check" aria-hidden="true"></i><strong>Human boundary</strong><span>Publish, delete, and spend stay human-controlled.</span></p>
+      <p><i class="ph ph-key" aria-hidden="true"></i><strong>Only the access it needs</strong><span>Every action that changes something requires limited permission.</span></p>
+      <p><i class="ph ph-receipt" aria-hidden="true"></i><strong>A clear activity record</strong><span>Agent actions can be traced and reviewed.</span></p>
+      <p><i class="ph ph-user-check" aria-hidden="true"></i><strong>Important actions stay with you</strong><span>Publishing, deleting and spending remain under human control.</span></p>
     </div>
   </section>
 
@@ -65,10 +64,10 @@ if (sql) {
     <div class="shell">
       <div class="agents-section-heading">
         <div>
-          <p class="eyebrow">Versioned connector registry</p>
+          <p class="eyebrow">Supported agent connections</p>
           <h2>Connect without guessing.</h2>
         </div>
-        <p>{verified.length} verified or protocol-compatible profiles. Every setup names its source and verification date.</p>
+        <p>These clients can connect to Super ii. Each setup shows how it was tested and when it was last checked.</p>
       </div>
 
       <div class="agents-filter" role="group" aria-label="Filter connectors">
@@ -141,7 +140,7 @@ if (sql) {
           </a>)}
         </div>
       ) : (
-        <div class="agents-directory__empty"><i class="ph ph-users-three" aria-hidden="true"></i><div><h3>The public agent directory is ready.</h3><p>No organization has opted an agent profile into public listing yet. Super ii never fills an empty directory with demo identities.</p></div><a class="button button--dark button--small" href="/account#agents">Create an identity</a></div>
+        <div class="agents-directory__empty"><i class="ph ph-users-three" aria-hidden="true"></i><div><h3>No public agent profiles yet.</h3><p>Organizations can choose to make their agent profiles visible here.</p></div><a class="button button--dark button--small" href="/account#agents">Create an identity</a></div>
       )}
     </div>
   </section>
@@ -151,7 +150,7 @@ if (sql) {
       <div class="agents-contract__copy">
         <p class="eyebrow">Two doors, one clear boundary</p>
         <h2>Explore freely. Work deliberately.</h2>
-        <p>The public interface is anonymous and read-only. The Work interface requires a short-lived token owned by a named human or organization, exact scopes, idempotency, and an immutable receipt.</p>
+        <p>The public connection can only read. The Work connection requires temporary, limited permission and keeps a record of every completed action.</p>
       </div>
       <div class="agents-contract__lanes">
         <section>
@@ -184,7 +183,7 @@ if (sql) {
     <div class="shell agents-protocols__grid">
       <div>
         <p class="eyebrow">Portable by design</p>
-        <h2>One service. Several machine-native doors.</h2>
+        <h2>Connect using the tools your agent already understands.</h2>
       </div>
       <a href="/mcp"><strong>MCP</strong><span>Tools and resources for agent clients</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
       <a href="/.well-known/agent-card.json"><strong>A2A 1.0</strong><span>Agent discovery and bounded public tasks</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>

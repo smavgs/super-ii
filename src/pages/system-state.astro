@@ -6,9 +6,9 @@ import { systemState } from '@/lib/system-state';
 
 <BaseLayout title="System state" description="Canonical, evidence-based capability and availability status for Super ii.">
   <PageHero
-    eyebrow="Operational truth 🧭"
+    eyebrow="What is available now 🧭"
     title="Super ii system state"
-    description={`Snapshot ${systemState.snapshot}. Status is separated from availability so implemented work is never presented as deployed or generally available.`}
+    description={`Snapshot ${systemState.snapshot}. See what has been built, what is available now, and the evidence behind each capability.`}
     compact
   >
     <div class="button-row">
@@ -45,7 +45,7 @@ import { systemState } from '@/lib/system-state';
       <ol class="status-ladder">
         {systemState.statusLadder.map((status, index) => <li><span>{index + 1}</span><code>{status}</code></li>)}
       </ol>
-      <p>Every production-facing claim is fail-closed. The public MCP endpoint is read-only; compute, publishing, private data, and payments are outside its authority.</p>
+      <p>If a required check is unavailable, Super ii treats that capability as unavailable instead of skipping the check. The public MCP endpoint is read-only; compute, publishing, private data, and payments are outside its authority.</p>
     </section>
   </main>
 </BaseLayout>

@@ -38,7 +38,7 @@ const allOperational = authStatus === 'Operational'
   <PageHero
     eyebrow="System status"
     title="Super ii service status"
-    description="A request-time view of the public control plane and the separate, fail-closed runtime data plane."
+    description="Live status of the Super ii website, accounts, database, publishing and processing services."
     compact
   />
 
@@ -46,7 +46,7 @@ const allOperational = authStatus === 'Operational'
     <div class="shell status-board">
       <div class="status-summary">
         <i class:list={['ph', allOperational ? 'ph-check-circle' : 'ph-info']} aria-hidden="true"></i>
-        {allOperational ? 'Public control plane operational' : 'Website operational; one or more integrations need attention'}
+        {allOperational ? 'Super ii is operating normally' : 'Super ii is online, but one or more services need attention'}
       </div>
       <div class="status-row"><span>Public website</span><span class="status-value">Operational</span></div>
       <div class="status-row"><span>Account authentication</span><span class="status-value">{authStatus}</span></div>
@@ -54,7 +54,7 @@ const allOperational = authStatus === 'Operational'
       <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · {publicItems} items</span></div>
       <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{runtimeStatus}</span></div>
       <div class="status-row"><span>Artifact publishing</span><span class="status-value">{publishingStatus}</span></div>
-      <p>Publishing remains closed unless Postgres, local object storage, ClamAV, and Gitleaks all report ready. Human approval is still required after automated checks.</p>
+      <p>Publishing stays closed if any required storage or security check is unavailable. A human review is also required before a release becomes public.</p>
       <p>Checked at request time: <time datetime={new Date().toISOString()}>{new Date().toUTCString()}</time></p>
     </div>
   </section>

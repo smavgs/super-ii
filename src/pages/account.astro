@@ -99,8 +99,8 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="Workspace" description="Start your first AI agent and manage your Super ii repositories, organizations, security, and plan." noindex>
-  <PageHero eyebrow="Your workspace" title="Workspace" description="Start your first agent, then manage the work and teams you connect to Super ii." compact />
+<BaseLayout title="Workspace" description="Manage your repositories, organizations, agents, imports, notifications, plan and account settings in one place." noindex>
+  <PageHero eyebrow="Your workspace" title="Workspace" description="Manage your repositories, organizations, agents, imports, notifications, plan and account settings in one place." compact />
   <section class="shell account-shell">
     <nav class="account-nav" aria-label="Account sections">
       <a href="#agent-starter">Agent Starter</a>
@@ -138,7 +138,7 @@ if (sql) {
               </section>
               {bridgeSources.length > 0 && <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Bridge sync 🌉</p><h2>Imported sources</h2></div><a class="button button--secondary button--small" href="/bring-my-work">Open Bridge</a></div>
-                <p>Public-source checks are opt-in. A detected revision is copied through quarantine and still waits for your review.</p>
+                <p>When Super ii finds a new public source version, it imports it as a new revision and waits for your review before publishing.</p>
                 <div class="account-list account-list--static bridge-source-list">
                   {bridgeSources.map((source) => <div>
                     <span>
@@ -178,7 +178,7 @@ if (sql) {
       ) : (
         <div class="account-card">
           <h2>Account activation is pending</h2>
-          <p>The account interface is ready and will become available as soon as the production identity application is connected.</p>
+          <p>Account access is temporarily unavailable. Please try again later.</p>
           <a class="button button--secondary" href="/">Return home</a>
         </div>
       )}

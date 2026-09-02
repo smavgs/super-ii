@@ -106,7 +106,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
     {!configured && (
       <div class="notice notice--warning" role="status">
         <i class="ph ph-warning" aria-hidden="true"></i>
-        Bridge is installed but its production credential vault is not configured. Imports remain closed.
+        Imports are temporarily unavailable. Your existing work is unaffected.
       </div>
     )}
     {welcome && <div class="notice notice--success">Welcome to Super ii 👋 You can bring existing work before creating anything from scratch.</div>}
@@ -119,7 +119,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
           <div class="bridge-auth-gate">
             <p class="eyebrow">One account first</p>
             <h2>Log in, then bring your work.</h2>
-            <p>Super ii needs a destination profile before it can prepare an import.</p>
+            <p>Log in so Super ii knows where to place the work you import.</p>
             <SignInButton asChild mode="modal">
               <button class="button button--dark" type="button">Log in to continue</button>
             </SignInButton>
@@ -133,7 +133,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 <div class="bridge-step__content">
                   <p class="eyebrow">Choose a source</p>
                   <h2 id="bridge-source-heading">Paste a profile or repository link</h2>
-                  <p>Hugging Face is the first supported connector. GitHub, GitLab, S3, and local Bridge paths follow the same interface.</p>
+                  <p>Hugging Face is currently supported. Paste a profile or repository link to begin.</p>
                   <form class="bridge-source-form" data-bridge-source-form>
                     <label class="sr-only" for="bridge-source-url">Profile or repository URL</label>
                     <div class="bridge-url-control">
@@ -174,7 +174,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                   <div class="bridge-repository-list" data-bridge-repository-list></div>
                   <label class="bridge-attestation">
                     <input type="checkbox" data-bridge-attestation />
-                    <span>I own this work or have permission under its license to copy it to Super ii. I understand every file will be quarantined and reviewed.</span>
+                    <span>I own this work or have permission to copy it to Super ii. I understand the files will be checked before they can be published.</span>
                   </label>
                   <div class="bridge-import-bar">
                     <div><strong data-bridge-selected-count>0 selected</strong><span data-bridge-selected-size>0 B</span></div>
@@ -189,7 +189,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 <div class="bridge-step__content">
                   <p class="eyebrow">Verified arrival</p>
                   <h2 id="bridge-progress-heading">Import activity</h2>
-                  <p>Bridge pins the source revision, downloads through the operator runtime, scans every file, creates an immutable manifest, then stops for human review.</p>
+                  <p>Super ii copies the exact version you selected, checks every file, records where it came from, and waits for human review before publishing.</p>
                   <div class="bridge-job-list" data-bridge-job-list>
                     {jobs.length ? jobs.map((job) => (
                       <article class="bridge-job" data-job-row={job.id}>
@@ -263,7 +263,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
         </Show>
       </>
     ) : (
-      <div class="bridge-auth-gate"><h2>Account service unavailable</h2><p>Bridge fails closed until authentication is configured.</p></div>
+      <div class="bridge-auth-gate"><h2>Account service unavailable</h2><p>Imports are unavailable while the account service is unavailable.</p></div>
     )}
   </section>
 </BaseLayout>

@@ -42,7 +42,7 @@ if (sql) {
 ---
 
 <BaseLayout title="Collections" description="Curated public collections of Super ii models, datasets, and apps.">
-  <PageHero eyebrow="Community discovery" title="Collections" description="Curated paths through public models, datasets, and apps." compact />
+  <PageHero eyebrow="Community discovery" title="Collections" description="Collections group useful models, datasets and apps around a topic or goal." compact />
   <section class="section shell">
     <form class="discussion-form collection-create-form" data-collection-create-form>
       <h2>Create a collection</h2>
@@ -66,8 +66,8 @@ if (sql) {
       <div class="empty-state">
         <div class="empty-state__icon"><i class="ph ph-stack"></i></div>
         <p class="eyebrow">{unavailable ? 'Temporarily unavailable' : 'A clean start'}</p>
-        <h2>{unavailable ? 'Collections cannot be loaded.' : 'No public collections yet'}</h2>
-        <p>{unavailable ? 'No placeholder collections are shown.' : 'The first community-curated collection will appear here.'}</p>
+        <h2>{unavailable ? 'Collections are temporarily unavailable.' : 'No public collections yet'}</h2>
+        <p>{unavailable ? 'Please try again shortly.' : 'The first community-curated collection will appear here.'}</p>
       </div>
     )}
   </section>

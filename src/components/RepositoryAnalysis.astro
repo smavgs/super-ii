@@ -57,7 +57,7 @@ const filesByPath = new Map(repository.files.map((file) => [file.path, file]));
               <div><dt>Task</dt><dd>{strings(model.tasks).join(', ') || 'Not inferred'}</dd></div>
               <div><dt>Context length</dt><dd>{String(model.context_length ?? 'Not declared')}</dd></div>
               <div><dt>Vocabulary</dt><dd>{String(model.vocabulary_size ?? 'Not declared')}</dd></div>
-              <div><dt>Safety mode</dt><dd>Offline · remote code disabled</dd></div>
+              <div><dt>Analysis safety</dt><dd>Inspected offline without running remote code</dd></div>
             </dl>
             {model.generation && <details><summary>Generation settings</summary><pre>{display(model.generation, 20_000)}</pre></details>}
           </article>

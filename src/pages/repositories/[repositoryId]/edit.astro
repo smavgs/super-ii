@@ -91,7 +91,7 @@ const published = repository?.revision_status === 'published';
         <section class="workspace-status-grid">
           <article class="workspace-status-card"><span>Branch</span><strong>{repository.branch_name}</strong><small>{branches.length} total</small></article>
           <article class="workspace-status-card"><span>Revision</span><strong>{repository.revision_status}</strong><small>{files.length} files</small></article>
-          <article class="workspace-status-card"><span>Secure runtime</span><strong>{runtime?.state ?? 'unconfigured'}</strong><small>{runtime?.publishing_enabled ? 'Scanning enabled' : 'Uploads stay closed'}</small></article>
+          <article class="workspace-status-card"><span>File checks</span><strong>{runtime?.state ?? 'unconfigured'}</strong><small>{runtime?.publishing_enabled ? 'Scanning enabled' : 'Uploads stay closed'}</small></article>
           <article class="workspace-status-card"><span>Visibility</span><strong>Public</strong><small>Review required</small></article>
         </section>
 
@@ -112,7 +112,7 @@ const published = repository?.revision_status === 'published';
               <label>Branch <select name="branch_id">{branches.map((branch) => <option value={branch.id}>{branch.name}</option>)}</select></label>
               <label>Commit message <input name="message" required maxlength="2000" placeholder="Document evaluation results" /></label>
               <button class="button button--secondary button--small" type="submit" disabled={editable}>Create commit</button>
-              <p>{editable ? 'Finish the current editable revision first.' : 'Clean files from the branch head are inherited by checksum.'}</p>
+              <p>{editable ? 'Finish the current editable revision first.' : 'The next revision starts with the current files from this branch.'}</p>
               <p data-form-status aria-live="polite"></p>
             </form>
           </div>
@@ -167,7 +167,7 @@ const published = repository?.revision_status === 'published';
             <form class="upload-dropzone" data-upload-form>
               <i class="ph ph-upload-simple" aria-hidden="true"></i>
               <h3>Upload repository files</h3>
-              <p>Choose one or more files up to 10 GiB each. Browser folder paths are preserved when available, 8 MiB chunks resume safely after an interruption, and every completed file is verified and scanned before release.</p>
+              <p>Choose one or more files, up to 10 GiB each. Interrupted uploads can resume, and every completed file is checked before release.</p>
               <label class="button button--secondary">Choose files <input name="files" type="file" multiple required /></label>
               <button class="button button--dark" type="submit">Upload and scan</button>
               <progress max="100" value="0" hidden data-upload-progress></progress>
@@ -194,9 +194,9 @@ const published = repository?.revision_status === 'published';
 
         <section class="repository-section">
           <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Submit for review</h2></div></div>
-          <p>Submission runs offline repository analysis, seals the release manifest, and moves this revision into human review. You cannot change files after that point.</p>
+          <p>Super ii runs the required checks and sends this revision for human review. Files cannot be changed while the review is in progress.</p>
           <button class="button button--dark" type="button" data-submit-review disabled={!editable || files.length === 0 || runtime?.state !== 'ready'}>Run checks and submit</button>
-          {runtime?.state !== 'ready' && <p class="form-hint">The secure scanning runtime is not connected, so submission remains safely disabled.</p>}
+          {runtime?.state !== 'ready' && <p class="form-hint">File checks are temporarily unavailable, so this revision cannot be submitted yet.</p>}
           <p data-submit-status aria-live="polite"></p>
           {reviews.length > 0 && <div class="review-history"><h3>Review history</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
         </section>

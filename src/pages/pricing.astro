@@ -166,42 +166,24 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
   <section class="section">
     <div class="shell feature-rows">
       <article class="feature-row">
-        <h2>Powerful AI without paying for unnecessary compute</h2>
+        <h2>Use your own hardware when you want</h2>
         <div>
-          <p><strong>Super ii is local-first.</strong></p>
-          <p>Run compatible models using your own:</p>
-          <ul>
-            {['Browser', 'Mac', 'PC', 'GPU', 'Ollama', 'llama.cpp', 'MLX', 'LM Studio', 'Jan', 'local agents', 'Jupyter', 'Colab', 'Kaggle', 'cloud infrastructure'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <p>Your hardware does the compute whenever possible. <InfoTip term="browserLocalExecution" /></p>
+          <p>Running compatible models on your own computer or infrastructure does not use paid Super ii compute. <InfoTip term="browserLocalExecution" /></p>
         </div>
       </article>
 
       <article class="feature-row">
-        <h2>Usage-based infrastructure</h2>
+        <h2>Pay only for hosted resources you choose</h2>
         <div>
-          <p>Pay only when you use infrastructure that creates a direct operating cost.</p>
-          <p><strong>Available separately:</strong></p>
-          <ul>
-            {['Additional storage', 'Hosted notebook execution', 'Persistent app runtime', 'CPU processing', 'GPU inference', 'Hosted model endpoints', 'Accelerated workloads', 'Managed compute'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <p><strong>Before activation, Super ii shows:</strong></p>
-          <ul>
-            {['unit price', 'included allowance', 'current usage', 'estimated cost', 'spend controls'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <p><strong>No surprise activation.</strong> <InfoTip term="usageInfrastructure" label="Usage based" /></p>
+          <p>Additional storage, hosted compute and other infrastructure are priced separately from your plan.</p>
+          <p>Before you use a paid resource, Super ii shows the price, what is included, your usage and your spending controls. <InfoTip term="usageInfrastructure" label="Usage based" /></p>
         </div>
       </article>
 
       <article class="feature-row">
         <h2>Bring your own infrastructure</h2>
         <div>
-          <p>Use Super ii without moving expensive compute into Super ii.</p>
-          <p><strong>Connect:</strong></p>
-          <ul>
-            {['your computer', 'your GPU server', 'AWS', 'Google Cloud', 'Microsoft Azure', 'private cloud', 'datacenter infrastructure'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <p>Super ii provides the AI hub, repositories, governance, agents, provenance and control layer. <InfoTip term="byocHardware" /></p>
+          <p>Use your own computer, GPU server or cloud infrastructure while Super ii manages the workspace around your AI work. <InfoTip term="byocHardware" /></p>
         </div>
       </article>
 
@@ -221,27 +203,10 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
       </article>
 
       <article class="feature-row">
-        <h2>Creator monetization</h2>
+        <h2>Need Enterprise?</h2>
         <div>
-          <p>Creators can build an audience and earn through Super ii.</p>
-          <p><strong>Available creator opportunities include:</strong></p>
-          <ul>
-            {['promoted Highlights', 'paid apps and services', 'creator programs', 'compute sponsorship', 'revenue sharing'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <p>Terms, fees and payout details are shown before participation. <InfoTip term="highlights" /></p>
-        </div>
-      </article>
-
-      <article class="feature-row">
-        <h2>Enterprise</h2>
-        <div>
-          <p><strong>Your models. Your infrastructure. Super ii manages the AI Hub layer.</strong></p>
-          <p>Enterprise deployments can combine Super ii with customer-owned cloud, GPU and datacenter infrastructure.</p>
-          <p><strong>Enterprise agreements can cover:</strong></p>
-          <ul>
-            {['identity and access', 'SSO and SCIM', 'audit and governance', 'regional requirements', 'dedicated runtimes', 'security requirements', 'procurement', 'support', 'storage', 'compute', 'deployment architecture'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
-          </ul>
-          <a class="button button--secondary" href="/contact?interest=enterprise">Request a proposal</a>
+          <p>If you need custom identity, deployment, security, support or infrastructure, we can define them in a written proposal.</p>
+          <a class="button button--secondary" href="/enterprise">Explore Enterprise</a>
         </div>
       </article>
 
@@ -256,16 +221,6 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
         </div>
       </article>
 
-      <article class="feature-row">
-        <h2>Pricing principle</h2>
-        <div>
-          <p><strong>Clear before you pay.</strong></p>
-          <p>Super ii separates:</p>
-          <p><strong>Subscription</strong><br />Access, privacy, advanced tools, governance and included allowances.</p>
-          <p><strong>Infrastructure</strong><br />Storage, CPU, GPU and persistent hosted execution that create measurable operating costs.</p>
-          <p>You always see what is included and what is usage based before you use it.</p>
-        </div>
-      </article>
     </div>
   </section>
 </BaseLayout>

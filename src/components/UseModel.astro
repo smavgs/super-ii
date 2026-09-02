@@ -32,9 +32,9 @@ const derivedCount = manifest.derivedVersions.length;
 
   <header class="use-model__header">
     <div>
-      <p class="eyebrow">Deterministic execution guide ✨</p>
+      <p class="eyebrow">Ways to run this model ✨</p>
       <h2 id="use-model-title">Use this model</h2>
-      <p>Choose the best reviewed path for your machine. Your hardware profile stays in this browser and is never sent to Super ii.</p>
+      <p>Tell us about your computer and Super ii will show the best ways to run this model.</p>
     </div>
     <button class="use-model__close" type="button" data-use-model-close aria-label="Close Use Model"><i class="ph ph-x" aria-hidden="true"></i></button>
   </header>
@@ -44,7 +44,7 @@ const derivedCount = manifest.derivedVersions.length;
     <div>
       <span>Recommended for your machine</span>
       <strong data-use-best>{firstCandidate?.name ?? 'No compatible execution route identified'}</strong>
-      <p data-use-best-reasons>{firstCandidate ? 'Complete the local hardware profile for a deterministic fit check.' : 'This reviewed revision does not expose a recognized runnable model format.'}</p>
+      <p data-use-best-reasons>{firstCandidate ? 'Add a few details about your computer to see which option fits best.' : 'This reviewed revision does not expose a recognized runnable model format.'}</p>
     </div>
     <span class="use-status use-status--unknown" data-use-best-status>{firstCandidate ? 'profile needed' : 'unsupported'}</span>
   </div>
@@ -98,7 +98,7 @@ const derivedCount = manifest.derivedVersions.length;
     <div class="use-model__main">
       <section class="use-quick-start" aria-labelledby="quick-start-title">
         <div class="use-model__section-heading">
-          <div><p class="eyebrow">1 · Exact bytes first</p><h3 id="quick-start-title">Quick Start</h3></div>
+          <div><p class="eyebrow">1 · Get the model files</p><h3 id="quick-start-title">Quick Start</h3></div>
           <span>{manifest.assets.length} checksum-bound files</span>
         </div>
         <p>Download the immutable reviewed revision, verify every SHA-256 digest, then run only the command for your selected integration. The script refuses to overwrite different existing bytes.</p>
@@ -242,13 +242,13 @@ const derivedCount = manifest.derivedVersions.length;
       </section>
 
       <section class="use-model__section use-hosted-truth" aria-labelledby="hosted-title">
-        <div class="use-model__section-heading"><div><p class="eyebrow">6 · Capacity truth ☁️</p><h3 id="hosted-title">Hosted inference</h3></div><span>{manifest.hostedInference.superiiRuntime}</span></div>
+        <div class="use-model__section-heading"><div><p class="eyebrow">6 · Hosted options ☁️</p><h3 id="hosted-title">Hosted inference</h3></div><span>{manifest.hostedInference.superiiRuntime}</span></div>
         <p>{manifest.hostedInference.statement}</p>
         <dl><div><dt>External providers</dt><dd>{manifest.hostedInference.externalProviders.length}</dd></div><div><dt>Published price</dt><dd>Not available</dd></div><div><dt>Published regions</dt><dd>None</dd></div></dl>
       </section>
 
       <section class="use-model__section use-provenance" aria-labelledby="use-provenance-title">
-        <div class="use-model__section-heading"><div><p class="eyebrow">Evidence, not guesses 🛡️</p><h3 id="use-provenance-title">Provenance</h3></div></div>
+        <div class="use-model__section-heading"><div><p class="eyebrow">Where this model came from 🛡️</p><h3 id="use-provenance-title">Provenance</h3></div></div>
         <dl>
           <div><dt>Creator</dt><dd>{repository.owner_handle}</dd></div>
           <div><dt>License</dt><dd>{repository.license ?? 'Not declared'}</dd></div>

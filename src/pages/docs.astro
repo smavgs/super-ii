@@ -10,7 +10,7 @@ export const prerender = true;
   <PageHero
     eyebrow="Documentation"
     title="Build with evidence."
-    description="Super ii separates what is designed, implemented, tested, integrated and production-verified so developers and agents can understand what actually works today."
+    description="Learn how Super ii works, what is available today, and how to use its features safely."
     compact
   >
     <div class="docs-overview">
@@ -38,7 +38,7 @@ export const prerender = true;
   <div class="shell content-shell">
     <article class="prose">
       <h2 id="start">Start here</h2>
-      <p>Super ii is in public beta. You can create an account with email, Google, or GitHub; create a real repository; upload through the quarantine pipeline when the secure runtime is ready; explore public repositories; search; discuss; react; follow; watch; and curate collections.</p>
+      <p>Super ii is in public beta. You can create an account, explore public work, search, discuss, follow creators, build collections and create repositories. Features that depend on additional processing are available when the required Super ii services are online.</p>
       <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision also needs human approval before Postgres permits publication.</p></blockquote>
 
       <h2 id="account">Create an account</h2>
@@ -94,40 +94,10 @@ export const prerender = true;
       <h2 id="trusted-publishing">Trusted publishing</h2>
       <p>Repository owners can bind an exact GitHub Actions OIDC subject and optional workflow ref. Super ii verifies GitHub’s live signing keys, issuer, audience, subject, repository, workflow, and short token lifetime before issuing an opaque repository-bound access token for no more than 10 minutes. Tokens are hashed at rest, scope-limited, revocable, and never replace the human publication review.</p>
 
-      <h2 id="capability-status">Capability status</h2>
-      <p><strong>Implemented</strong> means the code, database contract, fail-closed controls, UI, and local-runtime path exist and pass the launch checks. It does not mean Super ii is pretending to operate hardware that is not connected: uploads and server inference stay closed until an always-on operator-owned Linux runtime independently reports its database, storage, ClamAV, and Gitleaks gates ready.</p>
-      <div class="comparison-scroll">
-        <table class="comparison-table">
-          <thead><tr><th>Requested capability</th><th>Code status</th><th>Activation</th></tr></thead>
-          <tbody>
-            <tr><td>1 · Files, revisions, releases, tags, downloads, reviews, resumable TUS transfer, SHA-256 object storage; no Xet</td><td>Implemented</td><td>Runtime host and Rust transfer sidecar required for uploads</td></tr>
-            <tr><td>2 · Safetensors validation and tensor metadata</td><td>Implemented</td><td>Automatic during model inspection</td></tr>
-            <tr><td>3 · Datasets splits, schema, first 100 rows, and media previews rendered in Astro</td><td>Implemented</td><td>Automatic after approved upload</td></tr>
-            <tr><td>4 · Offline Transformers model understanding</td><td>Implemented</td><td>Local files only; remote code disabled</td></tr>
-            <tr><td>5 · Local tokenizer inspection and interactive token tool</td><td>Implemented</td><td>Shown on compatible public models</td></tr>
-            <tr><td>6a · Browser Transformers.js, local WASM, WebGPU/WASM</td><td>Implemented</td><td>User device pays the compute cost</td></tr>
-            <tr><td>6b · Persistent llama.cpp GGUF run, chat, warm reuse, status, unload, settings, and token statistics</td><td>Implemented</td><td>Operator runtime hardware required</td></tr>
-            <tr><td>7 · vLLM and SGLang high-throughput serving</td><td>Reviewed self-host setup guidance</td><td>Super ii-managed hosting only after dedicated funded GPU capacity</td></tr>
-            <tr><td>8 · Offline Diffusers generation</td><td>Implemented</td><td>Optional runtime GPU/CPU dependencies required</td></tr>
-            <tr><td>9 · Gradio repository, isolated container, app iframe</td><td>Implemented</td><td>Current containers are non-root, capability-dropped, read-only, and no-egress; rootless Docker remains the dedicated-host target</td></tr>
-            <tr><td>10 · Postgres full-text/trigram search and filters</td><td>Implemented</td><td>Active control-plane search</td></tr>
-            <tr><td>11 · Text Embeddings Inference semantic search</td><td>Deferred as requested</td><td>Only after measured Postgres search limits</td></tr>
-            <tr><td>12 · ClamAV quarantine gate</td><td>Implemented, fail closed</td><td>Fresh scanner service required</td></tr>
-            <tr><td>13 · Gitleaks publication gate</td><td>Implemented, fail closed</td><td>Pinned local CLI required</td></tr>
-            <tr><td>14 · Discussions, comments, reactions, events</td><td>Implemented</td><td>Active for public repositories</td></tr>
-            <tr><td>15 · Likes, follows, watchers, activity</td><td>Implemented</td><td>Active for signed-in users</td></tr>
-            <tr><td>16 · Mixed repository collections</td><td>Implemented</td><td>Active for signed-in users</td></tr>
-            <tr><td>17 · Typed lineage and provenance graph</td><td>Implemented</td><td>Shown when verified relationships exist</td></tr>
-            <tr><td>18 · Repository Markdown, JSON, agents.md, manifest, API, and MCP resources</td><td>Implemented</td><td>Generated from the same reviewed revision</td></tr>
-            <tr><td>19 · Hardware compatibility discovery and filters</td><td>Implemented</td><td>Populated by new model analysis</td></tr>
-            <tr><td>20 · Service accounts, resource groups, scoped tokens, agent identities, Work MCP, receipts, cursor events, and contribution jobs</td><td>Implemented and locally tested</td><td>Private by default; agent profiles are explicit opt-in</td></tr>
-            <tr><td>21 · GitHub Actions OIDC trusted publishing</td><td>Implemented</td><td>Requires an owner-configured exact trust binding</td></tr>
-            <tr><td>22 · Static Jupyter notebook validation, reader, and official Colab tutorials</td><td>Implemented</td><td>Opening or reading never executes code</td></tr>
-            <tr><td>23 · Explicit isolated execution for reviewed repository notebooks</td><td>Implemented</td><td>Authenticated, one-shot, no-network Docker sandbox; dedicated runtime required</td></tr>
-            <tr><td>24 · Use Manifest, local hardware ranking, runtimes, desktop apps, agents, generated notebooks, derived versions, and hosted-capacity truth</td><td>Implemented</td><td>Appears only for real reviewed model revisions; no seeded examples</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <h2 id="capability-status">Current availability</h2>
+      <p>Super ii features can depend on different services and runtime components. For the current status of each capability, see System state.</p>
+      <p><strong>Implemented</strong> means the required code and checks exist. Features that depend on separate runtime hardware are available only when that runtime is connected.</p>
+      <p><a class="button button--secondary" href="/system-state">View System state</a></p>
 
       <h2 id="publish">Publishing</h2>
       <p>An upload enters quarantine, receives path/MIME/hash validation, then must pass ClamAV, Gitleaks, format policy, and its applicable offline inspector. Clean bytes move into an immutable SHA-256 object store. A finalized manifest and human approval are required before the PL/pgSQL publication gate can make the revision public.</p>
@@ -160,7 +130,7 @@ export const prerender = true;
         <a href="#agent-native">Agent-native access</a>
         <a href="#hardware">Hardware compatibility</a>
         <a href="#trusted-publishing">Trusted publishing</a>
-        <a href="#capability-status">Capability status</a>
+        <a href="#capability-status">Current availability</a>
         <a href="#publish">Publishing roadmap</a>
         <a href="#organizations">Organizations</a>
         <a href="#plans">Plans and usage</a>

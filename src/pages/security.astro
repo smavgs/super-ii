@@ -8,8 +8,8 @@ export const prerender = true;
 <BaseLayout title="Security" description="The current Super ii security architecture, operational boundaries, reporting process, and planned controls.">
   <PageHero
     eyebrow="Security"
-    title="Security claims should be as reviewable as the code."
-    description="This page separates controls present at launch from controls that require later product or enterprise work."
+    title="How Super ii protects your account, files and published work."
+    description="See the security controls in use today, their current limits and how to report a problem."
     compact
   />
 
@@ -34,10 +34,10 @@ export const prerender = true;
       <h2 id="data-boundaries">Data boundaries</h2>
       <p>Account identity is handled by Clerk. Application records are stored in an isolated Neon Postgres project. The public site and server routes run on Cloudflare. Each provider processes data under its own terms and privacy commitments; the <a href="/legal/privacy">Privacy Policy</a> explains the categories used by Super ii.</p>
 
-      <h2 id="not-yet">Not claimed at launch</h2>
-      <p>Super ii does not claim a certification, formal uptime service level, penetration-test result, dedicated single-tenant environment, guaranteed data residency, or completed enterprise identity integration unless a later page or signed agreement supplies specific evidence.</p>
+      <h2 id="not-yet">Current security limits</h2>
+      <p>Super ii does not currently claim formal certification, a guaranteed uptime SLA, completed penetration testing, single-tenant hosting or guaranteed data residency unless these are explicitly included in an Enterprise agreement.</p>
 
-      <h2 id="roadmap">Runtime-dependent and planned controls</h2>
+      <h2 id="roadmap">Controls still being expanded</h2>
       <ul>
         <li>ClamAV, Gitleaks, immutable checksums, and release provenance are implemented but require the separate Linux runtime to be active; failure keeps publishing closed.</li>
         <li>Signed supply-chain attestations beyond the current checksum, trusted-publisher, review, audit, and lineage records.</li>
@@ -58,8 +58,8 @@ export const prerender = true;
       <nav>
         <a href="#launch-controls">Launch controls</a>
         <a href="#data-boundaries">Data boundaries</a>
-        <a href="#not-yet">Not claimed</a>
-        <a href="#roadmap">Planned controls</a>
+        <a href="#not-yet">Current security limits</a>
+        <a href="#roadmap">Controls still being expanded</a>
         <a href="#report">Report a vulnerability</a>
         <a href="#scope">Testing boundary</a>
       </nav>

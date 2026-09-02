@@ -42,12 +42,12 @@ if (sql) {
 ---
 
 <BaseLayout title="New repository" description="Create a real Super ii model, dataset, or app repository." noindex>
-  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Start with an immutable main branch, then upload files for quarantine scanning, analysis, and review." compact />
+  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Create your project, add its files, and submit it for review before it becomes public." compact />
   <section class="section shell creator-shell">
     <form class="form-card creator-form" data-repository-create-form>
       <div class="creator-callout">
         <i class="ph ph-shield-check" aria-hidden="true"></i>
-        <p><strong>Public and review-first.</strong> Uploads are quarantined until ClamAV, Gitleaks, format policy, repository analysis, and a human review all pass.</p>
+        <p><strong>Public and review-first.</strong> Files are checked before publishing. Automated safety checks and a human review must be completed before a release becomes public.</p>
       </div>
       <div class="form-grid form-grid--two">
         <label>Repository type
@@ -66,8 +66,9 @@ if (sql) {
         </label>
       </div>
       <div class="form-grid form-grid--two">
-        <label>Repository slug
+        <label>Repository URL name
           <input name="slug" required maxlength="96" pattern="[a-z0-9][a-z0-9._-]{0,94}[a-z0-9]|[a-z0-9]" placeholder="open-reasoning-model" />
+          <span>This becomes part of the project’s web address.</span>
         </label>
         <label>License
           <input name="license" maxlength="120" placeholder="apache-2.0" />
@@ -83,9 +84,9 @@ if (sql) {
       <label><span data-card-label>Model Card</span>
         <textarea name="card_markdown" maxlength="100000" rows="10" placeholder="# Overview&#10;&#10;Document intended use, limitations, evaluation, training data, and responsible-use notes."></textarea>
       </label>
-      <label>Provenance source URLs <span>(optional)</span>
+      <label>Source links <span>(optional)</span>
         <textarea name="source_urls" maxlength="10000" placeholder="https://example.org/source-one&#10;https://example.org/source-two"></textarea>
-        <span>One HTTPS source per line.</span>
+        <span>Add links showing where this work, model or data came from. One HTTPS link per line.</span>
       </label>
       <div class="form-actions">
         <button class="button button--dark" type="submit" disabled={owners.length === 0}>Create repository</button>

@@ -67,7 +67,7 @@ if (sql) {
       </article>
       <article class="feature-row">
         <h2>Review without friction ✅</h2>
-        <div><p>Keep discussions close to releases and preserve an activity trail. Every public revision still passes security, format, analysis, and human-review gates.</p></div>
+        <div><p>Keep discussions close to releases and preserve an activity trail. Every public release is checked before it appears on Super ii.</p></div>
       </article>
     </div>
   </section>
@@ -77,7 +77,7 @@ if (sql) {
       <div class="section-heading">
         <p class="eyebrow">Community directory</p>
         <h2>Public organizations</h2>
-        <p>Real profiles appear here as teams create them—no sample organizations are inserted.</p>
+        <p>Public organizations appear here as teams create them.</p>
       </div>
       {organizations.length ? (
         <div class="capability-grid">
@@ -98,7 +98,7 @@ if (sql) {
           <div class="empty-state__icon"><i class="ph ph-buildings" aria-hidden="true"></i></div>
           <p class="eyebrow">{unavailable ? 'Temporarily unavailable' : 'A clean start'}</p>
           <h2>{unavailable ? 'Organizations cannot be loaded.' : 'Create the first public organization'}</h2>
-          <p>{unavailable ? 'No placeholder profiles are shown.' : 'Set up a real team profile, add your interests, and publish under one shared identity.'}</p>
+          <p>{unavailable ? 'Please try again shortly.' : 'Set up a real team profile, add your interests, and publish under one shared identity.'}</p>
           <a class="button button--dark" href="/organizations/new">Create organization</a>
         </div>
       )}

@@ -172,7 +172,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
             </tbody>
           </table>
         </div>
-        <p class="repository-integrity">Every listed file passed ClamAV, Gitleaks, format policy, immutable manifest verification, and human review before publication.</p>
+        <p class="repository-integrity">Every listed file passed the required automated checks and human review before publication. <a href="/security">See security checks</a>.</p>
       </section>
 
       {notebooks.length > 0 && (
@@ -181,7 +181,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
             <div><p class="eyebrow">Static reader</p><h2>Notebooks</h2></div>
             <span>{notebooks.length} validated</span>
           </div>
-          <p class="repository-integrity">The static viewer never executes code automatically. Signed-in users can explicitly run a reviewed notebook in a one-shot Docker sandbox with no network, no injected secrets, a read-only repository, and strict CPU, memory, process, output, and time limits. 🔒</p>
+          <p class="repository-integrity">Reading a notebook never runs its code. Signed-in users can choose to run reviewed notebooks in a temporary, restricted environment with no network access. 🔒</p>
           <div class="repository-notebooks">
             {notebooks.map((notebook) => (
               <article class="repository-notebook-item">

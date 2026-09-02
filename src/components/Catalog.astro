@@ -40,15 +40,15 @@ const hasFilters = Object.values(filters).some((value) => value !== undefined &&
 const emptyState = {
   models: {
     title: 'No reviewed public models yet.',
-    copy: 'Super ii does not seed fake community content. The first model appears here when a real creator publishes a release that passes review.',
+    copy: 'The first reviewed public model will appear here when a creator publishes it.',
   },
   datasets: {
     title: 'No reviewed public datasets yet.',
-    copy: 'The first dataset appears here when a creator publishes it and the release passes review.',
+    copy: 'The first reviewed public dataset will appear here when a creator publishes it.',
   },
   spaces: {
     title: 'No reviewed public apps yet.',
-    copy: 'The first public app appears here after its release passes review.',
+    copy: 'The first reviewed public app will appear here when a creator publishes it.',
   },
 }[kind];
 ---
@@ -94,7 +94,7 @@ const emptyState = {
         </label>
         <label class="catalog-field">Available RAM (GiB) <input name="max_ram_gb" type="number" min="0" step="0.25" value={filters.maxRamBytes === undefined ? undefined : filters.maxRamBytes / 1024 ** 3} /></label>
         <label class="catalog-field">Available VRAM (GiB) <input name="max_vram_gb" type="number" min="0" step="0.25" value={filters.maxVramBytes === undefined ? undefined : filters.maxVramBytes / 1024 ** 3} /></label>
-        <p class="catalog-filter-note">Compatibility is conservative guidance. “Declared” means publisher-supplied; “derived” means offline format analysis.</p>
+        <p class="catalog-filter-note">Compatibility is an estimate. Publisher-provided results and Super ii-calculated results are clearly labeled.</p>
       </fieldset>
     )}
     <button class="button button--secondary button--small" type="submit">Apply filters</button>
@@ -163,7 +163,7 @@ const emptyState = {
         </div>
         <p data-empty-copy>
           {result.state === 'error'
-            ? 'Search is temporarily unavailable. No placeholder results are shown.'
+            ? 'Search is temporarily unavailable. Please try again shortly.'
             : hasFilters
               ? 'No reviewed public repository matches every selected filter.'
               : emptyState.copy}
