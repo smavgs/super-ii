@@ -7664,9 +7664,9 @@ pre {
 .super-assistant {
   position: fixed;
   z-index: 650;
-  right: calc(1rem + env(safe-area-inset-right));
+  right: auto;
   bottom: calc(1rem + env(safe-area-inset-bottom));
-  left: auto;
+  left: calc(1rem + env(safe-area-inset-left));
   pointer-events: none;
 }
 
@@ -7708,9 +7708,9 @@ pre {
 
 .super-assistant__panel {
   position: absolute;
-  right: 0;
+  right: auto;
   bottom: calc(100% + 0.75rem);
-  left: auto;
+  left: 0;
   display: grid;
   width: min(24rem, calc(100vw - 2rem));
   height: min(32rem, calc(100svh - 7.5rem));
@@ -7723,7 +7723,7 @@ pre {
   background: var(--surface-raised);
   box-shadow: 0 26px 80px rgb(7 26 47 / 0.28);
   pointer-events: auto;
-  transform-origin: bottom right;
+  transform-origin: bottom left;
   animation: super-assistant-enter 180ms ease-out both;
 }
 
@@ -8011,61 +8011,18 @@ pre {
   30% { opacity: 1; transform: translateY(-0.18rem); }
 }
 
-@media (max-width: 700px) {
-  .super-assistant {
-    top: calc(0.75rem + env(safe-area-inset-top));
-    right: calc(6.2rem + env(safe-area-inset-right));
-    bottom: auto;
-  }
-
-  .super-assistant__launcher {
-    position: relative;
-    width: 3rem;
-    min-height: 3rem;
-    padding: 0;
-    border-radius: 50%;
-  }
-
-  .super-assistant__presence {
-    position: absolute;
-    top: 0.28rem;
-    right: 0.28rem;
-    width: 0.42rem;
-    height: 0.42rem;
-    box-shadow: 0 0 0 3px rgb(22 134 90 / 0.12);
-  }
-
-  .super-assistant__label {
-    display: none;
-  }
-
-  .super-assistant__mascot {
-    font-size: 1.05rem;
-  }
-
-  .super-assistant__panel {
-    position: fixed;
-    inset: calc(5.25rem + env(safe-area-inset-top)) calc(0.75rem + env(safe-area-inset-right)) calc(0.75rem + env(safe-area-inset-bottom)) calc(0.75rem + env(safe-area-inset-left));
-    width: auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-  }
-}
-
 @media (max-width: 580px) {
   .super-assistant {
-    top: calc(0.55rem + env(safe-area-inset-top));
-    right: calc(6rem + env(safe-area-inset-right));
-    bottom: auto;
+    right: auto;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    left: calc(0.75rem + env(safe-area-inset-left));
   }
 
   .super-assistant__panel {
-    inset-block-start: calc(4.85rem + env(safe-area-inset-top));
-    width: auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
+    width: min(24rem, calc(100vw - 1.5rem));
+    height: min(33rem, calc(100svh - 6.5rem));
+    min-height: min(21rem, calc(100svh - 6.5rem));
+    max-height: calc(100svh - 6.5rem);
   }
 
   .super-assistant__message {

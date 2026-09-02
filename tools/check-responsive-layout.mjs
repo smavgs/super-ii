@@ -18,11 +18,11 @@ for (const requiredCss of [
   'width: min(calc(100% - 2rem), 1440px)',
   '@media (max-width: 1320px)',
   'max-height: calc(100dvh - 1.5rem)',
-  'right: calc(1rem + env(safe-area-inset-right))',
+  'left: calc(1rem + env(safe-area-inset-left))',
   'min-height: min(24rem, calc(100svh - 7.5rem))',
   '@media (max-width: 360px)',
   'font-size: clamp(1.75rem, 13.5vw, 2.25rem)',
-  'inset: calc(5.25rem + env(safe-area-inset-top))',
+  'width: min(24rem, calc(100vw - 1.5rem))',
 ]) {
   assert(css.includes(requiredCss), `global.css is missing ${requiredCss}`);
 }
@@ -36,13 +36,15 @@ assert(
   'desktop info popovers must remain internally scrollable within short viewports',
 );
 assert(
-  /\.super-assistant__panel\s*\{[\s\S]*?right:\s*0;[\s\S]*?left:\s*auto;/.test(css),
-  'the assistant panel must anchor to the non-content-heavy right edge',
+  /\.super-assistant\s*\{[\s\S]*?right:\s*auto;[\s\S]*?bottom:[\s\S]*?left:\s*calc\(1rem \+ env\(safe-area-inset-left\)\);/.test(css),
+  'the assistant launcher must remain anchored to the bottom-left corner',
 );
 assert(
-  /@media \(max-width: 700px\)[\s\S]*?\.super-assistant\s*\{[\s\S]*?top:[\s\S]*?bottom:\s*auto;[\s\S]*?\.super-assistant__panel\s*\{[\s\S]*?position:\s*fixed;/.test(css),
-  'the compact assistant must move into the mobile header and open below it',
+  /\.super-assistant__panel\s*\{[\s\S]*?right:\s*auto;[\s\S]*?bottom:\s*calc\(100% \+ 0\.75rem\);[\s\S]*?left:\s*0;/.test(css),
+  'the assistant panel must open above the bottom-left launcher',
 );
+assert(!/@media \(max-width: 700px\)[\s\S]*?\.super-assistant__label\s*\{[\s\S]*?display:\s*none;/.test(css), 'the assistant label must stay visible on narrow screens');
+assert(!/\.super-assistant__launcher\s*\{[\s\S]*?width:\s*3rem;[\s\S]*?border-radius:\s*50%;/.test(css), 'the assistant launcher must not collapse into a circle');
 
 for (const requiredMarkup of [
   'aria-label="Open Super ii assistant"',
@@ -55,4 +57,4 @@ for (const requiredMarkup of [
 assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
-console.log('Responsive layout check passed: fluid narrow viewports, stable header breakpoint, bounded popovers, and compact assistant controls.');
+console.log('Responsive layout check passed: fluid narrow viewports, stable header breakpoint, bounded popovers, and a persistent bottom-left assistant.');
