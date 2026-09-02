@@ -1,8 +1,20 @@
-type FailureKind = 'auth' | 'limited' | 'unavailable';
+type FailureKind = 'auth' | 'limited' | 'search-limited' | 'unavailable';
 
 type AssistantMessage = {
   role: 'user' | 'assistant';
   content: string;
+};
+
+type AssistantSource = {
+  title: string;
+  url: string;
+  source: string;
+};
+
+type AssistantReply = {
+  answer: string;
+  sources: AssistantSource[];
+  searched: boolean;
 };
 
 export type SuperAssistantController = {
@@ -21,7 +33,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-async function requestAssistant(messages: AssistantMessage[], signal: AbortSignal): Promise<string> {
+function assistantSources(value: unknown): AssistantSource[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 5).flatMap((item) => {
+    if (!isRecord(item)
+      || typeof item.title !== 'string'
+      || typeof item.url !== 'string'
+      || typeof item.source !== 'string') return [];
+    try {
+      const url = new URL(item.url);
+      if (!['http:', 'https:'].includes(url.protocol)) return [];
+      return [{
+        title: item.title.trim().slice(0, 240),
+        url: url.toString(),
+        source: item.source.trim().slice(0, 120),
+      }];
+    } catch {
+      return [];
+    }
+  }).filter((item) => item.title && item.source);
+}
+
+async function requestAssistant(
+  messages: AssistantMessage[],
+  webSearch: boolean,
+  signal: AbortSignal,
+): Promise<AssistantReply> {
   let response: Response;
   try {
     response = await fetch('/api/assistant/chat', {
@@ -31,7 +68,7 @@ async function requestAssistant(messages: AssistantMessage[], signal: AbortSigna
         'content-type': 'application/json',
       },
       credentials: 'same-origin',
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, web_search: webSearch }),
       signal,
     });
   } catch (error) {
@@ -41,12 +78,21 @@ async function requestAssistant(messages: AssistantMessage[], signal: AbortSigna
 
   const payload: unknown = await response.json().catch(() => null);
   if (response.status === 401) throw new AssistantConnectionError('auth');
-  if (response.status === 429) throw new AssistantConnectionError('limited');
+  if (response.status === 429) {
+    const kind = isRecord(payload) && payload.code === 'search_limit_reached'
+      ? 'search-limited'
+      : 'limited';
+    throw new AssistantConnectionError(kind);
+  }
   if (!response.ok || !isRecord(payload) || typeof payload.answer !== 'string' || !payload.answer.trim()) {
     throw new AssistantConnectionError('unavailable');
   }
 
-  return payload.answer.trim();
+  return {
+    answer: payload.answer.trim(),
+    sources: assistantSources(payload.sources),
+    searched: isRecord(payload.search) && payload.search.performed === true,
+  };
 }
 
 function boundedHistory(messages: AssistantMessage[]): AssistantMessage[] {
@@ -74,11 +120,13 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   const retryButton = requireElement<HTMLButtonElement>('[data-super-assistant-retry]', 'retry button');
   const form = requireElement<HTMLFormElement>('form[data-super-assistant-form]', 'form');
   const input = requireElement<HTMLTextAreaElement>('textarea[data-super-assistant-input]', 'input');
+  const searchButton = requireElement<HTMLButtonElement>('button[data-super-assistant-web-search]', 'web search button');
   const sendButton = requireElement<HTMLButtonElement>('button[data-super-assistant-send]', 'send button');
 
   let open = false;
   let destroyed = false;
   let awaitingResponse = false;
+  let webSearchEnabled = false;
   let activeRequest: AbortController | null = null;
   let currentMessage: HTMLElement | null = null;
   let currentCopy: HTMLParagraphElement | null = null;
@@ -92,7 +140,19 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   function setComposerReady(ready: boolean) {
     form.setAttribute('aria-busy', String(!ready));
     input.disabled = !ready;
+    searchButton.disabled = !ready || awaitingResponse;
     sendButton.disabled = !ready || awaitingResponse || !input.value.trim();
+  }
+
+  function renderSearchState() {
+    searchButton.setAttribute('aria-pressed', String(webSearchEnabled));
+    searchButton.setAttribute('aria-label', webSearchEnabled ? 'Turn web search off' : 'Turn web search on');
+  }
+
+  function setWebSearch(enabled: boolean) {
+    webSearchEnabled = enabled;
+    renderSearchState();
+    if (!awaitingResponse) setStatus(enabled ? 'Web search on' : 'Ready', enabled ? 'search' : 'ready');
   }
 
   function hideNotice() {
@@ -102,11 +162,20 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   }
 
   function showFailure(kind: FailureKind) {
-    setComposerReady(false);
     notice.hidden = false;
     authActions.hidden = kind !== 'auth';
-    retryButton.hidden = kind === 'auth';
+    retryButton.hidden = kind === 'auth' || kind === 'search-limited';
 
+    if (kind === 'search-limited') {
+      setWebSearch(false);
+      setComposerReady(true);
+      setStatus('Daily web searches used', 'attention');
+      noticeCopy.textContent = 'Your daily web-search allowance is used. You can keep chatting with web search off.';
+      if (open) input.focus();
+      return;
+    }
+
+    setComposerReady(false);
     if (kind === 'auth') {
       setStatus('Sign in to chat', 'attention');
       noticeCopy.textContent = 'Create a free account or log in to start a private browser session.';
@@ -123,7 +192,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
 
   function resetFailure() {
     hideNotice();
-    setStatus('Ready', 'ready');
+    setStatus(webSearchEnabled ? 'Web search on' : 'Ready', webSearchEnabled ? 'search' : 'ready');
     setComposerReady(true);
     if (open) input.focus();
   }
@@ -166,14 +235,34 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     scrollMessages();
   }
 
-  function finishAssistantMessage(answer: string) {
-    if (currentCopy) currentCopy.textContent = answer;
+  function appendSources(article: HTMLElement, sources: AssistantSource[]) {
+    if (!sources.length) return;
+    const sourceList = document.createElement('div');
+    sourceList.className = 'super-assistant__sources';
+    const label = document.createElement('span');
+    label.textContent = 'Sources';
+    sourceList.appendChild(label);
+    sources.forEach((source, index) => {
+      const link = document.createElement('a');
+      link.href = source.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = `${index + 1} · ${source.source}`;
+      link.title = source.title;
+      sourceList.appendChild(link);
+    });
+    article.appendChild(sourceList);
+  }
+
+  function finishAssistantMessage(reply: AssistantReply) {
+    if (currentCopy) currentCopy.textContent = reply.answer;
+    if (currentMessage) appendSources(currentMessage, reply.sources);
     currentMessage = null;
     currentCopy = null;
     awaitingResponse = false;
     activeRequest = null;
     setComposerReady(true);
-    setStatus('Ready', 'ready');
+    setStatus(reply.searched ? 'Web checked' : (webSearchEnabled ? 'Web search on' : 'Ready'), reply.searched || webSearchEnabled ? 'search' : 'ready');
     scrollMessages();
     if (open) input.focus();
   }
@@ -217,25 +306,26 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   async function submit() {
     const copy = input.value.trim();
     if (!copy || awaitingResponse) return;
+    hideNotice();
     input.value = '';
     resizeInput();
     addMessage('user', copy);
     beginAssistantMessage();
     awaitingResponse = true;
     setComposerReady(false);
-    setStatus('Thinking…');
+    setStatus(webSearchEnabled ? 'Checking the web…' : 'Thinking…', webSearchEnabled ? 'search' : '');
 
     const pendingHistory = boundedHistory([...conversation, { role: 'user', content: copy }]);
     const controller = new AbortController();
     activeRequest = controller;
     try {
-      const answer = await requestAssistant(pendingHistory, controller.signal);
+      const reply = await requestAssistant(pendingHistory, webSearchEnabled, controller.signal);
       if (destroyed) return;
       conversation.splice(0, conversation.length, ...boundedHistory([
         ...pendingHistory,
-        { role: 'assistant', content: answer },
+        { role: 'assistant', content: reply.answer },
       ]));
-      finishAssistantMessage(answer);
+      finishAssistantMessage(reply);
     } catch (error) {
       if (destroyed || (error instanceof DOMException && error.name === 'AbortError')) return;
       discardAssistantMessage();
@@ -245,6 +335,11 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
 
   closeButton.addEventListener('click', closePanel);
   retryButton.addEventListener('click', resetFailure);
+  searchButton.addEventListener('click', () => {
+    hideNotice();
+    setWebSearch(!webSearchEnabled);
+    input.focus();
+  });
   input.addEventListener('input', resizeInput);
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -267,6 +362,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     document.removeEventListener('keydown', onKeydown);
     window.removeEventListener('pagehide', destroy);
   };
+  renderSearchState();
   document.addEventListener('keydown', onKeydown);
   window.addEventListener('pagehide', destroy);
 

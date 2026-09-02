@@ -23,10 +23,10 @@ Every requested language has a real production responsibility:
 Infrastructure is split deliberately:
 
 - **Super ii Website** is the Cloudflare/Astro control plane and public UI.
-- **Super ii Runtime** is the self-hosted Linux data plane for files, scanning, offline inspection, llama.cpp, Diffusers, and isolated Gradio Spaces.
+- **Super ii Runtime** is the self-hosted data plane for files, scanning, offline inspection, llama.cpp, Diffusers, isolated Gradio Spaces, and bounded opt-in web search.
 - **Postgres** stores immutable repository history, search, review evidence, community data, collections, and lineage.
 
-The website does not use OpenAI, Anthropic, Hugging Face Inference, or another commercial model-routing API. Super ii Bridge uses explicit provider OAuth and repository APIs only to identify and copy user-authorized source work; analysis and inference remain on the self-hosted runtime. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
+The homepage assistant sends signed-in, session-only conversations server-side through OpenRouter to the free MiniMax M3 endpoint; its API key never enters the browser. When a user explicitly turns on Search web, MiniMax may request one bounded current-information lookup through the authenticated Super ii Runtime. The runtime returns normalized public search results without crawling destination pages. Super ii Bridge uses explicit provider OAuth and repository APIs only to identify and copy user-authorized source work. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
 
 The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, social graph, collections, lineage, and deterministic Use Model system are implemented. vLLM and SGLang have reviewed self-host instructions, while a Super ii-managed high-throughput GPU service and Text Embeddings Inference remain deliberately deferred until funded capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
 
@@ -94,6 +94,7 @@ Required deployment secrets:
 - `BRIDGE_TOKEN_ENCRYPTION_KEY`
 - `NOWPAYMENTS_API_KEY`
 - `NOWPAYMENTS_IPN_SECRET`
+- `OPENROUTER_API_KEY`
 - `SUPERII_ADMIN_USER_IDS`
 
 Store them with Cloudflare secrets or local ignored env files. Do not add values to `wrangler.jsonc` or Git.

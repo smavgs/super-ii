@@ -12,6 +12,7 @@ license = { text = "MIT" }
 dependencies = [
   "cryptography==50.0.1",
   "datasets==5.0.1",
+  "ddgs==9.16.0",
   "fastapi==0.141.1",
   "hf-xet==1.6.0",
   "huggingface-hub==1.29.0",

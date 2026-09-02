@@ -9,18 +9,13 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export async function consumeRateLimit(
-  locals: App.Locals,
-  request: Request,
+async function consumeHashedRateLimit(
+  networkHash: string,
   sql: NeonQueryFunction<false, false>,
   action: string,
   limit: number,
   windowSeconds: number,
 ): Promise<RateLimitResult> {
-  const salt = runtimeValue(locals, 'CONTACT_HASH_SALT');
-  if (!salt) return 'unavailable';
-  const network = request.headers.get('cf-connecting-ip') ?? 'local-or-unknown';
-  const networkHash = await sha256(`${salt}:${network}`);
   try {
     const rows = await sql`
       select app.consume_request_limit(
@@ -34,4 +29,43 @@ export async function consumeRateLimit(
   } catch {
     return 'unavailable';
   }
+}
+
+export async function consumeRateLimit(
+  locals: App.Locals,
+  request: Request,
+  sql: NeonQueryFunction<false, false>,
+  action: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult> {
+  const salt = runtimeValue(locals, 'CONTACT_HASH_SALT');
+  if (!salt) return 'unavailable';
+  const network = request.headers.get('cf-connecting-ip') ?? 'local-or-unknown';
+  return consumeHashedRateLimit(
+    await sha256(`${salt}:${network}`),
+    sql,
+    action,
+    limit,
+    windowSeconds,
+  );
+}
+
+export async function consumeIdentityRateLimit(
+  locals: App.Locals,
+  sql: NeonQueryFunction<false, false>,
+  identity: string,
+  action: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult> {
+  const salt = runtimeValue(locals, 'CONTACT_HASH_SALT');
+  if (!salt || !identity) return 'unavailable';
+  return consumeHashedRateLimit(
+    await sha256(`${salt}:identity:${identity}`),
+    sql,
+    action,
+    limit,
+    windowSeconds,
+  );
 }

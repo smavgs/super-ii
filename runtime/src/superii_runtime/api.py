@@ -33,6 +33,7 @@ from .api_models import (
     LlamaChatRequest,
     LlamaGenerateRequest,
     TokenizeRequest,
+    WebSearchRequest,
 )
 from .artifacts import ArtifactStore
 from .capabilities import capability_report
@@ -61,6 +62,7 @@ from .transfers import (
     request_transfer,
     request_transfer_sync,
 )
+from .web_search import WebSearchUnavailable, run_web_search
 from .workspace_cache import PersistentWorkspaceCache
 from .workspaces import materialized_revision, revision_manifest, revision_manifest_document
 
@@ -184,6 +186,15 @@ def _transfer_response(upstream: TransferResponse) -> Response:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"service": "superii-runtime", "status": "ok", "version": "0.1.0"}
+
+
+@app.post("/v1/search")
+async def web_search(payload: WebSearchRequest, _auth: RuntimeAuth) -> dict[str, object]:
+    try:
+        results = await run_web_search(payload)
+    except WebSearchUnavailable as error:
+        raise HTTPException(status_code=503, detail="web search is unavailable") from error
+    return {"query": payload.query, "results": results}
 
 
 @app.options("/v1/transfers")

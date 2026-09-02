@@ -64,7 +64,19 @@
         data-super-assistant-input
         disabled
       ></textarea>
-      <button type="submit" aria-label="Send message" data-super-assistant-send disabled>
+      <button
+        class="super-assistant__web-search"
+        type="button"
+        aria-label="Turn web search on"
+        aria-pressed="false"
+        data-super-assistant-web-search
+        disabled
+      >
+        <i class="ph ph-globe-hemisphere-west" aria-hidden="true"></i>
+        <span class="super-assistant__web-search-full">Search web</span>
+        <span class="super-assistant__web-search-compact">Web</span>
+      </button>
+      <button class="super-assistant__send" type="submit" aria-label="Send message" data-super-assistant-send disabled>
         <i class="ph ph-arrow-up" aria-hidden="true"></i>
       </button>
     </form>

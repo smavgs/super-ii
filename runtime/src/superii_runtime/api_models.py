@@ -71,3 +71,11 @@ class CreateTransferRequest(BaseModel):
 class ExecuteNotebookRequest(BaseModel):
     profile_id: UUID
     notebook_path: str = Field(min_length=1, max_length=1024, pattern=r"\.ipynb$")
+
+
+class WebSearchRequest(BaseModel):
+    query: str = Field(min_length=2, max_length=500)
+    category: Literal["general", "news"] = "general"
+    freshness: Literal["any", "day", "week", "month", "year"] = "any"
+    safe_search: Literal["on", "moderate", "off"] = "moderate"
+    max_results: int = Field(default=5, ge=1, le=8)

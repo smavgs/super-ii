@@ -29,6 +29,7 @@ Missing, timed-out, or errored scanners leave a file quarantined. A positive mal
 - Diffusers-generated PNG artifacts written atomically with private permissions and a configurable 24-hour retention window.
 - Gradio-only Spaces in read-only, no-egress, capability-dropped, resource-limited containers, streamed through the authenticated website into a sandboxed app iframe.
 - Local browser inference assets for Transformers.js, with remote models disabled in the website.
+- An authenticated, bounded DDGS web-search adapter for opt-in current-information lookups. It returns only normalized public titles, links, snippets, sources, and dates; it does not crawl result pages.
 - Postgres full-text/trigram discovery plus community, collections, social, and lineage tables.
 - A separate online Bridge worker for exact-revision Hugging Face imports through Xet-aware downloads, source checksum verification, quarantine scanning, offline analysis, immutable provenance, cancellation, recovery, and review-only completion.
 
@@ -99,6 +100,10 @@ remotely managed tunnel token belongs outside the repository at
 `~/Library/Application Support/Super ii Runtime/cloudflared-token`, owned by
 the runtime user with mode `0600`. The connector publishes only the loopback
 runtime on port `8788`; keep that port closed to the LAN.
+
+## Lightweight web search
+
+`POST /v1/search` is an authenticated control-plane endpoint, not a public search API. It accepts a bounded query, general/news category, optional freshness window, SafeSearch setting, and at most eight results. The website currently requests at most five. Results are normalized and URL-checked before returning; the runtime does not fetch, crawl, or summarize destination pages. User identity, plan allowance, and daily rate limiting stay in the website control plane.
 
 ## Resumable transfers
 

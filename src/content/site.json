@@ -24,7 +24,7 @@
       "unit": "forever",
       "status": "available",
       "summary": "For exploring, publishing and building in public.",
-      "features": ["Public profile and organizations", "Unlimited public repositories", "Public models, datasets and apps", "5 GB public storage", "Public notebooks", "Browser WebGPU and WASM execution", "Local AI with Ollama, llama.cpp, MLX and compatible runtimes", "Basic hardware compatibility", "Basic Verified Use", "Public MCP and API access", "Agent-readable repositories", "Provenance and lineage", "Community discussions", "Proposals and voting", "Super ii AI", "Bring My Work", "Community processing priority"]
+      "features": ["Public profile and organizations", "Unlimited public repositories", "Public models, datasets and apps", "5 GB public storage", "Public notebooks", "Browser WebGPU and WASM execution", "Local AI with Ollama, llama.cpp, MLX and compatible runtimes", "Basic hardware compatibility", "Basic Verified Use", "Public MCP and API access", "Agent-readable repositories", "Provenance and lineage", "Community discussions", "Proposals and voting", "Super ii AI", "3 web searches per day", "Bring My Work", "Community processing priority"]
     },
     {
       "id": "pro",
@@ -33,7 +33,7 @@
       "unit": "/ 30 days",
       "status": "available",
       "summary": "For independent builders who need privacy, more capacity and advanced tools.",
-      "features": ["Everything in Free, plus:", "Private repositories", "25 GB total hosted storage", "Private models, datasets and apps", "Private notebooks", "Advanced hardware profiles", "Advanced Verified Use", "Advanced MCP and API access", "Scoped agent tokens", "Advanced publishing controls", "Priority inspection and review", "Priority build queue", "Higher platform-processing allowance", "Usage and spend controls"]
+      "features": ["Everything in Free, plus:", "Private repositories", "25 GB total hosted storage", "Private models, datasets and apps", "Private notebooks", "30 web searches per day", "Pro profile badge · coming soon", "Advanced hardware profiles", "Advanced Verified Use", "Advanced MCP and API access", "Scoped agent tokens", "Advanced publishing controls", "Priority inspection and review", "Priority build queue", "Higher platform-processing allowance", "Usage and spend controls"]
     },
     {
       "id": "team",
@@ -42,7 +42,7 @@
       "unit": "/ member / 30 days",
       "status": "available",
       "summary": "For teams collaborating with shared control and governance.",
-      "features": ["Everything in Pro, plus:", "Organizations", "Advanced role-based access control", "Audit history", "Shared resource groups", "Service accounts", "Scoped team tokens", "Team agent and MCP access", "Shared notebooks", "Repository analytics", "Central team billing", "Priority processing", "50 GB pooled storage per paid member", "SSO available as an add-on"]
+      "features": ["Everything in Pro, plus:", "Organizations", "60 web searches per member per day", "Team profile badge · coming soon", "Advanced role-based access control", "Audit history", "Shared resource groups", "Service accounts", "Scoped team tokens", "Team agent and MCP access", "Shared notebooks", "Repository analytics", "Central team billing", "Priority processing", "50 GB pooled storage per paid member", "SSO available as an add-on"]
     },
     {
       "id": "enterprise",
@@ -51,7 +51,7 @@
       "unit": "/ annual agreement",
       "status": "proposal",
       "summary": "For organizations that need governed AI at scale.",
-      "features": ["Everything in Team, plus:", "SSO with SAML/OIDC", "SCIM directory sync", "Advanced identity policies", "Extended audit retention", "Regional deployment options", "Dedicated runtime options", "Customer-supplied cloud or hardware", "Security and procurement review", "Custom support plan", "Service-level agreement options", "Custom storage and compute", "Managed infrastructure options"]
+      "features": ["Everything in Team, plus:", "Custom web-search allowance", "Enterprise profile badge · coming soon", "SSO with SAML/OIDC", "SCIM directory sync", "Advanced identity policies", "Extended audit retention", "Regional deployment options", "Dedicated runtime options", "Customer-supplied cloud or hardware", "Security and procurement review", "Custom support plan", "Service-level agreement options", "Custom storage and compute", "Managed infrastructure options"]
     }
   ],
   "routes": [
