@@ -103,7 +103,7 @@ runtime on port `8788`; keep that port closed to the LAN.
 
 ## Lightweight web search
 
-`POST /v1/search` is an authenticated control-plane endpoint, not a public search API. It accepts a bounded query, general/news category, optional freshness window, SafeSearch setting, and at most eight results. The website currently requests at most five. Results are normalized and URL-checked before returning; the runtime does not fetch, crawl, or summarize destination pages. User identity, plan allowance, and daily rate limiting stay in the website control plane.
+`POST /v1/search` is an authenticated control-plane endpoint, not a public search API. It accepts a bounded query, general/news category, optional freshness window, SafeSearch setting, and at most eight results. The website currently requests at most five. Each lookup runs in a short-lived worker process with no runtime or database secrets and a hard 12-second timeout, so a stalled search backend cannot hold the main API process. Results are normalized and URL-checked before returning; the runtime does not fetch, crawl, or summarize destination pages. User identity, plan allowance, and daily rate limiting stay in the website control plane.
 
 ## Resumable transfers
 

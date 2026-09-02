@@ -13,6 +13,7 @@ const files = {
   rateLimit: await readFile(resolve(root, 'src/lib/rate-limit.ts'), 'utf8'),
   runtimeApi: await readFile(resolve(root, 'runtime/src/superii_runtime/api.py'), 'utf8'),
   runtimeSearch: await readFile(resolve(root, 'runtime/src/superii_runtime/web_search.py'), 'utf8'),
+  runtimeSearchWorker: await readFile(resolve(root, 'runtime/src/superii_runtime/web_search_worker.py'), 'utf8'),
   pricing: await readFile(resolve(root, 'src/content/site.json'), 'utf8'),
   privacy: await readFile(resolve(root, 'src/pages/legal/privacy.astro'), 'utf8'),
 };
@@ -54,6 +55,9 @@ requireText('runtimeApi', 'runtime API', '@app.post("/v1/search")');
 requireText('runtimeApi', 'runtime API', '_auth: RuntimeAuth');
 requireText('runtimeSearch', 'runtime search', 'DDGS(timeout=8)');
 requireText('runtimeSearch', 'runtime search', 'normalize_results');
+requireText('runtimeSearch', 'runtime search', 'create_subprocess_exec');
+requireText('runtimeSearch', 'runtime search', 'WORKER_TIMEOUT_SECONDS = 12');
+requireText('runtimeSearchWorker', 'runtime search worker', '_search_sync(payload)');
 requireText('pricing', 'pricing', '3 web searches per day');
 requireText('pricing', 'pricing', '30 web searches per day');
 requireText('pricing', 'pricing', '60 web searches per member per day');

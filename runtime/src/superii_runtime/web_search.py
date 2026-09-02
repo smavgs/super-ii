@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from asyncio import to_thread
+import json
+import os
+import sys
+from asyncio import create_subprocess_exec, subprocess, wait_for
 from collections.abc import Iterable, Mapping
+from contextlib import suppress
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
-
-from ddgs import DDGS
 
 from .api_models import WebSearchRequest
 
@@ -16,6 +18,8 @@ FRESHNESS = {
     "month": "m",
     "year": "y",
 }
+WORKER_TIMEOUT_SECONDS = 12
+MAX_WORKER_OUTPUT_BYTES = 64_000
 
 
 class WebSearchUnavailable(RuntimeError):
@@ -74,6 +78,10 @@ def normalize_results(
 
 
 def _search_sync(payload: WebSearchRequest) -> list[dict[str, str]]:
+    # Import only inside the isolated worker. Some native HTTP backends can hold
+    # the GIL while waiting, so they must never run inside the API process.
+    from ddgs import DDGS
+
     client = DDGS(timeout=8)
     try:
         method = client.news if payload.category == "news" else client.text
@@ -94,4 +102,45 @@ def _search_sync(payload: WebSearchRequest) -> list[dict[str, str]]:
 
 
 async def run_web_search(payload: WebSearchRequest) -> list[dict[str, str]]:
-    return await to_thread(_search_sync, payload)
+    environment = {
+        name: os.environ[name]
+        for name in ("PATH", "LANG", "LC_ALL", "SSL_CERT_FILE", "SSL_CERT_DIR")
+        if name in os.environ
+    }
+    environment["PYTHONUTF8"] = "1"
+    process = None
+    try:
+        process = await create_subprocess_exec(  # noqa: S603
+            sys.executable,
+            "-m",
+            "superii_runtime.web_search_worker",
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            env=environment,
+        )
+        stdout, _ = await wait_for(
+            process.communicate(payload.model_dump_json().encode()),
+            timeout=WORKER_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as error:
+        if process is not None:
+            with suppress(ProcessLookupError):
+                process.kill()
+            await process.wait()
+        raise WebSearchUnavailable("search worker timed out") from error
+    except (OSError, ValueError) as error:
+        raise WebSearchUnavailable("search worker unavailable") from error
+
+    if process is None:
+        raise WebSearchUnavailable("search worker unavailable")
+    if process.returncode != 0 or len(stdout) > MAX_WORKER_OUTPUT_BYTES:
+        raise WebSearchUnavailable("search worker failed")
+    try:
+        response = json.loads(stdout)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise WebSearchUnavailable("search worker returned invalid data") from error
+    if not isinstance(response, dict) or not isinstance(response.get("results"), list):
+        raise WebSearchUnavailable("search worker returned invalid data")
+    values = [item for item in response["results"] if isinstance(item, dict)]
+    return normalize_results(values, payload.max_results)
