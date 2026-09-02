@@ -52,7 +52,7 @@
   });
 
   mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
-  window.matchMedia('(min-width: 1041px)').addEventListener('change', (event) => {
+  window.matchMedia('(min-width: 1321px)').addEventListener('change', (event) => {
     if (event.matches) closeMenu();
   });
 
@@ -97,12 +97,16 @@
     let left = triggerRect.left + (triggerRect.width / 2) - (width / 2);
     left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
     panel.style.left = `${left}px`;
-    panel.style.top = `${triggerRect.bottom + 9}px`;
-
-    const panelHeight = panel.getBoundingClientRect().height;
-    if (triggerRect.bottom + panelHeight + 21 > window.innerHeight && triggerRect.top > panelHeight + 21) {
-      panel.style.top = `${triggerRect.top - panelHeight - 9}px`;
-    }
+    const viewportPadding = 12;
+    const panelHeight = Math.min(panel.getBoundingClientRect().height, window.innerHeight - (viewportPadding * 2));
+    const below = triggerRect.bottom + 9;
+    const above = triggerRect.top - panelHeight - 9;
+    const preferredTop = below + panelHeight + viewportPadding <= window.innerHeight ? below : above;
+    const top = Math.max(
+      viewportPadding,
+      Math.min(preferredTop, window.innerHeight - panelHeight - viewportPadding),
+    );
+    panel.style.top = `${top}px`;
   }
 
   function closeInfo(tip) {
