@@ -23,6 +23,10 @@ for (const requiredCss of [
   '@media (max-width: 360px)',
   'font-size: clamp(1.75rem, 13.5vw, 2.25rem)',
   'width: min(24rem, calc(100vw - 1.5rem))',
+  '@media (max-width: 1120px)',
+  'grid-template-columns: repeat(4, minmax(0, 1fr))',
+  '@media (max-width: 420px)',
+  'white-space: pre-wrap',
 ]) {
   assert(css.includes(requiredCss), `global.css is missing ${requiredCss}`);
 }
@@ -45,6 +49,22 @@ assert(
 );
 assert(!/@media \(max-width: 700px\)[\s\S]*?\.super-assistant__label\s*\{[\s\S]*?display:\s*none;/.test(css), 'the assistant label must stay visible on narrow screens');
 assert(!/\.super-assistant__launcher\s*\{[\s\S]*?width:\s*3rem;[\s\S]*?border-radius:\s*50%;/.test(css), 'the assistant launcher must not collapse into a circle');
+assert(
+  /\.account-workspace\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/.test(css),
+  'the signed-in account workspace must allow its content track to shrink',
+);
+assert(
+  /\.account-card \.sii-clerk-profile-root,[\s\S]*?\.account-card \.sii-clerk-profile-card\s*\{[\s\S]*?width:\s*100% !important;[\s\S]*?max-width:\s*100% !important;/.test(css),
+  'the embedded profile panel must remain inside the account card content box',
+);
+assert(
+  /@media \(max-width: 1120px\)[\s\S]*?\.account-shell\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?\.account-nav\s*\{[\s\S]*?repeat\(4, minmax\(0, 1fr\)\);/.test(css),
+  'the account sidebar must become a wrapped navigation grid before it crowds the workspace',
+);
+assert(
+  /@media \(max-width: 420px\)[\s\S]*?\.agent-os-picker\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\.agent-command code\s*\{[\s\S]*?white-space:\s*pre-wrap;/.test(css),
+  'Agent Starter controls and commands must fully reflow on very narrow screens',
+);
 
 for (const requiredMarkup of [
   'aria-label="Open Super ii assistant"',
@@ -57,4 +77,4 @@ for (const requiredMarkup of [
 assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
-console.log('Responsive layout check passed: fluid narrow viewports, stable header breakpoint, bounded popovers, and a persistent bottom-left assistant.');
+console.log('Responsive layout check passed: fluid pages, a contained account workspace, reflowing Agent Starter controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');

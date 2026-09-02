@@ -2955,7 +2955,19 @@ pre {
 
 .account-workspace {
   display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
+}
+
+.account-shell > div,
+.account-workspace > * {
+  min-width: 0;
+}
+
+.account-workspace > * {
+  width: 100%;
+  max-width: 100%;
 }
 
 .account-workspace .account-card + .account-card {
@@ -3171,6 +3183,8 @@ pre {
 }
 
 .account-card {
+  min-width: 0;
+  max-width: 100%;
   padding: 1.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -3188,6 +3202,13 @@ pre {
 
 .account-card p {
   color: var(--muted);
+}
+
+.account-card .sii-clerk-profile-root,
+.account-card .sii-clerk-profile-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
 }
 
 .status-board {
@@ -4270,6 +4291,22 @@ pre {
   text-overflow: ellipsis;
 }
 
+@media (max-width: 1120px) {
+  .account-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    padding-top: 1.5rem;
+  }
+
+  .account-nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .account-nav a {
+    text-align: center;
+  }
+}
+
 @media (max-width: 1040px) {
   .use-model__layout {
     grid-template-columns: 1fr;
@@ -4769,6 +4806,9 @@ pre {
 }
 
 .agent-starter {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
@@ -4788,6 +4828,19 @@ pre {
     radial-gradient(circle at 92% 15%, rgb(255 255 255 / 0.65), transparent 15rem),
     var(--yellow);
   color: #071a2f;
+}
+
+.agent-starter__header > div,
+.agent-starter__progress > *,
+.agent-model-recommendation > div,
+.agent-connect,
+.agent-connect__intro,
+.agent-connect__flow,
+.agent-connect__flow > div,
+.agent-connect__config,
+.agent-connect__finish,
+.agent-connect__finish > div {
+  min-width: 0;
 }
 
 .agent-starter__header .eyebrow {
@@ -4811,6 +4864,7 @@ pre {
 
 .agent-starter__badge {
   display: inline-flex;
+  max-width: 100%;
   flex: none;
   align-items: center;
   gap: 0.45rem;
@@ -4941,6 +4995,7 @@ pre {
 
 .agent-command {
   display: grid;
+  width: 100%;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.7rem;
@@ -4961,6 +5016,7 @@ pre {
 }
 
 .agent-command code {
+  min-width: 0;
   overflow-x: auto;
   padding: 0.45rem;
   color: #fff;
@@ -5372,6 +5428,57 @@ pre {
 
   .agent-starter__future p {
     text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .agent-starter__header,
+  .agent-starter__progress,
+  .agent-starter__future {
+    padding-inline: 1.15rem;
+  }
+
+  .agent-starter__steps {
+    padding-inline: 1.15rem;
+  }
+
+  .agent-os-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-os-picker button {
+    width: 100%;
+  }
+
+  .agent-command {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .agent-command > span:first-child,
+  .agent-command code,
+  .agent-command button,
+  .agent-command--light code {
+    grid-column: 1;
+  }
+
+  .agent-command code {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+
+  .agent-command button {
+    justify-content: center;
+  }
+
+  .agent-starter__success {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .agent-connect {
+    margin: 0.5rem;
+    padding: 1rem;
   }
 }
 
