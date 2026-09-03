@@ -60,6 +60,8 @@ export const systemState = {
   source: '/system-state.md',
   mcp: '/mcp',
   workMcp: '/mcp/work',
+  socialMcp: '/mcp/social',
+  social: '/social',
   agents: '/agents',
   a2a: '/.well-known/agent-card.json',
 } as const;

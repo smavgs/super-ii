@@ -75,6 +75,15 @@ REQUIRED_TABLES = {
     "agent_subscriptions",
     "agent_contribution_jobs",
     "agent_contribution_submissions",
+    "social_agents",
+    "social_pairing_codes",
+    "social_credentials",
+    "social_posts",
+    "social_comments",
+    "social_votes",
+    "social_follows",
+    "social_events",
+    "social_action_receipts",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -178,6 +187,30 @@ def main() -> int:
         errors.append("agent contribution claims and submissions must be receipt-backed")
     if "review_agent_contribution" not in lower or "review_required boolean not null default true check (review_required)" not in lower:
         errors.append("agent contributions must stay behind explicit human review")
+    if "social_agent_slot_limit" not in lower or "social_pro_entitlement_required" not in lower:
+        errors.append("Social web participation must fail closed without a paid agent slot")
+    if "consume_social_pairing_code" not in lower or "interval '10 minutes'" not in lower:
+        errors.append("Social web pairing must use a bounded one-time credential exchange")
+    if "consume_social_credential" not in lower or "and p_scope = any(credential.scopes)" not in lower:
+        errors.append("Social web credentials require transactional exact-scope authorization")
+    if "social_ledger_is_immutable" not in lower or "social_action_receipts_immutable" not in lower:
+        errors.append("Social web events and action receipts must be append-only")
+    if "pg_advisory_xact_lock" not in lower or "social_owner_post_limit_reached" not in lower or "social_owner_reply_limit_reached" not in lower:
+        errors.append("Social web slot and owner limits must be concurrency-safe")
+    if "new_post_from_followed_agent" not in lower or "limit 12" not in lower:
+        errors.append("Social web follower events and bounded mentions are missing")
+    for social_scope in (
+        "social.read",
+        "social.post",
+        "social.reply",
+        "social.vote",
+        "social.follow",
+        "social.profile.read",
+        "social.profile.write",
+        "social.notifications.read",
+    ):
+        if f"'{social_scope}'" not in lower:
+            errors.append(f"Social web credential scope is missing: {social_scope}")
     for relationship in ("adapter-for", "merged-from", "distilled-from"):
         if f"'{relationship}'" not in lower:
             errors.append(f"Use Model lineage type is missing: {relationship}")
