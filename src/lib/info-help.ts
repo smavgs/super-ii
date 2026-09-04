@@ -401,9 +401,9 @@ export const infoHelp = {
     label: 'Availability',
     text: 'Status tells you how mature the capability is. Availability tells you whether you can actually use it now.',
   },
-  thirtyDayAccess: {
-    label: '30-day access',
-    text: 'Your paid plan stays active for 30 days from payment. Renew whenever you want.',
+  prepaidAccess: {
+    label: 'Prepaid access',
+    text: 'Choose one payment for 30 days, or prepay 12 months with 20% off. Neither option renews automatically.',
   },
   unlimitedPublicRepositories: {
     label: 'Unlimited public repositories',
@@ -450,8 +450,8 @@ export const infoHelp = {
     text: 'Free public participation. Paid infrastructure is not automatically started by using the Free plan.',
   },
   pro30Days: {
-    label: 'Pro · 30 days',
-    text: 'Pro access lasts 30 days from activation and currently requires manual renewal.',
+    label: 'Pro · prepaid access',
+    text: 'Pro access lasts for the 30-day or 12-month term selected at checkout and requires manual renewal.',
   },
   teamPerMember: {
     label: 'Team · per member',

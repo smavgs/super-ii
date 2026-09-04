@@ -14,7 +14,7 @@ let repositories: Array<{ id: string; kind: string; owner_handle: string; slug: 
 let organizations: Array<{ handle: string; full_name: string; role: string }> = [];
 let notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }> = [];
 let subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }> = [];
-let payments: Array<{ id: string; plan_id: string; price_amount_cents: number; status: string; created_at: string }> = [];
+let payments: Array<{ id: string; plan_id: string; billing_term: string; price_amount_cents: number; status: string; created_at: string }> = [];
 let bridgeSources: Array<{
   repository_id: string;
   provider_repo_id: string;
@@ -72,7 +72,7 @@ if (sql) {
         order by s.updated_at desc limit 10
       ` as typeof subscriptions;
       payments = await sql`
-        select id, plan_id, price_amount_cents, status, created_at
+        select id, plan_id, billing_term, price_amount_cents, status, created_at
         from app.payment_orders where profile_id = ${profile.profileId}::uuid
         order by created_at desc limit 10
       ` as typeof payments;
@@ -157,7 +157,7 @@ if (sql) {
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Plan and payments 💳</p><h2>Billing</h2></div><a class="button button--secondary button--small" href="/pricing">View plans</a></div>
                 {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString('en', { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
-                {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
+                {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · {payment.billing_term === '12_months' ? '12 months' : '30 days'} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
               </section>
               <section class="account-card"><p class="eyebrow">Identity and security</p><h2>Profile settings</h2><UserProfile
                 routing="hash"

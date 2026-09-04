@@ -31,7 +31,20 @@ type siteContract struct {
 	} `json:"brand"`
 	Catalog map[string][]json.RawMessage `json:"catalog"`
 	Plans   []plan                       `json:"plans"`
-	Routes  []string                     `json:"routes"`
+	Billing struct {
+		Asset            string `json:"asset"`
+		Network          string `json:"network"`
+		AutomaticRenewal bool   `json:"automaticRenewal"`
+		Terms            []struct {
+			ID              string `json:"id"`
+			DiscountPercent int    `json:"discountPercent"`
+		} `json:"terms"`
+		AnnualTotalsUSD struct {
+			Pro           string `json:"pro"`
+			TeamPerMember string `json:"teamPerMember"`
+		} `json:"annualTotalsUsd"`
+	} `json:"billing"`
+	Routes []string `json:"routes"`
 }
 
 type skillManifest struct {
@@ -291,6 +304,15 @@ func main() {
 		errors = append(errors, "expected Free, Pro, Team, and Enterprise plan ids")
 	}
 	sort.Strings(availablePaid)
+	if contract.Billing.Asset != "USDC" || contract.Billing.Network != "Ethereum" || contract.Billing.AutomaticRenewal {
+		errors = append(errors, "billing must remain prepaid USDC on Ethereum without automatic renewal")
+	}
+	if len(contract.Billing.Terms) != 2 || contract.Billing.Terms[0].ID != "30_days" ||
+		contract.Billing.Terms[0].DiscountPercent != 0 || contract.Billing.Terms[1].ID != "12_months" ||
+		contract.Billing.Terms[1].DiscountPercent != 20 || contract.Billing.AnnualTotalsUSD.Pro != "86.40" ||
+		contract.Billing.AnnualTotalsUSD.TeamPerMember != "192.00" {
+		errors = append(errors, "billing terms or 12-month prices do not match the release contract")
+	}
 	if strings.Join(availablePaid, ",") != "pro,team" {
 		errors = append(errors, "paid availability must be exactly Pro and Team")
 	} else {
@@ -299,6 +321,8 @@ func main() {
 			filepath.Join(root, "src", "pages", "api", "checkout.ts"),
 			filepath.Join(root, "src", "pages", "api", "payments", "nowpayments", "ipn.ts"),
 			filepath.Join(root, "database", "migrations", "0005_creator_commerce.sql"),
+			filepath.Join(root, "database", "migrations", "0015_prepaid_plan_terms.sql"),
+			filepath.Join(root, "src", "pages", "pricing.astro"),
 		}
 		billingContract := ""
 		for _, path := range billingPaths {
@@ -309,7 +333,7 @@ func main() {
 			}
 			billingContract += strings.ToLower(string(content))
 		}
-		for _, marker := range []string{"nowpayments_api_key", "nowpayments_ipn_secret", "usdc", "apply_nowpayments_status"} {
+		for _, marker := range []string{"nowpayments_api_key", "nowpayments_ipn_secret", "usdc", "apply_nowpayments_status", "12_months", "0.80"} {
 			if !strings.Contains(billingContract, marker) {
 				errors = append(errors, "paid billing contract missing "+marker)
 			}

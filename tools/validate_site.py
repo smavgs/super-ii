@@ -61,18 +61,42 @@ def main() -> int:
     if free.get("price") != "$0" or free.get("status") != "available":
         errors.append("Free must remain an immediately available zero-price plan")
     available_paid = {plan.get("id") for plan in plans if plan.get("id") != "free" and plan.get("status") == "available"}
+    billing = data.get("billing", {})
+    if not isinstance(billing, dict):
+        billing = {}
+    billing_terms = billing.get("terms", [])
+    if (
+        billing.get("asset") != "USDC"
+        or billing.get("network") != "Ethereum"
+        or billing.get("automaticRenewal") is not False
+        or billing_terms != [
+            {"id": "30_days", "label": "30 days", "discountPercent": 0},
+            {"id": "12_months", "label": "12 months", "discountPercent": 20},
+        ]
+        or billing.get("annualTotalsUsd") != {"pro": "86.40", "teamPerMember": "192.00"}
+    ):
+        errors.append("billing must expose exact prepaid 30-day and discounted 12-month USDC terms")
     if available_paid:
         required_billing_sources = [
             ROOT / "src" / "lib" / "nowpayments.ts",
             ROOT / "src" / "pages" / "api" / "checkout.ts",
             ROOT / "src" / "pages" / "api" / "payments" / "nowpayments" / "ipn.ts",
             ROOT / "database" / "migrations" / "0005_creator_commerce.sql",
+            ROOT / "database" / "migrations" / "0015_prepaid_plan_terms.sql",
+            ROOT / "src" / "pages" / "pricing.astro",
         ]
         if available_paid != {"pro", "team"} or not all(path.is_file() for path in required_billing_sources):
             errors.append("paid availability requires the complete Pro and Team NOWPayments contract")
         else:
             billing_contract = "\n".join(path.read_text(encoding="utf-8", errors="replace") for path in required_billing_sources)
-            for marker in ("NOWPAYMENTS_API_KEY", "NOWPAYMENTS_IPN_SECRET", "USDC", "apply_nowpayments_status"):
+            for marker in (
+                "NOWPAYMENTS_API_KEY",
+                "NOWPAYMENTS_IPN_SECRET",
+                "USDC",
+                "apply_nowpayments_status",
+                "12_months",
+                "0.80",
+            ):
                 if marker.lower() not in billing_contract.lower():
                     errors.append(f"paid billing contract is missing {marker}")
 

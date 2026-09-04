@@ -13,6 +13,7 @@ const openapi = {
   servers: [{ url: 'https://superii.site' }],
   tags: [
     { name: 'Discovery' },
+    { name: 'Billing' },
     { name: 'A2A' },
     { name: 'Agent identity' },
     { name: 'Agent work' },
@@ -50,6 +51,58 @@ const openapi = {
           '200': { description: 'A real, possibly empty, reviewed catalog result', content: { 'application/json': { schema: { type: 'object' } } } },
           '422': { description: 'One or more search parameters are missing, duplicated, unknown, or outside the documented schema' },
           '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/checkout': {
+      post: {
+        tags: ['Billing'],
+        operationId: 'createPlanCheckout',
+        summary: 'Create a human-controlled prepaid USDC plan checkout',
+        description: 'Requires a same-origin signed-in browser session. The server derives the exact price from the existing Pro or Team plan, selected prepaid term, and Team seat count. Neither term renews automatically; Work MCP credentials have no billing or payment authority.',
+        security: [{ clerkSession: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['plan_id'],
+                properties: {
+                  plan_id: { type: 'string', enum: ['pro', 'team'] },
+                  billing_term: { type: 'string', enum: ['30_days', '12_months'], default: '30_days' },
+                  seat_count: { type: 'integer', minimum: 1, maximum: 100, default: 1 },
+                  organization_id: { type: ['string', 'null'], format: 'uuid' },
+                },
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'A matching open checkout was safely reused' },
+          '201': { description: 'Local order and exact NOWPayments checkout created' },
+          '400': { description: 'Plan, term, or seat count is invalid' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '409': { description: 'A matching checkout is already being created' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/checkout/{orderId}': {
+      get: {
+        tags: ['Billing'],
+        operationId: 'getPlanCheckout',
+        summary: 'Read and refresh one owned prepaid plan checkout',
+        security: [{ clerkSession: [] }],
+        parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Owned order with term, exact amount, payment route, and activation state' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '404': { description: 'Owned checkout not found' },
           '503': { $ref: '#/components/responses/Unavailable' },
         },
       },

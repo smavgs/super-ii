@@ -7,6 +7,7 @@ import {
   checkoutPriceCents,
   createNowPayment,
   isCheckoutPlan,
+  isCheckoutTerm,
   nowPaymentsConfigured,
   safeProviderPayload,
   validPaymentStatus,
@@ -38,6 +39,10 @@ export const POST: APIRoute = async ({ locals, request }) => {
     return Response.json({ error: 'invalid JSON' }, { status: 400 });
   }
   if (!isCheckoutPlan(body.plan_id)) return Response.json({ error: 'invalid plan' }, { status: 400 });
+  const requestedTerm = body.billing_term ?? '30_days';
+  if (!isCheckoutTerm(requestedTerm)) {
+    return Response.json({ error: 'billing term must be 30_days or 12_months' }, { status: 400 });
+  }
   const plan = checkoutPlans[body.plan_id];
   const requestedSeats = body.plan_id === 'pro' ? 1 : Number(body.seat_count ?? 1);
   const organizationId = body.plan_id === 'team' ? textValue(body.organization_id, 36) : null;
@@ -65,7 +70,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
       return Response.json({ error: 'seat count cannot be lower than the current member count' }, { status: 422 });
     }
   }
-  const priceCents = checkoutPriceCents(body.plan_id, requestedSeats);
+  const priceCents = checkoutPriceCents(body.plan_id, requestedSeats, requestedTerm);
 
   try {
     const orderRows = await sql`
@@ -74,7 +79,8 @@ export const POST: APIRoute = async ({ locals, request }) => {
         ${organizationId}::uuid,
         ${body.plan_id},
         ${requestedSeats},
-        ${priceCents}
+        ${priceCents},
+        ${requestedTerm}
       )
     `;
     const order = orderRows[0];
@@ -106,6 +112,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
       planName: plan.name,
       priceAmount: priceCents / 100,
       callbackUrl: absoluteUrl('/api/payments/nowpayments/ipn'),
+      description: `Super ii ${plan.name} - ${requestedTerm === '12_months' ? '12 months' : '30 days'}${body.plan_id === 'team' ? ` - ${requestedSeats} seats` : ''}`,
     });
     if (!validPaymentStatus(payment.payment_status)) {
       throw new Error('NOWPayments returned an unsupported payment status.');

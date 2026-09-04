@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ locals, params }) => {
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   const orderId = params.orderId ?? '';
   let rows = await sql`
-    select id, plan_id, seat_count, price_amount_cents, pay_currency, pay_network,
+    select id, plan_id, seat_count, billing_term, price_amount_cents, pay_currency, pay_network,
            pay_amount, pay_address, status, provider_payment_id, expires_at, paid_at, created_at
     from app.payment_orders
     where id = ${orderId}::uuid and profile_id = ${profile.profileId}::uuid
@@ -39,7 +39,7 @@ export const GET: APIRoute = async ({ locals, params }) => {
           )
         `;
         rows = await sql`
-          select id, plan_id, seat_count, price_amount_cents, pay_currency, pay_network,
+          select id, plan_id, seat_count, billing_term, price_amount_cents, pay_currency, pay_network,
                  pay_amount, pay_address, status, provider_payment_id, expires_at, paid_at, created_at
           from app.payment_orders
           where id = ${orderId}::uuid and profile_id = ${profile.profileId}::uuid

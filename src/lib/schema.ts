@@ -901,6 +901,7 @@ export const paymentOrders = app.table(
     organizationId: uuid('organization_id').references(() => organizations.id),
     planId: text('plan_id').notNull().references(() => plans.id),
     seatCount: integer('seat_count').notNull().default(1),
+    billingTerm: text('billing_term').notNull().default('30_days'),
     provider: text('provider').notNull().default('nowpayments'),
     providerPaymentId: text('provider_payment_id').unique(),
     priceAmountCents: integer('price_amount_cents').notNull(),

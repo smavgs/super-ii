@@ -8,6 +8,7 @@ type CheckoutOrder = {
   id: string;
   plan_id: string;
   seat_count: number;
+  billing_term: '30_days' | '12_months';
   price_amount_cents: number;
   pay_currency: string;
   pay_network: string;
@@ -28,7 +29,7 @@ if (sql) {
     authenticated = Boolean(profile);
     if (profile) {
       const rows = await sql`
-        select id, plan_id, seat_count, price_amount_cents, pay_currency, pay_network,
+        select id, plan_id, seat_count, billing_term, price_amount_cents, pay_currency, pay_network,
                pay_amount, pay_address, status, expires_at, paid_at
         from app.payment_orders
         where id = ${orderId}::uuid and profile_id = ${profile.profileId}::uuid
@@ -42,12 +43,13 @@ if (sql) {
 }
 if (!order) Astro.response.status = authenticated ? 404 : 401;
 const terminal = order ? ['finished', 'failed', 'refunded', 'expired'].includes(order.status) : true;
+const termLabel = order?.billing_term === '12_months' ? '12 months' : '30 days';
 ---
 
 <BaseLayout title={order ? `${order.plan_id} checkout` : 'Checkout unavailable'} description="Complete a Super ii plan payment with USDC on Ethereum." noindex>
   {order ? (
     <>
-      <PageHero eyebrow="Secure crypto checkout 💳" title={`${order.plan_id === 'team' ? 'Team' : 'Pro'} · 30 days`} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · ${order.seat_count} ${order.seat_count === 1 ? 'seat' : 'seats'} · pay in USDC on Ethereum`} compact />
+      <PageHero eyebrow="Secure crypto checkout 💳" title={`${order.plan_id === 'team' ? 'Team' : 'Pro'} · ${termLabel}`} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · ${order.seat_count} ${order.seat_count === 1 ? 'seat' : 'seats'} · pay in USDC on Ethereum`} compact />
       <main class="section shell checkout-shell" data-checkout data-order-id={order.id} data-terminal={String(terminal)}>
         <section class="checkout-card">
           <div class="checkout-status-row">
@@ -55,7 +57,7 @@ const terminal = order ? ['finished', 'failed', 'refunded', 'expired'].includes(
             <span class="status-dot" data-status={order.status}></span>
           </div>
           {order.status === 'finished' ? (
-            <div class="creator-callout creator-callout--success"><i class="ph ph-check-circle" aria-hidden="true"></i><p><strong>Plan active 🎉</strong> Your 30-day subscription has been activated. You can manage it from your account.</p></div>
+            <div class="creator-callout creator-callout--success"><i class="ph ph-check-circle" aria-hidden="true"></i><p><strong>Plan active 🎉</strong> Your {termLabel} of access has been activated. You can manage it from your account.</p></div>
           ) : order.pay_address && order.pay_amount ? (
             <>
               <div class="payment-warning">
@@ -86,7 +88,7 @@ const terminal = order ? ['finished', 'failed', 'refunded', 'expired'].includes(
             <li>Ethereum confirmations update this page.</li>
             <li>Your plan activates after the payment is confirmed.</li>
           </ol>
-          <p>This is a single 30-day purchase, not an automatic card renewal. Renew manually before the period ends.</p>
+          <p>This is one {termLabel} purchase, not an automatic renewal. Renew manually before the period ends if you want to continue.</p>
           <p>Network and processor fees may apply. Amounts underpaid, overpaid, sent on the wrong network, or sent after expiry may require NOWPayments support.</p>
         </aside>
       </main>

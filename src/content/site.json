@@ -54,6 +54,19 @@
       "features": ["Everything in Team, plus:", "Custom web-search allowance", "Enterprise profile badge · coming soon", "SSO with SAML/OIDC", "SCIM directory sync", "Advanced identity policies", "Extended audit retention", "Regional deployment options", "Dedicated runtime options", "Customer-supplied cloud or hardware", "Security and procurement review", "Custom support plan", "Service-level agreement options", "Custom storage and compute", "Managed infrastructure options"]
     }
   ],
+  "billing": {
+    "asset": "USDC",
+    "network": "Ethereum",
+    "automaticRenewal": false,
+    "terms": [
+      { "id": "30_days", "label": "30 days", "discountPercent": 0 },
+      { "id": "12_months", "label": "12 months", "discountPercent": 20 }
+    ],
+    "annualTotalsUsd": {
+      "pro": "86.40",
+      "teamPerMember": "192.00"
+    }
+  },
   "routes": [
     "/",
     "/models",

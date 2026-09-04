@@ -5,6 +5,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import type { InfoHelpKey } from '@/lib/info-help';
+import { checkoutPriceCents } from '@/lib/nowpayments';
 import { plans } from '@/lib/site';
 
 let signedIn = false;
@@ -54,6 +55,11 @@ const featureHelp: Partial<Record<string, InfoHelpKey>> = {
   'Customer-supplied cloud or hardware': 'customerSuppliedInfrastructure',
 };
 
+const displayUsd = (cents: number) => {
+  const dollars = cents / 100;
+  return `$${Number.isInteger(dollars) ? dollars.toFixed(0) : dollars.toFixed(2)}`;
+};
+
 const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelpKey }> = [
   { feature: 'Public repositories', values: ['Unlimited', 'Unlimited', 'Unlimited', 'Unlimited'], helpTerm: 'unlimitedPublicRepositories' },
   { feature: 'Private repositories', values: ['—', 'Included', 'Included', 'Included'] },
@@ -92,22 +98,52 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
   >
     <div class="pricing-notice">
       <i class="ph ph-info" aria-hidden="true"></i>
-      <p><strong>Pro and Team activate for 30 days after a verified USDC payment on Ethereum. No card required.</strong> <InfoTip term="thirtyDayAccess" /></p>
+      <p><strong>Choose 30 days or prepay 12 months with 20% off. Both are one-time USDC payments with no automatic renewal.</strong> <InfoTip term="prepaidAccess" /></p>
     </div>
   </PageHero>
 
   <section class="shell pricing-intro" aria-labelledby="plans-heading">
     <h2 class="sr-only" id="plans-heading">Plans</h2>
+    <div class="billing-term-control">
+      <div>
+        <p class="eyebrow">Access length</p>
+        <strong>Choose once. Renew only when you want.</strong>
+        <p data-billing-term-note aria-live="polite">One payment gives 30 days of access.</p>
+      </div>
+      <fieldset data-billing-term-picker>
+        <legend class="sr-only">Choose paid-plan access length</legend>
+        <label class="billing-term-option">
+          <input type="radio" name="billing-term-choice" value="30_days" checked />
+          <span><strong>30 days</strong><small>Standard price</small></span>
+        </label>
+        <label class="billing-term-option billing-term-option--annual">
+          <input type="radio" name="billing-term-choice" value="12_months" />
+          <span><strong>12 months</strong><small>Save 20%</small></span>
+        </label>
+      </fieldset>
+    </div>
     <div class="pricing-grid">
       {plans.map((plan) => {
         const cta = planCta[plan.id as keyof typeof planCta];
+        const paidPlanId = plan.id === 'pro' || plan.id === 'team' ? plan.id : null;
+        const monthlyUnitCents = paidPlanId ? checkoutPriceCents(paidPlanId, 1, '30_days') : null;
+        const annualUnitCents = paidPlanId ? checkoutPriceCents(paidPlanId, 1, '12_months') : null;
+        const defaultSeats = plan.id === 'team' ? Math.max(2, teamOrganizations[0]?.member_count ?? 1) : 1;
         return (
           <article class:list={['price-card', cta.featured && 'price-card--featured']}>
             <h2>{plan.name}</h2>
             <p class="price-card__summary">{plan.summary}</p>
-            <div class="price">
-              <strong>{plan.price}</strong>
-              <span>{plan.unit}</span>
+            <div
+              class="price"
+              data-paid-price={paidPlanId ?? undefined}
+              data-monthly-price={monthlyUnitCents === null ? undefined : displayUsd(monthlyUnitCents)}
+              data-annual-price={annualUnitCents === null ? undefined : displayUsd(annualUnitCents)}
+              data-monthly-unit={paidPlanId === 'team' ? '/ member / 30 days' : paidPlanId === 'pro' ? '/ 30 days' : undefined}
+              data-annual-unit={paidPlanId === 'team' ? '/ member / 12 months' : paidPlanId === 'pro' ? '/ 12 months' : undefined}
+              aria-live={paidPlanId ? 'polite' : undefined}
+            >
+              <strong data-price-value={paidPlanId ? true : undefined}>{plan.price}</strong>
+              <span data-price-unit={paidPlanId ? true : undefined}>{plan.unit}</span>
             </div>
             <ul>
               {plan.features.map((feature) => {
@@ -118,12 +154,19 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
             {cta.href ? (
               <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>{cta.label}</a>
             ) : (
-              <form class="plan-checkout" data-plan-checkout data-plan-id={plan.id}>
+              <form
+                class="plan-checkout"
+                data-plan-checkout
+                data-plan-id={plan.id}
+                data-monthly-unit-cents={monthlyUnitCents}
+                data-annual-unit-cents={annualUnitCents}
+              >
+                <input type="hidden" name="billing_term" value="30_days" data-billing-term-field />
                 {plan.id === 'team' && signedIn && teamOrganizations.length > 0 && <label>Organization <select name="organization_id" required>{teamOrganizations.map((organization) => <option value={organization.id}>{organization.name} · @{organization.handle}</option>)}</select></label>}
-                {plan.id === 'team' && <label>Seats <input name="seat_count" type="number" min="1" max="100" value={String(Math.max(2, teamOrganizations[0]?.member_count ?? 1))} required /></label>}
+                {plan.id === 'team' && <label>Seats <input name="seat_count" type="number" min="1" max="100" value={String(defaultSeats)} required /></label>}
                 {plan.id === 'team' && signedIn && teamOrganizations.length === 0 && <span>Create an organization before activating Team. <a href="/organizations/new">Create one</a></span>}
                 <button class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} type="submit" disabled={plan.id === 'team' && signedIn && teamOrganizations.length === 0}>{cta.label}</button>
-                <span>USDC · Ethereum · 30 days</span>
+                <span data-checkout-summary>USDC · Ethereum · {displayUsd((monthlyUnitCents ?? 0) * defaultSeats)} total{defaultSeats > 1 ? ` for ${defaultSeats} seats` : ''} · 30 days</span>
                 <p data-form-status aria-live="polite"></p>
               </form>
             )}
@@ -215,7 +258,7 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
         <div>
           <p>Pro and Team are activated with USDC on Ethereum.</p>
           <ul>
-            {['No card required', 'One payment activates 30 days', 'Renew manually when you want', 'Network and processor fees may apply', 'Your plan and infrastructure usage remain separate'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
+            {['No card required', 'Choose 30 days or 12 months', 'Save 20% when you prepay 12 months', 'No automatic renewal', 'Network and processor fees may apply', 'Your plan and infrastructure usage remain separate'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
           </ul>
           <p><InfoTip term="usdcEthereum" /></p>
         </div>
@@ -226,6 +269,68 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
 </BaseLayout>
 
 <script>
+  type BillingTerm = '30_days' | '12_months';
+
+  const termInputs = document.querySelectorAll<HTMLInputElement>('[name="billing-term-choice"]');
+  const termNote = document.querySelector<HTMLElement>('[data-billing-term-note]');
+  const paidPrices = document.querySelectorAll<HTMLElement>('[data-paid-price]');
+  const checkoutForms = document.querySelectorAll<HTMLFormElement>('[data-plan-checkout]');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const selectedTerm = (): BillingTerm => {
+    const selected = document.querySelector<HTMLInputElement>('[name="billing-term-choice"]:checked')?.value;
+    return selected === '12_months' ? '12_months' : '30_days';
+  };
+
+  const formatUsd = (cents: number) => {
+    const dollars = cents / 100;
+    return `$${Number.isInteger(dollars) ? dollars.toFixed(0) : dollars.toFixed(2)}`;
+  };
+
+  const updateCheckoutSummary = (form: HTMLFormElement, term: BillingTerm) => {
+    const seatsInput = form.querySelector<HTMLInputElement>('[name="seat_count"]');
+    const seats = Math.max(1, Number(seatsInput?.value ?? 1) || 1);
+    const unitCents = Number(term === '12_months'
+      ? form.dataset.annualUnitCents
+      : form.dataset.monthlyUnitCents);
+    const summary = form.querySelector<HTMLElement>('[data-checkout-summary]');
+    if (summary) {
+      summary.textContent = `USDC · Ethereum · ${formatUsd(unitCents * seats)} total${seats > 1 ? ` for ${seats} seats` : ''} · ${term === '12_months' ? '12 months' : '30 days'}`;
+    }
+  };
+
+  const applyTerm = (term: BillingTerm) => {
+    if (termNote) {
+      termNote.textContent = term === '12_months'
+        ? 'One payment gives 12 months of access with 20% off. No automatic renewal.'
+        : 'One payment gives 30 days of access. No automatic renewal.';
+    }
+    paidPrices.forEach((price) => {
+      const value = price.querySelector<HTMLElement>('[data-price-value]');
+      const unit = price.querySelector<HTMLElement>('[data-price-unit]');
+      if (value) value.textContent = term === '12_months' ? price.dataset.annualPrice ?? '' : price.dataset.monthlyPrice ?? '';
+      if (unit) unit.textContent = term === '12_months' ? price.dataset.annualUnit ?? '' : price.dataset.monthlyUnit ?? '';
+      if (!prefersReducedMotion) {
+        price.animate(
+          [{ opacity: 0.68, transform: 'translateY(2px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          { duration: 180, easing: 'ease-out' },
+        );
+      }
+    });
+    checkoutForms.forEach((form) => {
+      const field = form.querySelector<HTMLInputElement>('[data-billing-term-field]');
+      if (field) field.value = term;
+      updateCheckoutSummary(form, term);
+    });
+  };
+
+  termInputs.forEach((input) => input.addEventListener('change', () => applyTerm(selectedTerm())));
+  checkoutForms.forEach((form) => {
+    form.querySelector<HTMLInputElement>('[name="seat_count"]')?.addEventListener('input', () => {
+      updateCheckoutSummary(form, selectedTerm());
+    });
+  });
+
   document.querySelectorAll('[data-plan-checkout]').forEach((candidate) => {
     candidate.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -241,6 +346,7 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             plan_id: planId,
+            billing_term: values.get('billing_term'),
             seat_count: Number(values.get('seat_count') ?? 1),
             organization_id: values.get('organization_id') || null,
           }),

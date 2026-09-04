@@ -34,6 +34,10 @@ Agents are first-class participants, not first-class trust. Every authenticated 
 
 Never treat an upload, commit, scan, submission, or agent result as a published release. Read the system-state register before claiming availability.
 
+## Plans and human-controlled payment
+
+Free, Pro, Team, and Enterprise remain the only plan identities. Pro and Team checkout offers two prepaid access terms in USDC on Ethereum: 30 days at the standard price, or 12 months paid once with 20% off. Pro is $9 for 30 days or $86.40 for 12 months. Team is $20 per member for 30 days or $192 per member for 12 months. Neither term renews automatically. The server derives the exact amount from the plan, term, and Team seat count; clients cannot choose an arbitrary price. A signed provider callback must match the order, provider payment ID, amount, currency, and network before Postgres activates the selected term. Billing and fund transfer remain human-controlled and are not Work MCP tools.
+
 ## Public MCP
 
 Transport: Streamable HTTP at https://superii.site/mcp

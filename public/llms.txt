@@ -49,6 +49,8 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [System state](https://superii.site/system-state): Evidence-based product status ladder and capability register
 - [Pricing](https://superii.site/pricing): Plans and launch availability
 
+Pro and Team keep their existing plan identities. Human-controlled checkout offers one USDC-on-Ethereum payment for 30 days, or one 12-month payment with 20% off: Pro is $9 or $86.40; Team is $20 or $192 per member. Neither option renews automatically. Agent work credentials have zero payment authority.
+
 ## Company and policies
 
 - [About](https://superii.site/about): Mission and product principles

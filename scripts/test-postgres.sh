@@ -55,6 +55,10 @@ docker exec -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
   < "$project_root/database/tests/participation_smoke.sql" >/dev/null
 
+docker exec -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
+  < "$project_root/database/tests/billing_term_smoke.sql" >/dev/null
+
 counts=$(docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atc \
   "select count(*) || ':' || (select count(*) from app.repositories) from information_schema.tables where table_schema = 'app'")
 

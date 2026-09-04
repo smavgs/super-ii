@@ -100,10 +100,12 @@ Required deployment secrets:
 Store them with Cloudflare secrets or local ignored env files. Do not add values to `wrangler.jsonc` or Git.
 
 Paid plans use one-time NOWPayments orders denominated in USD and paid only as
-USDC on Ethereum. An authenticated, same-origin checkout creates or reuses one
-bounded order; signed IPN callbacks must match its provider ID, order ID, exact
-price, currency, and network before PL/pgSQL activates a 30-day entitlement.
-Card collection is intentionally absent.
+USDC on Ethereum. Pro and Team retain the same plans while offering a 30-day
+term or one 12-month prepayment discounted by 20%; neither renews automatically.
+An authenticated, same-origin checkout creates or reuses one bounded order;
+signed IPN callbacks must match its provider ID, order ID, exact price, currency,
+and network before PL/pgSQL activates the selected entitlement. Card collection
+is intentionally absent.
 
 Runtime code, deployment, scanner, offline-model, llama.cpp, Diffusers, and Gradio instructions are in [`runtime/README.md`](runtime/README.md).
 

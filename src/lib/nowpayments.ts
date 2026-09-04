@@ -9,6 +9,13 @@ export const checkoutPlans = {
 
 export type CheckoutPlanId = keyof typeof checkoutPlans;
 
+export const checkoutTerms = {
+  '30_days': { label: '30 days', discountPercent: 0 },
+  '12_months': { label: '12 months', discountPercent: 20 },
+} as const;
+
+export type CheckoutTermId = keyof typeof checkoutTerms;
+
 export type NowPayment = {
   payment_id: string | number;
   payment_status: string;
@@ -43,8 +50,19 @@ export function isCheckoutPlan(value: unknown): value is CheckoutPlanId {
   return typeof value === 'string' && value in checkoutPlans;
 }
 
-export function checkoutPriceCents(planId: CheckoutPlanId, seats: number): number {
-  return checkoutPlans[planId].unitAmountCents * seats;
+export function isCheckoutTerm(value: unknown): value is CheckoutTermId {
+  return typeof value === 'string' && value in checkoutTerms;
+}
+
+export function checkoutPriceCents(
+  planId: CheckoutPlanId,
+  seats: number,
+  term: CheckoutTermId = '30_days',
+): number {
+  const monthlyTotal = checkoutPlans[planId].unitAmountCents * seats;
+  return term === '12_months'
+    ? Math.round(monthlyTotal * 12 * 0.8)
+    : monthlyTotal;
 }
 
 export function validPaymentStatus(value: unknown): value is string {

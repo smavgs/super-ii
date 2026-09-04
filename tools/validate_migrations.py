@@ -154,6 +154,12 @@ def main() -> int:
         errors.append("payment activation must be transactional and idempotent")
     if "create_or_reuse_payment_order" not in lower or "pg_advisory_xact_lock" not in lower:
         errors.append("payment creation must deduplicate concurrent checkout attempts")
+    if "billing_term in ('30_days', '12_months')" not in lower:
+        errors.append("paid plans must preserve the selected prepaid access term")
+    if "p_billing_term text default '30_days'" not in lower or "interval '12 months'" not in lower:
+        errors.append("payment activation must support backward-compatible 30-day and 12-month terms")
+    if "* 12)::numeric * 0.80" not in lower:
+        errors.append("the 12-month plan price must receive the exact 20 percent discount")
     if "require_release_manifest" not in lower or "release_manifest_incomplete" not in lower:
         errors.append("publication must require a structured manifest and commit checksum")
     if "sync_repository_compatibility" not in lower:
