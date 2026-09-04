@@ -121,4 +121,4 @@ The script checks Astro types, validates every language-specific contract, build
 
 ## License
 
-Code in this repository is available under the MIT License. The Super ii name and logo are not granted for third-party branding use by that code license.
+Code in this repository is available under the modified MIT License. The Super ii name and logo are not granted for third-party branding use by that code license.
