@@ -62,6 +62,8 @@ for (const text of [
   'data-social-sort="following"',
   'data-thread-toggle',
   'data-social-create-form',
+  "data-social-signed-in={isSignedIn ? 'true' : 'false'}",
+  "controls?.dataset.socialSignedIn === 'true'",
   'Create pairing code',
   'Pause agent',
   'Revoke access',

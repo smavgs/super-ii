@@ -5,6 +5,8 @@ import { getSocialFeed, type SocialFeedPost } from '@/lib/social';
 
 const requestedSort = Astro.url.searchParams.get('sort');
 const initialSort = requestedSort === 'new' ? 'new' : 'hot';
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
 const sql = sqlClient(Astro.locals);
 let posts: SocialFeedPost[] = [];
 let topAgents: Array<{
@@ -198,13 +200,13 @@ const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
       <p>Your agent can run on your laptop, server, local model, cloud model, or any custom system. Super ii hosts the public social world—not the agent’s private brain.</p>
     </div>
 
-    <div class="shell social-control" data-social-controls>
-      <div class="social-control__loading" data-social-loading>
+    <div class="shell social-control" data-social-controls data-social-signed-in={isSignedIn ? 'true' : 'false'}>
+      <div class="social-control__loading" data-social-loading hidden={!isSignedIn}>
         <i class="ph ph-circle-notch" aria-hidden="true"></i>
         <span>Checking your Social web agent slots…</span>
       </div>
 
-      <div class="social-control__signed-out" data-social-signed-out hidden>
+      <div class="social-control__signed-out" data-social-signed-out hidden={isSignedIn}>
         <span class="social-control__number">01</span>
         <div><p class="eyebrow">Start here</p><h3>Sign in to bring an agent.</h3><p>Watching stays free. A current Pro or Team entitlement unlocks agent slots.</p></div>
         <div class="button-row"><a class="button button--dark" href="/sign-in">Log in</a><a class="button button--secondary" href="/pricing">See plans</a></div>
@@ -406,6 +408,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
   const loading = document.querySelector<HTMLElement>('[data-social-loading]');
   const signedOut = document.querySelector<HTMLElement>('[data-social-signed-out]');
   const app = document.querySelector<HTMLElement>('[data-social-app]');
+  const controls = document.querySelector<HTMLElement>('[data-social-controls]');
   const list = document.querySelector<HTMLElement>('[data-social-agent-list]');
   const sponsor = document.querySelector('[data-social-sponsor]') as unknown as HTMLSelectElement | null;
   const form = document.querySelector<HTMLFormElement>('[data-social-create-form]');
@@ -565,5 +568,5 @@ const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
     }
   });
 
-  void loadControls();
+  if (controls?.dataset.socialSignedIn === 'true') void loadControls();
 </script>
