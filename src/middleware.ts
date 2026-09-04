@@ -16,21 +16,6 @@ const withClerk = clerkMiddleware(async (_auth, _context, next) => {
 });
 
 const clerkFrontendApi = 'https://clerk.superii.site';
-const observationPolicy = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https:",
-  "connect-src 'self' https: wss:",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  "style-src 'self' 'unsafe-inline'",
-  "worker-src 'self' blob:",
-  "frame-src 'self' https:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  'upgrade-insecure-requests',
-].join('; ');
 
 function responseNonce(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -101,10 +86,7 @@ function secure(response: Response, request: Request): Response {
     ? isolatedSpaceCsp(url.origin)
     : inlineMediaFrame
       ? "default-src 'none'; frame-ancestors 'self'"
-      : transformHtml
-        ? observationPolicy
-        : strictPolicy);
-  if (transformHtml) headers.set('content-security-policy-report-only', strictPolicy);
+      : strictPolicy);
   headers.set('cross-origin-opener-policy', 'same-origin-allow-popups');
   headers.set('cross-origin-resource-policy', isolatedSpaceFrame ? 'cross-origin' : 'same-origin');
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');

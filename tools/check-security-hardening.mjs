@@ -93,7 +93,7 @@ assert.equal(catalogSearchInputSchema.safeParse({ unexpected: true }).success, f
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'space' }).success, true);
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'invalid' }).success, false);
 
-const [middleware, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi] = await Promise.all([
+const [middleware, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule] = await Promise.all([
   read('src/middleware.ts'),
   read('public/_headers'),
   read('src/pages/api/search.ts'),
@@ -102,6 +102,7 @@ const [middleware, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, cata
   read('src/lib/a2a.ts'),
   read('src/lib/catalog.ts'),
   read('src/pages/openapi.json.ts'),
+  read('src/lib/site.ts'),
 ]);
 
 const policyLine = staticHeaders.split('\n').find((line) => line.trim().startsWith('Content-Security-Policy:'));
@@ -124,6 +125,8 @@ assert.match(middleware, /"'strict-dynamic'"/);
 assert.match(middleware, /new HTMLRewriter\(\)/);
 assert.match(middleware, /element\.setAttribute\('nonce', nonce\)/);
 assert.match(middleware, /inlineMediaFrame[\s\S]+default-src 'none'; frame-ancestors 'self'/);
+assert.ok(!middleware.includes('content-security-policy-report-only'), 'strict CSP must be enforced after observation');
+assert.ok(!middleware.includes("script-src 'self' 'unsafe-inline' https:"), 'legacy observation policy must be removed');
 
 assert.match(searchRoute, /parseCatalogRestSearchParams\(url\.searchParams\)/);
 assert.match(searchRoute, /consumeRateLimit\(locals, request, sql, 'catalog\.search', 300, 3600\)/);
@@ -142,6 +145,8 @@ for (const leaked of ['service:', 'version:', 'checks:', 'timestamp:']) {
 }
 assert.match(healthRoute, /status: healthy \? 'ok' : 'degraded'/);
 assert.match(healthRoute, /status: healthy \? 200 : 503/);
+assert.match(siteModule, /runtimeEnv\?\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
+assert.match(siteModule, /import\.meta\.env\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
 
 assert.match(openapi, /name: 'kind', in: 'query', required: true/);
 assert.match(openapi, /name: 'limit'[\s\S]+minimum: 1, maximum: 50, default: 20/);

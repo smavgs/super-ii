@@ -1,4 +1,5 @@
 import siteData from '@/content/site.json';
+import { env } from 'cloudflare:workers';
 
 export const site = siteData;
 export const plans = siteData.plans;
@@ -41,5 +42,9 @@ export function absoluteUrl(path = '/') {
 
 export function authIsConfigured(locals: App.Locals): boolean {
   void locals;
-  return Boolean(import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const runtimeEnv = env as Record<string, string | undefined>;
+  return Boolean(
+    runtimeEnv?.PUBLIC_CLERK_PUBLISHABLE_KEY
+      ?? import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY,
+  );
 }
