@@ -2,7 +2,8 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { createMcpHandler } from 'agents/mcp/server';
 import { z } from 'zod';
 import { repositoryApiContract, repositoryDocument, repositoryRepresentationLinks } from './agent-resources';
-import { searchCatalog, type CatalogFilters, type RepositoryKind } from './catalog';
+import { searchCatalog, type RepositoryKind } from './catalog';
+import { catalogFiltersFromInput, catalogSearchInputSchema } from './catalog-search';
 import { getPublicPaper, paperDocument, searchPublicPapers } from './papers';
 import { getPublicRepository, type RepositoryBundle } from './repository';
 import { systemState, systemStateMarkdown } from './system-state';
@@ -52,50 +53,17 @@ function isToolError(value: RepositoryBundle | ReturnType<typeof error>): value 
   return 'isError' in value;
 }
 
-function searchInput() {
-  return z.object({
-    query: z.string().trim().max(300).optional(),
-    task: z.string().trim().max(120).optional(),
-    library: z.string().trim().max(120).optional(),
-    license: z.string().trim().max(120).optional(),
-    modality: z.string().trim().max(120).optional(),
-    author: z.string().trim().max(120).optional(),
-    max_size_bytes: z.number().int().nonnegative().optional(),
-    updated_after: z.iso.date().optional(),
-    hardware: z.enum(['apple-silicon', 'nvidia', 'amd', 'cpu', 'browser', 'llama-cpp']).optional(),
-    operating_system: z.enum(['macos', 'linux', 'windows', 'browser']).optional(),
-    available_ram_bytes: z.number().int().nonnegative().optional(),
-    available_vram_bytes: z.number().int().nonnegative().optional(),
-    sort: z.enum(['relevance', 'trending', 'downloads', 'likes', 'updated']).optional(),
-    limit: z.number().int().min(1).max(50).default(20),
-  });
-}
-
 function registerSearchTool(server: McpServer, locals: App.Locals, name: string, kind: RepositoryKind) {
   server.registerTool(
     name,
     {
       title: `Search public Super ii ${kind}s`,
       description: `Search reviewed public ${kind} repositories with metadata, size, recency, and hardware filters. Empty results are real and never filled with demos.`,
-      inputSchema: searchInput(),
+      inputSchema: catalogSearchInputSchema,
       annotations,
     },
     async (input) => {
-      const filters: CatalogFilters = {
-        query: input.query,
-        task: input.task,
-        library: input.library,
-        license: input.license,
-        modality: input.modality,
-        author: input.author,
-        maxSizeBytes: input.max_size_bytes,
-        updatedAfter: input.updated_after,
-        hardware: input.hardware,
-        operatingSystem: input.operating_system,
-        maxRamBytes: input.available_ram_bytes,
-        maxVramBytes: input.available_vram_bytes,
-        sort: input.sort,
-      };
+      const filters = catalogFiltersFromInput(input);
       const found = await searchCatalog(locals, kind, filters, input.limit, 0);
       if (found.state === 'error') return error('public search is temporarily unavailable');
       return result({ state: found.state, count: found.items.length, repositories: found.items });

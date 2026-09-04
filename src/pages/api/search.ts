@@ -1,35 +1,41 @@
 import type { APIRoute } from 'astro';
-import { searchCatalog, type RepositoryKind } from '@/lib/catalog';
+import { searchCatalog } from '@/lib/catalog';
+import { parseCatalogRestSearchParams } from '@/lib/catalog-search';
+import { sqlClient } from '@/lib/db';
+import { consumeRateLimit } from '@/lib/rate-limit';
 
-const kinds = new Set<RepositoryKind>(['model', 'dataset', 'space']);
-
-export const GET: APIRoute = async ({ locals, url }) => {
-  const rawKind = url.searchParams.get('kind');
-  if (!rawKind || !kinds.has(rawKind as RepositoryKind)) {
-    return Response.json({ error: 'kind must be model, dataset, or space' }, { status: 400 });
+export const GET: APIRoute = async ({ locals, request, url }) => {
+  const parsed = parseCatalogRestSearchParams(url.searchParams);
+  if (!parsed.success) {
+    return Response.json(
+      { error: 'invalid search query', issues: parsed.issues },
+      { status: 422, headers: { 'cache-control': 'no-store' } },
+    );
   }
-  const limit = Math.min(Math.max(Number(url.searchParams.get('limit') ?? 24) || 24, 1), 100);
-  const offset = Math.max(Number(url.searchParams.get('offset') ?? 0) || 0, 0);
+
+  const sql = sqlClient(locals);
+  if (sql) {
+    const rate = await consumeRateLimit(locals, request, sql, 'catalog.search', 300, 3600);
+    if (rate !== 'allowed') {
+      return Response.json(
+        { error: rate === 'limited' ? 'public search rate limit reached' : 'search safety service unavailable' },
+        {
+          status: rate === 'limited' ? 429 : 503,
+          headers: {
+            'cache-control': 'no-store',
+            ...(rate === 'limited' ? { 'retry-after': '3600' } : {}),
+          },
+        },
+      );
+    }
+  }
+
   const result = await searchCatalog(
     locals,
-    rawKind as RepositoryKind,
-    {
-      query: url.searchParams.get('q') ?? undefined,
-      task: url.searchParams.get('task') ?? undefined,
-      library: url.searchParams.get('library') ?? undefined,
-      license: url.searchParams.get('license') ?? undefined,
-      modality: url.searchParams.get('modality') ?? undefined,
-      author: url.searchParams.get('author') ?? undefined,
-      maxSizeBytes: url.searchParams.has('max_size') ? Number(url.searchParams.get('max_size')) : undefined,
-      updatedAfter: url.searchParams.get('updated_after') ?? undefined,
-      hardware: (url.searchParams.get('hardware') ?? undefined) as 'apple-silicon' | 'nvidia' | 'amd' | 'cpu' | 'browser' | 'llama-cpp' | undefined,
-      operatingSystem: (url.searchParams.get('os') ?? undefined) as 'macos' | 'linux' | 'windows' | 'browser' | undefined,
-      maxRamBytes: url.searchParams.has('max_ram_bytes') ? Number(url.searchParams.get('max_ram_bytes')) : undefined,
-      maxVramBytes: url.searchParams.has('max_vram_bytes') ? Number(url.searchParams.get('max_vram_bytes')) : undefined,
-      sort: (url.searchParams.get('sort') ?? undefined) as 'relevance' | 'trending' | 'downloads' | 'likes' | 'updated' | undefined,
-    },
-    limit,
-    offset,
+    parsed.data.kind,
+    parsed.data.filters,
+    parsed.data.limit,
+    parsed.data.offset,
   );
   const status = result.state === 'error' ? 503 : 200;
   return Response.json(result, {

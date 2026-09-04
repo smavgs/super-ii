@@ -1,26 +1,9 @@
 import { z } from 'zod';
 import { repositoryDocument } from './agent-resources';
-import { searchCatalog, type CatalogFilters, type RepositoryKind } from './catalog';
+import { searchCatalog, type RepositoryKind } from './catalog';
+import { catalogFiltersFromInput, catalogSearchWithKindSchema } from './catalog-search';
 import { getPublicRepository, type RepositoryBundle } from './repository';
 import { systemState } from './system-state';
-
-const catalogArguments = z.object({
-  kind: z.enum(['model', 'dataset', 'space']),
-  query: z.string().trim().max(300).optional(),
-  task: z.string().trim().max(120).optional(),
-  library: z.string().trim().max(120).optional(),
-  license: z.string().trim().max(120).optional(),
-  modality: z.string().trim().max(120).optional(),
-  author: z.string().trim().max(120).optional(),
-  max_size_bytes: z.number().int().nonnegative().optional(),
-  updated_after: z.iso.date().optional(),
-  hardware: z.enum(['apple-silicon', 'nvidia', 'amd', 'cpu', 'browser', 'llama-cpp']).optional(),
-  operating_system: z.enum(['macos', 'linux', 'windows', 'browser']).optional(),
-  available_ram_bytes: z.number().int().nonnegative().optional(),
-  available_vram_bytes: z.number().int().nonnegative().optional(),
-  sort: z.enum(['relevance', 'trending', 'downloads', 'likes', 'updated']).optional(),
-  limit: z.number().int().min(1).max(50).default(20),
-}).strict();
 
 const repositoryArguments = z.object({
   kind: z.enum(['model', 'dataset', 'space']),
@@ -33,7 +16,7 @@ const downloadArguments = repositoryArguments.extend({
 }).strict();
 
 const skillRequest = z.discriminatedUnion('skillId', [
-  z.object({ skillId: z.literal('search-public-catalog'), arguments: catalogArguments }).strict(),
+  z.object({ skillId: z.literal('search-public-catalog'), arguments: catalogSearchWithKindSchema }).strict(),
   z.object({ skillId: z.literal('inspect-public-repository'), arguments: repositoryArguments }).strict(),
   z.object({ skillId: z.literal('resolve-verified-download'), arguments: downloadArguments }).strict(),
   z.object({ skillId: z.literal('read-system-state'), arguments: z.object({}).strict().default({}) }).strict(),
@@ -128,21 +111,7 @@ export async function executeA2APublicSkill(
 
   if (request.skillId === 'search-public-catalog') {
     const input = request.arguments;
-    const filters: CatalogFilters = {
-      query: input.query,
-      task: input.task,
-      library: input.library,
-      license: input.license,
-      modality: input.modality,
-      author: input.author,
-      maxSizeBytes: input.max_size_bytes,
-      updatedAfter: input.updated_after,
-      hardware: input.hardware,
-      operatingSystem: input.operating_system,
-      maxRamBytes: input.available_ram_bytes,
-      maxVramBytes: input.available_vram_bytes,
-      sort: input.sort,
-    };
+    const filters = catalogFiltersFromInput(input);
     const found = await searchCatalog(locals, input.kind, filters, input.limit, 0);
     if (found.state === 'error') return { ok: false, status: 'failed', message: 'Public search is temporarily unavailable.' };
     if (found.state === 'unconfigured') return { ok: false, status: 'failed', message: 'Public search is not configured on this deployment.' };

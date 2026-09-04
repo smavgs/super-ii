@@ -1,13 +1,9 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import NotebookDocument from '@/components/NotebookDocument.astro';
-import { getOfficialNotebook, officialNotebooks } from '@/lib/notebooks';
+import { getOfficialNotebook } from '@/lib/notebooks';
 
-export const prerender = true;
-
-export function getStaticPaths() {
-  return officialNotebooks.map((notebook) => ({ params: { slug: notebook.slug } }));
-}
+export const prerender = false;
 
 const tutorial = getOfficialNotebook(Astro.params.slug);
 if (!tutorial) Astro.response.status = 404;

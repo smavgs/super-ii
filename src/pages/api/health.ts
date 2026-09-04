@@ -10,15 +10,6 @@ export const GET: APIRoute = async ({ locals }) => {
   return new Response(
     JSON.stringify({
       status: healthy ? 'ok' : 'degraded',
-      service: 'superii-web',
-      version: '1.0.0',
-      checks: {
-        website: 'ok',
-        authentication,
-        database,
-        catalog: 'ok-empty',
-      },
-      timestamp: new Date().toISOString(),
     }),
     {
       status: healthy ? 200 : 503,

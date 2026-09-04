@@ -29,6 +29,7 @@ fi
 npm run validate
 node tools/copy-browser-ai-assets.mjs
 npx astro build
+node tools/check-built-security.mjs
 
 # Astro copies public/ verbatim. Finder can recreate this harmless local file
 # at any time, so remove it only from the generated release tree before the

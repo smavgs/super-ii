@@ -71,6 +71,9 @@ export async function searchCatalog(
   const sql = sqlClient(locals);
   if (!sql) return { state: 'unconfigured', items: [] };
 
+  const pageSize = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 20;
+  const pageOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 100) : 0;
+
   const maxSize = filters.maxSizeBytes;
   const updatedAfter = filters.updatedAfter && !Number.isNaN(Date.parse(filters.updatedAfter))
     ? new Date(filters.updatedAfter).toISOString()
@@ -165,8 +168,8 @@ export async function searchCatalog(
         case when ${sort} = 'relevance' then matches.rank end desc,
         matches.updated_at desc,
         matches.repository_id
-      limit ${Math.min(Math.max(limit, 1), 100)}
-      offset ${Math.max(offset, 0)}
+      limit ${pageSize}
+      offset ${pageOffset}
     `;
     return { state: 'ok', items: rows as PublicRepository[] };
   } catch {

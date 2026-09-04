@@ -15,21 +15,54 @@ const withClerk = clerkMiddleware(async (_auth, _context, next) => {
   });
 });
 
-const csp = [
+const clerkFrontendApi = 'https://clerk.superii.site';
+const observationPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https:",
   "connect-src 'self' https: wss:",
-  "img-src 'self' data: https://img.clerk.com https:",
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "worker-src 'self' blob:",
-  "frame-src 'self' https://challenges.cloudflare.com https://*.protect.clerk.com",
+  "frame-src 'self' https:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
   'upgrade-insecure-requests',
 ].join('; ');
+
+function responseNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function contentSecurityPolicy(nonce: string | null, allowSameOriginFrame = false): string {
+  const scriptSources = [
+    "'self'",
+    ...(nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
+    "'wasm-unsafe-eval'",
+    clerkFrontendApi,
+    'https://challenges.cloudflare.com',
+    'https://*.protect.clerk.com',
+  ];
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSources.join(' ')}`,
+    "script-src-attr 'none'",
+    `connect-src 'self' ${clerkFrontendApi} https://clerk-telemetry.com https://*.clerk-telemetry.com https://challenges.cloudflare.com https://*.protect.clerk.com:*`,
+    "img-src 'self' data: blob: https://img.clerk.com https:",
+    "font-src 'self' data:",
+    "style-src 'self' 'unsafe-inline'",
+    "worker-src 'self' blob:",
+    `frame-src 'self' ${clerkFrontendApi} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    `frame-ancestors '${allowSameOriginFrame ? 'self' : 'none'}'`,
+    'upgrade-insecure-requests',
+  ].join('; ');
+}
 
 function isolatedSpaceCsp(origin: string): string {
   return [
@@ -53,16 +86,25 @@ function secure(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   const url = new URL(request.url);
   const isolatedSpaceFrame = /^\/api\/repositories\/[^/]+\/space(?:\/|$)/.test(url.pathname);
-  const sameOriginFrame = isolatedSpaceFrame
-    || (/^\/api\/repositories\/[^/]+\/files\/[^/]+$/.test(url.pathname) && url.searchParams.get('inline') === '1');
-  headers.set(
-    'content-security-policy',
-    isolatedSpaceFrame
-      ? isolatedSpaceCsp(url.origin)
-      : sameOriginFrame
-        ? csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'")
-        : csp,
-  );
+  const inlineMediaFrame = /^\/api\/repositories\/[^/]+\/files\/[^/]+$/.test(url.pathname)
+    && url.searchParams.get('inline') === '1';
+  const sameOriginFrame = isolatedSpaceFrame || inlineMediaFrame;
+  const contentType = headers.get('content-type')?.toLowerCase() ?? '';
+  const transformHtml = !isolatedSpaceFrame
+    && !inlineMediaFrame
+    && request.method !== 'HEAD'
+    && response.body !== null
+    && contentType.includes('text/html');
+  const nonce = transformHtml ? responseNonce() : null;
+  const strictPolicy = contentSecurityPolicy(nonce);
+  headers.set('content-security-policy', isolatedSpaceFrame
+    ? isolatedSpaceCsp(url.origin)
+    : inlineMediaFrame
+      ? "default-src 'none'; frame-ancestors 'self'"
+      : transformHtml
+        ? observationPolicy
+        : strictPolicy);
+  if (transformHtml) headers.set('content-security-policy-report-only', strictPolicy);
   headers.set('cross-origin-opener-policy', 'same-origin-allow-popups');
   headers.set('cross-origin-resource-policy', isolatedSpaceFrame ? 'cross-origin' : 'same-origin');
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
@@ -70,7 +112,15 @@ function secure(response: Response, request: Request): Response {
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-frame-options', sameOriginFrame ? 'SAMEORIGIN' : 'DENY');
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  const secured = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  if (!nonce) return secured;
+  return new HTMLRewriter()
+    .on('script', {
+      element(element) {
+        element.setAttribute('nonce', nonce);
+      },
+    })
+    .transform(secured);
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
