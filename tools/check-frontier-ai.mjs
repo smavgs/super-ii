@@ -37,12 +37,11 @@ for (const text of [
 for (const text of [
   'Maximum-power AI.',
   '$0 to start.',
-  '2.8-trillion-parameter frontier model',
+  'Use a 2.8-trillion-parameter frontier model, from your own computer',
   'No business AI subscription required to start.',
   'No high-end GPU needed.',
   'Use it from your own computer.',
   'Use frontier AI',
-  'Kimi K3',
 ]) {
   assert(files.homepage.includes(text), `homepage hook is missing ${JSON.stringify(text)}`);
 }
@@ -78,6 +77,9 @@ assert(/<section class="frontier-home-hook"[\s\S]*?<\/section>\s*<section class=
 assert(!files.homepage.includes('Free endpoint access is controlled by NVIDIA and subject to its current trial terms and limits.'), 'homepage must omit the NVIDIA trial disclaimer');
 assert(!files.homepage.includes('· NVIDIA + OpenCode'), 'homepage must omit the provider suffix');
 assert(!files.homepage.includes('frontier-home-hook__path'), 'homepage must omit the connection-path illustration');
+assert(!files.homepage.includes('No 2.8T model download.'), 'homepage must omit the model-download benefit');
+const frontierMarkup = files.homepage.match(/<section class="frontier-home-hook"[\s\S]*?<\/section>/)?.[0] || '';
+assert((frontierMarkup.match(/<li>/g) || []).length === 3, 'homepage hook must contain exactly three outlined benefits');
 assert(files.homepage.includes('href="/frontier-ai"'), 'homepage call to action must open the complete guide');
 
 assert(files.routes.includes('"/frontier-ai"'), 'canonical route registry is missing /frontier-ai');
