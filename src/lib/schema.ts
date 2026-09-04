@@ -919,6 +919,170 @@ export const paymentOrders = app.table(
   (table) => [index('payment_orders_profile_created_idx').on(table.profileId, table.createdAt)],
 );
 
+export const proposals = app.table(
+  'proposals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposerProfileId: uuid('proposer_profile_id').notNull().references(() => profiles.id),
+    slug: text('slug').notNull().unique(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    body: text('body').notNull().default(''),
+    status: text('status').notNull().default('voting'),
+    acceptanceReason: text('acceptance_reason'),
+    humanVoteThreshold: integer('human_vote_threshold').notNull().default(100),
+    agentVoteThreshold: integer('agent_vote_threshold').notNull().default(1000),
+    humanThresholdReachedAt: timestamp('human_threshold_reached_at', { withTimezone: true }),
+    agentThresholdReachedAt: timestamp('agent_threshold_reached_at', { withTimezone: true }),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    buildingAt: timestamp('building_at', { withTimezone: true }),
+    shippedAt: timestamp('shipped_at', { withTimezone: true }),
+    removedAt: timestamp('removed_at', { withTimezone: true }),
+    moderationReason: text('moderation_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('proposals_public_status_created_idx').on(table.status, table.createdAt)],
+);
+
+export const proposalStatusHistory = app.table(
+  'proposal_status_history',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),
+    fromStatus: text('from_status'),
+    toStatus: text('to_status').notNull(),
+    changedByProfileId: uuid('changed_by_profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+    reason: text('reason').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('proposal_status_history_proposal_idx').on(table.proposalId, table.createdAt)],
+);
+
+export const proposalVotes = app.table(
+  'proposal_votes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),
+    voteKind: text('vote_kind').notNull(),
+    voterProfileId: uuid('voter_profile_id').references(() => profiles.id),
+    voterSocialAgentId: uuid('voter_social_agent_id'),
+    operatorProfileId: uuid('operator_profile_id').notNull().references(() => profiles.id),
+    networkHash: text('network_hash'),
+    riskState: text('risk_state').notNull().default('valid'),
+    riskReason: text('risk_reason'),
+    reviewedByProfileId: uuid('reviewed_by_profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('proposal_votes_public_count_idx').on(table.proposalId, table.voteKind, table.riskState)],
+);
+
+export const proposalReports = app.table(
+  'proposal_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),
+    voteId: uuid('vote_id').references(() => proposalVotes.id, { onDelete: 'cascade' }),
+    reporterProfileId: uuid('reporter_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    reason: text('reason').notNull(),
+    detail: text('detail').notNull().default(''),
+    status: text('status').notNull().default('open'),
+    reviewedByProfileId: uuid('reviewed_by_profile_id').references(() => profiles.id, { onDelete: 'set null' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('proposal_reports_review_idx').on(table.status, table.createdAt)],
+);
+
+export const proposalLeaderBadges = app.table(
+  'proposal_leader_badges',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id),
+    awardMonth: date('award_month').notNull(),
+    rank: integer('rank').notNull(),
+    winningProposalId: uuid('winning_proposal_id').notNull().references(() => proposals.id),
+    validHumanVotes: integer('valid_human_votes').notNull(),
+    awardedAt: timestamp('awarded_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('proposal_leader_badges_profile_idx').on(table.profileId, table.awardMonth)],
+);
+
+export const participationOrders = app.table(
+  'participation_orders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id),
+    productType: text('product_type').notNull(),
+    repositoryId: uuid('repository_id').references(() => repositories.id),
+    durationDays: integer('duration_days'),
+    provider: text('provider').notNull().default('nowpayments'),
+    providerPaymentId: text('provider_payment_id').unique(),
+    priceAmountCents: integer('price_amount_cents').notNull(),
+    priceCurrency: text('price_currency').notNull().default('usd'),
+    payCurrency: text('pay_currency').notNull().default('usdc'),
+    payNetwork: text('pay_network').notNull().default('eth'),
+    payAmount: numeric('pay_amount', { precision: 30, scale: 12 }),
+    payAddress: text('pay_address'),
+    status: text('status').notNull().default('created'),
+    providerPayload: jsonb('provider_payload').$type<Record<string, unknown>>().notNull().default({}),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    paidAt: timestamp('paid_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('participation_orders_profile_created_idx').on(table.profileId, table.createdAt)],
+);
+
+export const fameSlots = app.table('fame_slots', {
+  slotNumber: integer('slot_number').primaryKey(),
+  profileId: uuid('profile_id').references(() => profiles.id),
+  orderId: uuid('order_id').references(() => participationOrders.id),
+  status: text('status').notNull().default('open'),
+  reservedUntil: timestamp('reserved_until', { withTimezone: true }),
+  activatedAt: timestamp('activated_at', { withTimezone: true }),
+  retiredAt: timestamp('retired_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const highlightCampaigns = app.table(
+  'highlight_campaigns',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orderId: uuid('order_id').notNull().references(() => participationOrders.id).unique(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id),
+    repositoryId: uuid('repository_id').notNull().references(() => repositories.id),
+    durationDays: integer('duration_days').notNull(),
+    state: text('state').notNull().default('pending'),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    rotationCount: bigint('rotation_count', { mode: 'bigint' }).notNull().default(0n),
+    impressions: bigint('impressions', { mode: 'bigint' }).notNull().default(0n),
+    profileViews: bigint('profile_views', { mode: 'bigint' }).notNull().default(0n),
+    repositoryOpens: bigint('repository_opens', { mode: 'bigint' }).notNull().default(0n),
+    downloads: bigint('downloads', { mode: 'bigint' }).notNull().default(0n),
+    lastSelectedAt: timestamp('last_selected_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('highlight_campaigns_rotation_idx').on(table.state, table.rotationCount, table.lastSelectedAt)],
+);
+
+export const highlightEvents = app.table(
+  'highlight_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    campaignId: uuid('campaign_id').notNull().references(() => highlightCampaigns.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    visitorHash: text('visitor_hash').notNull(),
+    eventDay: date('event_day').notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('highlight_events_campaign_created_idx').on(table.campaignId, table.eventType, table.occurredAt)],
+);
+
 export const papers = app.table(
   'papers',
   {

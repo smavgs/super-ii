@@ -145,8 +145,11 @@ export async function createNowPayment(
     planName: string;
     priceAmount: number;
     callbackUrl: string;
+    orderReference?: string;
+    description?: string;
   },
 ): Promise<NowPayment> {
+  const orderReference = input.orderReference ?? `superii:${input.orderId}`;
   const result = await requestNowPayments(locals, '/payment', {
     method: 'POST',
     body: JSON.stringify({
@@ -154,15 +157,18 @@ export async function createNowPayment(
       price_currency: 'usd',
       pay_currency: 'usdc',
       ipn_callback_url: input.callbackUrl,
-      order_id: `superii:${input.orderId}`,
-      order_description: `Super ii ${input.planName} - 30 days`,
+      order_id: orderReference,
+      order_description: input.description ?? `Super ii ${input.planName} - 30 days`,
       is_fixed_rate: true,
       is_fee_paid_by_user: true,
     }),
   });
   const payment = parsePayment(result);
-  if (payment.price_currency.toLowerCase() !== 'usd' || !isUsdcEthereumRoute(payment)) {
-    throw new Error('NOWPayments did not return the required USDC on Ethereum route.');
+  if (payment.price_currency.toLowerCase() !== 'usd'
+    || Math.round(payment.price_amount * 100) !== Math.round(input.priceAmount * 100)
+    || (payment.order_id !== undefined && payment.order_id !== orderReference)
+    || !isUsdcEthereumRoute(payment)) {
+    throw new Error('NOWPayments did not return the exact requested USDC on Ethereum checkout.');
   }
   return payment;
 }

@@ -1,0 +1,118 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { getProposalBySlug, type ProposalDetail } from '@/lib/participation';
+import { authIsConfigured } from '@/lib/site';
+
+const slug = Astro.params.slug ?? '';
+const sql = sqlClient(Astro.locals);
+let proposal: ProposalDetail | null = null;
+let viewerProfileId: string | null = null;
+if (sql) {
+  try {
+    viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
+    proposal = await getProposalBySlug(sql, slug, viewerProfileId);
+  } catch {
+    proposal = null;
+  }
+}
+if (!proposal) Astro.response.status = 404;
+const authConfigured = authIsConfigured(Astro.locals);
+const stages = ['voting', 'accepted', 'building', 'shipped'];
+const stageIndex = proposal ? stages.indexOf(proposal.status) : -1;
+const dateLabel = (value: string) => new Date(value).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+---
+
+<BaseLayout title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} noindex={!proposal} className="proposal-detail-page">
+  {proposal ? (
+    <main class="shell proposal-detail" data-proposal={proposal.id}>
+      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/proposals">Proposals</a><i class="ph ph-caret-right" aria-hidden="true"></i><span>{proposal.title}</span></nav>
+      <header class="proposal-detail__header">
+        <div>
+          <p class="eyebrow">Public proposal · {proposal.status}</p>
+          <h1>{proposal.title}</h1>
+          <p class="proposal-detail__summary">{proposal.summary}</p>
+          <p>Proposed by <a href={`/people/${proposal.proposer_handle}`}>@{proposal.proposer_handle}</a> · <time datetime={proposal.created_at}>{dateLabel(proposal.created_at)} UTC</time></p>
+        </div>
+        <button class="proposal-vote proposal-vote--large" type="button" data-proposal-vote disabled={!viewerProfileId || proposal.viewer_voted}>
+          <i class="ph ph-caret-up" aria-hidden="true"></i><strong data-human-count>{proposal.human_votes}</strong><small>{proposal.viewer_voted ? 'Voted' : 'Vote'}</small>
+        </button>
+      </header>
+
+      <ol class="proposal-timeline" aria-label="Proposal roadmap status">
+        {stages.map((stage, index) => (
+          <li data-complete={String(index <= stageIndex)} aria-current={stage === proposal.status ? 'step' : undefined}>
+            <span>{index < stageIndex ? '✓' : index + 1}</span><strong>{stage[0].toUpperCase() + stage.slice(1)}</strong>
+          </li>
+        ))}
+      </ol>
+
+      <div class="proposal-detail__grid">
+        <article class="proposal-detail__body">
+          <p class="eyebrow">The proposal</p>
+          <div class="proposal-body-copy">{proposal.body ? proposal.body.split('\n').filter(Boolean).map((paragraph) => <p>{paragraph}</p>) : <p>No further details were added.</p>}</div>
+          <h2>Public history</h2>
+          <ol class="proposal-history">
+            {proposal.history.map((event) => <li><span></span><div><strong>{event.to_status[0].toUpperCase() + event.to_status.slice(1)}</strong><p>{event.reason}</p><time datetime={event.created_at}>{dateLabel(event.created_at)} UTC</time></div></li>)}
+          </ol>
+        </article>
+        <aside class="proposal-detail__aside">
+          <section>
+            <p class="eyebrow">Separate public signals</p>
+            <div class="proposal-meter"><div><span>👤 Verified humans</span><strong><span data-human-signal>{proposal.human_votes}</span> / {proposal.human_vote_threshold}</strong></div><progress value={proposal.human_votes} max={proposal.human_vote_threshold}></progress><small>Reaching 100 commits Super ii to build.</small></div>
+            <div class="proposal-meter"><div><span>🤖 Authenticated agents</span><strong>{proposal.agent_votes} / {proposal.agent_vote_threshold}</strong></div><progress value={proposal.agent_votes} max={proposal.agent_vote_threshold}></progress><small>A separate demand signal; it never counts as human demand.</small></div>
+            <p class="form-status" data-proposal-status aria-live="polite"></p>
+            {!viewerProfileId && authConfigured && <Show when="signed-out"><SignInButton asChild mode="modal"><button class="button button--dark button--small" type="button">Log in to vote</button></SignInButton></Show>}
+          </section>
+          <section>
+            <p class="eyebrow">For connected agents</p>
+            <h2>Cast an agent signal</h2>
+            <p>A paired Social agent can call this proposal’s agent-vote endpoint with its scoped bearer credential. One signal per agent.</p>
+            <code>POST /api/proposals/{proposal.id}/agent-vote</code>
+          </section>
+          <section>
+            <p class="eyebrow">Community review 🛡️</p>
+            <h2>Report a concern</h2>
+            {authConfigured ? <Show when="signed-in"><form data-proposal-report><label>Reason<select name="reason"><option value="spam">Spam</option><option value="manipulation">Vote manipulation</option><option value="duplicate">Duplicate</option><option value="abuse">Abuse</option><option value="unsafe">Unsafe</option><option value="other">Other</option></select></label><label>Details<textarea name="detail" maxlength="2000" rows="3"></textarea></label><button class="button button--secondary button--small" type="submit">Send report</button><p class="form-status" data-report-status aria-live="polite"></p></form></Show> : <p>Reporting is temporarily unavailable.</p>}
+          </section>
+        </aside>
+      </div>
+    </main>
+  ) : (
+    <main class="section shell"><div class="empty-state"><h1>Proposal not found</h1><p>This proposal does not exist or is no longer public.</p><a class="button button--secondary" href="/proposals">Browse proposals</a></div></main>
+  )}
+</BaseLayout>
+
+{proposal && <script>
+  const root = document.querySelector<HTMLElement>('[data-proposal]');
+  const proposalId = root?.dataset.proposal;
+  const button = root?.querySelector<HTMLButtonElement>('[data-proposal-vote]');
+  const status = root?.querySelector<HTMLElement>('[data-proposal-status]');
+  button?.addEventListener('click', async () => {
+    if (!proposalId) return;
+    button.disabled = true;
+    if (status) status.textContent = 'Recording your verified human vote…';
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}/vote`, { method: 'POST' });
+      const data = await response.json() as { error?: string; human_votes?: number };
+      if (!response.ok) throw new Error(data.error || 'Vote could not be recorded.');
+      root?.querySelectorAll<HTMLElement>('[data-human-count], [data-human-signal]').forEach((node) => { node.textContent = String(data.human_votes ?? node.textContent); });
+      const label = button.querySelector('small'); if (label) label.textContent = 'Voted';
+      if (status) status.textContent = 'Your human vote is recorded ✓';
+    } catch (error) {
+      button.disabled = false;
+      if (status) status.textContent = error instanceof Error ? error.message : 'Vote could not be recorded.';
+    }
+  });
+  const report = root?.querySelector<HTMLFormElement>('[data-proposal-report]');
+  report?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const reportStatus = report.querySelector<HTMLElement>('[data-report-status]');
+    const response = await fetch(`/api/proposals/${proposalId}/report`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(report).entries())) });
+    const data = await response.json() as { error?: string };
+    if (reportStatus) reportStatus.textContent = response.ok ? 'Thank you. The report is recorded for review.' : data.error || 'Report could not be sent.';
+    if (response.ok) report.reset();
+  });
+</script>}

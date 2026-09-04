@@ -9,6 +9,18 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+export async function requestNetworkHash(
+  locals: App.Locals,
+  request: Request,
+  purpose = 'request',
+): Promise<string | null> {
+  const salt = runtimeValue(locals, 'CONTACT_HASH_SALT');
+  if (!salt) return null;
+  const network = request.headers.get('cf-connecting-ip') ?? 'local-or-unknown';
+  const userAgent = request.headers.get('user-agent')?.slice(0, 300) ?? 'unknown-agent';
+  return sha256(`${salt}:${purpose}:${network}:${userAgent}`);
+}
+
 async function consumeHashedRateLimit(
   networkHash: string,
   sql: NeonQueryFunction<false, false>,

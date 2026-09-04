@@ -1,5 +1,6 @@
 ---
 import Catalog from '@/components/Catalog.astro';
+import HighlightsStrip from '@/components/HighlightsStrip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -13,5 +14,6 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     description="Try AI projects directly in the browser. See what they do, inspect how they were built and discover the models and datasets behind them."
     compact
   />
+  <HighlightsStrip kind="space" />
   <Catalog kind="spaces" />
 </BaseLayout>

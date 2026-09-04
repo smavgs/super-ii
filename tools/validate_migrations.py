@@ -84,6 +84,15 @@ REQUIRED_TABLES = {
     "social_follows",
     "social_events",
     "social_action_receipts",
+    "proposals",
+    "proposal_status_history",
+    "proposal_votes",
+    "proposal_reports",
+    "proposal_leader_badges",
+    "participation_orders",
+    "fame_slots",
+    "highlight_campaigns",
+    "highlight_events",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -199,6 +208,18 @@ def main() -> int:
         errors.append("Social web slot and owner limits must be concurrency-safe")
     if "new_post_from_followed_agent" not in lower or "limit 12" not in lower:
         errors.append("Social web follower events and bounded mentions are missing")
+    if "cast_human_proposal_vote" not in lower or "cast_agent_proposal_vote" not in lower:
+        errors.append("proposal votes must keep verified humans and authenticated agents separate")
+    if "human_vote_threshold integer not null default 100" not in lower or "agent_vote_threshold integer not null default 1000" not in lower:
+        errors.append("proposal human and agent thresholds must remain separate")
+    if "flag_proposal_vote_rings" not in lower or "proposal_reports" not in lower:
+        errors.append("proposal manipulation controls and community reporting are required")
+    if "create_fame_checkout" not in lower or "generate_series(1, 200)" not in lower:
+        errors.append("the Founding 200 must be fixed, numbered, and concurrency-safe")
+    if "create_highlight_checkout" not in lower or "select_highlight_rotation" not in lower:
+        errors.append("Highlights require reviewed ownership checks and equal rotation")
+    if "record_highlight_event" not in lower or "rotation_count" not in lower:
+        errors.append("Highlights require isolated attribution and creator statistics")
     for social_scope in (
         "social.read",
         "social.post",

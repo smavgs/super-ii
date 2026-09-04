@@ -1,0 +1,123 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { UUID_PATTERN } from '@/lib/agent-management';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+
+type ParticipationOrder = {
+  id: string;
+  product_type: 'fame' | 'highlight';
+  repository_id: string | null;
+  duration_days: number | null;
+  price_amount_cents: number;
+  pay_currency: string;
+  pay_network: string;
+  pay_amount: string | null;
+  pay_address: string | null;
+  status: string;
+  expires_at: string | null;
+  paid_at: string | null;
+  slot_number: number | null;
+  owner_handle: string | null;
+  slug: string | null;
+  title: string | null;
+};
+
+const orderId = Astro.params.orderId ?? '';
+const sql = sqlClient(Astro.locals);
+let order: ParticipationOrder | null = null;
+let authenticated = false;
+if (sql && UUID_PATTERN.test(orderId)) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    authenticated = Boolean(profile);
+    if (profile) {
+      const rows = await sql`
+        select payment.id, payment.product_type, payment.repository_id, payment.duration_days,
+               payment.price_amount_cents, payment.pay_currency, payment.pay_network,
+               payment.pay_amount, payment.pay_address, payment.status,
+               payment.expires_at, payment.paid_at, slot.slot_number,
+               repository.owner_handle, repository.slug, repository.title
+        from app.participation_orders payment
+        left join app.fame_slots slot on slot.order_id = payment.id
+        left join app.repositories repository on repository.id = payment.repository_id
+        where payment.id = ${orderId}::uuid and payment.profile_id = ${profile.profileId}::uuid
+        limit 1
+      `;
+      order = (rows[0] as ParticipationOrder | undefined) ?? null;
+    }
+  } catch {
+    order = null;
+  }
+}
+if (!order) Astro.response.status = authenticated ? 404 : 401;
+const terminal = order ? ['finished', 'failed', 'refunded', 'expired'].includes(order.status) : true;
+const fame = order?.product_type === 'fame';
+const productTitle = fame
+  ? `Founding Supporter #${String(order?.slot_number ?? '').padStart(3, '0')}`
+  : `Highlight · ${order?.duration_days === 1 ? '24 hours' : '30 days'}`;
+---
+
+<BaseLayout title={order ? `${productTitle} checkout` : 'Checkout unavailable'} description="Complete a Super ii participation purchase with USDC on Ethereum." noindex>
+  {order ? (
+    <>
+      <PageHero eyebrow="Secure crypto checkout 💳" title={productTitle} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · pay in USDC on Ethereum${!fame && order.title ? ` · ${order.owner_handle}/${order.slug}` : ''}`} compact />
+      <main class="section shell checkout-shell" data-participation-checkout data-order-id={order.id} data-product={order.product_type} data-terminal={String(terminal)}>
+        <section class="checkout-card">
+          <div class="checkout-status-row"><div><p class="eyebrow">Payment status</p><h2 data-checkout-status>{order.status.replaceAll('_', ' ')}</h2></div><span class="status-dot" data-status={order.status}></span></div>
+          {order.status === 'finished' ? (
+            <div class="creator-callout creator-callout--success"><i class="ph ph-check-circle" aria-hidden="true"></i><p><strong>{fame ? 'Founding place active ✦' : 'Highlight ready ✦'}</strong> {fame ? `Your permanent place is #${String(order.slot_number).padStart(3, '0')}.` : 'Your campaign is active now or scheduled directly after an existing campaign for the same repository.'}</p></div>
+          ) : order.pay_address && order.pay_amount ? (
+            <>
+              <div class="payment-warning"><i class="ph ph-warning" aria-hidden="true"></i><p><strong>Send only USDC on Ethereum (ETH/ERC-20).</strong> A different asset or network can be lost. The wallet network fee is separate.</p></div>
+              <label class="payment-copy-field">Exact amount<span><code data-pay-amount>{order.pay_amount}</code><button type="button" data-copy={order.pay_amount}>Copy</button></span></label>
+              <label class="payment-copy-field">Deposit address<span><code data-pay-address>{order.pay_address}</code><button type="button" data-copy={order.pay_address}>Copy</button></span></label>
+              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time>.</p>}
+              <p class="form-status" data-checkout-message aria-live="polite">Waiting for the Ethereum payment and confirmations…</p>
+            </>
+          ) : (
+            <div class="payment-warning"><i class="ph ph-warning" aria-hidden="true"></i><p>The payment address is unavailable. Please return and create a fresh checkout.</p></div>
+          )}
+          <div class="form-actions"><a class="button button--dark" href={fame ? '/fame' : '/highlights'}>{fame ? 'Open Hall of Fame' : 'Open Highlights'}</a><a class="button button--secondary" href="/account">Open workspace</a></div>
+        </section>
+        <aside class="checkout-aside">
+          <h2>{fame ? 'Your Founding 200 place' : 'Your Highlight campaign'}</h2>
+          {fame ? <><p>One payment reserves one equal, permanent, non-transferable place linked to your Super ii account.</p><p>The badge and placement continue for as long as Super ii operates the Hall of Fame service. A refund permanently retires the number; it is never resold.</p></> : <><p>Only this reviewed public repository can be displayed. The campaign is labeled Promoted and rotates fairly with every other active campaign.</p><p>It does not affect organic search, trending, download rank, proposal votes, or review.</p></>}
+          <p>Blockchain transfers are generally irreversible. Wrong-network, underpaid, overpaid, or expired transfers may require NOWPayments support.</p>
+        </aside>
+      </main>
+    </>
+  ) : (
+    <main class="section shell"><div class="empty-state"><h1>{authenticated ? 'Checkout not found' : 'Log in to view checkout'}</h1><p>{authenticated ? 'This order does not exist or belongs to another account.' : 'Payment details are private to the account that created them.'}</p><a class="button button--dark" href={authenticated ? '/highlights' : '/sign-in'}>{authenticated ? 'Back to Highlights' : 'Log in'}</a></div></main>
+  )}
+</BaseLayout>
+
+{order && !terminal && <script>
+  const checkout = document.querySelector<HTMLElement>('[data-participation-checkout]');
+  const orderId = checkout?.dataset.orderId;
+  checkout?.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(button.dataset.copy ?? ''); button.textContent = 'Copied'; window.setTimeout(() => { button.textContent = 'Copy'; }, 1500); }
+      catch { button.textContent = 'Copy failed'; }
+    });
+  });
+  let checks = 0;
+  const refresh = async () => {
+    if (!orderId || document.visibilityState !== 'visible') return;
+    checks += 1;
+    try {
+      const response = await fetch(`/api/participation/checkout/${orderId}`, { headers: { accept: 'application/json' } });
+      const data = await response.json() as { order?: { status?: string } };
+      const next = data.order?.status; if (!response.ok || !next) return;
+      const heading = checkout?.querySelector<HTMLElement>('[data-checkout-status]');
+      const dot = checkout?.querySelector<HTMLElement>('.status-dot');
+      const message = checkout?.querySelector<HTMLElement>('[data-checkout-message]');
+      if (heading) heading.textContent = next.replaceAll('_', ' ');
+      if (dot) dot.dataset.status = next;
+      if (message) message.textContent = next === 'finished' ? 'Payment confirmed. Activation is complete ✦' : `Payment status: ${next.replaceAll('_', ' ')}.`;
+      if (['finished', 'failed', 'refunded', 'expired'].includes(next)) { if (next === 'finished') window.setTimeout(() => location.reload(), 800); return; }
+    } finally { if (checks < 90) window.setTimeout(refresh, 10_000); }
+  };
+  window.setTimeout(refresh, 4_000);
+</script>}

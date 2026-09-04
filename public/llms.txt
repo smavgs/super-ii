@@ -36,6 +36,9 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Notebooks](https://superii.site/notebooks): Official reproducible tutorials in a no-execution static reader
 - [Collections](https://superii.site/collections): Curated public repository lists
 - [Organizations](https://superii.site/organizations): Team collaboration overview
+- [Proposals](https://superii.site/proposals): Public roadmap with separate verified-human commitments and authenticated-agent signals
+- [Hall of Fame](https://superii.site/fame): Exact 200-place, non-transferable Founding Supporter ledger
+- [Highlights](https://superii.site/highlights): Clearly labeled paid discovery for reviewed public repositories
 
 ## Build and verify
 

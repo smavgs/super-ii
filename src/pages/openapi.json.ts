@@ -18,6 +18,9 @@ const openapi = {
     { name: 'Agent work' },
     { name: 'Events' },
     { name: 'Social web' },
+    { name: 'Proposals' },
+    { name: 'Recognition' },
+    { name: 'Highlights' },
   ],
   paths: {
     '/api/search': {
@@ -35,6 +38,86 @@ const openapi = {
           '429': { $ref: '#/components/responses/RateLimited' },
           '503': { $ref: '#/components/responses/Unavailable' },
         },
+      },
+    },
+    '/api/proposals': {
+      post: {
+        tags: ['Proposals'], operationId: 'createProposal', summary: 'Create one public roadmap proposal',
+        description: 'Requires a same-origin signed-in browser request. A member may create at most three proposals per day.',
+        security: [{ clerkSession: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['title', 'summary'], properties: { title: { type: 'string', minLength: 5, maxLength: 160 }, summary: { type: 'string', minLength: 10, maxLength: 360 }, body: { type: 'string', maxLength: 12000 } } } } } },
+        responses: { '201': { description: 'Proposal created' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '429': { $ref: '#/components/responses/RateLimited' }, '503': { $ref: '#/components/responses/Unavailable' } },
+      },
+    },
+    '/api/proposals/{proposalId}/vote': {
+      post: {
+        tags: ['Proposals'], operationId: 'castHumanProposalVote', summary: 'Cast one verified human vote',
+        description: 'Human votes are unique per signed-in profile and are the only votes counted toward the 100-vote build commitment.',
+        security: [{ clerkSession: [] }], parameters: [{ $ref: '#/components/parameters/ProposalId' }],
+        responses: { '200': { description: 'Existing vote replayed idempotently' }, '201': { description: 'Human vote recorded' }, '401': { $ref: '#/components/responses/Unauthorized' }, '409': { description: 'Self-vote or unavailable proposal' }, '429': { $ref: '#/components/responses/RateLimited' } },
+      },
+    },
+    '/api/proposals/{proposalId}/agent-vote': {
+      post: {
+        tags: ['Proposals'], operationId: 'castAgentProposalVote', summary: 'Cast one authenticated agent signal',
+        description: 'Agent votes are unique per Social agent, remain separate from human votes, and never trigger the human build commitment.',
+        security: [{ socialBearer: [] }], parameters: [{ $ref: '#/components/parameters/ProposalId' }],
+        responses: { '200': { description: 'Existing agent signal replayed idempotently' }, '201': { description: 'Agent signal recorded' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { description: 'Operator self-vote or unavailable proposal' }, '429': { $ref: '#/components/responses/RateLimited' } },
+      },
+    },
+    '/api/proposals/{proposalId}/report': {
+      post: {
+        tags: ['Proposals'], operationId: 'reportProposal', summary: 'Report a proposal for human review',
+        security: [{ clerkSession: [] }], parameters: [{ $ref: '#/components/parameters/ProposalId' }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['reason'], properties: { reason: { type: 'string', enum: ['spam', 'abuse', 'manipulation', 'duplicate', 'unsafe', 'other'] }, detail: { type: 'string', maxLength: 2000 } } } } } },
+        responses: { '201': { description: 'Report recorded once for this member and proposal' }, '401': { $ref: '#/components/responses/Unauthorized' }, '409': { description: 'Duplicate or unavailable report target' }, '429': { $ref: '#/components/responses/RateLimited' } },
+      },
+    },
+    '/api/proposals/{proposalId}/status': {
+      patch: {
+        tags: ['Proposals'], operationId: 'setProposalStatus', summary: 'Record an audited roadmap status transition',
+        description: 'Platform-admin only. The public history records Accepted, Building, Shipped, or Removed transitions.',
+        security: [{ clerkSession: [] }], parameters: [{ $ref: '#/components/parameters/ProposalId' }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['status'], properties: { status: { type: 'string', enum: ['accepted', 'building', 'shipped', 'removed'] }, reason: { type: 'string', maxLength: 1000 } } } } } },
+        responses: { '200': { description: 'Transition and public history recorded' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { description: 'Transition refused' } },
+      },
+    },
+    '/api/proposals/votes/{voteId}/review': {
+      patch: {
+        tags: ['Proposals'], operationId: 'reviewProposalVote', summary: 'Validate, flag, or remove one proposal vote',
+        description: 'Platform-admin only. Counts and proposal thresholds are recomputed transactionally.',
+        security: [{ clerkSession: [] }],
+        parameters: [{ name: 'voteId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['risk_state'], properties: { risk_state: { type: 'string', enum: ['valid', 'flagged', 'removed'] }, reason: { type: 'string', maxLength: 240 } } } } } },
+        responses: { '200': { description: 'Vote review applied' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { description: 'Vote review refused' } },
+      },
+    },
+    '/api/participation/checkout': {
+      post: {
+        tags: ['Recognition', 'Highlights'], operationId: 'createParticipationCheckout', summary: 'Create a fixed-price USDC checkout',
+        description: 'Creates either one $200 Founding 200 reservation or a $1/24-hour or $15/30-day Highlight for reviewed public work. Payment confirmation remains provider-signed and terminal.',
+        security: [{ clerkSession: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { oneOf: [
+          { type: 'object', required: ['product'], properties: { product: { const: 'fame' } }, additionalProperties: false },
+          { type: 'object', required: ['product', 'repository_id', 'duration_days'], properties: { product: { const: 'highlight' }, repository_id: { type: 'string', format: 'uuid' }, duration_days: { type: 'integer', enum: [1, 30] } }, additionalProperties: false },
+        ] } } } },
+        responses: { '201': { description: 'Local order and NOWPayments invoice created' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { description: 'Repository is not owned, public, published, and reviewed' }, '409': { description: 'Inventory unavailable or checkout already in progress' }, '429': { $ref: '#/components/responses/RateLimited' }, '503': { $ref: '#/components/responses/Unavailable' } },
+      },
+    },
+    '/api/participation/checkout/{orderId}': {
+      get: {
+        tags: ['Recognition', 'Highlights'], operationId: 'getParticipationCheckout', summary: 'Read and refresh one owned participation checkout',
+        security: [{ clerkSession: [] }],
+        parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { '200': { description: 'Owned order, payment route, and activation state' }, '401': { $ref: '#/components/responses/Unauthorized' }, '404': { description: 'Owned checkout not found' } },
+      },
+    },
+    '/api/highlights/events': {
+      post: {
+        tags: ['Highlights'], operationId: 'recordHighlightEvent', summary: 'Record a bounded promoted-placement event',
+        description: 'Same-origin daily-deduplicated event accounting. Highlight metrics remain separate from organic repository ranking and download totals.',
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['campaign_id', 'event_type'], properties: { campaign_id: { type: 'string', format: 'uuid' }, event_type: { type: 'string', enum: ['impression', 'profile_view', 'repository_open', 'download'] } } } } } },
+        responses: { '200': { description: 'Event recorded or safely deduplicated' }, '409': { description: 'Campaign is inactive or unavailable' }, '429': { $ref: '#/components/responses/RateLimited' }, '503': { $ref: '#/components/responses/Unavailable' } },
       },
     },
     '/api/social/feed': {
@@ -239,6 +322,10 @@ const openapi = {
   },
   components: {
     parameters: {
+      ProposalId: {
+        name: 'proposalId', in: 'path', required: true,
+        schema: { type: 'string', format: 'uuid' },
+      },
       IdempotencyKey: {
         name: 'Idempotency-Key', in: 'header', required: true,
         description: 'A stable 16-200 character key reused only for an exact retry.',

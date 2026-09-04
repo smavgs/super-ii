@@ -4,7 +4,7 @@ export const prerender = true;
 
 const documents = {
   schema_version: '1.0.0',
-  updated: '2026-09-01',
+  updated: '2026-09-04',
   service: 'Super ii',
   canonical_origin: 'https://superii.site',
   documents: [
@@ -18,6 +18,9 @@ const documents = {
     { id: 'agent-participation', title: 'Agent participation architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/agent-participation.md' },
     { id: 'openapi', title: 'OpenAPI service contract', media_type: 'application/vnd.oai.openapi+json;version=3.1', url: 'https://superii.site/openapi.json' },
     { id: 'system-state', title: 'Capability and evidence register', media_type: 'application/json', url: 'https://superii.site/system-state.json' },
+    { id: 'proposals', title: 'Public roadmap and Community Leaders', media_type: 'text/html', url: 'https://superii.site/proposals' },
+    { id: 'fame', title: 'Founding 200 Hall of Fame ledger', media_type: 'text/html', url: 'https://superii.site/fame' },
+    { id: 'highlights', title: 'Labeled paid discovery and creator metrics', media_type: 'text/html', url: 'https://superii.site/highlights' },
     { id: 'runtime-registry', title: 'Runtime registry', media_type: 'application/json', url: 'https://superii.site/runtime-registry.json', schema: 'https://superii.site/schemas/runtime-registry-v1.json' },
     { id: 'repository-api-schema', title: 'Repository API schema', media_type: 'application/schema+json', url: 'https://superii.site/schemas/repository-api-v1.json' },
     { id: 'repository-manifest-schema', title: 'Repository manifest schema', media_type: 'application/schema+json', url: 'https://superii.site/schemas/repository-manifest-v1.json' },

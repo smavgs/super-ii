@@ -1,5 +1,6 @@
 ---
 import Catalog from '@/components/Catalog.astro';
+import HighlightsStrip from '@/components/HighlightsStrip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -13,5 +14,6 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     description="Find and publish datasets with the information needed to understand and reuse them responsibly. See the license, schema, preview, provenance, lineage and version history in one place."
     compact
   />
+  <HighlightsStrip kind="dataset" />
   <Catalog kind="datasets" />
 </BaseLayout>

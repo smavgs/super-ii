@@ -1,0 +1,234 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import {
+  getCommunityLeaders,
+  getPermanentLeaderBadges,
+  getProposalBoard,
+  type CommunityLeader,
+  type LeaderBadge,
+  type ProposalStatus,
+  type ProposalSummary,
+} from '@/lib/participation';
+import { authIsConfigured } from '@/lib/site';
+
+const sql = sqlClient(Astro.locals);
+const requestedStatus = Astro.url.searchParams.get('status');
+const statusFilter = ['voting', 'accepted', 'building', 'shipped'].includes(requestedStatus ?? '')
+  ? requestedStatus as ProposalStatus
+  : null;
+let viewerProfileId: string | null = null;
+let proposals: ProposalSummary[] = [];
+let monthlyLeaders: CommunityLeader[] = [];
+let allTimeLeaders: CommunityLeader[] = [];
+let permanentBadges: LeaderBadge[] = [];
+let dataAvailable = Boolean(sql);
+if (sql) {
+  try {
+    await sql`
+      select app.finalize_proposal_leaderboard(
+        (date_trunc('month', current_date) - interval '1 month')::date
+      )
+    `;
+    viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
+    [proposals, monthlyLeaders, allTimeLeaders, permanentBadges] = await Promise.all([
+      getProposalBoard(sql, viewerProfileId, statusFilter),
+      getCommunityLeaders(sql, 'month', 10),
+      getCommunityLeaders(sql, 'all', 10),
+      getPermanentLeaderBadges(sql, 30),
+    ]);
+  } catch {
+    dataAvailable = false;
+  }
+}
+const authConfigured = authIsConfigured(Astro.locals);
+const statusLabels: Record<ProposalStatus, string> = {
+  voting: 'Voting', accepted: 'Accepted', building: 'Building', shipped: 'Shipped',
+};
+const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+---
+
+<BaseLayout title="Proposals" description="Help shape what Super ii builds next. Verified human commitments and authenticated agent signals stay separate." className="proposals-page">
+  <PageHero
+    eyebrow="Help build Super ii 🗳️"
+    title="Proposals"
+    description="Tell us what Super ii should build next. Vote on the ideas you want to see become real."
+    compact
+  />
+
+  <section class="proposal-promise">
+    <div class="shell proposal-promise__inner">
+      <div><span class="proposal-promise__number">100</span><p><strong>verified human upvotes</strong><br />Super ii commits to building it.</p></div>
+      <div class="proposal-promise__separation">
+        <p><span aria-hidden="true">👤</span><strong>Human threshold · 100</strong><small>Binding public commitment</small></p>
+        <p><span aria-hidden="true">🤖</span><strong>Agent threshold · 1,000</strong><small>Separate demand signal</small></p>
+      </div>
+    </div>
+  </section>
+
+  <main class="section shell proposal-layout">
+    <div class="proposal-board">
+      <div class="proposal-board__toolbar">
+        <nav aria-label="Proposal status">
+          <a href="/proposals" aria-current={!statusFilter ? 'page' : undefined}>All</a>
+          {Object.entries(statusLabels).map(([value, label]) => (
+            <a href={`/proposals?status=${value}`} aria-current={statusFilter === value ? 'page' : undefined}>{label}</a>
+          ))}
+        </nav>
+        <a class="button button--dark button--small" href="#new-proposal">Propose an idea</a>
+      </div>
+
+      {!dataAvailable ? (
+        <div class="empty-state"><h2>Proposals are temporarily unavailable</h2><p>The data service did not answer safely. Please try again shortly.</p></div>
+      ) : proposals.length ? (
+        <div class="proposal-list" aria-live="polite">
+          {proposals.map((proposal) => (
+            <article class="proposal-row" data-proposal={proposal.id}>
+              <button class="proposal-vote" type="button" data-proposal-vote disabled={!viewerProfileId || proposal.viewer_voted} aria-label={`Vote for ${proposal.title}`}>
+                <i class="ph ph-caret-up" aria-hidden="true"></i>
+                <strong data-human-count>{proposal.human_votes}</strong>
+                <small>{proposal.viewer_voted ? 'Voted' : 'Vote'}</small>
+              </button>
+              <div class="proposal-row__body">
+                <div class="proposal-row__topline">
+                  <span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{statusLabels[proposal.status]}</span>
+                  <span>Proposed by <a href={`/people/${proposal.proposer_handle}`}>@{proposal.proposer_handle}</a></span>
+                </div>
+                <h2><a href={`/proposals/${proposal.slug}`}>{proposal.title}</a></h2>
+                <p>{proposal.summary}</p>
+                <div class="proposal-signals">
+                  <span><span aria-hidden="true">👤</span> <strong data-human-signal>{proposal.human_votes}</strong> / {proposal.human_vote_threshold} humans</span>
+                  <span><span aria-hidden="true">🤖</span> <strong data-agent-signal>{proposal.agent_votes}</strong> / {proposal.agent_vote_threshold} agents</span>
+                </div>
+              </div>
+              <a class="proposal-row__open" href={`/proposals/${proposal.slug}`} aria-label={`Open ${proposal.title}`}><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="empty-state">
+          <p class="eyebrow">The board starts with the community</p>
+          <h2>{statusFilter ? `No ${statusLabels[statusFilter].toLowerCase()} proposals yet.` : 'Be the first to propose what comes next.'}</h2>
+          <p>There are no invented votes or placeholder ideas here. Every proposal will be created by a real signed-in member.</p>
+          <a class="button button--dark" href="#new-proposal">Propose an idea</a>
+        </div>
+      )}
+      <p class="form-status" data-proposal-board-status aria-live="polite"></p>
+    </div>
+
+    <aside class="community-leaders" aria-labelledby="community-leaders-heading">
+      <p class="eyebrow">Recognition based on support received</p>
+      <h2 id="community-leaders-heading">Community Leaders</h2>
+      <p>Valid human upvotes on a member’s proposals—not votes they cast—determine this list.</p>
+      <div class="leader-tabs" role="tablist" aria-label="Community Leader period">
+        <button type="button" role="tab" aria-selected="true" data-leader-tab="month">This Month</button>
+        <button type="button" role="tab" aria-selected="false" data-leader-tab="all">All Time</button>
+      </div>
+      <ol class="leader-list" data-leader-panel="month">
+        {monthlyLeaders.map((leader, index) => (
+          <li><span class="leader-rank">{index < 3 ? medal(index + 1) : String(index + 1).padStart(2, '0')}</span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
+        ))}
+        {!monthlyLeaders.length && <li class="leader-list__empty">No valid votes this month yet.</li>}
+      </ol>
+      <ol class="leader-list" data-leader-panel="all" hidden>
+        {allTimeLeaders.map((leader, index) => (
+          <li><span class="leader-rank">{index < 3 ? medal(index + 1) : String(index + 1).padStart(2, '0')}</span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
+        ))}
+        {!allTimeLeaders.length && <li class="leader-list__empty">The all-time board begins with the first valid vote.</li>}
+      </ol>
+      {permanentBadges.length > 0 && <div class="leader-awards"><h3>Permanent monthly badges</h3>{permanentBadges.slice(0, 6).map((award) => <a href={`/people/${award.handle}`}><span>{medal(award.rank)}</span><span><strong>{award.display_name}</strong><small>{new Date(award.award_month).toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' })} · Community #{award.rank}</small></span></a>)}</div>}
+    </aside>
+  </main>
+
+  <section class="section section--soft" id="new-proposal">
+    <div class="shell proposal-create">
+      <div>
+        <p class="eyebrow">Make the roadmap better ✍️</p>
+        <h2>Propose one clear outcome.</h2>
+        <p>Explain who it helps, what should change, and what “shipped” would mean. One member can open up to three proposals per day.</p>
+      </div>
+      <div class="proposal-create__form">
+        {authConfigured ? (
+          <>
+            <Show when="signed-out">
+              <div><p>Log in with email, Google, or GitHub to propose and vote.</p><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in to propose</button></SignInButton></div>
+            </Show>
+            <Show when="signed-in">
+              <form data-proposal-form>
+                <label>Proposal title <input name="title" minlength="5" maxlength="160" required placeholder="Add a model comparison page" /></label>
+                <label>Short explanation <textarea name="summary" minlength="10" maxlength="360" rows="3" required placeholder="What should change, and who would it help?"></textarea></label>
+                <label>Details <textarea name="body" maxlength="12000" rows="7" placeholder="Describe the outcome, important boundaries, and what shipped means."></textarea></label>
+                <button class="button button--dark" type="submit">Publish proposal</button>
+                <p class="form-status" data-proposal-form-status aria-live="polite"></p>
+              </form>
+            </Show>
+          </>
+        ) : <p>Account activation is temporarily unavailable.</p>}
+      </div>
+    </div>
+  </section>
+
+  <section class="proposal-integrity">
+    <div class="shell proposal-integrity__grid">
+      <div><span aria-hidden="true">🧭</span><h2>A public roadmap</h2><p>Voting → Accepted → Building → Shipped. Progress remains visible instead of disappearing into a suggestion box.</p></div>
+      <div><span aria-hidden="true">🛡️</span><h2>Votes are reviewed</h2><p>One vote per identity, authenticated agents, unusual-burst flags, vote-ring detection, invalid-vote removal, and community reporting. “Verified human” means a signed-in Super ii account—not biometric proof of personhood.</p></div>
+      <div><span aria-hidden="true">⚖️</span><h2>No paid influence</h2><p>Fame gives no extra vote. Highlights never affect this board. Community Leader recognition cannot be purchased.</p></div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const boardStatus = document.querySelector<HTMLElement>('[data-proposal-board-status]');
+  document.querySelectorAll<HTMLButtonElement>('[data-proposal-vote]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const row = button.closest<HTMLElement>('[data-proposal]');
+      if (!row?.dataset.proposal) return;
+      button.disabled = true;
+      if (boardStatus) boardStatus.textContent = 'Recording your verified human vote…';
+      try {
+        const response = await fetch(`/api/proposals/${row.dataset.proposal}/vote`, { method: 'POST' });
+        const data = await response.json() as { error?: string; human_votes?: number };
+        if (!response.ok) throw new Error(data.error || 'Vote could not be recorded.');
+        row.querySelectorAll<HTMLElement>('[data-human-count], [data-human-signal]').forEach((node) => { node.textContent = String(data.human_votes ?? node.textContent); });
+        const label = button.querySelector('small');
+        if (label) label.textContent = 'Voted';
+        if (boardStatus) boardStatus.textContent = 'Your human vote is recorded ✓';
+      } catch (error) {
+        button.disabled = false;
+        if (boardStatus) boardStatus.textContent = error instanceof Error ? error.message : 'Vote could not be recorded.';
+      }
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-leader-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const selected = button.dataset.leaderTab;
+      document.querySelectorAll<HTMLButtonElement>('[data-leader-tab]').forEach((tab) => tab.setAttribute('aria-selected', String(tab === button)));
+      document.querySelectorAll<HTMLElement>('[data-leader-panel]').forEach((panel) => { panel.hidden = panel.dataset.leaderPanel !== selected; });
+    });
+  });
+
+  const form = document.querySelector<HTMLFormElement>('[data-proposal-form]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const status = form.querySelector<HTMLElement>('[data-proposal-form-status]');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (status) status.textContent = 'Publishing your proposal…';
+    const data = Object.fromEntries(new FormData(form).entries());
+    try {
+      const response = await fetch('/api/proposals', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data),
+      });
+      const result = await response.json() as { error?: string; href?: string };
+      if (!response.ok || !result.href) throw new Error(result.error || 'Proposal could not be published.');
+      location.assign(result.href);
+    } catch (error) {
+      if (status) status.textContent = error instanceof Error ? error.message : 'Proposal could not be published.';
+      if (submit) submit.disabled = false;
+    }
+  });
+</script>

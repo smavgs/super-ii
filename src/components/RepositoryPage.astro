@@ -48,6 +48,9 @@ const compatibilityTargets = repository?.compatibility ? [
 ] as const : [];
 const notebooks = repository ? repositoryNotebooks(repository) : [];
 const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
+const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highlight') ?? '')
+  ? Astro.url.searchParams.get('highlight')
+  : null;
 ---
 
 <BaseLayout
@@ -56,7 +59,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
   noindex={!repository}
 >
   {repository ? (
-    <main class="repository-page shell">
+    <main class="repository-page shell" data-highlight-campaign={highlightedBy}>
       <header class="repository-header">
         <p class="eyebrow">{repository.kind} repository</p>
         <p class="repository-path">{repository.owner_handle} / {repository.slug}</p>
@@ -164,7 +167,7 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
                   <td>
                     <span class="file-actions">
                       {notebookPaths.has(file.path) && <a href={repositoryNotebookHref(repository, file.path)}>View notebook</a>}
-                      <a href={`/api/repositories/${repository.id}/files/${file.id}`}>Download</a>
+                      <a href={`/api/repositories/${repository.id}/files/${file.id}`} data-highlight-download={highlightedBy}>Download</a>
                     </span>
                   </td>
                 </tr>
@@ -469,6 +472,22 @@ const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
     </section>
   )}
 </BaseLayout>
+
+{repository && highlightedBy && <script>
+  const repositoryRoot = document.querySelector<HTMLElement>('[data-highlight-campaign]');
+  const highlightCampaign = repositoryRoot?.dataset.highlightCampaign;
+  const record = (eventType: string) => {
+    if (!highlightCampaign) return;
+    void fetch('/api/highlights/events', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ campaign_id: highlightCampaign, event_type: eventType }), keepalive: true,
+    }).catch(() => undefined);
+  };
+  record('repository_open');
+  repositoryRoot?.querySelectorAll<HTMLElement>('[data-highlight-download]').forEach((link) => {
+    link.addEventListener('click', () => record('download'));
+  });
+</script>}
 
 {repository && kind === 'model' && <script>
   import { createBrowserAiRunner, type BrowserAiTask } from '@/lib/browser-ai';

@@ -61,6 +61,9 @@
     "/spaces",
     "/agents",
     "/social",
+    "/proposals",
+    "/fame",
+    "/highlights",
     "/notebooks",
     "/pricing",
     "/organizations",
@@ -101,6 +104,9 @@
     "/legal/terms",
     "/api/health",
     "/api/search",
-    "/api/checkout"
+    "/api/checkout",
+    "/api/proposals",
+    "/api/participation/checkout",
+    "/api/highlights/events"
   ]
 }

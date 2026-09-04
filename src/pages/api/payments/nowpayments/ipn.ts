@@ -26,7 +26,14 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const providerPaymentId = payload.payment_id;
   const status = payload.payment_status;
   const externalOrder = typeof payload.order_id === 'string' ? payload.order_id : '';
-  const orderId = externalOrder.startsWith('superii:') ? externalOrder.slice('superii:'.length) : '';
+  const participationPrefix = 'superii:participation:';
+  const planPrefix = 'superii:';
+  const participationOrder = externalOrder.startsWith(participationPrefix);
+  const orderId = participationOrder
+    ? externalOrder.slice(participationPrefix.length)
+    : externalOrder.startsWith(planPrefix)
+      ? externalOrder.slice(planPrefix.length)
+      : '';
   const priceAmount = Number(payload.price_amount);
   if ((typeof providerPaymentId !== 'string' && typeof providerPaymentId !== 'number')
     || !validPaymentStatus(status)
@@ -40,12 +47,19 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   try {
-    const orders = await sql`
-      select price_amount_cents, price_currency, pay_currency, pay_network, provider_payment_id
-      from app.payment_orders
-      where id = ${orderId}::uuid and provider = 'nowpayments'
-      limit 1
-    `;
+    const orders = participationOrder
+      ? await sql`
+          select price_amount_cents, price_currency, pay_currency, pay_network, provider_payment_id
+          from app.participation_orders
+          where id = ${orderId}::uuid and provider = 'nowpayments'
+          limit 1
+        `
+      : await sql`
+          select price_amount_cents, price_currency, pay_currency, pay_network, provider_payment_id
+          from app.payment_orders
+          where id = ${orderId}::uuid and provider = 'nowpayments'
+          limit 1
+        `;
     const order = orders[0];
     if (!order
       || Number(order.price_amount_cents) !== Math.round(priceAmount * 100)
@@ -56,14 +70,23 @@ export const POST: APIRoute = async ({ locals, request }) => {
         && String(order.provider_payment_id) !== String(providerPaymentId))) {
       return Response.json({ error: 'payment does not match checkout' }, { status: 409 });
     }
-    const rows = await sql`
-      select app.apply_nowpayments_status(
-        ${orderId}::uuid,
-        ${String(providerPaymentId)},
-        ${status},
-        ${JSON.stringify(safeProviderPayload(payload))}::jsonb
-      ) as applied
-    `;
+    const rows = participationOrder
+      ? await sql`
+          select app.apply_participation_payment_status(
+            ${orderId}::uuid,
+            ${String(providerPaymentId)},
+            ${status},
+            ${JSON.stringify(safeProviderPayload(payload))}::jsonb
+          ) as applied
+        `
+      : await sql`
+          select app.apply_nowpayments_status(
+            ${orderId}::uuid,
+            ${String(providerPaymentId)},
+            ${status},
+            ${JSON.stringify(safeProviderPayload(payload))}::jsonb
+          ) as applied
+        `;
     if (rows[0]?.applied !== true) throw new Error('payment update was not applied');
     return Response.json({ ok: true });
   } catch {

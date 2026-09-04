@@ -1,5 +1,6 @@
 ---
 import Catalog from '@/components/Catalog.astro';
+import HighlightsStrip from '@/components/HighlightsStrip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -13,5 +14,6 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     description="Find, inspect, run and build on AI models. Every reviewed model can show its files, versions, license, architecture, provenance, hardware requirements and ways to use it."
     compact
   />
+  <HighlightsStrip kind="model" />
   <Catalog kind="models" />
 </BaseLayout>

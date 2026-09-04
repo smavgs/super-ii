@@ -1,0 +1,141 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import LogoMark from '@/components/LogoMark.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { getFameBoard, type FamePlace } from '@/lib/participation';
+import { authIsConfigured } from '@/lib/site';
+
+type ViewerPlace = {
+  slot_number: number;
+  status: string;
+  order_id: string;
+  payment_status: string;
+};
+
+const sql = sqlClient(Astro.locals);
+let places: FamePlace[] = [];
+let viewerPlace: ViewerPlace | null = null;
+let dataAvailable = Boolean(sql);
+if (sql) {
+  try {
+    places = await getFameBoard(sql);
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) {
+      const rows = await sql`
+        select slot.slot_number, slot.status, slot.order_id, payment.status as payment_status
+        from app.fame_slots slot
+        join app.participation_orders payment on payment.id = slot.order_id
+        where slot.profile_id = ${profile.profileId}::uuid
+        order by slot.slot_number limit 1
+      `;
+      viewerPlace = (rows[0] as ViewerPlace | undefined) ?? null;
+    }
+  } catch {
+    dataAvailable = false;
+    places = [];
+  }
+}
+const activeCount = places.filter((place) => ['active', 'retired'].includes(place.status)).length;
+const availableCount = places.filter((place) => place.status === 'open').length;
+const authConfigured = authIsConfigured(Astro.locals);
+const checkoutOpen = viewerPlace && !['active', 'retired'].includes(viewerPlace.status)
+  && !['failed', 'refunded', 'expired'].includes(viewerPlace.payment_status);
+const numberLabel = (value: number) => String(value).padStart(3, '0');
+---
+
+<BaseLayout title="Hall of Fame" description="The Super ii Hall of Fame: exactly 200 equal, permanent places for the people who supported Super ii at the beginning." className="fame-page">
+  <main class="fame-shell">
+    <header class="fame-hero shell">
+      <LogoMark size="small" priority />
+      <p class="eyebrow">Super ii</p>
+      <h1>Hall of Fame</h1>
+      <p class="fame-hero__founding">The Founding 200</p>
+      <p>The first 200 people who chose to support Super ii at the beginning.</p>
+      <div class="fame-count"><strong>{dataAvailable ? activeCount : '—'}</strong><span>of 200 historical places claimed</span></div>
+    </header>
+
+    <section class="shell fame-board" aria-labelledby="founding-board-heading">
+      <div class="fame-board__heading">
+        <div><p class="eyebrow">Exactly 200 · no #201</p><h2 id="founding-board-heading">The permanent ledger</h2></div>
+        <p>Every person receives the same space. There are no premium positions and no ranking.</p>
+      </div>
+      {dataAvailable ? (
+        <ol class="fame-grid">
+          {places.map((place) => (
+            <li class:list={['fame-place', `fame-place--${place.status}`]}>
+              {place.status === 'active' && place.handle ? (
+                <a href={`/people/${place.handle}`} title={`${place.display_name} · Founding Supporter #${numberLabel(place.slot_number)}`}>
+                  {place.avatar_url ? <img src={place.avatar_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span class="fame-place__avatar">{(place.display_name ?? place.handle).slice(0, 1).toUpperCase()}</span>}
+                  <strong>{numberLabel(place.slot_number)}</strong><small>{place.display_name}</small>
+                </a>
+              ) : (
+                <div title={place.status === 'open' ? `Founding place #${numberLabel(place.slot_number)} is available` : `Founding place #${numberLabel(place.slot_number)} is ${place.status}`}>
+                  <span class="fame-place__avatar">{place.status === 'open' ? '○' : '•'}</span>
+                  <strong>{numberLabel(place.slot_number)}</strong><small>{place.status === 'open' ? 'Available' : place.status === 'reserved' ? 'Reserved' : 'Historical place'}</small>
+                </div>
+              )}
+            </li>
+          ))}
+        </ol>
+      ) : <div class="empty-state"><h2>The Hall of Fame ledger is temporarily unavailable.</h2><p>No checkout can be created until the ledger is safely reachable.</p></div>}
+    </section>
+
+    <section class="fame-join" id="join-fame">
+      <div class="shell fame-join__inner">
+        <div>
+          <p class="eyebrow">One payment · one equal place</p>
+          <h2>Become one of the Founding 200.</h2>
+          <p><strong>$200 USDC on Ethereum, once.</strong> Your profile receives the permanent <span class="fame-badge">FAME ✦</span> badge and the next available number from 001–200.</p>
+          <p>Permanent placement means for as long as Super ii operates the Hall of Fame service.</p>
+        </div>
+        <div class="fame-join__action">
+          {viewerPlace?.status === 'active' ? (
+            <div class="fame-member-confirmation"><span>FAME ✦</span><strong>Founding Supporter #{numberLabel(viewerPlace.slot_number)}</strong><a class="button button--secondary button--small" href="/account">Open profile</a></div>
+          ) : checkoutOpen ? (
+            <div><p>Place #{numberLabel(viewerPlace!.slot_number)} is reserved for your current checkout.</p><a class="button button--dark" href={`/checkout/participation/${viewerPlace!.order_id}`}>Continue checkout</a></div>
+          ) : dataAvailable && availableCount === 0 ? (
+            <div class="fame-closed"><strong>Closed forever.</strong><span>All 200 places have been allocated. There is no #201.</span></div>
+          ) : authConfigured ? (
+            <>
+              <Show when="signed-out"><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in to claim a place</button></SignInButton></Show>
+              <Show when="signed-in"><button class="button button--yellow" type="button" data-fame-checkout disabled={!dataAvailable}>Claim the next place · $200</button></Show>
+              <p class="form-status" data-fame-status aria-live="polite">{dataAvailable ? `${availableCount} places available now.` : 'Checkout unavailable.'}</p>
+            </>
+          ) : <p>Account checkout is temporarily unavailable.</p>}
+        </div>
+      </div>
+    </section>
+
+    <section class="shell fame-rules">
+      <h2>What the place means</h2>
+      <div>
+        <p><span>01</span><strong>Linked to one account</strong>Your number and Fame badge are non-transferable and cannot be resold.</p>
+        <p><span>02</span><strong>Always equal</strong>No larger picture, preferred placement, or upgrade can be purchased.</p>
+        <p><span>03</span><strong>Your living profile</strong>Your displayed name and photograph follow your public Super ii profile updates.</p>
+        <p><span>04</span><strong>Recognition, not power</strong>Fame adds no proposal votes, organic rank, moderation authority, or product access.</p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  const button = document.querySelector<HTMLButtonElement>('[data-fame-checkout]');
+  const status = document.querySelector<HTMLElement>('[data-fame-status]');
+  button?.addEventListener('click', async () => {
+    button.disabled = true;
+    if (status) status.textContent = 'Reserving the next available place…';
+    try {
+      const response = await fetch('/api/participation/checkout', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ product: 'fame' }),
+      });
+      const data = await response.json() as { error?: string; href?: string };
+      if (!response.ok || !data.href) throw new Error(data.error || 'Checkout could not be created.');
+      location.assign(data.href);
+    } catch (error) {
+      button.disabled = false;
+      if (status) status.textContent = error instanceof Error ? error.message : 'Checkout could not be created.';
+    }
+  });
+</script>

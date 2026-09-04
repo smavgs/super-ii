@@ -1,0 +1,142 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { repositoryPath, type PublicRepository } from '@/lib/catalog';
+
+type PublicProfile = {
+  id: string;
+  handle: string;
+  display_name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  follower_count: number;
+  following_count: number;
+  viewer_follows: boolean;
+};
+type ProfileProposal = { slug: string; title: string; status: string; human_votes: number; agent_votes: number };
+type ProfileAward = { rank: number; award_month: string; valid_human_votes: number; proposal_slug: string; proposal_title: string };
+
+const handle = (Astro.params.handle ?? '').toLowerCase();
+const sql = sqlClient(Astro.locals);
+let profile: PublicProfile | null = null;
+let repositories: PublicRepository[] = [];
+let proposals: ProfileProposal[] = [];
+let awards: ProfileAward[] = [];
+let fameNumber: number | null = null;
+let viewerProfileId: string | null = null;
+if (sql) {
+  try {
+    viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
+    const profiles = await sql`
+      select profile.id, profile.handle, profile.display_name, profile.bio,
+             profile.avatar_url, profile.created_at,
+             (select count(*)::integer from app.follows follow where follow.followed_profile_id = profile.id) as follower_count,
+             (select count(*)::integer from app.follows follow where follow.follower_profile_id = profile.id) as following_count,
+             exists (select 1 from app.follows follow
+               where follow.follower_profile_id = ${viewerProfileId}::uuid
+                 and follow.followed_profile_id = profile.id) as viewer_follows
+      from app.profiles profile
+      where lower(profile.handle) = ${handle} and profile.is_public
+      limit 1
+    `;
+    profile = (profiles[0] as PublicProfile | undefined) ?? null;
+    if (profile) {
+      const [repositoryRows, proposalRows, awardRows] = await Promise.all([
+        sql`
+          select repository.id as repository_id, repository.kind, repository.owner_handle,
+                 repository.slug, repository.title, repository.summary, repository.license,
+                 repository.task, repository.library, repository.modality,
+                 repository.total_size_bytes, repository.updated_at, 0::real as rank,
+                 (select count(*)::integer from app.repository_downloads download where download.repository_id = repository.id) as downloads_count,
+                 (select count(*)::integer from app.likes liked where liked.repository_id = repository.id) as likes_count,
+                 0::integer as trend_score
+          from app.repositories repository
+          where repository.owner_profile_id = ${profile.id}::uuid
+            and repository.visibility = 'public' and repository.status = 'published'
+          order by repository.updated_at desc limit 100
+        `,
+        sql`
+          select proposal.slug, proposal.title, proposal.status,
+                 count(vote.id) filter (where vote.vote_kind = 'human' and vote.risk_state = 'valid')::integer as human_votes,
+                 count(vote.id) filter (where vote.vote_kind = 'agent' and vote.risk_state = 'valid')::integer as agent_votes
+          from app.proposals proposal
+          left join app.proposal_votes vote on vote.proposal_id = proposal.id
+          where proposal.proposer_profile_id = ${profile.id}::uuid and proposal.status <> 'removed'
+          group by proposal.id order by proposal.created_at desc limit 50
+        `,
+        sql`
+          select badge.rank, badge.award_month, badge.valid_human_votes,
+                 proposal.slug as proposal_slug, proposal.title as proposal_title
+          from app.proposal_leader_badges badge
+          join app.proposals proposal on proposal.id = badge.winning_proposal_id
+          where badge.profile_id = ${profile.id}::uuid
+          order by badge.award_month desc, badge.rank
+        `,
+      ]);
+      repositories = repositoryRows as unknown as PublicRepository[];
+      proposals = proposalRows as unknown as ProfileProposal[];
+      awards = awardRows as unknown as ProfileAward[];
+      const fame = await sql`
+        select slot_number from app.fame_slots
+        where profile_id = ${profile.id}::uuid and status = 'active' limit 1
+      `;
+      fameNumber = fame[0]?.slot_number ? Number(fame[0].slot_number) : null;
+    }
+  } catch {
+    profile = null;
+  }
+}
+if (!profile) Astro.response.status = 404;
+const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+const highlightedBy = Astro.url.searchParams.get('highlight');
+---
+
+<BaseLayout title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} noindex={!profile}>
+  {profile ? (
+    <main class="shell person-page" data-profile-id={profile.id} data-highlight-campaign={highlightedBy}>
+      <header class="person-header">
+        {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
+        <div class="person-header__identity">
+          <p class="eyebrow">Public member profile</p>
+          <h1>{profile.display_name}</h1>
+          <p class="person-handle">@{profile.handle}</p>
+          {profile.bio && <p>{profile.bio}</p>}
+          <div class="profile-badges">
+            {fameNumber && <a class="fame-badge" href="/fame">FAME ✦ · #{String(fameNumber).padStart(3, '0')}</a>}
+            {awards.map((award) => <a class="leader-badge" href={`/proposals/${award.proposal_slug}`} title={`${award.proposal_title} · ${award.valid_human_votes} valid votes`}>{medal(award.rank)} Community #{award.rank} · {new Date(award.award_month).toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</a>)}
+          </div>
+        </div>
+        <div class="person-header__social"><p><strong>{Number(profile.follower_count)}</strong><span>followers</span></p><p><strong>{Number(profile.following_count)}</strong><span>following</span></p>{viewerProfileId && viewerProfileId !== profile.id && <button class:list={['button', 'button--small', profile.viewer_follows ? 'button--secondary' : 'button--dark']} type="button" data-profile-follow data-active={String(profile.viewer_follows)}>{profile.viewer_follows ? 'Following' : 'Follow'}</button>}</div>
+      </header>
+
+      <div class="person-layout">
+        <section class="repository-section">
+          <div class="repository-section__heading"><div><p class="eyebrow">Reviewed public work</p><h2>Repositories</h2></div><span>{repositories.length}</span></div>
+          {repositories.length ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" href={repositoryPath(item)}><div class="catalog-card__topline"><span>{item.kind}</span><span>{item.license ?? 'License pending'}</span></div><h3>{item.title}</h3><p>{item.summary}</p><div class="catalog-card__metadata"><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}</div> : <p>No reviewed public repositories yet.</p>}
+        </section>
+        <aside class="person-proposals">
+          <p class="eyebrow">Ideas and reputation 🗳️</p><h2>Proposals</h2>
+          {proposals.length ? <div>{proposals.map((proposal) => <a href={`/proposals/${proposal.slug}`}><span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{proposal.status}</span><strong>{proposal.title}</strong><small>👤 {proposal.human_votes} · 🤖 {proposal.agent_votes}</small></a>)}</div> : <p>No public proposals yet.</p>}
+          <a class="button button--secondary button--small" href="/proposals">Open proposal board</a>
+        </aside>
+      </div>
+    </main>
+  ) : <main class="section shell"><div class="empty-state"><h1>Profile not found</h1><p>This member profile does not exist or is not public.</p><a class="button button--secondary" href="/proposals">Browse Community Leaders</a></div></main>}
+</BaseLayout>
+
+{profile && <script>
+  const root = document.querySelector<HTMLElement>('[data-profile-id]');
+  const campaignId = root?.dataset.highlightCampaign;
+  if (campaignId && /^[0-9a-f-]{36}$/i.test(campaignId)) {
+    void fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: 'profile_view' }), keepalive: true }).catch(() => undefined);
+  }
+  const follow = root?.querySelector<HTMLButtonElement>('[data-profile-follow]');
+  follow?.addEventListener('click', async () => {
+    const active = follow.dataset.active !== 'true'; follow.disabled = true;
+    const response = await fetch(`/api/profiles/${root?.dataset.profileId}/follow`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ active }) });
+    if (response.ok) { follow.dataset.active = String(active); follow.textContent = active ? 'Following' : 'Follow'; follow.classList.toggle('button--dark', !active); follow.classList.toggle('button--secondary', active); }
+    follow.disabled = false;
+  });
+</script>}

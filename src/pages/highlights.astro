@@ -1,0 +1,158 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import type { RepositoryKind } from '@/lib/catalog';
+import {
+  getAllActiveHighlights,
+  getEligibleHighlightRepositories,
+  getOwnedHighlights,
+  publicRepositoryPath,
+  type EligibleHighlightRepository,
+  type HighlightItem,
+  type OwnedHighlight,
+} from '@/lib/participation';
+import { authIsConfigured } from '@/lib/site';
+
+const requestedKind = Astro.url.searchParams.get('kind');
+const kind = ['model', 'dataset', 'space'].includes(requestedKind ?? '') ? requestedKind as RepositoryKind : null;
+const sql = sqlClient(Astro.locals);
+let items: HighlightItem[] = [];
+let owned: OwnedHighlight[] = [];
+let eligible: EligibleHighlightRepository[] = [];
+let dataAvailable = Boolean(sql);
+if (sql) {
+  try {
+    items = await getAllActiveHighlights(sql, kind);
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) [owned, eligible] = await Promise.all([
+      getOwnedHighlights(sql, profile.profileId),
+      getEligibleHighlightRepositories(sql, profile.profileId),
+    ]);
+  } catch {
+    dataAvailable = false;
+  }
+}
+const authConfigured = authIsConfigured(Astro.locals);
+const kindLabel = (value: RepositoryKind) => value === 'model' ? 'Model' : value === 'dataset' ? 'Dataset' : 'App';
+const remaining = (value: string) => {
+  const milliseconds = new Date(value).getTime() - Date.now();
+  if (milliseconds <= 0) return 'Ending now';
+  const hours = Math.floor(milliseconds / 3_600_000);
+  const days = Math.floor(hours / 24);
+  return days > 0 ? `${days}d ${hours % 24}h remaining` : `${hours}h ${Math.floor((milliseconds % 3_600_000) / 60_000)}m remaining`;
+};
+---
+
+<BaseLayout title="Highlights" description="Discover reviewed public models, datasets, and apps their creators want more people to see. Paid discovery remains separate from organic ranking." className="highlights-page">
+  <header class="highlights-hero">
+    <div class="shell highlights-hero__inner">
+      <div><p class="eyebrow">Paid discovery with a visible boundary</p><h1>Highlights <span aria-hidden="true">✦</span></h1><p>Discover models, datasets and apps their creators want more people to see.</p></div>
+      <div class="highlights-hero__prices"><p><strong>$1</strong><span>24 hours</span></p><p><strong>$15</strong><span>30 days</span></p><small>USDC on Ethereum · no bidding</small></div>
+    </div>
+  </header>
+
+  <main class="section shell">
+    <div class="highlights-heading">
+      <div><p class="eyebrow">Every active promotion</p><h2>Currently highlighted</h2></div>
+      <nav aria-label="Highlight category">
+        <a href="/highlights" aria-current={!kind ? 'page' : undefined}>All</a>
+        <a href="/highlights?kind=model" aria-current={kind === 'model' ? 'page' : undefined}>Models</a>
+        <a href="/highlights?kind=dataset" aria-current={kind === 'dataset' ? 'page' : undefined}>Datasets</a>
+        <a href="/highlights?kind=space" aria-current={kind === 'space' ? 'page' : undefined}>Apps</a>
+      </nav>
+    </div>
+    {!dataAvailable ? (
+      <div class="empty-state"><h2>Highlights are temporarily unavailable.</h2><p>Promotion checkout remains closed whenever eligibility or rotation cannot be verified safely.</p></div>
+    ) : items.length ? (
+      <div class="highlight-gallery">
+        {items.map((item) => (
+          <article class="highlight-card" data-highlight-campaign={item.campaign_id}>
+            <div class="highlight-card__top"><span>Promoted</span><span>{kindLabel(item.kind)}</span></div>
+            <h3><a href={`${publicRepositoryPath(item)}?highlight=${item.campaign_id}`} data-highlight-event="repository_open">{item.title}</a></h3>
+            <p>{item.summary}</p>
+            <div class="highlight-card__meta"><span>{item.owner_handle}/{item.slug}</span><span>{item.license ?? 'License pending'}</span></div>
+            <footer><a href={`/people/${item.creator_handle}?highlight=${item.campaign_id}`} data-highlight-event="profile_view">@{item.creator_handle}</a><span>{remaining(item.ends_at)}</span></footer>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div class="highlights-empty"><span aria-hidden="true">✦</span><div><h2>No active {kind ? `${kindLabel(kind).toLowerCase()} ` : ''}Highlights yet.</h2><p>The page contains no paid placeholders. The first eligible creator promotion will appear here after payment confirms.</p></div><a class="button button--dark" href="#promote">Highlight your work</a></div>
+    )}
+  </main>
+
+  <section class="section section--soft" id="promote">
+    <div class="shell highlight-purchase-layout">
+      <div class="highlight-purchase-copy">
+        <p class="eyebrow">For creators 🚀</p>
+        <h2>Give reviewed work a fair turn in front.</h2>
+        <p>Every active campaign is guaranteed a place on this page. Category pages show 6–12 campaigns in equal rotation.</p>
+        <ul><li>Only reviewed, published, public work is eligible.</li><li>Payment never bypasses review.</li><li>No creator can bid for a better position.</li><li>Promotions never change search, organic rank, downloads ranking, or trending.</li></ul>
+      </div>
+      <div class="highlight-purchase-card">
+        <p class="eyebrow">Start a Highlight</p>
+        {authConfigured ? (
+          <>
+            <Show when="signed-out"><p>Log in with email, Google, or GitHub to select your reviewed work.</p><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in to continue</button></SignInButton></Show>
+            <Show when="signed-in">
+              {eligible.length ? <form data-highlight-checkout>
+                <label>Reviewed public repository<select name="repository_id" required>{eligible.map((repository) => <option value={repository.repository_id}>{kindLabel(repository.kind)} · {repository.owner_handle}/{repository.slug}</option>)}</select></label>
+                <fieldset><legend>Duration</legend><label class="highlight-plan"><input type="radio" name="duration_days" value="1" checked /><span><strong>24 hours</strong><small>$1 USD in USDC</small></span></label><label class="highlight-plan"><input type="radio" name="duration_days" value="30" /><span><strong>30 days</strong><small>$15 USD in USDC</small></span></label></fieldset>
+                <button class="button button--dark" type="submit" disabled={!dataAvailable}>Continue to USDC checkout</button>
+                <p class="form-status" data-highlight-checkout-status aria-live="polite"></p>
+              </form> : <div><p>Publish and pass review on a public model, dataset, or app before promoting it.</p><a class="button button--secondary" href="/new">Create a repository</a></div>}
+            </Show>
+          </>
+        ) : <p>Account checkout is temporarily unavailable.</p>}
+      </div>
+    </div>
+  </section>
+
+  {owned.length > 0 && <section class="section shell highlight-dashboard">
+    <div class="section-heading"><p class="eyebrow">Your campaign evidence 📊</p><h2>Highlight statistics</h2><p>Daily unique signals are reported separately from every organic catalog metric.</p></div>
+    <div class="highlight-campaign-list">
+      {owned.map((campaign) => <article>
+        <header><div><span class:list={['proposal-status', `proposal-status--${campaign.state}`]}>{campaign.state}</span><h3>{campaign.title}</h3><p>{campaign.owner_handle}/{campaign.slug} · {campaign.duration_days === 1 ? '24 hours' : '30 days'}</p></div>{campaign.ends_at && <strong>{remaining(campaign.ends_at)}</strong>}</header>
+        <dl><div><dt>Impressions</dt><dd>{campaign.impressions.toLocaleString()}</dd></div><div><dt>Profile views</dt><dd>{campaign.profile_views.toLocaleString()}</dd></div><div><dt>Repo opens</dt><dd>{campaign.repository_opens.toLocaleString()}</dd></div><div><dt>Downloads</dt><dd>{campaign.downloads.toLocaleString()}</dd></div></dl>
+        {['pending', 'scheduled'].includes(campaign.state) && <a href={`/checkout/participation/${campaign.order_id}`}>Open payment or schedule details</a>}
+      </article>)}
+    </div>
+  </section>}
+
+  <section class="highlight-integrity">
+    <div class="shell"><p><span>ORGANIC</span><strong>Earned relevance stays earned.</strong> Highlights are never inserted into organic results.</p><i class="ph ph-arrows-left-right" aria-hidden="true"></i><p><span>PROMOTED</span><strong>Paid visibility stays labeled.</strong> Orange framing and “Promoted” appear everywhere.</p></div>
+  </section>
+</BaseLayout>
+
+<script>
+  const recordHighlight = (campaignId: string, eventType: string) => fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: eventType }), keepalive: true }).catch(() => undefined);
+  document.querySelectorAll<HTMLElement>('[data-highlight-campaign]').forEach((card) => {
+    const campaignId = card.dataset.highlightCampaign; if (!campaignId) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5)) return;
+      observer.disconnect(); window.setTimeout(() => { if (card.isConnected) void recordHighlight(campaignId, 'impression'); }, 500);
+    }, { threshold: 0.5 });
+    observer.observe(card);
+    card.querySelectorAll<HTMLElement>('[data-highlight-event]').forEach((link) => link.addEventListener('click', () => { void recordHighlight(campaignId, link.dataset.highlightEvent ?? 'repository_open'); }));
+  });
+
+  const form = document.querySelector<HTMLFormElement>('[data-highlight-checkout]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const status = form.querySelector<HTMLElement>('[data-highlight-checkout-status]');
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (status) status.textContent = 'Creating a fixed-price USDC checkout…';
+    const raw = Object.fromEntries(new FormData(form).entries());
+    try {
+      const response = await fetch('/api/participation/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ product: 'highlight', repository_id: raw.repository_id, duration_days: Number(raw.duration_days) }) });
+      const data = await response.json() as { error?: string; href?: string };
+      if (!response.ok || !data.href) throw new Error(data.error || 'Checkout could not be created.');
+      location.assign(data.href);
+    } catch (error) {
+      if (status) status.textContent = error instanceof Error ? error.message : 'Checkout could not be created.';
+      if (submit) submit.disabled = false;
+    }
+  });
+</script>

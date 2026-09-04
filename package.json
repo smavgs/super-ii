@@ -13,7 +13,7 @@
     "build": "./scripts/build.sh",
     "check": "astro check",
     "preview": "wrangler dev",
-    "validate": "python3 tools/validate_site.py && python3 tools/validate_notebooks.py && ./scripts/verify-use-model.sh && go run ./tools/releasecheck ./src/content/site.json && node tools/check-use-model.mjs && node tools/check-routes.mjs && node tools/check-super-assistant.mjs && node tools/check-social-metadata.mjs && node tools/check-responsive-layout.mjs && node tools/check-social-web.mjs",
+    "validate": "python3 tools/validate_site.py && python3 tools/validate_notebooks.py && ./scripts/verify-use-model.sh && go run ./tools/releasecheck ./src/content/site.json && node tools/check-use-model.mjs && node tools/check-routes.mjs && node tools/check-super-assistant.mjs && node tools/check-social-metadata.mjs && node tools/check-responsive-layout.mjs && node tools/check-social-web.mjs && node tools/check-participation.mjs",
     "db:check": "python3 tools/validate_migrations.py",
     "db:test": "./scripts/test-postgres.sh",
     "runtime:verify": "./scripts/verify-runtime.sh",

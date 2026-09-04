@@ -1,0 +1,88 @@
+---
+import { sqlClient } from '@/lib/db';
+import {
+  getRotatedHighlights,
+  publicRepositoryPath,
+  type HighlightItem,
+} from '@/lib/participation';
+import type { RepositoryKind } from '@/lib/catalog';
+
+interface Props {
+  kind: RepositoryKind;
+}
+
+const { kind } = Astro.props;
+const sql = sqlClient(Astro.locals);
+let items: HighlightItem[] = [];
+if (sql) {
+  try {
+    items = await getRotatedHighlights(sql, kind, 8);
+  } catch {
+    items = [];
+  }
+}
+const label = kind === 'model' ? 'models' : kind === 'dataset' ? 'datasets' : 'apps';
+---
+
+<section class="highlights-strip shell" aria-labelledby={`highlights-${kind}`} data-highlights-strip>
+  <header class="highlights-strip__heading">
+    <div>
+      <p class="eyebrow">Promoted · kept separate from organic ranking</p>
+      <h2 id={`highlights-${kind}`}>Highlights <span aria-hidden="true">✦</span></h2>
+    </div>
+    <a href={`/highlights?kind=${kind}`}>See all promoted {label} <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+  </header>
+  {items.length ? (
+    <div class="highlights-strip__rail">
+      {items.map((item) => (
+        <article class="highlight-mini" data-highlight-campaign={item.campaign_id}>
+          <div class="highlight-mini__label"><span>Promoted</span><span>{item.kind}</span></div>
+          <h3><a
+            href={`${publicRepositoryPath(item)}?highlight=${item.campaign_id}`}
+            data-highlight-event="repository_open"
+          >{item.title}</a></h3>
+          <p>{item.summary}</p>
+          <div class="highlight-mini__foot">
+            <a
+              href={`/people/${encodeURIComponent(item.creator_handle)}?highlight=${item.campaign_id}`}
+              data-highlight-event="profile_view"
+            >@{item.creator_handle}</a>
+            <span>{item.license ?? 'License pending'}</span>
+          </div>
+        </article>
+      ))}
+    </div>
+  ) : (
+    <div class="highlights-strip__empty">
+      <p>No active {label} promotions yet. Reviewed public work can reserve equal rotation here.</p>
+      <a class="button button--secondary button--small" href="/highlights#promote">Highlight your work</a>
+    </div>
+  )}
+</section>
+
+<script>
+  const recordHighlight = (campaignId: string, eventType: string) => fetch('/api/highlights/events', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ campaign_id: campaignId, event_type: eventType }),
+    keepalive: true,
+  }).catch(() => undefined);
+
+  document.querySelectorAll<HTMLElement>('[data-highlight-campaign]').forEach((card) => {
+    const campaignId = card.dataset.highlightCampaign;
+    if (!campaignId) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5)) return;
+      observer.disconnect();
+      window.setTimeout(() => {
+        if (card.isConnected) void recordHighlight(campaignId, 'impression');
+      }, 500);
+    }, { threshold: 0.5 });
+    observer.observe(card);
+    card.querySelectorAll<HTMLElement>('[data-highlight-event]').forEach((link) => {
+      link.addEventListener('click', () => {
+        void recordHighlight(campaignId, link.dataset.highlightEvent ?? 'repository_open');
+      });
+    });
+  });
+</script>
