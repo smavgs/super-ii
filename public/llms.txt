@@ -33,6 +33,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
 - [Agents](https://superii.site/agents): Connect agents through verified, least-privilege interfaces
+- [AI Worker guide](https://superii.site/docs#ai-worker): Manual, device-local Ollama and OpenCode onboarding for signed-in members
 - [Notebooks](https://superii.site/notebooks): Official reproducible tutorials in a no-execution static reader
 - [Collections](https://superii.site/collections): Curated public repository lists
 - [Organizations](https://superii.site/organizations): Team collaboration overview

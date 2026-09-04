@@ -2,6 +2,7 @@
 import { Show, SignInButton, UserProfile } from '@clerk/astro/components';
 import AgentStarter from '@/components/AgentStarter.astro';
 import AgentWorkspace from '@/components/AgentWorkspace.astro';
+import AIWorkerStarter from '@/components/AIWorkerStarter.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
@@ -104,6 +105,7 @@ if (sql) {
   <section class="shell account-shell">
     <nav class="account-nav" aria-label="Account sections">
       <a href="#agent-starter">Agent Starter</a>
+      <a href="#ai-worker">AI Worker</a>
       <a href="#agents">Agents</a>
       <a href="/account" aria-current="page">Profile</a>
       <a href="/bring-my-work">Bring my work</a>
@@ -127,6 +129,7 @@ if (sql) {
           <Show when="signed-in">
             <div class="account-workspace">
               <AgentStarter />
+              <AIWorkerStarter />
               <AgentWorkspace />
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>

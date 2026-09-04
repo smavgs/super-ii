@@ -1,0 +1,381 @@
+---
+import { absoluteUrl } from '@/lib/site';
+
+const mcpEndpoint = absoluteUrl('/mcp');
+const installCommands = {
+  macos: 'curl -fsSL https://ollama.com/install.sh | sh',
+  windows: 'irm https://ollama.com/install.ps1 | iex',
+  linux: 'curl -fsSL https://ollama.com/install.sh | sh',
+};
+---
+
+<details class="ai-worker" id="ai-worker" data-ai-worker>
+  <summary class="ai-worker__summary">
+    <span class="ai-worker__summary-icon" aria-hidden="true"><i class="ph ph-desktop-tower"></i></span>
+    <span class="ai-worker__summary-copy">
+      <span class="eyebrow">AI Worker</span>
+      <strong>Your own free AI worker</strong>
+      <small>Local AI · Ollama + OpenCode · opens only when you choose it</small>
+    </span>
+    <span class="ai-worker__summary-progress">
+      <strong data-worker-summary-progress>0 of 4 complete</strong>
+      <small>Saved on this device</small>
+    </span>
+    <i class="ph ph-caret-down ai-worker__summary-caret" aria-hidden="true"></i>
+  </summary>
+
+  <div class="ai-worker__body">
+    <header class="ai-worker__intro">
+      <div>
+        <p class="eyebrow">💻 Local AI · Free</p>
+        <h2>Your own AI worker. On your computer.</h2>
+        <p>No monthly AI subscription. No token charges. Give it work and let it help directly from your computer.</p>
+      </div>
+      <span class="ai-worker__local-badge"><i class="ph ph-hard-drives" aria-hidden="true"></i> Your computer runs the AI</span>
+    </header>
+
+    <div class="agent-starter__progress" aria-label="AI Worker setup progress">
+      <div>
+        <strong data-worker-progress-label>0 of 4 complete</strong>
+        <span>Saved only in this browser on this device</span>
+      </div>
+      <div class="agent-starter__progress-track" aria-hidden="true"><span data-worker-progress-bar></span></div>
+      <button class="text-button" type="button" data-worker-reset hidden>Start again</button>
+    </div>
+
+    <ol class="agent-starter__steps">
+      <li class="agent-starter__step" data-worker-step="install">
+        <div class="agent-starter__step-number">01</div>
+        <div class="agent-starter__step-content">
+          <p class="eyebrow">Install</p>
+          <h3>Install Ollama</h3>
+          <p>Choose your operating system. This guide shows the matching official Ollama installer command and download page.</p>
+
+          <div class="agent-os-picker" role="group" aria-label="Choose your computer operating system">
+            <button type="button" data-worker-os="macos" aria-pressed="true"><i class="ph ph-apple-logo" aria-hidden="true"></i> Mac</button>
+            <button type="button" data-worker-os="windows" aria-pressed="false"><i class="ph ph-windows-logo" aria-hidden="true"></i> Windows</button>
+            <button type="button" data-worker-os="linux" aria-pressed="false"><i class="ph ph-linux-logo" aria-hidden="true"></i> Linux</button>
+          </div>
+          <p class="agent-os-status" data-worker-os-status aria-live="polite">Mac instructions selected.</p>
+
+          <div class="agent-command">
+            <span data-worker-shell-label>Terminal</span>
+            <code
+              data-worker-command-id="install"
+              data-command-macos={installCommands.macos}
+              data-command-windows={installCommands.windows}
+              data-command-linux={installCommands.linux}
+            >{installCommands.macos}</code>
+            <button type="button" data-worker-copy-command="install" aria-label="Copy Ollama installation command">
+              <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+            </button>
+          </div>
+          <div class="agent-starter__support-row">
+            <a href="https://ollama.com/download/mac" target="_blank" rel="noreferrer" data-worker-install-link>Open official Ollama download</a>
+            <span>Review the official installer before running a remote script.</span>
+          </div>
+          <button class="agent-step-complete" type="button" data-worker-complete="install" aria-pressed="false">
+            <i class="ph ph-circle" aria-hidden="true"></i><span>Mark installed</span>
+          </button>
+        </div>
+      </li>
+
+      <li class="agent-starter__step" data-worker-step="model">
+        <div class="agent-starter__step-number">02</div>
+        <div class="agent-starter__step-content">
+          <p class="eyebrow">AI model</p>
+          <h3>Download a capable small model</h3>
+          <p>Start with <strong>qwen3.5:4b</strong>, a compact local model that works with OpenCode. Model size and availability can change, so the official model page remains the source of truth.</p>
+          <div class="agent-model-recommendation">
+            <div>
+              <span class="status-badge status-badge--complete">Recommended local start</span>
+              <strong>qwen3.5:4b</strong>
+              <small>Local inference · no AI subscription · no per-token bill</small>
+            </div>
+            <a class="button button--secondary button--small" href="https://ollama.com/library/qwen3.5:4b" target="_blank" rel="noreferrer">Model details <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          </div>
+          <div class="agent-command">
+            <span>Terminal</span>
+            <code data-worker-command-id="model">ollama pull qwen3.5:4b</code>
+            <button type="button" data-worker-copy-command="model" aria-label="Copy the model download command">
+              <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+            </button>
+          </div>
+          <button class="agent-step-complete" type="button" data-worker-complete="model" aria-pressed="false">
+            <i class="ph ph-circle" aria-hidden="true"></i><span>Mark downloaded</span>
+          </button>
+        </div>
+      </li>
+
+      <li class="agent-starter__step" data-worker-step="context">
+        <div class="agent-starter__step-number">03</div>
+        <div class="agent-starter__step-content">
+          <p class="eyebrow">Working memory</p>
+          <h3>Set context length to 64K or higher</h3>
+          <p>Open <strong>Ollama → Settings → Context length</strong> and choose at least <strong>64K</strong>. More context helps the worker understand longer instructions, files, and tool results; the comfortable size depends on your computer’s available memory.</p>
+          <div class="ai-worker__context-card">
+            <i class="ph ph-brain" aria-hidden="true"></i>
+            <span><strong>64K+</strong><small>Recommended for coding tools</small></span>
+          </div>
+          <button class="agent-step-complete" type="button" data-worker-complete="context" aria-pressed="false">
+            <i class="ph ph-circle" aria-hidden="true"></i><span>Mark 64K set</span>
+          </button>
+        </div>
+      </li>
+
+      <li class="agent-starter__step" data-worker-step="launch">
+        <div class="agent-starter__step-number">04</div>
+        <div class="agent-starter__step-content">
+          <p class="eyebrow">Launch</p>
+          <h3>Start your AI worker</h3>
+          <p>Ollama will set up and launch OpenCode. If the model picker appears, choose <strong>qwen3.5:4b</strong>.</p>
+          <div class="agent-command">
+            <span>Terminal</span>
+            <code data-worker-command-id="launch">ollama launch opencode</code>
+            <button type="button" data-worker-copy-command="launch" aria-label="Copy the OpenCode launch command">
+              <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+            </button>
+          </div>
+          <p class="ai-worker__local-line"><i class="ph ph-check-circle" aria-hidden="true"></i> Local · No API key · No token bill</p>
+          <button class="agent-step-complete" type="button" data-worker-complete="launch" aria-pressed="false">
+            <i class="ph ph-circle" aria-hidden="true"></i><span>Mark launched</span>
+          </button>
+        </div>
+      </li>
+    </ol>
+
+    <section class="agent-starter__success" data-worker-success aria-live="polite" hidden>
+      <div class="agent-starter__success-mark"><i class="ph ph-confetti" aria-hidden="true"></i></div>
+      <div>
+        <p class="eyebrow">You did it 🎉</p>
+        <h3>Your AI worker is running.</h3>
+        <p>Open a project folder and try one of these:</p>
+        <ul class="ai-worker__prompts">
+          <li>“Look at this folder and explain what this project does.”</li>
+          <li>“Find what needs improving and show me what you would change.”</li>
+          <li>“Help me build this project step by step.”</li>
+        </ul>
+        <p><strong>Your computer runs the AI.</strong> Local inference has no monthly AI subscription and no per-token charges.</p>
+      </div>
+    </section>
+
+    <section class="agent-connect" id="connect-super-ii-worker">
+      <div class="agent-connect__intro">
+        <p class="eyebrow">Next · Connect Super ii</p>
+        <h3>Your worker is ready. Give it Super ii discovery.</h3>
+        <p>Connect Super ii’s public, read-only MCP so OpenCode can discover reviewed models, datasets, apps, papers, and verified files.</p>
+      </div>
+
+      <div class="agent-connect__flow">
+        <div>
+          <span>1</span>
+          <p>In a new terminal, start the guided setup:</p>
+          <div class="agent-command agent-command--light">
+            <code data-worker-command-id="mcp-add">opencode mcp add</code>
+            <button type="button" data-worker-copy-command="mcp-add" aria-label="Copy OpenCode MCP add command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+          </div>
+        </div>
+        <div>
+          <span>2</span>
+          <p>Choose <strong>Remote</strong>, name it <strong>superii</strong>, and use:</p>
+          <div class="agent-command agent-command--light">
+            <code data-worker-command-id="mcp-url">{mcpEndpoint}</code>
+            <button type="button" data-worker-copy-command="mcp-url" aria-label="Copy Super ii MCP URL"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+          </div>
+        </div>
+        <div>
+          <span>3</span>
+          <p>Verify the connection:</p>
+          <div class="agent-command agent-command--light">
+            <code data-worker-command-id="mcp-list">opencode mcp list</code>
+            <button type="button" data-worker-copy-command="mcp-list" aria-label="Copy OpenCode MCP list command"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="agent-connect__finish">
+        <div><i class="ph ph-check-circle" aria-hidden="true"></i><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
+        <p>Try: “Use Super ii to show its system state and explain what it can discover.”</p>
+      </div>
+    </section>
+
+    <footer class="agent-starter__future">
+      <span>AI Worker · Ollama + OpenCode</span>
+      <p>Your local AI path. Start small, then use a larger model later if your computer can handle it.</p>
+    </footer>
+  </div>
+</details>
+
+<script>
+  type WorkerStep = 'install' | 'model' | 'context' | 'launch';
+  type WorkerOs = 'macos' | 'windows' | 'linux';
+
+  const WORKER_STORAGE_KEY = 'superii-ai-worker-v1';
+  const WORKER_STEP_KEYS: WorkerStep[] = ['install', 'model', 'context', 'launch'];
+  const WORKER_INSTALL_LINKS: Record<WorkerOs, string> = {
+    macos: 'https://ollama.com/download/mac',
+    windows: 'https://ollama.com/download/windows',
+    linux: 'https://ollama.com/download/linux',
+  };
+  const WORKER_OS_LABELS: Record<WorkerOs, string> = {
+    macos: 'Mac',
+    windows: 'Windows',
+    linux: 'Linux',
+  };
+
+  interface WorkerState {
+    os: WorkerOs;
+    complete: WorkerStep[];
+  }
+
+  function detectWorkerOs(): WorkerOs {
+    const value = `${navigator.platform || ''} ${navigator.userAgent || ''}`.toLowerCase();
+    if (value.includes('win')) return 'windows';
+    if (value.includes('mac')) return 'macos';
+    if (value.includes('linux') && !value.includes('android')) return 'linux';
+    return 'macos';
+  }
+
+  function readWorkerState(): WorkerState {
+    const fallback: WorkerState = { os: detectWorkerOs(), complete: [] };
+    try {
+      const stored = JSON.parse(localStorage.getItem(WORKER_STORAGE_KEY) || 'null');
+      if (!stored || !['macos', 'windows', 'linux'].includes(stored.os) || !Array.isArray(stored.complete)) return fallback;
+      return {
+        os: stored.os,
+        complete: stored.complete.filter((step: string): step is WorkerStep => WORKER_STEP_KEYS.includes(step as WorkerStep)),
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  async function copyWorkerText(value: string, button: HTMLButtonElement) {
+    const label = button.querySelector('span');
+    try {
+      await navigator.clipboard.writeText(value);
+      if (label) label.textContent = 'Copied';
+      button.dataset.copied = 'true';
+      window.setTimeout(() => {
+        if (label) label.textContent = button.dataset.originalLabel || 'Copy';
+        delete button.dataset.copied;
+      }, 1800);
+    } catch {
+      const source = button.closest('.agent-command')?.querySelector('code');
+      if (source) {
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(source);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+      if (label) label.textContent = 'Select text';
+    }
+  }
+
+  document.querySelectorAll<HTMLDetailsElement>('[data-ai-worker]').forEach((worker) => {
+    if (worker.dataset.initialized === 'true') return;
+    worker.dataset.initialized = 'true';
+    worker.dataset.enhanced = 'true';
+    let state = readWorkerState();
+
+    const summaryProgress = worker.querySelector<HTMLElement>('[data-worker-summary-progress]');
+    const progressLabel = worker.querySelector<HTMLElement>('[data-worker-progress-label]');
+    const progressBar = worker.querySelector<HTMLElement>('[data-worker-progress-bar]');
+    const resetButton = worker.querySelector<HTMLButtonElement>('[data-worker-reset]');
+    const success = worker.querySelector<HTMLElement>('[data-worker-success]');
+    const installCommand = worker.querySelector<HTMLElement>('[data-worker-command-id="install"]');
+    const installLink = worker.querySelector<HTMLAnchorElement>('[data-worker-install-link]');
+    const shellLabel = worker.querySelector<HTMLElement>('[data-worker-shell-label]');
+    const osStatus = worker.querySelector<HTMLElement>('[data-worker-os-status]');
+
+    const save = () => {
+      try { localStorage.setItem(WORKER_STORAGE_KEY, JSON.stringify(state)); } catch {}
+    };
+
+    const render = () => {
+      worker.querySelectorAll<HTMLButtonElement>('[data-worker-os]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.workerOs === state.os));
+      });
+      if (installCommand) installCommand.textContent = installCommand.dataset[`command${state.os[0].toUpperCase()}${state.os.slice(1)}`] || '';
+      if (installLink) installLink.href = WORKER_INSTALL_LINKS[state.os];
+      if (shellLabel) shellLabel.textContent = state.os === 'windows' ? 'PowerShell' : 'Terminal';
+      if (osStatus) osStatus.textContent = `${WORKER_OS_LABELS[state.os]} instructions selected.`;
+
+      worker.querySelectorAll<HTMLButtonElement>('[data-worker-complete]').forEach((button) => {
+        const step = button.dataset.workerComplete as WorkerStep;
+        const complete = state.complete.includes(step);
+        button.setAttribute('aria-pressed', String(complete));
+        const icon = button.querySelector('i');
+        if (icon) icon.className = complete ? 'ph ph-check-circle' : 'ph ph-circle';
+        button.closest<HTMLElement>('[data-worker-step]')?.toggleAttribute('data-complete', complete);
+      });
+
+      const count = state.complete.length;
+      const progressText = `${count} of ${WORKER_STEP_KEYS.length} complete`;
+      if (summaryProgress) summaryProgress.textContent = progressText;
+      if (progressLabel) progressLabel.textContent = progressText;
+      if (progressBar) progressBar.style.width = `${(count / WORKER_STEP_KEYS.length) * 100}%`;
+      if (resetButton) resetButton.hidden = count === 0;
+      if (success) success.hidden = count !== WORKER_STEP_KEYS.length;
+      worker.toggleAttribute('data-complete', count === WORKER_STEP_KEYS.length);
+    };
+
+    const openFromLocation = () => {
+      const requested = location.hash === '#ai-worker' || new URLSearchParams(location.search).get('welcome') === 'ai-worker';
+      if (!requested) return;
+      const settledUrl = new URL(location.href);
+      settledUrl.hash = '';
+      settledUrl.searchParams.delete('welcome');
+      history.replaceState(history.state, '', `${settledUrl.pathname}${settledUrl.search}`);
+      worker.open = true;
+      requestAnimationFrame(() => worker.scrollIntoView({
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+      }));
+    };
+
+    worker.querySelectorAll<HTMLButtonElement>('[data-worker-os]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.os = button.dataset.workerOs as WorkerOs;
+        save();
+        render();
+      });
+    });
+
+    worker.querySelectorAll<HTMLButtonElement>('[data-worker-complete]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const step = button.dataset.workerComplete as WorkerStep;
+        state.complete = state.complete.includes(step)
+          ? state.complete.filter((value) => value !== step)
+          : [...state.complete, step];
+        save();
+        render();
+      });
+    });
+
+    resetButton?.addEventListener('click', () => {
+      state = { os: detectWorkerOs(), complete: [] };
+      save();
+      render();
+      worker.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+
+    worker.querySelectorAll<HTMLButtonElement>('[data-worker-copy-command]').forEach((button) => {
+      const label = button.querySelector('span');
+      button.dataset.originalLabel = label?.textContent || 'Copy';
+      button.addEventListener('click', () => {
+        const id = button.dataset.workerCopyCommand;
+        const source = id ? worker.querySelector<HTMLElement>(`[data-worker-command-id="${CSS.escape(id)}"]`) : null;
+        if (source?.textContent) void copyWorkerText(source.textContent.trim(), button);
+      });
+    });
+
+    document.querySelectorAll<HTMLAnchorElement>('a[href="#ai-worker"]').forEach((link) => {
+      link.addEventListener('click', () => { worker.open = true; });
+    });
+    window.addEventListener('hashchange', openFromLocation);
+    render();
+    openFromLocation();
+  });
+</script>

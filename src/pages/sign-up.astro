@@ -5,6 +5,13 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 
 const authConfigured = authIsConfigured(Astro.locals);
+const agentStarterRedirect = '/account?welcome=agent-starter#agent-starter';
+const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
+const requestedRedirect = Astro.url.searchParams.get('redirect_url');
+const postSignUpRedirect = requestedRedirect === aiWorkerRedirect ? aiWorkerRedirect : agentStarterRedirect;
+const signInUrl = postSignUpRedirect === aiWorkerRedirect
+  ? `/sign-in?redirect_url=${encodeURIComponent(aiWorkerRedirect)}`
+  : '/sign-in';
 ---
 
 <BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">
@@ -18,8 +25,9 @@ const authConfigured = authIsConfigured(Astro.locals);
           <SignUp
             routing="path"
             path="/sign-up"
-            signInUrl="/sign-in"
-            fallbackRedirectUrl="/account?welcome=agent-starter#agent-starter"
+            signInUrl={signInUrl}
+            forceRedirectUrl={postSignUpRedirect}
+            fallbackRedirectUrl={postSignUpRedirect}
             appearance={{
               elements: {
                 rootBox: 'sii-clerk-root',

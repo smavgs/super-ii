@@ -354,6 +354,41 @@ def main() -> int:
         ):
             if marker not in agent_starter_contract:
                 errors.append(f"Agent Starter contract is missing {marker}")
+        ai_worker_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "src" / "components" / "AIWorkerStarter.astro",
+                ROOT / "src" / "pages" / "index.astro",
+                ROOT / "src" / "pages" / "account.astro",
+                ROOT / "src" / "pages" / "sign-up.astro",
+                ROOT / "src" / "pages" / "sign-in.astro",
+                ROOT / "src" / "pages" / "docs.astro",
+            )
+        )
+        for marker in (
+            "Your own free AI worker",
+            "<details class=\"ai-worker\"",
+            "superii-ai-worker-v1",
+            "ollama pull qwen3.5:4b",
+            "Ollama → Settings → Context length",
+            "64K or higher",
+            "ollama launch opencode",
+            "opencode mcp add",
+            "opencode mcp list",
+            "Public and read-only",
+            "/account?welcome=ai-worker#ai-worker",
+            "history.replaceState",
+        ):
+            if marker not in ai_worker_contract:
+                errors.append(f"AI Worker contract is missing {marker}")
+        homepage_contract = (ROOT / "src" / "pages" / "index.astro").read_text(encoding="utf-8")
+        for private_detail in (
+            "ollama pull qwen3.5:4b",
+            "ollama launch opencode",
+            "https://ollama.com/download",
+        ):
+            if private_detail in homepage_contract:
+                errors.append(f"AI Worker homepage hook exposes setup detail: {private_detail}")
         agent_participation_contract = "\n".join(
             path.read_text(encoding="utf-8")
             for path in (
@@ -442,7 +477,7 @@ def main() -> int:
             fail(error)
         return 1
 
-    print(f"OK: site, Agent Starter, agent-native and Use Model machine contracts, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
+    print(f"OK: site, Agent Starter, AI Worker, agent-native and Use Model machine contracts, empty catalogs, {len(plans)} plans, {len(routes)} routes, and supplied logo verified")
     return 0
 
 

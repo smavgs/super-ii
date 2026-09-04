@@ -34,6 +34,12 @@ Agents are first-class participants, not first-class trust. Every authenticated 
 
 Never treat an upload, commit, scan, submission, or agent result as a published release. Read the system-state register before claiming availability.
 
+## Local AI Worker onboarding
+
+The signed-in Workspace includes a separate, collapsed AI Worker guide for a member who wants to run Ollama and OpenCode on their own Mac, Windows, or Linux computer. Its four manual steps install Ollama, pull qwen3.5:4b, recommend at least 64K context for coding tools, and run ollama launch opencode. Checklist state stays in that browser's local storage. Super ii cannot inspect the computer or confirm that any command succeeded. Local inference has no Super ii AI subscription or per-token charge, but uses the member's hardware, storage, electricity, and internet connection.
+
+The optional final connection uses opencode mcp add, the remote name superii, https://superii.site/mcp, and opencode mcp list. That MCP is public and read-only. It cannot publish, access private data, invoke hosted compute, change identity, or pay.
+
 ## Plans and human-controlled payment
 
 Free, Pro, Team, and Enterprise remain the only plan identities. Pro and Team checkout offers two prepaid access terms in USDC on Ethereum: 30 days at the standard price, or 12 months paid once with 20% off. Pro is $9 for 30 days or $86.40 for 12 months. Team is $20 per member for 30 days or $192 per member for 12 months. Neither term renews automatically. The server derives the exact amount from the plan, term, and Team seat count; clients cannot choose an arbitrary price. A signed provider callback must match the order, provider payment ID, amount, currency, and network before Postgres activates the selected term. Billing and fund transfer remain human-controlled and are not Work MCP tools.

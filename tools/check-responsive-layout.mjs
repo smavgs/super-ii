@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const css = fs.readFileSync(path.join(root, 'src/styles/global.css'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'src/components/SuperAssistant.astro'), 'utf8');
+const aiWorker = fs.readFileSync(path.join(root, 'src/components/AIWorkerStarter.astro'), 'utf8');
 const siteScript = fs.readFileSync(path.join(root, 'public/scripts/site.js'), 'utf8');
 
 function assert(condition, message) {
@@ -65,6 +66,16 @@ assert(
   /@media \(max-width: 420px\)[\s\S]*?\.agent-os-picker\s*\{[\s\S]*?grid-template-columns:\s*1fr;[\s\S]*?\.agent-command code\s*\{[\s\S]*?white-space:\s*pre-wrap;/.test(css),
   'Agent Starter controls and commands must fully reflow on very narrow screens',
 );
+assert(
+  /@media \(max-width: 640px\)[\s\S]*?\.ai-worker__summary\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\) auto;/.test(css),
+  'the collapsed AI Worker summary must reflow before its status crowds the title',
+);
+assert(
+  /@media \(max-width: 420px\)[\s\S]*?\.ai-worker__summary-icon\s*\{[\s\S]*?display:\s*none;/.test(css),
+  'the AI Worker summary must remove its decorative icon on very narrow screens',
+);
+assert(aiWorker.includes('<details class="ai-worker"'), 'AI Worker must remain an on-demand details drawer');
+assert(aiWorker.includes("location.hash === '#ai-worker'"), 'AI Worker must open from the Workspace anchor');
 
 for (const requiredMarkup of [
   'aria-label="Open Super ii assistant"',
@@ -77,4 +88,4 @@ for (const requiredMarkup of [
 assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
-console.log('Responsive layout check passed: fluid pages, a contained account workspace, reflowing Agent Starter controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');
+console.log('Responsive layout check passed: fluid pages, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');
