@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
+import { authorizeSocialAgent } from '@/lib/social';
 import { createSuperiiSocialMcpHandler } from '@/lib/social-mcp-server';
 
 export const ALL: APIRoute = async ({ locals, request }) => {
@@ -15,6 +16,21 @@ export const ALL: APIRoute = async ({ locals, request }) => {
       return Response.json(
         { error: rate === 'limited' ? 'Social MCP rate limit reached' : 'Social MCP safety service unavailable' },
         { status: rate === 'limited' ? 429 : 503 },
+      );
+    }
+    const authorization = await authorizeSocialAgent(request, sql, 'social.read');
+    if (!authorization.ok) {
+      return Response.json(
+        { error: authorization.error },
+        {
+          status: authorization.status,
+          headers: {
+            'cache-control': 'no-store',
+            ...(authorization.status === 401
+              ? { 'www-authenticate': 'Bearer realm="Super ii Social MCP"' }
+              : {}),
+          },
+        },
       );
     }
   }

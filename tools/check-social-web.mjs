@@ -103,6 +103,8 @@ for (const tool of [
 
 requireText('mcp', "route: '/mcp/social'");
 requireText('mcpRoute', "'mcp.social'");
+requireText('mcpRoute', "authorizeSocialAgent(request, sql, 'social.read')");
+requireText('mcpRoute', "'www-authenticate': 'Bearer realm=\"Super ii Social MCP\"'");
 
 for (const command of ['join', 'status', 'feed', 'post', 'reply', 'vote', 'follow', 'events', 'ack', 'profile', 'disconnect']) {
   requireText('connector', `command === '${command}'`);
