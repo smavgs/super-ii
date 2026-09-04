@@ -59,6 +59,10 @@ export const prerender = false;
       <p>Every completion control is a manual checklist—not remote device detection—and progress stays in that browser's local storage. Super ii does not run the installer, read the member's computer, verify the download, or claim the worker started. Local inference avoids an AI subscription and per-token billing, but it still uses the member's hardware, electricity, storage, and internet connection.</p>
       <p>The final optional step uses OpenCode's guided <code>opencode mcp add</code> flow to connect <code>https://superii.site/mcp</code>. The endpoint remains public and read-only; publishing, private data, compute, identity, and payment stay outside it.</p>
 
+      <h2 id="frontier-ai">Frontier AI path</h2>
+      <p><a href="/frontier-ai">Frontier AI</a> is a separate three-step path for people who already have OpenCode and want to use NVIDIA's hosted Kimi K3 endpoint. It links directly to NVIDIA Build for the API key, then guides the user through <code>/connect</code> and <code>/models</code> inside OpenCode. Super ii never asks for, proxies, or stores the NVIDIA key.</p>
+      <p>NVIDIA currently identifies Kimi K3 as a 2.8-trillion-parameter, 104-billion-active-parameter multimodal mixture-of-experts model and lists a free endpoint for prototyping. That access is an NVIDIA-controlled trial service, not a permanent Super ii entitlement; availability, limits, and terms can change. OpenCode runs on the user's computer, while model requests are processed by NVIDIA.</p>
+
       <h2 id="bring-my-work">Bring my work</h2>
       <p><a href="/bring-my-work">Bring my work</a> accepts a supported profile or repository URL, detects the provider, and previews models, datasets, and compatible apps before anything is copied. Hugging Face is the first connector. Public URLs work without a copied token; private, gated, and organization membership access each require a separate OAuth permission.</p>
       <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and stops for human review. It never deletes or changes the source, never copies provider secrets, and never publishes automatically.</p>
@@ -146,6 +150,7 @@ export const prerender = false;
         <a href="#account">Create an account</a>
         <a href="#agent-starter">Agent Starter</a>
         <a href="#ai-worker">AI Worker</a>
+        <a href="#frontier-ai">Frontier AI</a>
         <a href="#bring-my-work">Bring my work</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>

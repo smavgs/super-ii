@@ -1,0 +1,282 @@
+---
+import SuperAssistant from '@/components/SuperAssistant.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const nvidiaModelUrl = 'https://build.nvidia.com/moonshotai/kimi-k3';
+const openCodeProviderUrl = 'https://opencode.ai/docs/providers/#nvidia';
+---
+
+<BaseLayout
+  title="Frontier AI from your computer"
+  description="Connect OpenCode to NVIDIA and start using Kimi K3, a 2.8-trillion-parameter frontier model, in three clear steps."
+  className="frontier-ai-page"
+>
+  <section class="frontier-hero">
+    <div class="shell frontier-hero__inner">
+      <div class="frontier-hero__copy">
+        <p class="eyebrow">Super ii frontier path · NVIDIA + OpenCode</p>
+        <h1>Maximum-power AI.<br /><span>$0 to start.</span> ⚡</h1>
+        <p class="frontier-hero__lead">Use a 2.8-trillion-parameter frontier model.</p>
+        <ul class="frontier-hero__promises" aria-label="What you need to start">
+          <li><i class="ph ph-check" aria-hidden="true"></i>No business AI subscription required to start.</li>
+          <li><i class="ph ph-check" aria-hidden="true"></i>No high-end GPU needed.</li>
+          <li><i class="ph ph-check" aria-hidden="true"></i>Use it from your own computer.</li>
+        </ul>
+        <a class="button button--yellow" href="#setup">Use frontier AI <span aria-hidden="true">🧠</span></a>
+      </div>
+
+      <div class="frontier-orbit" aria-label="Your computer connects OpenCode to NVIDIA's Kimi K3 endpoint">
+        <span class="frontier-orbit__ring frontier-orbit__ring--outer" aria-hidden="true"></span>
+        <span class="frontier-orbit__ring frontier-orbit__ring--inner" aria-hidden="true"></span>
+        <div class="frontier-orbit__core">
+          <span>Kimi</span>
+          <strong>K3</strong>
+          <small>~2.8T</small>
+        </div>
+        <span class="frontier-orbit__node frontier-orbit__node--computer"><i class="ph ph-laptop" aria-hidden="true"></i>Your computer</span>
+        <span class="frontier-orbit__node frontier-orbit__node--code"><i class="ph ph-terminal-window" aria-hidden="true"></i>OpenCode</span>
+        <span class="frontier-orbit__node frontier-orbit__node--cloud"><i class="ph ph-cloud" aria-hidden="true"></i>NVIDIA API</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="frontier-path" aria-labelledby="frontier-path-title">
+    <div class="shell">
+      <p class="eyebrow">The architecture is simple</p>
+      <h2 id="frontier-path-title" class="sr-only">How the frontier AI path works</h2>
+      <ol class="frontier-path__rail">
+        <li><i class="ph ph-laptop" aria-hidden="true"></i><span>Your computer</span></li>
+        <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
+        <li><i class="ph ph-terminal-window" aria-hidden="true"></i><span>OpenCode</span></li>
+        <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
+        <li><i class="ph ph-cloud-arrow-up" aria-hidden="true"></i><span>NVIDIA API</span></li>
+        <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
+        <li><i class="ph ph-brain" aria-hidden="true"></i><span>Kimi K3 <small>~2.8T</small></span></li>
+      </ol>
+      <p>The massive model runs on NVIDIA infrastructure. OpenCode stays on your computer and uses the model through NVIDIA’s API, so you do not need to download Kimi K3 or buy a high-end GPU.</p>
+    </div>
+  </section>
+
+  <section class="frontier-setup" id="setup" aria-labelledby="frontier-setup-title" data-frontier-guide>
+    <div class="shell frontier-setup__shell">
+      <header class="frontier-setup__header">
+        <div>
+          <p class="eyebrow">Three steps. Then start working.</p>
+          <h2 id="frontier-setup-title">Frontier AI, without the maze.</h2>
+          <p>Already using OpenCode? Start below. If not, <a href="/account#agent-starter">Agent Starter will help you open it first</a>.</p>
+        </div>
+        <div class="frontier-progress" aria-label="Frontier AI setup progress">
+          <div><strong data-frontier-progress-label>0 of 3 complete</strong><span>Saved on this device</span></div>
+          <div class="frontier-progress__track" aria-hidden="true"><span data-frontier-progress-bar></span></div>
+          <button class="text-button" type="button" data-frontier-reset hidden>Start again</button>
+        </div>
+      </header>
+
+      <ol class="frontier-steps">
+        <li class="frontier-step" data-frontier-step="access">
+          <span class="frontier-step__number">01</span>
+          <div class="frontier-step__body">
+            <p class="eyebrow">Get NVIDIA access</p>
+            <h3>Create your free NVIDIA account and API key.</h3>
+            <p>Open the official Kimi K3 page on NVIDIA Build, sign in, and choose <strong>Generate API Key</strong>.</p>
+            <div class="frontier-step__actions">
+              <a class="button button--dark" href={nvidiaModelUrl} target="_blank" rel="noreferrer">
+                Open NVIDIA Kimi K3 <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+              </a>
+              <button class="frontier-step__complete" type="button" data-frontier-complete="access" aria-pressed="false">
+                <i class="ph ph-circle" aria-hidden="true"></i><span>Mark key created</span>
+              </button>
+            </div>
+            <p class="frontier-step__note"><i class="ph ph-shield-check" aria-hidden="true"></i>NVIDIA controls free endpoint availability, limits, and trial terms.</p>
+          </div>
+        </li>
+
+        <li class="frontier-step" data-frontier-step="connect">
+          <span class="frontier-step__number">02</span>
+          <div class="frontier-step__body">
+            <p class="eyebrow">Connect</p>
+            <h3>Connect NVIDIA to OpenCode.</h3>
+            <p>Inside OpenCode, type the command below. Choose <strong>NVIDIA</strong>, then paste your NVIDIA API key into OpenCode’s credential prompt.</p>
+            <div class="frontier-command">
+              <span>Inside OpenCode</span>
+              <code data-frontier-copy-source="connect">/connect</code>
+              <button type="button" data-frontier-copy="connect" aria-label="Copy the OpenCode connect command">
+                <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+              </button>
+            </div>
+            <div class="frontier-step__actions">
+              <a class="frontier-text-link" href={openCodeProviderUrl} target="_blank" rel="noreferrer">Read OpenCode’s NVIDIA instructions <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+              <button class="frontier-step__complete" type="button" data-frontier-complete="connect" aria-pressed="false">
+                <i class="ph ph-circle" aria-hidden="true"></i><span>Mark connected</span>
+              </button>
+            </div>
+            <p class="frontier-step__note"><i class="ph ph-lock-key" aria-hidden="true"></i>Your key goes directly into OpenCode—not Super ii. Never paste it into a chat, screenshot, source file, or repository.</p>
+          </div>
+        </li>
+
+        <li class="frontier-step" data-frontier-step="model">
+          <span class="frontier-step__number">03</span>
+          <div class="frontier-step__body">
+            <p class="eyebrow">Choose your AI</p>
+            <h3>Select Kimi K3.</h3>
+            <p>Inside OpenCode, open the model picker. Search for <strong>Kimi K3</strong> under NVIDIA and select the exact model shown below.</p>
+            <div class="frontier-command">
+              <span>Inside OpenCode</span>
+              <code data-frontier-copy-source="models">/models</code>
+              <button type="button" data-frontier-copy="models" aria-label="Copy the OpenCode models command">
+                <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+              </button>
+            </div>
+            <div class="frontier-model">
+              <div><span>NVIDIA</span><strong data-frontier-copy-source="model">moonshotai/kimi-k3</strong><small>2.8T total parameters · 104B active · 1M context</small></div>
+              <button type="button" data-frontier-copy="model" aria-label="Copy the Kimi K3 model ID">
+                <i class="ph ph-copy" aria-hidden="true"></i><span>Copy model</span>
+              </button>
+            </div>
+            <div class="frontier-step__actions">
+              <button class="frontier-step__complete" type="button" data-frontier-complete="model" aria-pressed="false">
+                <i class="ph ph-circle" aria-hidden="true"></i><span>Mark model selected</span>
+              </button>
+            </div>
+          </div>
+        </li>
+      </ol>
+
+      <section class="frontier-ready" data-frontier-ready aria-live="polite" hidden>
+        <div class="frontier-ready__signal"><i class="ph ph-lightning" aria-hidden="true"></i></div>
+        <div>
+          <p class="eyebrow">You’re in. 🧠</p>
+          <h2>Frontier AI is now working from your computer.</h2>
+          <p>No complicated configuration. No downloading a 2.8T model. No GPU purchase.</p>
+        </div>
+        <span class="frontier-ready__status" data-frontier-ready-status>Steps marked complete</span>
+      </section>
+    </div>
+  </section>
+
+  <section class="frontier-start" aria-labelledby="frontier-start-title">
+    <div class="shell frontier-start__inner">
+      <div>
+        <p class="eyebrow">Start working</p>
+        <h2 id="frontier-start-title">Open a project folder. Ask for a real result.</h2>
+      </div>
+      <div class="frontier-prompts">
+        <blockquote>“Analyse this entire business or project and tell me what we should do next.”</blockquote>
+        <blockquote>“Build this for me and use the tools available on my computer.”</blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section class="frontier-truth" aria-label="Important provider and privacy information">
+    <div class="shell frontier-truth__inner">
+      <i class="ph ph-info" aria-hidden="true"></i>
+      <p><strong>Clear before you start.</strong> NVIDIA’s hosted endpoint is a provider-controlled trial service, not a permanent Super ii entitlement. Your requests are processed by NVIDIA under its terms. OpenCode stores the provider credential on your computer; Super ii does not collect, proxy, or store it through this guide.</p>
+      <a href={nvidiaModelUrl} target="_blank" rel="noreferrer">Check current availability <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+    </div>
+  </section>
+
+  <SuperAssistant />
+</BaseLayout>
+
+<script>
+  type FrontierStep = 'access' | 'connect' | 'model';
+
+  const FRONTIER_STORAGE_KEY = 'superii-frontier-ai-v1';
+  const FRONTIER_STEPS: FrontierStep[] = ['access', 'connect', 'model'];
+
+  function readFrontierProgress(): FrontierStep[] {
+    try {
+      const stored = JSON.parse(localStorage.getItem(FRONTIER_STORAGE_KEY) || '[]');
+      if (!Array.isArray(stored)) return [];
+      return stored.filter((step: string): step is FrontierStep => FRONTIER_STEPS.includes(step as FrontierStep));
+    } catch {
+      return [];
+    }
+  }
+
+  function saveFrontierProgress(complete: FrontierStep[]) {
+    try { localStorage.setItem(FRONTIER_STORAGE_KEY, JSON.stringify(complete)); } catch {}
+  }
+
+  async function copyFrontierText(guide: HTMLElement, id: string, button: HTMLButtonElement) {
+    const source = guide.querySelector<HTMLElement>(`[data-frontier-copy-source="${CSS.escape(id)}"]`);
+    const value = source?.textContent?.trim();
+    if (!source || !value) return;
+    const label = button.querySelector('span');
+    const original = label?.textContent || 'Copy';
+    try {
+      await navigator.clipboard.writeText(value);
+      if (label) label.textContent = 'Copied';
+      button.dataset.copied = 'true';
+      window.setTimeout(() => {
+        if (label) label.textContent = original;
+        delete button.dataset.copied;
+      }, 1800);
+    } catch {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(source);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      if (label) label.textContent = 'Selected';
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-frontier-guide]').forEach((guide) => {
+    if (guide.dataset.initialized === 'true') return;
+    guide.dataset.initialized = 'true';
+    guide.dataset.enhanced = 'true';
+    let complete = readFrontierProgress();
+
+    const label = guide.querySelector<HTMLElement>('[data-frontier-progress-label]');
+    const bar = guide.querySelector<HTMLElement>('[data-frontier-progress-bar]');
+    const reset = guide.querySelector<HTMLButtonElement>('[data-frontier-reset]');
+    const ready = guide.querySelector<HTMLElement>('[data-frontier-ready]');
+    const readyStatus = guide.querySelector<HTMLElement>('[data-frontier-ready-status]');
+
+    const render = () => {
+      guide.querySelectorAll<HTMLButtonElement>('[data-frontier-complete]').forEach((button) => {
+        const step = button.dataset.frontierComplete as FrontierStep;
+        const isComplete = complete.includes(step);
+        button.setAttribute('aria-pressed', String(isComplete));
+        button.closest<HTMLElement>('[data-frontier-step]')?.toggleAttribute('data-complete', isComplete);
+        const icon = button.querySelector('i');
+        if (icon) icon.className = isComplete ? 'ph ph-check-circle' : 'ph ph-circle';
+      });
+
+      const count = complete.length;
+      if (label) label.textContent = `${count} of ${FRONTIER_STEPS.length} complete`;
+      if (bar) bar.style.width = `${(count / FRONTIER_STEPS.length) * 100}%`;
+      if (reset) reset.hidden = count === 0;
+      if (ready) {
+        ready.hidden = count !== FRONTIER_STEPS.length;
+        ready.toggleAttribute('data-complete', count === FRONTIER_STEPS.length);
+      }
+      if (readyStatus) readyStatus.textContent = 'Steps marked complete';
+    };
+
+    guide.querySelectorAll<HTMLButtonElement>('[data-frontier-complete]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const step = button.dataset.frontierComplete as FrontierStep;
+        complete = complete.includes(step) ? complete.filter((item) => item !== step) : [...complete, step];
+        saveFrontierProgress(complete);
+        render();
+      });
+    });
+
+    guide.querySelectorAll<HTMLButtonElement>('[data-frontier-copy]').forEach((button) => {
+      button.addEventListener('click', () => void copyFrontierText(guide, button.dataset.frontierCopy || '', button));
+    });
+
+    reset?.addEventListener('click', () => {
+      complete = [];
+      saveFrontierProgress(complete);
+      render();
+      guide.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
+
+    render();
+  });
+</script>
