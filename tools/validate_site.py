@@ -110,6 +110,29 @@ def main() -> int:
             if not isinstance(route, str) or not route.startswith("/") or (route != "/" and route.endswith("/")):
                 errors.append(f"invalid canonical route: {route!r}")
 
+    join_team_page = ROOT / "src" / "pages" / "join-team.astro"
+    footer_file = ROOT / "src" / "components" / "Footer.astro"
+    contact_page = ROOT / "src" / "pages" / "contact.astro"
+    contact_api = ROOT / "src" / "pages" / "api" / "contact.ts"
+    if "/join-team" not in routes or not all(path.is_file() for path in (join_team_page, footer_file, contact_page, contact_api)):
+        errors.append("Join Team requires its canonical page, footer action, and contact path")
+    else:
+        join_team_contract = "\n".join(
+            path.read_text(encoding="utf-8", errors="replace")
+            for path in (join_team_page, footer_file, contact_page, contact_api)
+        )
+        for marker in (
+            'class="footer-join-team"',
+            'href="/join-team"',
+            "Build Super ii with us.",
+            "Join the Founding Circle",
+            "Equity is not automatically granted",
+            "founding-circle",
+            "founding-team",
+        ):
+            if marker not in join_team_contract:
+                errors.append(f"Join Team contract is missing {marker}")
+
     try:
         logo_hash = hashlib.sha256(LOGO_FILE.read_bytes()).hexdigest()
     except OSError as exc:

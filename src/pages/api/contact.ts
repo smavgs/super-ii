@@ -2,6 +2,8 @@ import type { APIRoute } from 'astro';
 import { runtimeValue, sqlClient } from '@/lib/db';
 
 const allowedInterests = new Set([
+  'founding-circle',
+  'founding-team',
   'creator',
   'pro',
   'team',
@@ -82,7 +84,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ) as submission_id
     `;
 
-    const waitlistInterests = new Set(['creator', 'pro', 'team', 'enterprise']);
+    const waitlistInterests = new Set(['founding-circle', 'founding-team', 'creator', 'pro', 'team', 'enterprise']);
     if (waitlistInterests.has(interest)) {
       await sql`
         insert into app.waitlist (email, interest, source)

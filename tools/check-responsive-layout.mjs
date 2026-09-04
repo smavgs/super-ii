@@ -7,6 +7,8 @@ const css = fs.readFileSync(path.join(root, 'src/styles/global.css'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'src/components/SuperAssistant.astro'), 'utf8');
 const aiWorker = fs.readFileSync(path.join(root, 'src/components/AIWorkerStarter.astro'), 'utf8');
 const agentBash = fs.readFileSync(path.join(root, 'src/components/AgentBash.astro'), 'utf8');
+const footer = fs.readFileSync(path.join(root, 'src/components/Footer.astro'), 'utf8');
+const joinTeam = fs.readFileSync(path.join(root, 'src/pages/join-team.astro'), 'utf8');
 const siteScript = fs.readFileSync(path.join(root, 'public/scripts/site.js'), 'utf8');
 
 function assert(condition, message) {
@@ -92,6 +94,24 @@ assert(
   /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.agent-bash__logo\s*\{[\s\S]*?animation:\s*none;/.test(css),
   'the agent logo entrance must respect reduced-motion preferences',
 );
+assert(
+  footer.indexOf('X · @superiisite') < footer.indexOf('class="footer-join-team"') && footer.includes('href="/join-team"'),
+  'the fluorescent Join Team action must follow the X account in the Company footer',
+);
+assert(joinTeam.includes('Build Super ii with us.') && joinTeam.includes('Join the Founding Circle'), 'the Join Team page must preserve the supplied invitation');
+assert(joinTeam.includes('/contact?interest=founding-circle') && joinTeam.includes('/contact?interest=founding-team'), 'both Join Team paths must lead to working contact choices');
+assert(
+  /\.footer-column \.footer-join-team\s*\{[\s\S]*?background:\s*var\(--fluoro-pink\);[\s\S]*?color:\s*#071a2f;/.test(css),
+  'the footer Join Team action must retain its high-contrast fluorescent-pink treatment',
+);
+assert(
+  /@media \(max-width: 640px\)[\s\S]*?\.join-team-fit__inner ul,[\s\S]*?\.join-team-path__steps\s*\{[\s\S]*?grid-template-columns:\s*1fr;/.test(css),
+  'Join Team lists and progression must reflow to one column on narrow screens',
+);
+assert(
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.join-team-hero__copy,[\s\S]*?animation:\s*none;/.test(css),
+  'Join Team entrance motion must respect reduced-motion preferences',
+);
 
 for (const requiredMarkup of [
   'aria-label="Open Super ii assistant"',
@@ -104,4 +124,4 @@ for (const requiredMarkup of [
 assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
-console.log('Responsive layout check passed: fluid pages, a horizontally safe agent handoff, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');
+console.log('Responsive layout check passed: fluid pages, a horizontally safe agent handoff, a high-contrast Join Team path, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');

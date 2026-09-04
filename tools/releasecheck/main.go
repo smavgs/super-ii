@@ -172,7 +172,7 @@ func main() {
 			errors = append(errors, "route must begin with /: "+route)
 		}
 	}
-	for _, requiredRoute := range []string{"/agents", "/agents.md", "/siiwebskill.md", "/agent-connectors.json", "/llms-full.txt", "/openapi.json", "/docs.json", "/.well-known/agent-card.json", "/a2a/v1/message:send", "/mcp", "/mcp/work", "/notebooks", "/runtime-registry.json", "/system-state", "/system-state.json", "/system-state.md"} {
+	for _, requiredRoute := range []string{"/agents", "/agents.md", "/siiwebskill.md", "/agent-connectors.json", "/llms-full.txt", "/openapi.json", "/docs.json", "/.well-known/agent-card.json", "/a2a/v1/message:send", "/mcp", "/mcp/work", "/notebooks", "/join-team", "/runtime-registry.json", "/system-state", "/system-state.json", "/system-state.md"} {
 		if !routes[requiredRoute] {
 			errors = append(errors, "missing agent-native route: "+requiredRoute)
 		}
@@ -183,6 +183,8 @@ func main() {
 		filepath.Join("src", "lib", "mcp-server.ts"),
 		filepath.Join("src", "pages", "mcp.ts"),
 		filepath.Join("src", "pages", "agents.astro"),
+		filepath.Join("src", "pages", "join-team.astro"),
+		filepath.Join("src", "components", "Footer.astro"),
 		filepath.Join("src", "pages", "siiwebskill.md.ts"),
 		filepath.Join("src", "components", "AgentBash.astro"),
 		filepath.Join("src", "content", "agent-connectors.json"),

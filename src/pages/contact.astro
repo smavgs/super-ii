@@ -5,7 +5,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 export const prerender = false;
 ---
 
-<BaseLayout title="Contact" description="Contact Super ii about creator access, plans, enterprise requirements, security, privacy, or launch feedback.">
+<BaseLayout title="Contact" description="Contact Super ii about joining the Founding Circle, creator access, plans, enterprise requirements, security, privacy, or launch feedback.">
   <PageHero
     eyebrow="Contact"
     title="What are you building?"
@@ -28,6 +28,8 @@ export const prerender = false;
           <div class="field field--full">
             <label for="contact-interest">What can we help with?</label>
             <select id="contact-interest" name="interest" required>
+              <option value="founding-circle">Join the Founding Circle</option>
+              <option value="founding-team">Founding Team</option>
               <option value="creator">Creator and publishing access</option>
               <option value="pro">Pro plan</option>
               <option value="team">Team plan</option>
