@@ -12,6 +12,7 @@ const documents = {
     { id: 'llms', title: 'Compact machine guide', media_type: 'text/plain', url: 'https://superii.site/llms.txt' },
     { id: 'llms-full', title: 'Full machine guide', media_type: 'text/plain', url: 'https://superii.site/llms-full.txt' },
     { id: 'agent-contract', title: 'Global agent contract', media_type: 'text/markdown', url: 'https://superii.site/agents.md' },
+    { id: 'agent-handoff', title: 'Universal agent handoff', media_type: 'text/markdown', url: 'https://superii.site/siiwebskill.md' },
     { id: 'agent-card', title: 'A2A v1.0 Agent Card', media_type: 'application/json', url: 'https://superii.site/.well-known/agent-card.json' },
     { id: 'connectors', title: 'Agent connector registry', media_type: 'application/json', url: 'https://superii.site/agent-connectors.json', schema: 'https://superii.site/schemas/agent-connector-registry-v1.json' },
     { id: 'skill', title: 'Super ii Agent Skill', media_type: 'text/markdown', url: 'https://superii.site/skills/superii/SKILL.md' },

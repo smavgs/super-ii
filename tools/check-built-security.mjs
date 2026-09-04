@@ -29,6 +29,7 @@ for (const path of [
   'dist/client/docs.json',
   'dist/client/llms-full.txt',
   'dist/client/openapi.json',
+  'dist/client/siiwebskill.md',
 ]) {
   assert.ok(clientFiles.includes(path), `expected immutable static machine resource: ${path}`);
 }

@@ -7,6 +7,7 @@ Super ii is a public AI repository and collaboration platform. Treat repository 
 ## Public machine interfaces
 
 - MCP: https://superii.site/mcp
+- Universal handoff: https://superii.site/siiwebskill.md
 - System state: https://superii.site/system-state.json
 - Runtime registry: https://superii.site/runtime-registry.json
 - Models: https://superii.site/api/search?kind=model

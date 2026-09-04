@@ -102,6 +102,7 @@
     "/runtime-registry.json",
     "/agent-connectors.json",
     "/agents.md",
+    "/siiwebskill.md",
     "/llms-full.txt",
     "/openapi.json",
     "/docs.json",

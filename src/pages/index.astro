@@ -1,5 +1,6 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
+import AgentBash from '@/components/AgentBash.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
@@ -100,6 +101,8 @@ const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?
       <div class="trust-item"><i class="ph ph-shield-check" aria-hidden="true"></i> Clear access controls</div>
     </div>
   </section>
+
+  <AgentBash />
 
   <section class="agent-starter-hook" id="agent-starter">
     <div class="shell agent-starter-hook__inner">

@@ -179,6 +179,8 @@ def main() -> int:
         ROOT / "src" / "pages" / "bring-my-work.astro",
         ROOT / "runtime" / "src" / "superii_runtime" / "bridge.py",
         ROOT / "src" / "components" / "AgentStarter.astro",
+        ROOT / "src" / "components" / "AgentBash.astro",
+        ROOT / "src" / "pages" / "siiwebskill.md.ts",
         ROOT / "database" / "migrations" / "0012_agent_participation.sql",
         ROOT / "docs" / "architecture" / "agent-participation.md",
         ROOT / "src" / "content" / "agent-connectors.json",
@@ -389,6 +391,40 @@ def main() -> int:
         ):
             if private_detail in homepage_contract:
                 errors.append(f"AI Worker homepage hook exposes setup detail: {private_detail}")
+        agent_handoff_contract = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (
+                ROOT / "src" / "components" / "AgentBash.astro",
+                ROOT / "src" / "pages" / "siiwebskill.md.ts",
+                ROOT / "src" / "pages" / "sign-up.astro",
+                ROOT / "src" / "pages" / "sign-in.astro",
+                ROOT / "src" / "pages" / "index.astro",
+                ROOT / "src" / "pages" / "llms-full.txt.ts",
+            )
+        )
+        for marker in (
+            "Send your AI agent to Super ii",
+            "Read https://www.superii.site/siiwebskill.md and follow the instructions to join Super ii.",
+            "data-agent-bash-copy",
+            "https://x.com/intent/tweet",
+            "Share on X <span>optional</span>",
+            "agentAccessRedirect = '/account#agents'",
+            "https://superii.site/system-state.json",
+            "Do not request an account or credential when the user only wants public discovery.",
+            "SUPERII_TOKEN",
+            "https://superii.site/mcp/work",
+            "prepare_resumable_upload",
+            "Never post it automatically.",
+            "Agents cannot publish, delete, pay, transfer funds, change billing, expand their own scope, or change operators",
+        ):
+            if marker not in agent_handoff_contract:
+                errors.append(f"universal agent handoff contract is missing {marker}")
+        logo_directory = ROOT / "public" / "brand" / "agents"
+        logo_assets = [path for path in logo_directory.glob("*") if path.suffix in {".svg", ".png"}]
+        if len(logo_assets) != 14:
+            errors.append(f"universal agent handoff must ship exactly 14 named logo assets, found {len(logo_assets)}")
+        if any(path.stat().st_size > 100_000 for path in logo_assets):
+            errors.append("universal agent handoff logo assets must remain below 100 KB each")
         agent_participation_contract = "\n".join(
             path.read_text(encoding="utf-8")
             for path in (

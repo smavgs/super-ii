@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const css = fs.readFileSync(path.join(root, 'src/styles/global.css'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'src/components/SuperAssistant.astro'), 'utf8');
 const aiWorker = fs.readFileSync(path.join(root, 'src/components/AIWorkerStarter.astro'), 'utf8');
+const agentBash = fs.readFileSync(path.join(root, 'src/components/AgentBash.astro'), 'utf8');
 const siteScript = fs.readFileSync(path.join(root, 'public/scripts/site.js'), 'utf8');
 
 function assert(condition, message) {
@@ -76,6 +77,21 @@ assert(
 );
 assert(aiWorker.includes('<details class="ai-worker"'), 'AI Worker must remain an on-demand details drawer');
 assert(aiWorker.includes("location.hash === '#ai-worker'"), 'AI Worker must open from the Workspace anchor');
+assert(agentBash.includes('role="list"') && agentBash.includes('role="listitem"'), 'the logo-only agent rail must remain accessible');
+assert((agentBash.match(/icon: '\/brand\/agents\//g) ?? []).length === 14, 'the handoff rail must include all 14 named agent marks');
+assert(agentBash.includes('data-agent-bash-copy'), 'the universal agent instruction must remain copyable');
+assert(
+  /\.agent-bash__logos\s*\{[\s\S]*?overflow-x:\s*auto;/.test(css),
+  'the logo rail must scroll horizontally instead of overflowing narrow screens',
+);
+assert(
+  /@media \(max-width: 640px\)[\s\S]*?\.agent-bash__terminal-body\s*\{[\s\S]*?grid-template-columns:\s*1fr;/.test(css),
+  'the universal agent terminal must stack before its copy control crowds the instruction',
+);
+assert(
+  /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.agent-bash__logo\s*\{[\s\S]*?animation:\s*none;/.test(css),
+  'the agent logo entrance must respect reduced-motion preferences',
+);
 
 for (const requiredMarkup of [
   'aria-label="Open Super ii assistant"',
@@ -88,4 +104,4 @@ for (const requiredMarkup of [
 assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
-console.log('Responsive layout check passed: fluid pages, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');
+console.log('Responsive layout check passed: fluid pages, a horizontally safe agent handoff, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');

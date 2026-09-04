@@ -7,11 +7,14 @@ import { authIsConfigured } from '@/lib/site';
 const authConfigured = authIsConfigured(Astro.locals);
 const agentStarterRedirect = '/account?welcome=agent-starter#agent-starter';
 const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
+const agentAccessRedirect = '/account#agents';
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const postSignUpRedirect = requestedRedirect === aiWorkerRedirect ? aiWorkerRedirect : agentStarterRedirect;
-const signInUrl = postSignUpRedirect === aiWorkerRedirect
-  ? `/sign-in?redirect_url=${encodeURIComponent(aiWorkerRedirect)}`
-  : '/sign-in';
+const postSignUpRedirect = requestedRedirect === aiWorkerRedirect || requestedRedirect === agentAccessRedirect
+  ? requestedRedirect
+  : agentStarterRedirect;
+const signInUrl = postSignUpRedirect === agentStarterRedirect
+  ? '/sign-in'
+  : `/sign-in?redirect_url=${encodeURIComponent(postSignUpRedirect)}`;
 ---
 
 <BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">

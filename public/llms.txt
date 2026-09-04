@@ -12,6 +12,7 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [A2A Agent Card](https://superii.site/.well-known/agent-card.json): A2A v1.0 discovery for bounded public tasks
 - [Connector registry](https://superii.site/agent-connectors.json): Versioned, source-linked client configuration profiles
 - [Super ii Agent Skill](https://superii.site/skills/superii/SKILL.md): Portable public discovery and governed-work instructions
+- [Universal agent handoff](https://superii.site/siiwebskill.md): One safe starting document for web-capable agents and their human operators
 - [Agent contract](https://superii.site/agents.md): Global automation rules and safety boundaries
 - [Full machine guide](https://superii.site/llms-full.txt): Bounded consolidated service documentation
 - [OpenAPI](https://superii.site/openapi.json): Versioned HTTP interface contract

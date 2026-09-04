@@ -647,6 +647,307 @@ pre {
   font-size: 1.15rem;
 }
 
+.agent-bash {
+  overflow: clip;
+  border-bottom: 1px solid #dce2e7;
+  background: #fff;
+  color: #071a2f;
+}
+
+.agent-bash__inner {
+  padding-block: clamp(3.5rem, 7vw, 6.5rem);
+}
+
+.agent-bash__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
+  align-items: end;
+  gap: clamp(1.5rem, 5vw, 5rem);
+}
+
+.agent-bash__intro .eyebrow {
+  color: #496274;
+}
+
+.agent-bash__intro h2 {
+  max-width: 14ch;
+  margin: 0;
+  color: #071a2f;
+  font-size: clamp(2.35rem, 5.4vw, 5rem);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.agent-bash__intro > p {
+  max-width: 45ch;
+  margin: 0;
+  color: #496274;
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
+}
+
+.agent-bash__logos {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1.15rem, 2.5vw, 2.5rem);
+  margin-block: clamp(2.5rem, 5vw, 4.5rem) 1.5rem;
+  padding-block: 1.15rem;
+  overflow-x: auto;
+  border-block: 1px solid #e5e9ed;
+  scrollbar-color: #aebbc5 transparent;
+  scrollbar-width: thin;
+}
+
+.agent-bash__logo {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  color: #071a2f;
+  opacity: 0;
+  place-items: center;
+  transform: translateY(0.35rem);
+  animation: agent-logo-in 360ms cubic-bezier(0.2, 0.75, 0.25, 1) forwards;
+  animation-delay: calc(var(--agent-logo-index) * 34ms);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.agent-bash__logo:hover {
+  opacity: 0.72;
+  transform: translateY(-0.12rem);
+}
+
+.agent-bash__logo img {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+}
+
+.agent-bash__logo--others i {
+  font-size: 1.75rem;
+}
+
+.agent-bash__terminal {
+  overflow: hidden;
+  border: 1px solid #172821;
+  border-radius: 18px;
+  background: #030705;
+  box-shadow: 0 22px 65px rgb(7 26 47 / 0.16);
+}
+
+.agent-bash__terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.8rem;
+  padding-inline: 1rem;
+  border-bottom: 1px solid #183225;
+  background: #080e0a;
+}
+
+.agent-bash__terminal-bar > span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid #355640;
+  border-radius: 999px;
+  background: #112019;
+}
+
+.agent-bash__terminal-bar small {
+  margin-left: auto;
+  color: #789785;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+}
+
+.agent-bash__terminal-body {
+  display: grid;
+  min-height: 8.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 3.5vw, 2.5rem);
+}
+
+.agent-bash__terminal pre {
+  min-width: 0;
+  margin: 0;
+  overflow: visible;
+  white-space: pre-wrap;
+}
+
+.agent-bash__terminal code {
+  color: #74ff9f;
+  font-size: clamp(0.94rem, 1.7vw, 1.22rem);
+  font-weight: 600;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 18px rgb(116 255 159 / 0.2);
+}
+
+.agent-bash__terminal button {
+  display: inline-flex;
+  min-width: 6.75rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #74ff9f;
+  border-radius: 10px;
+  background: #10291a;
+  color: #baffcc;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.agent-bash__terminal button:hover,
+.agent-bash__terminal button[data-copied='true'] {
+  background: #74ff9f;
+  color: #071a2f;
+  transform: translateY(-1px);
+}
+
+.agent-bash__terminal button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.agent-bash__status {
+  min-height: 1.35rem;
+  margin: 0.65rem 0 0;
+  color: #37634a;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.agent-bash__footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 1.65rem;
+}
+
+.agent-bash__footer > p {
+  max-width: 72ch;
+  margin: 0;
+  color: #496274;
+  font-size: 0.92rem;
+}
+
+.agent-bash__footer > p strong {
+  color: #071a2f;
+}
+
+.agent-bash__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.agent-bash__share,
+.agent-bash__learn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: #071a2f;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.agent-bash__share span {
+  color: #667b8a;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.agent-bash__learn {
+  color: #496274;
+}
+
+@keyframes agent-logo-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 800px) {
+  .agent-bash__intro,
+  .agent-bash__footer {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-bash__intro h2 {
+    max-width: 16ch;
+  }
+
+  .agent-bash__actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .agent-bash__inner {
+    padding-block: 3.25rem;
+  }
+
+  .agent-bash__intro h2 {
+    font-size: clamp(2.35rem, 13vw, 3.6rem);
+  }
+
+  .agent-bash__logos {
+    margin-right: -1rem;
+    padding-right: 1rem;
+  }
+
+  .agent-bash__terminal-body {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .agent-bash__terminal button {
+    width: 100%;
+  }
+
+  .agent-bash__actions,
+  .agent-bash__actions .button,
+  .agent-bash__share,
+  .agent-bash__learn {
+    width: 100%;
+  }
+
+  .agent-bash__share,
+  .agent-bash__learn {
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-bash__logo {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .agent-bash__terminal button {
+    transition: none;
+  }
+}
+
 .section {
   padding-block: clamp(4.5rem, 8vw, 8rem);
 }
