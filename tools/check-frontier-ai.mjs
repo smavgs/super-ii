@@ -32,6 +32,18 @@ for (const text of [
   'Kimi K3',
 ]) {
   assert(files.page.includes(text), `guide is missing ${JSON.stringify(text)}`);
+}
+
+for (const text of [
+  'Maximum-power AI.',
+  '$0 to start.',
+  '2.8-trillion-parameter frontier model',
+  'No business AI subscription required to start.',
+  'No high-end GPU needed.',
+  'Use it from your own computer.',
+  'Use frontier AI',
+  'Kimi K3',
+]) {
   assert(files.homepage.includes(text), `homepage hook is missing ${JSON.stringify(text)}`);
 }
 
@@ -58,10 +70,14 @@ assert(files.page.includes("localStorage.setItem(FRONTIER_STORAGE_KEY"), 'progre
 assert(files.page.includes("prefers-reduced-motion: reduce"), 'progress scrolling must respect reduced motion');
 assert(/data-frontier-ready[^>]*hidden/.test(files.page), 'success claim must stay hidden until the user completes all three steps');
 
-const agentHook = files.homepage.indexOf('<section class="agent-starter-hook"');
 const frontierHook = files.homepage.indexOf('<section class="frontier-home-hook"');
-const catalogSection = files.homepage.indexOf('<section class="section">', frontierHook);
-assert(agentHook >= 0 && frontierHook > agentHook && catalogSection > frontierHook, 'frontier hook must sit directly after Agent Starter and before the main catalog story');
+const participationHook = files.homepage.indexOf('<section class="participation-home"');
+const finalCta = files.homepage.indexOf('<section class="cta-band"');
+assert(participationHook >= 0 && frontierHook > participationHook && finalCta > frontierHook, 'frontier hook must sit at the bottom of the homepage before the final publishing call to action');
+assert(/<section class="frontier-home-hook"[\s\S]*?<\/section>\s*<section class="cta-band">/.test(files.homepage), 'frontier hook must sit immediately before The hub is open');
+assert(!files.homepage.includes('Free endpoint access is controlled by NVIDIA and subject to its current trial terms and limits.'), 'homepage must omit the NVIDIA trial disclaimer');
+assert(!files.homepage.includes('· NVIDIA + OpenCode'), 'homepage must omit the provider suffix');
+assert(!files.homepage.includes('frontier-home-hook__path'), 'homepage must omit the connection-path illustration');
 assert(files.homepage.includes('href="/frontier-ai"'), 'homepage call to action must open the complete guide');
 
 assert(files.routes.includes('"/frontier-ai"'), 'canonical route registry is missing /frontier-ai');
@@ -82,8 +98,10 @@ for (const selector of [
   assert(files.css.includes(selector), `global.css is missing ${selector}`);
 }
 assert(files.css.includes('.frontier-ready[hidden]'), 'CSS must preserve the initial hidden success state');
-assert(/@media \(max-width: 900px\)[\s\S]*?\.frontier-home-hook__inner[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/.test(files.css), 'homepage hook must collapse to one column');
+assert(/\.frontier-home-hook\s*\{[^}]*background:\s*#000;/.test(files.css), 'homepage hook must use a black background');
+assert(/\.frontier-home-hook__inner\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/.test(files.css), 'homepage hook must use a single-column strip layout');
+assert(!files.css.includes('.frontier-home-hook__path'), 'global.css must not retain the removed homepage illustration styles');
 assert(/@media \(max-width: 620px\)[\s\S]*?\.frontier-step[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/.test(files.css), 'setup steps must collapse on narrow screens');
 assert(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.frontier-orbit__ring[\s\S]*?animation:\s*none/.test(files.css), 'frontier animation must stop for reduced motion');
 
-console.log('OK: Hook 4 links a responsive homepage story to a three-step, device-local, credential-safe NVIDIA Kimi K3 setup guide.');
+console.log('OK: Hook 4 places a black, illustration-free homepage strip before the final CTA and links it to a three-step, device-local, credential-safe NVIDIA Kimi K3 setup guide.');
