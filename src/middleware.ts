@@ -97,6 +97,12 @@ function secure(response: Response, request: Request): Response {
   const secured = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   if (!nonce) return secured;
   return new HTMLRewriter()
+    .on('link[rel="preload"][as="script"]', {
+      element(element) {
+        const href = element.getAttribute('href') ?? '';
+        if (href.includes('/npm/@clerk/ui@')) element.remove();
+      },
+    })
     .on('script', {
       element(element) {
         element.setAttribute('nonce', nonce);

@@ -93,8 +93,9 @@ assert.equal(catalogSearchInputSchema.safeParse({ unexpected: true }).success, f
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'space' }).success, true);
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'invalid' }).success, false);
 
-const [middleware, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule] = await Promise.all([
+const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule] = await Promise.all([
   read('src/middleware.ts'),
+  read('astro.config.mjs'),
   read('public/_headers'),
   read('src/pages/api/search.ts'),
   read('src/pages/api/health.ts'),
@@ -124,9 +125,12 @@ assert.match(middleware, /'nonce-\$\{nonce\}'/);
 assert.match(middleware, /"'strict-dynamic'"/);
 assert.match(middleware, /new HTMLRewriter\(\)/);
 assert.match(middleware, /element\.setAttribute\('nonce', nonce\)/);
+assert.match(middleware, /href\.includes\('\/npm\/@clerk\/ui@'\)[\s\S]+element\.remove\(\)/);
 assert.match(middleware, /inlineMediaFrame[\s\S]+default-src 'none'; frame-ancestors 'self'/);
 assert.ok(!middleware.includes('content-security-policy-report-only'), 'strict CSP must be enforced after observation');
 assert.ok(!middleware.includes("script-src 'self' 'unsafe-inline' https:"), 'legacy observation policy must be removed');
+assert.ok(!astroConfig.includes('prefetchAll'), 'Cloudflare Worker routes must not use unsupported global page prefetching');
+assert.ok(!astroConfig.includes('prefetchUI: false'), 'Clerk modal UI must remain available on demand');
 
 assert.match(searchRoute, /parseCatalogRestSearchParams\(url\.searchParams\)/);
 assert.match(searchRoute, /consumeRateLimit\(locals, request, sql, 'catalog\.search', 300, 3600\)/);
