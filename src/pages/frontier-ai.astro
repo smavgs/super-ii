@@ -6,6 +6,11 @@ export const prerender = false;
 
 const nvidiaModelUrl = 'https://build.nvidia.com/moonshotai/kimi-k3';
 const openCodeProviderUrl = 'https://opencode.ai/docs/providers/#nvidia';
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+const frontierStartUrl = isSignedIn
+  ? '#setup'
+  : `/sign-up?redirect_url=${encodeURIComponent('/frontier-ai#setup')}`;
 ---
 
 <BaseLayout
@@ -24,7 +29,7 @@ const openCodeProviderUrl = 'https://opencode.ai/docs/providers/#nvidia';
           <li><i class="ph ph-check" aria-hidden="true"></i>No high-end GPU needed.</li>
           <li><i class="ph ph-check" aria-hidden="true"></i>Use it from your own computer.</li>
         </ul>
-        <a class="button button--yellow" href="#setup">Use frontier AI <span aria-hidden="true">🧠</span></a>
+        <a class="button button--yellow" href={frontierStartUrl}>Use frontier AI <span aria-hidden="true">🧠</span></a>
       </div>
 
       <div class="frontier-orbit" aria-label="Your computer connects OpenCode to NVIDIA's Kimi K3 endpoint">

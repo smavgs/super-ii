@@ -47,6 +47,14 @@ const capabilities = [
 ];
 
 const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?welcome=ai-worker#ai-worker')}`;
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+const skillsCtaUrl = isSignedIn
+  ? '/skills'
+  : `/sign-up?redirect_url=${encodeURIComponent('/skills')}`;
+const frontierCtaUrl = isSignedIn
+  ? '/frontier-ai'
+  : `/sign-up?redirect_url=${encodeURIComponent('/frontier-ai')}`;
 ---
 
 <BaseLayout>
@@ -283,7 +291,7 @@ const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?
           <li>No high-end GPU needed.</li>
           <li>Use it from your own computer.</li>
         </ul>
-        <a class="button button--yellow" href="/frontier-ai">
+        <a class="button button--yellow" href={frontierCtaUrl}>
           Use frontier AI <span aria-hidden="true">🧠</span>
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </a>
@@ -296,8 +304,8 @@ const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?
       <div class="skills-home-hook__copy">
         <p class="eyebrow">Skills · Included from Free</p>
         <h2>Give your AI agent a useful job.</h2>
-        <p>Explore ready-to-use skills, copy the complete prompt, or let Super ii guide the setup.</p>
-        <a class="button button--dark" href="/skills">
+        <p>Explore ready-to-use skills, copy the complete prompt, or share it with someone.</p>
+        <a class="button button--dark" href={skillsCtaUrl}>
           Explore Skills
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </a>

@@ -34,7 +34,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Models](https://superii.site/models): Public model catalog and local browser inference tools
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
-- [Skills](https://superii.site/skills): Search, inspect, copy, or set up ready-to-use AI-agent skills
+- [Skills](https://superii.site/skills): Search, inspect, copy, or share ready-to-use AI-agent skills
 - [Agents](https://superii.site/agents): Connect agents through verified, least-privilege interfaces
 - [AI Worker guide](https://superii.site/docs#ai-worker): Manual, device-local Ollama and OpenCode onboarding for signed-in members
 - [Notebooks](https://superii.site/notebooks): Official reproducible tutorials in a no-execution static reader

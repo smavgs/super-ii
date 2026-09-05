@@ -51,7 +51,7 @@ The optional final connection uses opencode mcp add, the remote name superii, ht
 
 ## Skills library
 
-The public Skills page is a searchable interface for complete, portable AI-agent setup prompts. A person can open a skill in place, inspect its category and integrations, copy the complete prompt for any compatible agent, or ask the existing Super ii assistant to guide setup. Set up passes the selected name, category, integrations, and prompt as bounded context; the assistant asks which agent and integrations the person already uses before continuing.
+The public Skills page is a searchable interface for complete, portable AI-agent prompts. A person can open a skill in place, inspect its category and integrations, copy the complete prompt for any compatible agent, or share a direct link. Share uses the device share sheet when available and otherwise copies the link; opening that link returns to the library with the selected skill window open. The Share action does not send the prompt to the Super ii assistant.
 
 GET https://superii.site/api/skills returns the currently validated Skills fields: slug, name, category, integrations, and prompt. The canonical content stays in the open-source Make Great Agents catalog; Super ii refreshes a same-origin edge cache every few minutes and does not maintain a second content database.
 

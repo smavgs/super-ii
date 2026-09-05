@@ -12187,8 +12187,8 @@ pre {
 
 .skill-window__copy { background: #fff8f3; color: #7d3526; }
 .skill-window__copy:hover, .skill-window__copy.is-copied { background: #ffd1bd; }
-.skill-window__setup { background: #35150f; color: #fff8f3; }
-.skill-window__setup:hover { background: #6f2d20; }
+.skill-window__share { background: #35150f; color: #fff8f3; }
+.skill-window__share:hover, .skill-window__share.is-shared { background: #6f2d20; }
 
 :root[data-theme='dark'] .skills-page {
   --peach-cream: #261612;

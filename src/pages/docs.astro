@@ -65,7 +65,7 @@ export const prerender = false;
 
       <h2 id="skills">Skills</h2>
       <p><a href="/skills">Skills</a> is a searchable library of complete, ready-to-use prompts for AI agents. Every item can be inspected without leaving Super ii and copied into Codex, OpenCode, Claude Code, a local agent, or another compatible agent. The underlying prompt is kept intact and the interface does not require a particular agent provider.</p>
-      <p>Selecting <strong>Set up</strong> opens the existing Super ii assistant with the chosen skill name, category, integrations, and complete prompt as bounded setup context. The assistant starts by asking which agent and integrations the member already uses; it never claims a connection or configuration succeeded without evidence.</p>
+      <p>Selecting <strong>Share</strong> opens the device share sheet when the browser supports it. Otherwise, Super ii copies a direct link to the skill. Opening that link returns to the Skills library with the selected skill window already open; the Share action does not send the prompt to the Super ii assistant.</p>
       <p>The open-source Make Great Agents catalog remains the canonical content source. Super ii reads its generated public feed through the same-origin <a href="/api/skills"><code>/api/skills</code></a> endpoint, validates and reduces each item to the fields this interface needs, refreshes the edge copy every few minutes, and may serve the last valid copy during a brief upstream interruption. No second skills database is maintained.</p>
 
       <h2 id="bring-my-work">Bring my work</h2>

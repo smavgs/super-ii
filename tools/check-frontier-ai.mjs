@@ -12,6 +12,8 @@ const files = {
   routes: read('src/content/site.json'),
   sitemap: read('public/sitemap.xml'),
   css: read('src/styles/global.css'),
+  signUp: read('src/pages/sign-up.astro'),
+  signIn: read('src/pages/sign-in.astro'),
 };
 
 function assert(condition, message) {
@@ -80,7 +82,16 @@ assert(!files.homepage.includes('frontier-home-hook__path'), 'homepage must omit
 assert(!files.homepage.includes('No 2.8T model download.'), 'homepage must omit the model-download benefit');
 const frontierMarkup = files.homepage.match(/<section class="frontier-home-hook"[\s\S]*?<\/section>/)?.[0] || '';
 assert((frontierMarkup.match(/<li>/g) || []).length === 3, 'homepage hook must contain exactly three outlined benefits');
-assert(files.homepage.includes('href="/frontier-ai"'), 'homepage call to action must open the complete guide');
+assert(files.homepage.includes('const frontierCtaUrl = isSignedIn'), 'homepage call to action must react to account state');
+assert(files.homepage.includes('href={frontierCtaUrl}'), 'homepage call to action must use the account-aware destination');
+assert(files.homepage.includes("`/sign-up?redirect_url=${encodeURIComponent('/frontier-ai')}`"), 'signed-out homepage visitors must join before opening Frontier AI');
+assert(files.page.includes('const frontierStartUrl = isSignedIn'), 'guide action must react to account state');
+assert(files.page.includes('href={frontierStartUrl}'), 'guide action must use the account-aware destination');
+assert(files.page.includes("`/sign-up?redirect_url=${encodeURIComponent('/frontier-ai#setup')}`"), 'signed-out guide visitors must join before starting setup');
+for (const page of ['signUp', 'signIn']) {
+  assert(files[page].includes("const frontierRedirect = '/frontier-ai'"), `${page} is missing the Frontier AI return destination`);
+  assert(files[page].includes("const frontierSetupRedirect = '/frontier-ai#setup'"), `${page} is missing the Frontier setup return destination`);
+}
 
 assert(files.routes.includes('"/frontier-ai"'), 'canonical route registry is missing /frontier-ai');
 assert(files.sitemap.includes('https://superii.site/frontier-ai'), 'sitemap is missing /frontier-ai');

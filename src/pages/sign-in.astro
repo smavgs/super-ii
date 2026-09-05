@@ -7,8 +7,18 @@ import { authIsConfigured } from '@/lib/site';
 const authConfigured = authIsConfigured(Astro.locals);
 const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
 const agentAccessRedirect = '/account#agents';
+const skillsRedirect = '/skills';
+const frontierRedirect = '/frontier-ai';
+const frontierSetupRedirect = '/frontier-ai#setup';
+const allowedRedirects = new Set([
+  aiWorkerRedirect,
+  agentAccessRedirect,
+  skillsRedirect,
+  frontierRedirect,
+  frontierSetupRedirect,
+]);
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const postSignInRedirect = requestedRedirect === aiWorkerRedirect || requestedRedirect === agentAccessRedirect
+const postSignInRedirect = requestedRedirect && allowedRedirects.has(requestedRedirect)
   ? requestedRedirect
   : '/account';
 const signUpUrl = postSignInRedirect === '/account'

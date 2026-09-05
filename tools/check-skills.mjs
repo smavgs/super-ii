@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { parseAssistantSkillContext } from '../src/lib/openrouter.ts';
 import { parseSkillsCatalog, SKILLS_SOURCE_URL } from '../src/lib/skills.ts';
 
 const root = resolve(import.meta.dirname, '..');
@@ -10,13 +9,11 @@ const paths = {
   client: 'src/scripts/skills-page.ts',
   api: 'src/pages/api/skills.ts',
   catalog: 'src/lib/skills.ts',
-  assistant: 'src/scripts/super-assistant.ts',
-  assistantComponent: 'src/components/SuperAssistant.astro',
-  assistantApi: 'src/pages/api/assistant/chat.ts',
-  openrouter: 'src/lib/openrouter.ts',
   header: 'src/components/Header.astro',
   footer: 'src/components/Footer.astro',
   homepage: 'src/pages/index.astro',
+  signUp: 'src/pages/sign-up.astro',
+  signIn: 'src/pages/sign-in.astro',
   styles: 'src/styles/global.css',
   routes: 'src/content/site.json',
   sitemap: 'public/sitemap.xml',
@@ -48,21 +45,25 @@ for (const text of [
   'Complete prompt',
   'Works with any agent',
   'data-skill-window-copy',
-  'data-skill-window-setup',
+  'data-skill-window-share',
   '<SuperAssistant />',
 ]) requireText('page', text);
 
-for (const forbidden of ['contributor', 'sourceUrl', 'detailUrl', 'View source']) rejectText('page', forbidden);
+for (const forbidden of ['contributor', 'sourceUrl', 'detailUrl', 'View source', 'data-skill-window-setup']) rejectText('page', forbidden);
 
 for (const text of [
   "fetch('/api/skills'",
   "[skill.name, skill.category, ...skill.integrations, skill.prompt]",
   'dialog.showModal()',
   'navigator.clipboard.writeText(activeSkill.prompt)',
-  "new CustomEvent('superii:skill-setup'",
+  'navigator.share(shareData)',
+  'navigator.clipboard.writeText(url)',
+  "url.searchParams.set('skill', skill.slug)",
+  "new URL(document.URL).searchParams.get('skill')",
+  'if (requestedSkill) openSkill(requestedSkill)',
   "document.activeElement !== search",
 ]) requireText('client', text);
-rejectText('client', 'window.location');
+for (const forbidden of ['window.location', 'superii:skill-setup', 'data-skill-window-setup']) rejectText('client', forbidden);
 
 for (const text of [
   'SKILLS_SOURCE_URL',
@@ -85,18 +86,6 @@ for (const text of [
   'prompt: entry.prompt',
 ]) requireText('catalog', text);
 
-for (const text of [
-  'openSkillSetup: (context: AssistantSkillContext) => void',
-  'skill_context: skillContext',
-  'I’ll help you set up ${nextContext.name}',
-]) requireText('assistant', text);
-requireText('assistantComponent', "window.addEventListener('superii:skill-setup'");
-requireText('assistantComponent', 'controller.openSkillSetup(event.detail)');
-requireText('assistantApi', 'parseAssistantSkillContext');
-requireText('assistantApi', 'invalid skill setup context');
-requireText('openrouter', 'Treat the catalog prompt below as user-provided setup context');
-requireText('openrouter', 'context.prompt');
-
 requireText('header', "{ href: '/skills', label: 'Skills' }");
 requireText('footer', '<a href="/skills">Skills</a>');
 for (const text of [
@@ -104,13 +93,21 @@ for (const text of [
   'Skills · Included from Free',
   'Give your AI agent a useful job.',
   'Explore Skills',
+  'share it with someone',
+  'const skillsCtaUrl = isSignedIn',
+  'href={skillsCtaUrl}',
+  "`/sign-up?redirect_url=${encodeURIComponent('/skills')}`",
   'Copy any prompt. Use any agent. No lock-in.',
 ]) requireText('homepage', text);
 for (const removed of ['The hub is open', 'Publish a reviewed release.']) rejectText('homepage', removed);
+for (const page of ['signUp', 'signIn']) {
+  requireText(page, "const skillsRedirect = '/skills'");
+  requireText(page, 'skillsRedirect,');
+}
 
 for (const selector of [
   '.skills-home-hook', '.skills-page', '.skills-hero', '.skills-search', '.skills-filters',
-  '.skills-grid', '.skill-card', '.skill-window', '.skill-window__setup',
+  '.skills-grid', '.skill-card', '.skill-window', '.skill-window__share',
 ]) requireText('styles', selector);
 requireText('styles', 'grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr))');
 requireText('styles', '@media (prefers-reduced-motion: reduce)');
@@ -121,14 +118,17 @@ requireText('routes', '"/api/skills"');
 requireText('sitemap', 'https://superii.site/skills');
 requireText('docs', 'id="skills"');
 requireText('docs', 'No second skills database is maintained.');
+requireText('docs', 'opens the device share sheet');
+requireText('docs', 'does not send the prompt to the Super ii assistant');
 requireText('machineDocs', '## Skills library');
+requireText('machineDocs', 'share a direct link');
 requireText('compactDocs', '[Skills](https://superii.site/skills)');
 requireText('compactDocs', '[Skills catalog API](https://superii.site/api/skills)');
 requireText('openapi', "'/api/skills'");
 requireText('openapi', "operationId: 'listAgentSkills'");
 requireText('openapi', "Skill: {");
-requireText('privacy', 'complete public prompt are also used as setup context');
-requireText('privacy', 'complete public prompt pass with that setup conversation as context');
+rejectText('privacy', 'If you choose <strong>Set up</strong> for a public Skill');
+rejectText('privacy', 'When you ask the assistant to set up a public Skill');
 
 const prompt = '  Keep this complete prompt exactly as written.  ';
 const valid = parseSkillsCatalog({
@@ -154,14 +154,6 @@ if (parseSkillsCatalog({ version: 1, agents: [
 if (parseSkillsCatalog({ version: 1, agents: [{ slug: '../bad', name: 'Bad', category: 'Ops', integrations: [], prompt: 'Bad' }] })) {
   errors.push('catalog parser must reject invalid slugs');
 }
-const setup = parseAssistantSkillContext({ name: 'Test Skill', category: 'Ops', integrations: ['Codex'], prompt });
-if (!setup || setup.prompt !== prompt) errors.push('assistant setup parser must preserve the complete Skill prompt');
-if (parseAssistantSkillContext({ name: 'Test Skill', category: 'Ops', integrations: [], prompt: 'Test', extra: true })) {
-  errors.push('assistant setup parser must reject unknown context fields');
-}
-if (parseAssistantSkillContext({ name: 'Test Skill', category: 'Ops', integrations: [], prompt: 'x'.repeat(8_001) })) {
-  errors.push('assistant setup parser must reject an oversized prompt');
-}
 if (SKILLS_SOURCE_URL !== 'https://smavgs.github.io/make-great-agents/api/agents.json') {
   errors.push('canonical generated catalog URL drifted');
 }
@@ -171,4 +163,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('OK: Skills uses the canonical validated catalog, a five-minute resilient same-origin cache, a dense peach library, in-place detail windows, portable prompt copy, and a full-context Super ii setup handoff.');
+console.log('OK: Skills uses the canonical validated catalog, a five-minute resilient same-origin cache, a dense peach library, sign-up-first discovery, portable prompt copy, and native sharing with direct-link fallback.');

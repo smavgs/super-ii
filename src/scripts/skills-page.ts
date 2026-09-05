@@ -60,7 +60,7 @@ const dialogPrompt = required<HTMLElement>('[data-skill-window-prompt]');
 const dialogStatus = required<HTMLElement>('[data-skill-window-status]');
 const dialogClose = required<HTMLButtonElement>('[data-skill-window-close]');
 const copyButton = required<HTMLButtonElement>('[data-skill-window-copy]');
-const setupButton = required<HTMLButtonElement>('[data-skill-window-setup]');
+const shareButton = required<HTMLButtonElement>('[data-skill-window-share]');
 
 let skills: Skill[] = [];
 let activeCategory = 'All';
@@ -83,6 +83,19 @@ function integrationLabel(skill: Skill) {
   if (!skill.integrations.length) return 'No integration required';
   const visible = skill.integrations.slice(0, 2).join(' · ');
   return skill.integrations.length > 2 ? `${visible} · +${skill.integrations.length - 2}` : visible;
+}
+
+function skillShareUrl(skill: Skill) {
+  const url = new URL('/skills', document.baseURI);
+  url.searchParams.set('skill', skill.slug);
+  return url.toString();
+}
+
+function clearActionStatus(button: HTMLButtonElement, className: string) {
+  window.setTimeout(() => {
+    dialogStatus.textContent = '';
+    button.classList.remove(className);
+  }, 1800);
 }
 
 function openSkill(skill: Skill) {
@@ -190,6 +203,11 @@ async function loadSkills() {
     skills = [...catalog.skills].sort((left, right) => left.name.localeCompare(right.name));
     renderFilters();
     renderCards();
+    const requestedSlug = new URL(document.URL).searchParams.get('skill');
+    const requestedSkill = requestedSlug
+      ? skills.find((skill) => skill.slug === requestedSlug)
+      : null;
+    if (requestedSkill) openSkill(requestedSkill);
   } catch {
     grid.hidden = true;
     empty.hidden = true;
@@ -243,24 +261,44 @@ copyButton.addEventListener('click', async () => {
     await navigator.clipboard.writeText(activeSkill.prompt);
     dialogStatus.textContent = 'Complete prompt copied.';
     copyButton.classList.add('is-copied');
-    window.setTimeout(() => {
-      dialogStatus.textContent = '';
-      copyButton.classList.remove('is-copied');
-    }, 1800);
+    clearActionStatus(copyButton, 'is-copied');
   } catch {
     dialogStatus.textContent = 'Copy was blocked. Select the prompt manually.';
   }
 });
-setupButton.addEventListener('click', () => {
+shareButton.addEventListener('click', async () => {
   if (!activeSkill) return;
-  const context = {
-    name: activeSkill.name,
-    category: activeSkill.category,
-    integrations: [...activeSkill.integrations],
-    prompt: activeSkill.prompt,
+  const url = skillShareUrl(activeSkill);
+  const shareData = {
+    title: `${activeSkill.name} · Super ii Skills`,
+    text: `${activeSkill.name} — a ready-to-use AI-agent skill on Super ii.`,
+    url,
   };
-  dialog.close();
-  window.dispatchEvent(new CustomEvent('superii:skill-setup', { detail: context }));
+
+  try {
+    if (typeof navigator.share === 'function'
+      && (typeof navigator.canShare !== 'function' || navigator.canShare(shareData))) {
+      await navigator.share(shareData);
+      dialogStatus.textContent = 'Skill shared.';
+    } else {
+      if (!navigator.clipboard?.writeText) throw new Error('share unavailable');
+      await navigator.clipboard.writeText(url);
+      dialogStatus.textContent = 'Share link copied.';
+    }
+    shareButton.classList.add('is-shared');
+    clearActionStatus(shareButton, 'is-shared');
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === 'AbortError') return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('copy unavailable');
+      await navigator.clipboard.writeText(url);
+      dialogStatus.textContent = 'Share link copied.';
+      shareButton.classList.add('is-shared');
+      clearActionStatus(shareButton, 'is-shared');
+    } catch {
+      dialogStatus.textContent = 'Sharing is unavailable. Copy the link from your browser.';
+    }
+  }
 });
 
 void loadSkills();
