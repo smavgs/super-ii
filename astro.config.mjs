@@ -12,11 +12,7 @@ export default defineConfig({
     imageService: { build: 'compile', runtime: 'passthrough' },
     prerenderEnvironment: 'workerd',
   }),
-  integrations: [clerk({ enableEnvSchema: false })],
-  prefetch: {
-    prefetchAll: true,
-    defaultStrategy: 'viewport',
-  },
+  integrations: [clerk({ enableEnvSchema: false, prefetchUI: false })],
   security: {
     checkOrigin: true,
   },
