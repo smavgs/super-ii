@@ -51,9 +51,9 @@ for (const copy of [
 ]) requireText('homepage', copy);
 
 const hookIndex = files.homepage.indexOf('<section class="social-home-hook">');
-const finalCtaIndex = files.homepage.indexOf('<section class="cta-band">');
-if (hookIndex < 0 || finalCtaIndex < 0 || hookIndex > finalCtaIndex) {
-  errors.push('homepage Social web hook must appear immediately before the final hub CTA');
+const skillsHookIndex = files.homepage.indexOf('<section class="skills-home-hook">');
+if (hookIndex < 0 || skillsHookIndex < 0 || hookIndex > skillsHookIndex) {
+  errors.push('homepage Social web hook must appear before the final Skills hook');
 }
 
 for (const text of [

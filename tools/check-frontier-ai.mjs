@@ -71,9 +71,9 @@ assert(/data-frontier-ready[^>]*hidden/.test(files.page), 'success claim must st
 
 const frontierHook = files.homepage.indexOf('<section class="frontier-home-hook"');
 const participationHook = files.homepage.indexOf('<section class="participation-home"');
-const finalCta = files.homepage.indexOf('<section class="cta-band"');
-assert(participationHook >= 0 && frontierHook > participationHook && finalCta > frontierHook, 'frontier hook must sit at the bottom of the homepage before the final publishing call to action');
-assert(/<section class="frontier-home-hook"[\s\S]*?<\/section>\s*<section class="cta-band">/.test(files.homepage), 'frontier hook must sit immediately before The hub is open');
+const skillsHook = files.homepage.indexOf('<section class="skills-home-hook"');
+assert(participationHook >= 0 && frontierHook > participationHook && skillsHook > frontierHook, 'frontier hook must sit at the bottom of the homepage before the Skills call to action');
+assert(/<section class="frontier-home-hook"[\s\S]*?<\/section>\s*<section class="skills-home-hook">/.test(files.homepage), 'frontier hook must sit immediately before Skills');
 assert(!files.homepage.includes('Free endpoint access is controlled by NVIDIA and subject to its current trial terms and limits.'), 'homepage must omit the NVIDIA trial disclaimer');
 assert(!files.homepage.includes('· NVIDIA + OpenCode'), 'homepage must omit the provider suffix');
 assert(!files.homepage.includes('frontier-home-hook__path'), 'homepage must omit the connection-path illustration');
@@ -106,4 +106,4 @@ assert(!files.css.includes('.frontier-home-hook__path'), 'global.css must not re
 assert(/@media \(max-width: 620px\)[\s\S]*?\.frontier-step[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/.test(files.css), 'setup steps must collapse on narrow screens');
 assert(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.frontier-orbit__ring[\s\S]*?animation:\s*none/.test(files.css), 'frontier animation must stop for reduced motion');
 
-console.log('OK: Hook 4 places a black, illustration-free homepage strip before the final CTA and links it to a three-step, device-local, credential-safe NVIDIA Kimi K3 setup guide.');
+console.log('OK: Hook 4 places a black, illustration-free homepage strip before Skills and links it to a three-step, device-local, credential-safe NVIDIA Kimi K3 setup guide.');

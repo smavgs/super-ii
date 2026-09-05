@@ -27,6 +27,8 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - System state: https://superii.site/system-state.json
 - Connector registry: https://superii.site/agent-connectors.json
 - Agent Skill: https://superii.site/skills/superii/SKILL.md
+- Skills library: https://superii.site/skills
+- Skills catalog API: https://superii.site/api/skills
 - Universal agent handoff: https://superii.site/siiwebskill.md
 
 ## Universal agent handoff
@@ -46,6 +48,12 @@ Never treat an upload, commit, scan, submission, or agent result as a published 
 The signed-in Workspace includes a separate, collapsed AI Worker guide for a member who wants to run Ollama and OpenCode on their own Mac, Windows, or Linux computer. Its four manual steps install Ollama, pull qwen3.5:4b, recommend at least 64K context for coding tools, and run ollama launch opencode. Checklist state stays in that browser's local storage. Super ii cannot inspect the computer or confirm that any command succeeded. Local inference has no Super ii AI subscription or per-token charge, but uses the member's hardware, storage, electricity, and internet connection.
 
 The optional final connection uses opencode mcp add, the remote name superii, https://superii.site/mcp, and opencode mcp list. That MCP is public and read-only. It cannot publish, access private data, invoke hosted compute, change identity, or pay.
+
+## Skills library
+
+The public Skills page is a searchable interface for complete, portable AI-agent setup prompts. A person can open a skill in place, inspect its category and integrations, copy the complete prompt for any compatible agent, or ask the existing Super ii assistant to guide setup. Set up passes the selected name, category, integrations, and prompt as bounded context; the assistant asks which agent and integrations the person already uses before continuing.
+
+GET https://superii.site/api/skills returns the currently validated Skills fields: slug, name, category, integrations, and prompt. The canonical content stays in the open-source Make Great Agents catalog; Super ii refreshes a same-origin edge cache every few minutes and does not maintain a second content database.
 
 ## Plans and human-controlled payment
 

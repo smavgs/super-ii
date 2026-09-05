@@ -291,13 +291,24 @@ const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?
     </div>
   </section>
 
-  <section class="cta-band">
-    <div class="shell cta-band__inner">
-      <div>
-        <p class="eyebrow">The hub is open</p>
-        <h2>Publish a reviewed release.</h2>
+  <section class="skills-home-hook">
+    <div class="shell skills-home-hook__inner">
+      <div class="skills-home-hook__copy">
+        <p class="eyebrow">Skills · Included from Free</p>
+        <h2>Give your AI agent a useful job.</h2>
+        <p>Explore ready-to-use skills, copy the complete prompt, or let Super ii guide the setup.</p>
+        <a class="button button--dark" href="/skills">
+          Explore Skills
+          <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </a>
+        <p class="skills-home-hook__note">Copy any prompt. Use any agent. No lock-in.</p>
       </div>
-      <a class="button button--yellow" href="/sign-up">Join free</a>
+      <div class="skills-home-hook__deck" aria-label="Examples from the Skills library">
+        <span><i aria-hidden="true">⌘</i><strong>Agent Chief of Staff</strong></span>
+        <span><i aria-hidden="true">✦</i><strong>SEO Improver</strong></span>
+        <span><i aria-hidden="true">↗</i><strong>Inbox Zero Assistant</strong></span>
+        <span><i aria-hidden="true">◎</i><strong>YouTube Research Analyst</strong></span>
+      </div>
     </div>
   </section>
   <SuperAssistant />

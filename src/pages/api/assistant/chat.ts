@@ -10,12 +10,13 @@ import {
   openRouterToolCall,
   openRouterToolFollowupRequest,
   parseAssistantMessages,
+  parseAssistantSkillContext,
   parseRuntimeSearchResults,
 } from '@/lib/openrouter';
 import { consumeIdentityRateLimit, consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
 
-const MAX_REQUEST_CHARS = 16_000;
+const MAX_REQUEST_CHARS = 24_000;
 const SEARCH_WINDOW_SECONDS = 86_400;
 const SEARCH_LIMITS = {
   free: 3,
@@ -149,6 +150,12 @@ export const POST: APIRoute = async ({ locals, request }) => {
   }
   const messages = parseAssistantMessages(body.messages);
   if (!messages) return json({ error: 'invalid assistant conversation' }, 400);
+  let skillContext;
+  if ('skill_context' in body) {
+    const parsedSkillContext = parseAssistantSkillContext(body.skill_context);
+    if (!parsedSkillContext) return json({ error: 'invalid skill setup context' }, 400);
+    skillContext = parsedSkillContext;
+  }
   const webSearchEnabled = body.web_search === true;
 
   const rate = await consumeRateLimit(locals, request, sql, 'assistant.chat', 30, 3600);
@@ -163,7 +170,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const apiKey = runtimeValue(locals, 'OPENROUTER_API_KEY');
   if (!apiKey) return json({ error: 'assistant is not configured' }, 503);
 
-  const initial = await callOpenRouter(apiKey, openRouterChatRequest(messages, webSearchEnabled));
+  const initial = await callOpenRouter(apiKey, openRouterChatRequest(messages, webSearchEnabled, skillContext));
   if (!initial?.response.ok) return providerFailure(initial);
 
   const toolCall = webSearchEnabled ? openRouterToolCall(initial.payload) : null;
@@ -237,7 +244,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sources = parseRuntimeSearchResults(await runtimeResponse.json().catch(() => null));
   if (!sources) return json({ error: 'web search is temporarily unavailable' }, 503, { 'retry-after': '30' });
 
-  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources));
+  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources, skillContext));
   if (!final?.response.ok) return providerFailure(final);
   const answer = openRouterAnswer(final.payload);
   if (!answer) return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });

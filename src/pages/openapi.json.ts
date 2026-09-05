@@ -55,6 +55,33 @@ const openapi = {
         },
       },
     },
+    '/api/skills': {
+      get: {
+        tags: ['Discovery'],
+        operationId: 'listAgentSkills',
+        summary: 'List validated, portable AI-agent Skills',
+        description: 'Returns only the slug, name, category, integrations, and complete prompt from the canonical open-source Make Great Agents feed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
+        responses: {
+          '200': {
+            description: 'Current validated Skills catalog',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['version', 'skills'],
+                  properties: {
+                    version: { const: 1 },
+                    skills: { type: 'array', minItems: 1, maxItems: 1000, items: { $ref: '#/components/schemas/Skill' } },
+                  },
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
     '/api/checkout': {
       post: {
         tags: ['Billing'],
@@ -411,6 +438,18 @@ const openapi = {
       Unavailable: { description: 'A required fail-closed control is unavailable' },
     },
     schemas: {
+      Skill: {
+        type: 'object',
+        required: ['slug', 'name', 'category', 'integrations', 'prompt'],
+        properties: {
+          slug: { type: 'string', maxLength: 80, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' },
+          name: { type: 'string', maxLength: 120 },
+          category: { type: 'string', maxLength: 80 },
+          integrations: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
+          prompt: { type: 'string', maxLength: 8000 },
+        },
+        additionalProperties: false,
+      },
       A2ASendMessageRequest: {
         type: 'object', required: ['message'], additionalProperties: true,
         properties: { message: { type: 'object', required: ['messageId', 'role', 'parts'], properties: { messageId: { type: 'string', minLength: 1, maxLength: 200 }, role: { const: 'ROLE_USER' }, parts: { type: 'array', minItems: 1, maxItems: 8, items: { type: 'object' } } } } },

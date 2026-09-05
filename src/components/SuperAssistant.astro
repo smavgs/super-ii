@@ -94,13 +94,31 @@
 
     let controllerPromise: Promise<import('../scripts/super-assistant').SuperAssistantController> | null = null;
 
+    const loadController = () => {
+      controllerPromise ??= import('../scripts/super-assistant')
+        .then(({ createSuperAssistant }) => createSuperAssistant(element));
+      return controllerPromise;
+    };
+
     launcher.addEventListener('click', async () => {
       launcher.disabled = true;
       try {
-        controllerPromise ??= import('../scripts/super-assistant')
-          .then(({ createSuperAssistant }) => createSuperAssistant(element));
-        const controller = await controllerPromise;
+        const controller = await loadController();
         controller.toggle();
+      } catch {
+        controllerPromise = null;
+        if (status instanceof HTMLElement) status.textContent = 'Could not load. Try again.';
+      } finally {
+        launcher.disabled = false;
+      }
+    });
+
+    window.addEventListener('superii:skill-setup', async (event) => {
+      if (!(event instanceof CustomEvent) || !event.detail) return;
+      launcher.disabled = true;
+      try {
+        const controller = await loadController();
+        controller.openSkillSetup(event.detail);
       } catch {
         controllerPromise = null;
         if (status instanceof HTMLElement) status.textContent = 'Could not load. Try again.';

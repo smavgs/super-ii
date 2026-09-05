@@ -63,6 +63,11 @@ export const prerender = false;
       <p><a href="/frontier-ai">Frontier AI</a> is a separate three-step path for people who already have OpenCode and want to use NVIDIA's hosted Kimi K3 endpoint. It links directly to NVIDIA Build for the API key, then guides the user through <code>/connect</code> and <code>/models</code> inside OpenCode. Super ii never asks for, proxies, or stores the NVIDIA key.</p>
       <p>NVIDIA currently identifies Kimi K3 as a 2.8-trillion-parameter, 104-billion-active-parameter multimodal mixture-of-experts model and lists a free endpoint for prototyping. That access is an NVIDIA-controlled trial service, not a permanent Super ii entitlement; availability, limits, and terms can change. OpenCode runs on the user's computer, while model requests are processed by NVIDIA.</p>
 
+      <h2 id="skills">Skills</h2>
+      <p><a href="/skills">Skills</a> is a searchable library of complete, ready-to-use prompts for AI agents. Every item can be inspected without leaving Super ii and copied into Codex, OpenCode, Claude Code, a local agent, or another compatible agent. The underlying prompt is kept intact and the interface does not require a particular agent provider.</p>
+      <p>Selecting <strong>Set up</strong> opens the existing Super ii assistant with the chosen skill name, category, integrations, and complete prompt as bounded setup context. The assistant starts by asking which agent and integrations the member already uses; it never claims a connection or configuration succeeded without evidence.</p>
+      <p>The open-source Make Great Agents catalog remains the canonical content source. Super ii reads its generated public feed through the same-origin <a href="/api/skills"><code>/api/skills</code></a> endpoint, validates and reduces each item to the fields this interface needs, refreshes the edge copy every few minutes, and may serve the last valid copy during a brief upstream interruption. No second skills database is maintained.</p>
+
       <h2 id="bring-my-work">Bring my work</h2>
       <p><a href="/bring-my-work">Bring my work</a> accepts a supported profile or repository URL, detects the provider, and previews models, datasets, and compatible apps before anything is copied. Hugging Face is the first connector. Public URLs work without a copied token; private, gated, and organization membership access each require a separate OAuth permission.</p>
       <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and stops for human review. It never deletes or changes the source, never copies provider secrets, and never publishes automatically.</p>
@@ -151,6 +156,7 @@ export const prerender = false;
         <a href="#agent-starter">Agent Starter</a>
         <a href="#ai-worker">AI Worker</a>
         <a href="#frontier-ai">Frontier AI</a>
+        <a href="#skills">Skills</a>
         <a href="#bring-my-work">Bring my work</a>
         <a href="#catalog">Explore the hub</a>
         <a href="#architecture">Architecture</a>

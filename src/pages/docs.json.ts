@@ -9,6 +9,8 @@ const documents = {
   canonical_origin: 'https://superii.site',
   documents: [
     { id: 'agents', title: 'Agent hub', media_type: 'text/html', url: 'https://superii.site/agents' },
+    { id: 'skills', title: 'Skills library', media_type: 'text/html', url: 'https://superii.site/skills' },
+    { id: 'skills-api', title: 'Skills catalog API', media_type: 'application/json', url: 'https://superii.site/api/skills' },
     { id: 'llms', title: 'Compact machine guide', media_type: 'text/plain', url: 'https://superii.site/llms.txt' },
     { id: 'llms-full', title: 'Full machine guide', media_type: 'text/plain', url: 'https://superii.site/llms-full.txt' },
     { id: 'agent-contract', title: 'Global agent contract', media_type: 'text/markdown', url: 'https://superii.site/agents.md' },

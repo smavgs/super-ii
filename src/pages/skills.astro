@@ -1,0 +1,101 @@
+---
+import SuperAssistant from '@/components/SuperAssistant.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+---
+
+<BaseLayout
+  title="Skills"
+  description="Ready-to-use skills for your AI agent. Search, copy any complete prompt, or let Super ii guide the setup."
+  className="skills-page"
+>
+  <section class="skills-hero">
+    <div class="shell skills-hero__inner">
+      <div class="skills-hero__copy">
+        <p class="skills-kicker"><span aria-hidden="true">✦</span> Included from Free</p>
+        <h1>Skills</h1>
+        <p>Ready-to-use skills for your AI agent.</p>
+      </div>
+      <div class="skills-hero__note" aria-label="How Skills work">
+        <span>01</span>
+        <p><strong>Pick a useful job.</strong> Copy its complete prompt anywhere—or ask Super ii to help set it up.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="skills-library" aria-labelledby="skills-library-title">
+    <div class="shell">
+      <div class="skills-toolbar">
+        <div class="skills-search">
+          <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+          <label class="sr-only" for="skills-search">Search skills</label>
+          <input id="skills-search" type="search" placeholder="Search skills…" autocomplete="off" data-skills-search />
+          <kbd aria-hidden="true">/</kbd>
+        </div>
+        <p class="skills-count" id="skills-library-title" aria-live="polite" data-skills-count>Loading skills…</p>
+      </div>
+
+      <div class="skills-filters" aria-label="Filter skills by category" data-skills-filters hidden></div>
+
+      <div class="skills-error" data-skills-error hidden>
+        <span aria-hidden="true">↻</span>
+        <div><strong>Skills are taking a moment.</strong><p>The library could not load just now.</p></div>
+        <button type="button" data-skills-retry>Try again</button>
+      </div>
+
+      <div class="skills-grid skills-grid--loading" data-skills-grid aria-busy="true">
+        {Array.from({ length: 14 }, (_, index) => (
+          <span class="skill-card skill-card--skeleton" aria-hidden="true">
+            <i>{String(index + 1).padStart(2, '0')}</i><b></b><em></em><em></em>
+          </span>
+        ))}
+      </div>
+
+      <div class="skills-empty" data-skills-empty hidden>
+        <span aria-hidden="true">⌁</span>
+        <h2>No skill found.</h2>
+        <p>Try another name, category, integration, or task.</p>
+        <button type="button" data-skills-clear>Clear search</button>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="skill-window" aria-labelledby="skill-window-title" data-skill-window>
+    <div class="skill-window__frame">
+      <header class="skill-window__header">
+        <span class="skill-window__mark" aria-hidden="true" data-skill-window-mark>✦</span>
+        <div>
+          <p data-skill-window-category>Skill</p>
+          <h2 id="skill-window-title" data-skill-window-title></h2>
+        </div>
+        <button type="button" aria-label="Close skill" data-skill-window-close><i class="ph ph-x" aria-hidden="true"></i></button>
+      </header>
+
+      <div class="skill-window__integrations" data-skill-window-integrations></div>
+
+      <section class="skill-window__prompt" aria-labelledby="skill-window-prompt-title">
+        <div><h3 id="skill-window-prompt-title">Complete prompt</h3><span>Works with any agent</span></div>
+        <pre><code data-skill-window-prompt></code></pre>
+      </section>
+
+      <footer class="skill-window__actions">
+        <p aria-live="polite" data-skill-window-status></p>
+        <div>
+          <button class="skill-window__copy" type="button" data-skill-window-copy>
+            <i class="ph ph-copy" aria-hidden="true"></i> Copy
+          </button>
+          <button class="skill-window__setup" type="button" data-skill-window-setup>
+            <i class="ph ph-sparkle" aria-hidden="true"></i> Set up
+          </button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
+  <SuperAssistant />
+</BaseLayout>
+
+<script>
+  import '@/scripts/skills-page';
+</script>

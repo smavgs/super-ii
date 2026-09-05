@@ -17,8 +17,16 @@ type AssistantReply = {
   searched: boolean;
 };
 
+export type AssistantSkillContext = {
+  name: string;
+  category: string;
+  integrations: string[];
+  prompt: string;
+};
+
 export type SuperAssistantController = {
   toggle: () => void;
+  openSkillSetup: (context: AssistantSkillContext) => void;
   destroy: () => void;
 };
 
@@ -31,6 +39,28 @@ class AssistantConnectionError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizedSkillContext(value: unknown): AssistantSkillContext | null {
+  if (!isRecord(value)
+    || typeof value.name !== 'string'
+    || !value.name.trim()
+    || value.name.length > 120
+    || typeof value.category !== 'string'
+    || !value.category.trim()
+    || value.category.length > 80
+    || !Array.isArray(value.integrations)
+    || value.integrations.length > 12
+    || value.integrations.some((item) => typeof item !== 'string' || !item.trim() || item.length > 80)
+    || typeof value.prompt !== 'string'
+    || !value.prompt.trim()
+    || value.prompt.length > 8_000) return null;
+  return {
+    name: value.name.trim(),
+    category: value.category.trim(),
+    integrations: value.integrations.map((item) => (item as string).trim()),
+    prompt: value.prompt,
+  };
 }
 
 function assistantSources(value: unknown): AssistantSource[] {
@@ -57,6 +87,7 @@ function assistantSources(value: unknown): AssistantSource[] {
 async function requestAssistant(
   messages: AssistantMessage[],
   webSearch: boolean,
+  skillContext: AssistantSkillContext | null,
   signal: AbortSignal,
 ): Promise<AssistantReply> {
   let response: Response;
@@ -68,7 +99,11 @@ async function requestAssistant(
         'content-type': 'application/json',
       },
       credentials: 'same-origin',
-      body: JSON.stringify({ messages, web_search: webSearch }),
+      body: JSON.stringify({
+        messages,
+        web_search: webSearch,
+        ...(skillContext ? { skill_context: skillContext } : {}),
+      }),
       signal,
     });
   } catch (error) {
@@ -130,6 +165,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   let activeRequest: AbortController | null = null;
   let currentMessage: HTMLElement | null = null;
   let currentCopy: HTMLParagraphElement | null = null;
+  let skillContext: AssistantSkillContext | null = null;
   const conversation: AssistantMessage[] = [];
 
   function setStatus(copy: string, state = '') {
@@ -303,6 +339,31 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     else openPanel();
   }
 
+  function openSkillSetup(context: AssistantSkillContext) {
+    const nextContext = normalizedSkillContext(context);
+    if (!nextContext) return;
+    activeRequest?.abort();
+    activeRequest = null;
+    awaitingResponse = false;
+    currentMessage = null;
+    currentCopy = null;
+    conversation.splice(0, conversation.length);
+    messages.replaceChildren();
+    skillContext = nextContext;
+    input.value = '';
+    input.placeholder = 'Tell me which agent you use…';
+    resizeInput();
+    hideNotice();
+    addMessage(
+      'assistant',
+      `I’ll help you set up ${nextContext.name}. First, let’s check which agent you’re using and which integrations you already have connected.`,
+    );
+    if (!open) openPanel();
+    setStatus('Skill setup ready', 'ready');
+    setComposerReady(true);
+    input.focus();
+  }
+
   async function submit() {
     const copy = input.value.trim();
     if (!copy || awaitingResponse) return;
@@ -319,7 +380,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     const controller = new AbortController();
     activeRequest = controller;
     try {
-      const reply = await requestAssistant(pendingHistory, webSearchEnabled, controller.signal);
+      const reply = await requestAssistant(pendingHistory, webSearchEnabled, skillContext, controller.signal);
       if (destroyed) return;
       conversation.splice(0, conversation.length, ...boundedHistory([
         ...pendingHistory,
@@ -366,5 +427,5 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   document.addEventListener('keydown', onKeydown);
   window.addEventListener('pagehide', destroy);
 
-  return { toggle, destroy };
+  return { toggle, openSkillSetup, destroy };
 }
