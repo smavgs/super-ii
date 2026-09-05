@@ -407,6 +407,11 @@ def main() -> int:
             if marker not in ai_worker_contract:
                 errors.append(f"AI Worker contract is missing {marker}")
         homepage_contract = (ROOT / "src" / "pages" / "index.astro").read_text(encoding="utf-8")
+        progress_index = homepage_contract.find('<p class="eyebrow">One place to make progress</p>')
+        ai_worker_index = homepage_contract.find('<section class="ai-worker-hook" id="ai-worker-home">')
+        clean_beginning_index = homepage_contract.find('<p class="eyebrow">A clean beginning</p>')
+        if not 0 <= progress_index < ai_worker_index < clean_beginning_index:
+            errors.append("AI Worker homepage hook must sit between One place to make progress and A clean beginning")
         for private_detail in (
             "ollama pull qwen3.5:4b",
             "ollama launch opencode",
