@@ -47,6 +47,7 @@ test = [
 superii-runtime = "superii_runtime.main:run"
 superii-benchmark = "superii_runtime.benchmarks:main"
 superii-bridge = "superii_runtime.bridge:main"
+superii-policy = "superii_runtime.policy_service:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/superii_runtime"]

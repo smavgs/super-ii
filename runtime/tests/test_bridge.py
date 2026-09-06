@@ -111,6 +111,9 @@ class FakeDatabase:
     def update_bridge_item_progress(self, _item_id, progress):
         self.progress.append(progress)
 
+    def finalize_for_policy(self, _repository_id, _revision_id):
+        return {}
+
     def complete_bridge_item(self, _item_id, card, manifest):
         self.completed = (card, manifest)
         return "review"
@@ -120,7 +123,7 @@ class FakeDatabase:
         return state
 
 
-def test_worker_imports_exact_snapshot_into_review_only(
+def test_worker_imports_exact_snapshot_through_automatic_policy(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -158,7 +161,7 @@ def test_worker_imports_exact_snapshot_into_review_only(
 
     def fake_runtime(_settings, path, body=None):
         runtime_calls.append((path, body))
-        return {"status": "passed"}
+        return {"status": "published" if path.endswith("/finalize") else "passed"}
 
     monkeypatch.setattr(bridge, "_download_snapshot", fake_download)
     monkeypatch.setattr(bridge, "process_upload", fake_upload)
@@ -169,7 +172,7 @@ def test_worker_imports_exact_snapshot_into_review_only(
 
     assert uploaded == ["README.md"]
     assert database.progress == [len(payload)]
-    assert database.state is None
+    assert database.state == ("complete", len(payload), None)
     assert database.completed is not None
     assert database.completed[0] == payload.decode()
     assert database.completed[1][0]["imported_sha256"] == digest

@@ -37,7 +37,7 @@ async function collect(directory) {
 }
 await collect(resolve(root, 'src'));
 
-const known = new Set([...site.routes, '/api/contact']);
+const known = new Set([...site.routes, '/api/contact', '/api/publication-keys']);
 for (const file of sourceFiles) {
   const source = await readFile(file, 'utf8');
   for (const match of source.matchAll(hrefPattern)) {

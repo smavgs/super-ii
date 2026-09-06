@@ -32,10 +32,16 @@ jobs:
       - run: npm run check
       - run: npm run db:check
       - run: npm run db:test
+      - run: uv sync --directory sdk/python --extra test --frozen
+      - run: uv run --directory sdk/python ruff format --check .
+      - run: uv run --directory sdk/python ruff check .
+      - run: uv run --directory sdk/python pytest
+      - run: uv build --directory sdk/python
       - run: uv sync --directory runtime --extra test --frozen
       - run: uv run --directory runtime ruff format --check .
       - run: uv run --directory runtime ruff check .
       - run: uv run --directory runtime pytest
+      - run: runtime/.venv/bin/python tools/check_publication_service.py
       - run: uv lock --directory runtime/space-image --check
       - run: uv lock --directory runtime/notebook-image --check
       - run: cargo +1.97.0 fmt --manifest-path rust/Cargo.toml --check
@@ -44,5 +50,12 @@ jobs:
       - run: cargo +1.97.0 clippy --locked --all-targets --manifest-path rust/Cargo.toml -- -D warnings
       - run: docker build --tag superii/notebook-executor:ci runtime/notebook-image
       - run: docker build --tag superii/transfer:ci rust
-      - run: SUPERII_DATABASE_URL=postgresql://example.invalid/db SUPERII_RUNTIME_TOKEN=01234567890123456789012345678901 docker compose --file runtime/compose.yaml config --quiet
+      - run: docker compose --file runtime/compose.yaml config --quiet
+        env:
+          SUPERII_DATABASE_URL: postgresql://example.invalid/db
+          SUPERII_RUNTIME_TOKEN: "01234567890123456789012345678901"
+          SUPERII_POLICY_DATABASE_URL: postgresql://policy@example.invalid/db
+          SUPERII_POLICY_TOKEN: "01234567890123456789012345678901"
+          SUPERII_POLICY_SIGNING_KEY: CI_CONFIG_VALIDATION_ONLY
+          SUPERII_POLICY_KEY_ID: CI_CONFIG_VALIDATION_ONLY
       - run: npm run build

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { managedRepository, scopedManagedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
+import { canReadSdkRepository } from '@/lib/sdk-access';
 import { proxiedFileResponse, runtimeFetch } from '@/lib/runtime';
 import { authorizeRepositoryRequest } from '@/lib/scoped-auth';
 
@@ -30,7 +31,7 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   let mimeType: string;
   try {
     const rows = await sql`
-      select f.id, f.mime_type
+      select f.id, f.mime_type, r.id as repository_id, r.visibility, r.status
       from app.repository_files f
       join app.repository_revisions rr on rr.id = f.revision_id
       join app.repositories r on r.id = f.repository_id
@@ -39,12 +40,13 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
         and f.storage_state = 'available'
         and f.scan_status = 'clean'
         and rr.status = 'published'
-        and r.latest_revision_id = rr.id
-        and r.visibility = 'public'
-        and r.status = 'published'
+
       limit 1
     `;
     if (!rows.length) return Response.json({ error: 'file not found' }, { status: 404 });
+    if (!await canReadSdkRepository(locals, request, sql, {
+      id: String(rows[0].repository_id), visibility: String(rows[0].visibility), status: String(rows[0].status),
+    })) return Response.json({ error: 'file not found' }, { status: 404 });
     mimeType = String(rows[0].mime_type).toLowerCase();
   } catch {
     return Response.json({ error: 'file not found' }, { status: 404 });
@@ -68,6 +70,7 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   }
   if (!upstream) return Response.json({ error: 'download runtime unavailable' }, { status: 503 });
   const response = proxiedFileResponse(upstream);
+  response.headers.set('cache-control', 'private, no-store');
   if (inline) {
     response.headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'");
     response.headers.set('x-frame-options', 'SAMEORIGIN');

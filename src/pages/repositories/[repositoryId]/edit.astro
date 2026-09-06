@@ -31,6 +31,7 @@ const sql = sqlClient(Astro.locals);
 let repository: Awaited<ReturnType<typeof managedRepository>> = null;
 let files: DraftFile[] = [];
 let branches: Branch[] = [];
+let decisions: Array<{ outcome: string; policy_version: string; manifest_sha256: string; reasons: Array<{ message: string }>; created_at: string }> = [];
 let reviews: Array<{ decision: string; notes: string; updated_at: string }> = [];
 let trustedPublishers: TrustedPublisher[] = [];
 let authenticated = false;
@@ -53,6 +54,11 @@ if (sql) {
         where b.repository_id = ${repository.id}::uuid
         order by b.is_default desc, b.name
       ` as Branch[];
+      decisions = await sql`
+        select outcome, policy_version, manifest_sha256, reasons, created_at
+        from app.publication_decisions where revision_id = ${repository.revision_id}::uuid
+        order by created_at desc limit 20
+      ` as typeof decisions;
       reviews = await sql`
         select decision, notes, updated_at
         from app.repository_reviews
@@ -75,6 +81,7 @@ const runtime = repository ? await pingRuntime(Astro.locals) : null;
 const prefix = repository?.kind === 'model' ? 'models' : repository?.kind === 'dataset' ? 'datasets' : 'spaces';
 const publicHref = repository ? `/${prefix}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}` : '/account';
 const editable = repository && ['draft', 'quarantined'].includes(repository.revision_status);
+const submittable = editable || repository?.revision_status === 'review';
 const published = repository?.revision_status === 'published';
 ---
 
@@ -92,7 +99,7 @@ const published = repository?.revision_status === 'published';
           <article class="workspace-status-card"><span>Branch</span><strong>{repository.branch_name}</strong><small>{branches.length} total</small></article>
           <article class="workspace-status-card"><span>Revision</span><strong>{repository.revision_status}</strong><small>{files.length} files</small></article>
           <article class="workspace-status-card"><span>File checks</span><strong>{runtime?.state ?? 'unconfigured'}</strong><small>{runtime?.publishing_enabled ? 'Scanning enabled' : 'Uploads stay closed'}</small></article>
-          <article class="workspace-status-card"><span>Visibility</span><strong>Public</strong><small>Review required</small></article>
+          <article class="workspace-status-card"><span>Visibility</span><strong>{repository.visibility}</strong><small>Automatic publication policy</small></article>
         </section>
 
         <section class="repository-section">
@@ -133,7 +140,7 @@ const published = repository?.revision_status === 'published';
               <legend>Allowed short-lived scopes</legend>
               <label><input type="checkbox" name="scope" value="repository:upload" checked /> Upload and remove draft files</label>
               <label><input type="checkbox" name="scope" value="repository:commit" checked /> Create commits</label>
-              <label><input type="checkbox" name="scope" value="repository:submit" checked /> Run checks and submit for human review</label>
+              <label><input type="checkbox" name="scope" value="repository:submit" checked /> Run checks and submit for automatic publication</label>
               <label><input type="checkbox" name="scope" value="repository:trace" /> Write private-by-default agent trace metadata</label>
             </fieldset>
             <button class="button button--secondary button--small" type="submit">Trust GitHub workflow</button>
@@ -173,7 +180,7 @@ const published = repository?.revision_status === 'published';
               <progress max="100" value="0" hidden data-upload-progress></progress>
               <p data-form-status aria-live="polite"></p>
             </form>
-          ) : <p>This revision is read-only because review has started.</p>}
+          ) : <p>This revision is sealed for publication.</p>}
           <div class="file-table-wrap">
             <table class="file-table">
               <thead><tr><th>Path</th><th>Size</th><th>SHA-256</th><th>Gate</th><th></th></tr></thead>
@@ -193,12 +200,22 @@ const published = repository?.revision_status === 'published';
         </section>
 
         <section class="repository-section">
-          <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Submit for review</h2></div></div>
-          <p>Super ii runs the required checks and sends this revision for human review. Files cannot be changed while the review is in progress.</p>
-          <button class="button button--dark" type="button" data-submit-review disabled={!editable || files.length === 0 || runtime?.state !== 'ready'}>Run checks and submit</button>
+          <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Automatic publication</h2></div></div>
+          <p>Super ii checks files, license and provenance against an independent publication policy. Passing releases publish automatically. Failed or unknown checks keep the release closed and explain what to fix.</p>
+          {editable && <form class="mini-form" data-publication-metadata>
+            <h3>License and provenance</h3>
+            <label>License identifier <input name="license" required maxlength="120" placeholder="apache-2.0" value={repository.license} /></label>
+            <label>Right to publish <select name="basis"><option value="original" selected={!repository.provenance?.rights_declaration?.basis || repository.provenance?.rights_declaration?.basis === 'original'}>My original work</option><option value="permission" selected={repository.provenance?.rights_declaration?.basis === 'permission'}>Permission from the rights holder</option><option value="licensed-redistribution" selected={repository.provenance?.rights_declaration?.basis === 'licensed-redistribution'}>Redistribution under the source license</option></select></label>
+            <label>Source URL <input name="source_url" type="url" placeholder="https://..." value={repository.provenance?.rights_declaration?.source_url ?? ''} /></label>
+            <label><input name="confirmed" type="checkbox" required /> I confirm this declaration and my right to publish these files under the stated license.</label>
+            <button class="button button--secondary" type="submit">Save publication details</button>
+            <p data-form-status aria-live="polite"></p>
+          </form>}
+          <button class="button button--dark" type="button" data-submit-review disabled={!submittable || files.length === 0 || runtime?.state !== 'ready'}>{repository.revision_status === 'review' ? 'Retry automatic publication' : 'Run checks and submit'}</button>
           {runtime?.state !== 'ready' && <p class="form-hint">File checks are temporarily unavailable, so this revision cannot be submitted yet.</p>}
           <p data-submit-status aria-live="polite"></p>
-          {reviews.length > 0 && <div class="review-history"><h3>Review history</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
+          {decisions.map((decision) => <div class="review-history"><h3>Automatic policy: {decision.outcome}</h3><p>{decision.policy_version} · {decision.created_at}</p>{decision.reasons.map((reason) => <p>{reason.message}</p>)}</div>)}
+          {reviews.length > 0 && <div class="review-history"><h3>Historical review records</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
         </section>
 
         {published && (
@@ -476,6 +493,22 @@ const published = repository?.revision_status === 'published';
     });
   });
 
+  const metadataForm = workspace?.querySelector('[data-publication-metadata]');
+  metadataForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!(metadataForm instanceof HTMLFormElement) || !repositoryId) return;
+    const values = new FormData(metadataForm);
+    const status = metadataForm.querySelector('[data-form-status]');
+    try {
+      await jsonAction(workspacePath(`/api/repositories/${repositoryId}/publication-metadata`), {
+        license: values.get('license'), basis: values.get('basis'),
+        source_url: values.get('source_url'), confirmed: values.get('confirmed') === 'on',
+      });
+      if (status instanceof HTMLElement) status.textContent = 'Publication details saved.';
+    } catch (error) {
+      if (status instanceof HTMLElement) status.textContent = error instanceof Error ? error.message : 'Could not save.';
+    }
+  });
   const review = workspace?.querySelector('[data-submit-review]');
   review?.addEventListener('click', async () => {
     if (!(review instanceof HTMLButtonElement) || !repositoryId) return;
@@ -483,8 +516,8 @@ const published = repository?.revision_status === 'published';
     review.disabled = true;
     try {
       if (status instanceof HTMLElement) status.textContent = 'Running offline analysis and sealing the manifest…';
-      await jsonAction(workspacePath(`/api/repositories/${repositoryId}/submit`), {});
-      if (status instanceof HTMLElement) status.textContent = 'Submitted for human review ✅';
+      const result = await jsonAction(workspacePath(`/api/repositories/${repositoryId}/submit`), {});
+      if (status instanceof HTMLElement) status.textContent = result.status === 'published' ? 'Published automatically ✅' : 'Publication checks need attention. Opening the decision…';
       location.reload();
     } catch (error) {
       if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Submission failed.'; status.dataset.state = 'error'; }

@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { sha256Hex } from './scoped-auth';
 
 export const agentScopes = [
+  'repository:read',
   'repository:create',
   'repository:upload',
   'repository:commit',
@@ -42,7 +43,7 @@ export type AgentReceipt = {
   request_sha256: string;
   result_sha256: string | null;
   status: 'succeeded' | 'rejected' | 'failed';
-  review_boundary: 'human-review-required' | 'human-approved' | 'not-applicable';
+  review_boundary: 'human-review-required' | 'human-approved' | 'not-applicable' | 'automatic-policy';
   detail: Record<string, unknown>;
   occurred_at: string;
 };
@@ -172,7 +173,7 @@ export async function recordAgentReceipt(
     requestSha256: string;
     resultSha256?: string | null;
     status: 'succeeded' | 'rejected' | 'failed';
-    reviewBoundary: 'human-review-required' | 'human-approved' | 'not-applicable';
+    reviewBoundary: 'human-review-required' | 'human-approved' | 'not-applicable' | 'automatic-policy';
     detail?: Record<string, unknown>;
   },
 ): Promise<AgentReceipt> {

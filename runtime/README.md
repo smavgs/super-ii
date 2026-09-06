@@ -11,7 +11,7 @@ The upload state machine is:
 ```text
 upload -> quarantine -> path and format policy -> ClamAV -> Gitleaks
        -> specialized offline inspection -> immutable SHA-256 object
-       -> finalization -> human review -> PL/pgSQL publish gate
+       -> finalization -> independent signed policy -> atomic PL/pgSQL publication
 ```
 
 Missing, timed-out, or errored scanners leave a file quarantined. A positive malware, secret, unsafe-serialization, or invalid-format finding rejects the file. Publication requires both ClamAV and Gitleaks pass evidence for every file and an approved review.
@@ -36,6 +36,46 @@ Missing, timed-out, or errored scanners leave a file quarantined. A positive mal
 vLLM is deliberately disabled until Super ii owns dedicated GPU capacity. Text Embeddings Inference is deliberately disabled until measured Postgres search scale warrants semantic search.
 
 The runtime image pins the official llama.cpp `b10516` Ubuntu CPU archives for amd64 and arm64 and verifies the SHA-256 digests published with that release before extracting them. Gitleaks is pinned and verified the same way. Rust is pinned by `rust-toolchain.toml`; Cargo and uv lockfiles are required in CI.
+
+## Independent automatic publication
+
+Migration `0017_automatic_publication.sql` replaces the old human publication
+gate. Authorized submission seals an immutable revision and calls the separate
+loopback policy service on port 8791. The service obtains a locked database
+candidate, evaluates fixed local policy, signs the exact repository/revision/
+commit/manifest/metadata and scanner evidence, then records the decision and
+publishes atomically. Agents cannot supply the policy outcome or signature.
+Failed/unknown checks return actionable reasons and leave an editable quarantined
+revision. Service outages keep the sealed revision closed and permit safe retry.
+Historical human reviews and contribution-job reviews keep their original meaning.
+
+The policy login is a member only of the restricted `superii_policy` database
+role. It cannot change the trust keys or policy hash. The DB administrative owner
+remains the trust root. Ed25519 signing happens in the policy service and client
+verification; Postgres enforces the restricted-role call boundary and matching
+inputs rather than claiming to verify Ed25519 internally. Separate processes on
+one OS account are not isolation from that account's administrator.
+
+On macOS, apply the migration, run
+`runtime/.venv/bin/python tools/configure_publication_policy_macos.py` from the
+repository root, install `run-policy-macos.sh` beside the other runtime launchers,
+and launch it as `site.superii.policy`. The helper reuses credentials in Keychain
+and verifies the restricted login. Start policy before restarting the main
+runtime, which receives only the policy request token, never its signing key.
+The Compose service uses a separate restricted DB URL and signing-key variables.
+Do not expose port 8791 through a tunnel or public host binding.
+
+`/api/publication-keys` publishes key IDs, Ed25519 public keys, policy hashes and
+enabled state. SDK clients fetch active keys over the canonical HTTPS origin or
+pin a trusted key map explicitly. Disabling a compromised key makes fresh SDK
+acquisition fail closed. Keep previous keys available for historical verification;
+register a new policy-key record when reviewed policy code changes. New records
+do not silently bless older releases.
+
+`tools/check_publication_service.py` exercises real Ed25519 signatures, restricted
+DB access, atomic publication, blocked outcomes and replay in disposable
+PostgreSQL. Scanner evidence in that integration test is a fixture; production
+readiness also requires the existing real ClamAV, Gitleaks and format inspectors.
 
 ## Development
 
@@ -107,7 +147,7 @@ runtime on port `8788`; keep that port closed to the LAN.
 
 ## Resumable transfers
 
-Run `superii-transferd` only on loopback. The Python runtime is the sole trusted caller; Cloudflare never receives its service token. Browser clients receive an expiring, repository/revision/profile/size/checksum-bound capability and send independent 8 MiB chunks through same-origin Astro routes. Every chunk is streamed, offset-checked, and checksum-checked before the Rust service durably advances state. Commit rechecks the complete SHA-256 digest; scanning and human review still remain mandatory after upload.
+Run `superii-transferd` only on loopback. The Python runtime is the sole trusted caller; Cloudflare never receives its service token. Browser clients receive an expiring, repository/revision/profile/size/checksum-bound capability and send independent 8 MiB chunks through same-origin Astro routes. Every chunk is streamed, offset-checked, and checksum-checked before the Rust service durably advances state. Commit rechecks the complete SHA-256 digest; scanning, offline inspection, and independent automatic policy approval remain mandatory after upload.
 
 The CLI resumes from a mode-0600 local state file containing the short-lived transfer capability. It never logs that capability, and removes the state file after a successful commit. Protect or delete an abandoned state file before its expiry. Its basic commands are `superii push`, `superii pull`, `superii verify`, and `superii inspect`; use `superii --help` for required URL, capability, checksum, and output arguments.
 

@@ -424,9 +424,22 @@ class BridgeWorker:
                     source_path.unlink(missing_ok=True)
                 base = f"/v1/repositories/{repository_id}/revisions/{revision_id}"
                 _runtime_post(self.settings, f"{base}/inspect", {"kind": str(item["kind"])})
-                _runtime_post(self.settings, f"{base}/finalize")
+                self.database.finalize_for_policy(repository_id, revision_id)
                 self.database.complete_bridge_item(item_id, card_markdown, verified_manifest)
-                _log("item.review", job_id=job_id, item_id=item_id)
+                publication = _runtime_post(self.settings, f"{base}/finalize")
+                published = publication.get("status") == "published"
+                self.database.set_bridge_item_state(
+                    item_id,
+                    "complete" if published else "blocked",
+                    progress,
+                    None if published else "publication_policy_blocked",
+                    None if published else "Open the repository workspace for policy reasons.",
+                )
+                _log(
+                    "item.published" if published else "item.policy_blocked",
+                    job_id=job_id,
+                    item_id=item_id,
+                )
         except Exception as error:
             code, detail = _failure(error)
             with suppress(Exception):
@@ -535,7 +548,7 @@ class BridgeWorker:
             "source_url": source_url,
             "kind": str(subscription["kind"]),
             "title": repo_id.split("/", 1)[-1][:200],
-            "summary": "Automatically detected source revision; review is still required.",
+            "summary": "New source revision; automatic publication checks required.",
             "license": license_name[:120],
             "source_visibility": "public",
             "file_count": len(manifest),

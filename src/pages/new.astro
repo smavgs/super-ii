@@ -42,12 +42,12 @@ if (sql) {
 ---
 
 <BaseLayout title="New repository" description="Create a real Super ii model, dataset, or app repository." noindex>
-  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Create your project, add its files, and submit it for review before it becomes public." compact />
+  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Create your project, add its files, and run automatic publication checks." compact />
   <section class="section shell creator-shell">
     <form class="form-card creator-form" data-repository-create-form>
       <div class="creator-callout">
         <i class="ph ph-shield-check" aria-hidden="true"></i>
-        <p><strong>Public and review-first.</strong> Files are checked before publishing. Automated safety checks and a human review must be completed before a release becomes public.</p>
+        <p><strong>Automatic checks before publication.</strong> Files are checked before publishing. Passing releases publish automatically. Failed or unknown checks keep files closed and explain what needs fixing.</p>
       </div>
       <div class="form-grid form-grid--two">
         <label>Repository type

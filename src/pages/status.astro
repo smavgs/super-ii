@@ -16,7 +16,7 @@ const runtimeStatus = runtimeHealth.state === 'ready'
     : runtimeHealth.state === 'unconfigured'
       ? 'Not connected'
       : 'Unavailable';
-const publishingStatus = runtimeHealth.publishing_enabled ? 'Review-gated' : 'Closed safely';
+const publishingStatus = runtimeHealth.publishing_enabled ? 'Automatic policy checks' : 'Closed safely';
 let publicItems = 0;
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -31,7 +31,7 @@ if (sql) {
 }
 const allOperational = authStatus === 'Operational'
   && databaseStatus === 'Operational'
-  && runtimeHealth.state !== 'error';
+  && runtimeHealth.state === 'ready';
 ---
 
 <BaseLayout title="Status" description="Current operational status for the Super ii website, authentication, database, and public catalogs." noindex>
@@ -54,7 +54,7 @@ const allOperational = authStatus === 'Operational'
       <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · {publicItems} items</span></div>
       <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{runtimeStatus}</span></div>
       <div class="status-row"><span>Artifact publishing</span><span class="status-value">{publishingStatus}</span></div>
-      <p>Publishing stays closed if any required storage or security check is unavailable. A human review is also required before a release becomes public.</p>
+      <p>Publishing stays closed if any required storage or security check is unavailable. Passing releases publish automatically; failed or unknown checks return actionable reasons.</p>
       <p>Checked at request time: <time datetime={new Date().toISOString()}>{new Date().toUTCString()}</time></p>
     </div>
   </section>

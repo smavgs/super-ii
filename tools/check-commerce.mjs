@@ -161,7 +161,7 @@ for (const marker of [
 ]) requireText('workspace', marker);
 requireText('account', '<CommerceWorkspace />');
 requireText('account', 'href="#commerce"');
-requireText('workMcp', 'This server cannot publish, delete, pay');
+requireText('workMcp', 'The agent cannot approve its own release, delete, pay');
 if (files.workMcp.includes('commerce_create_order') || files.workMcp.includes('sii_commerce_')) {
   errors.push('Work MCP must remain separate from commerce authority');
 }

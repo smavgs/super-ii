@@ -44,6 +44,7 @@ declare
   bridge_revision_id uuid;
   bridge_already_imported boolean;
   bridge_organization_id uuid;
+  policy_payload text;
 begin
   alice_id := app.ensure_profile('clerk-alice', 'alice', 'Alice', null);
   bob_id := app.ensure_profile('clerk-bob', 'bob', 'Bob', null);
@@ -745,7 +746,7 @@ begin
     repository_id, revision_id, reviewer_id, decision
   ) values (publish_repository_id, revision_row.id, 'human-reviewer', 'approved');
   update app.repository_revisions
-  set manifest_sha256 = repeat('c', 64),
+  set manifest_sha256 = encode(digest(convert_to('model.safetensors','UTF8') || decode('00','hex') || convert_to(repeat('b',64),'UTF8') || decode('00','hex') || convert_to(E'4\n','UTF8'),'sha256'),'hex'),
       commit_sha = repeat('d', 64),
       manifest = jsonb_build_array(jsonb_build_object(
         'path', 'model.safetensors',
@@ -763,7 +764,7 @@ begin
     raise exception 'publish unexpectedly bypassed format policy';
   exception
     when others then
-      if sqlerrm <> 'required_scans_not_passed' then
+      if sqlerrm <> 'automatic_publication_attestation_required' then
         raise;
       end if;
   end;
@@ -771,7 +772,18 @@ begin
   insert into app.repository_file_inspections (
     repository_file_id, inspector, status, tool_version, completed_at
   ) values (file_id, 'format_policy', 'passed', 'smoke', now());
-  perform app.publish_repository_revision(revision_row.id, 'smoke-test');
+  insert into app.publication_keys(id,public_key,policy_sha256)
+  values ('smoke-policy', 'smoke-only-public-key', repeat('f',64));
+  update app.repository_revision_analyses set tool_versions = '{"smoke-inspector":"1"}'::jsonb, completed_at = now() where revision_id = revision_row.id;
+  policy_payload := jsonb_build_object(
+    'repository_id', publish_repository_id, 'revision_id', revision_row.id,
+    'commit_sha', repeat('d',64),
+    'manifest_sha256', (select manifest_sha256 from app.repository_revisions where id = revision_row.id),
+    'metadata_sha256', app.publication_metadata_sha(publish_repository_id),
+    'policy_version', 'superii-auto-publish-v1', 'policy_sha256', repeat('f',64),
+    'outcome', 'passed', 'reasons', '[]'::jsonb, 'evidence', '{"fixture":"SQL gate only; cryptography tested in Python"}'::jsonb
+  )::text;
+  perform app.apply_publication_decision(policy_payload, 'smoke-only-signature', 'smoke-policy');
 
   if not exists (
     select 1 from app.repositories

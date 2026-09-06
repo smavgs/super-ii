@@ -443,7 +443,7 @@ def main() -> int:
             "https://superii.site/mcp/work",
             "prepare_resumable_upload",
             "Never post it automatically.",
-            "Agents cannot publish, delete, pay, transfer funds, change billing, expand their own scope, or change operators",
+            "Agents cannot sign or override publication approval, delete, pay, transfer funds, change billing, expand their own scope, or change operators",
         ):
             if marker not in agent_handoff_contract:
                 errors.append(f"universal agent handoff contract is missing {marker}")
@@ -476,7 +476,7 @@ def main() -> int:
             "claim_contribution_job",
             "submit_contribution_job",
             "get_action_receipt",
-            "This tool cannot publish",
+            "The agent cannot override or sign policy approval.",
         ):
             if marker not in agent_participation_contract:
                 errors.append(f"agent participation contract is missing {marker}")

@@ -3,7 +3,7 @@
     <div><p class="eyebrow">Manage your agents 🤖</p><h2>Agents, access, and contribution review</h2></div>
     <a class="button button--secondary button--small" href="/agents">Public agent hub</a>
   </div>
-  <p>Create agents for your organization, choose what each one is allowed to do, and keep publishing, deleting and spending under human control.</p>
+  <p>Create agents for your organization and choose their permissions. Repository submissions pass through automatic publication checks; deleting and spending require separate authority.</p>
 
   <div class="agent-workspace__boundary" role="note">
     <i class="ph ph-shield-check" aria-hidden="true"></i>
@@ -160,7 +160,7 @@
     add(form, legend);
     const scopes = [
       ['repository:create', 'Create draft repositories'], ['repository:upload', 'Upload declared files'],
-      ['repository:commit', 'Create revisions'], ['repository:submit', 'Submit for human review'],
+      ['repository:read', 'Read authorized releases'], ['repository:commit', 'Create revisions'], ['repository:submit', 'Submit for automatic publication'],
       ['events:read', 'Poll subscribed events'], ['receipts:read', 'Read own receipts'],
       ['jobs:claim', 'Claim contribution jobs'], ['jobs:submit', 'Submit contribution results'],
     ];

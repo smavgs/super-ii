@@ -98,15 +98,15 @@ export function createSuperiiWorkMcpServer(
   const server = new McpServer(
     { name: 'Super ii authenticated Work MCP', version: '1.0.0' },
     {
-      instructions: 'Authenticated and review-bound. Never reveal the bearer token or transfer capability. Reuse an idempotency key only for an exact retry. Use prepare_resumable_upload for bytes, verify checksums, and stop at human review. This server cannot publish, delete, pay, expand scopes, or change operators.',
+      instructions: 'Authenticated and policy-gated. Never reveal the bearer token or transfer capability. Reuse an idempotency key only for an exact retry. Use prepare_resumable_upload for bytes, verify checksums, and submit to the independent automatic publication policy. The agent cannot approve its own release, delete, pay, expand scopes, or change operators.',
     },
   );
 
   server.registerTool(
     'create_draft_repository',
     {
-      title: 'Create a review-bound draft repository',
-      description: 'Create a public-intent model, dataset, or app draft owned by the token operator organization. Publication still requires clean files and human review.',
+      title: 'Create a policy-gated draft repository',
+      description: 'Create a public-intent model, dataset, or app draft owned by the token operator organization. Publication requires clean files and a passing independent automatic policy decision.',
       inputSchema: z.object({
         idempotency_key: idempotency,
         kind: z.enum(['model', 'dataset', 'space']),
@@ -118,6 +118,7 @@ export function createSuperiiWorkMcpServer(
         library: z.string().trim().max(120).optional(),
         modality: z.string().trim().max(120).optional(),
         card_markdown: z.string().max(100_000).default(''),
+        rights_declaration: z.object({ confirmed: z.literal(true), basis: z.enum(['original', 'permission', 'licensed-redistribution']), source_url: z.url().optional() }).strict().optional(),
         source_urls: z.array(z.url().refine((value) => value.startsWith('https://'))).max(50).default([]),
       }).strict(),
       annotations: writeAnnotations,
@@ -138,7 +139,7 @@ export function createSuperiiWorkMcpServer(
             ${input.idempotency_key}, ${requestHash}, ${input.kind}::repository_kind,
             ${input.slug}, ${input.title}, ${input.summary}, ${input.license ?? null},
             ${input.task ?? null}, ${input.library ?? null}, ${input.modality ?? null},
-            ${input.card_markdown}, ${JSON.stringify({ sources: input.source_urls })}::jsonb
+            ${input.card_markdown}, ${JSON.stringify({ sources: input.source_urls, rights_declaration: input.rights_declaration })}::jsonb
           ) as outcome
         `;
         const outcome = rows[0]?.outcome as Record<string, unknown> | undefined;
@@ -151,7 +152,7 @@ export function createSuperiiWorkMcpServer(
           edit_url: new URL(`/repositories/${String(created?.repository_id)}/edit`, origin).toString(),
           public_url: publicHref(origin, input.kind, String(ownerRows[0]?.owner_handle ?? ''), input.slug),
           publication_state: 'draft',
-          human_review_required: true,
+          human_review_required: false,
         });
       } catch {
         return toolError('repository slug is unavailable, access changed, or the idempotency key conflicts');
@@ -163,7 +164,7 @@ export function createSuperiiWorkMcpServer(
     'create_revision',
     {
       title: 'Create a repository revision',
-      description: 'Create the next editable revision on an organization-owned branch. Existing clean files are copied; the new revision remains review-bound.',
+      description: 'Create the next editable revision on an organization-owned branch. Existing clean files are copied; the new revision remains policy-gated.',
       inputSchema: z.object({
         idempotency_key: idempotency,
         repository_id: uuid,
@@ -194,7 +195,7 @@ export function createSuperiiWorkMcpServer(
         return toolResult({
           ...(rows[0]?.outcome as Record<string, unknown>),
           edit_url: new URL(`/repositories/${repository.id}/edit?branch=${encodeURIComponent(repository.branch_id)}`, origin).toString(),
-          human_review_required: true,
+          human_review_required: false,
         });
       } catch {
         return toolError('finish or submit the current editable revision, or use a new idempotency key for a new action');
@@ -350,7 +351,7 @@ export function createSuperiiWorkMcpServer(
             requestSha256: requestHash,
             resultSha256: await jsonSha256(receiptDetail),
             status: 'succeeded',
-            reviewBoundary: 'human-review-required',
+            reviewBoundary: 'automatic-policy',
             detail: receiptDetail,
           });
         } catch {
@@ -381,11 +382,12 @@ export function createSuperiiWorkMcpServer(
     },
   );
 
+  for (const submitTool of ['submit_revision_for_publication', 'submit_revision_for_review']) {
   server.registerTool(
-    'submit_revision_for_review',
+    submitTool,
     {
-      title: 'Submit a clean revision for human review',
-      description: 'Run fail-closed offline inspection and finalization, then place the revision in the human review queue. This tool cannot publish.',
+      title: 'Submit a clean revision for automatic publication',
+      description: 'Run offline inspection and finalize an immutable manifest. The independent policy service automatically publishes passing releases; failed or unknown checks remain blocked. The agent cannot override or sign policy approval.',
       inputSchema: z.object({
         idempotency_key: idempotency,
         repository_id: uuid,
@@ -405,7 +407,7 @@ export function createSuperiiWorkMcpServer(
         const previous = await existingAgentReceipt(sql, authorization.actor, input.idempotency_key, 'revision.submit', requestHash);
         if (previous.conflict) return toolError('idempotency key conflicts with an earlier action');
         if (previous.receipt) return toolResult({ replayed: true, receipt: previous.receipt, ...previous.receipt.detail });
-        if (!runtimeIsConfigured(locals)) return toolError('secure review runtime is unavailable');
+        if (!runtimeIsConfigured(locals)) return toolError('secure publication runtime is unavailable');
         let inspection: Response | null;
         try {
           inspection = await runtimeFetch(locals, `/v1/repositories/${repository.id}/revisions/${repository.revision_id}/inspect`, {
@@ -428,12 +430,13 @@ export function createSuperiiWorkMcpServer(
           return toolError('revision could not be finalized');
         }
         const finalized = await finalize?.json().catch(() => ({})) as Record<string, unknown> | undefined;
-        if (!finalize?.ok) return toolError('revision is not ready for human review', finalized?.detail);
+        if (!finalize?.ok) return toolError('revision could not complete automatic publication', finalized?.detail);
         const detail = {
           repository_id: repository.id,
           revision_id: repository.revision_id,
-          status: 'review',
-          human_review_required: true,
+          status: finalized?.status,
+          decision: finalized?.decision,
+          human_review_required: false,
           edit_url: new URL(`/repositories/${repository.id}/edit`, origin).toString(),
           analysis: inspectionPayload ?? {},
         };
@@ -449,12 +452,12 @@ export function createSuperiiWorkMcpServer(
             requestSha256: requestHash,
             resultSha256: await jsonSha256(detail),
             status: 'succeeded',
-            reviewBoundary: 'human-review-required',
+            reviewBoundary: 'automatic-policy',
             detail,
           });
         } catch {
           return toolError(
-            'submission reached review but its immutable receipt could not be recorded; retry with the same idempotency key',
+            'submission finished policy evaluation but its immutable receipt could not be recorded; retry with the same idempotency key',
             { revision_id: repository.revision_id, retryable: true },
           );
         }
@@ -464,6 +467,7 @@ export function createSuperiiWorkMcpServer(
       }
     },
   );
+  }
 
   server.registerTool(
     'claim_contribution_job',
