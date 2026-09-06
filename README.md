@@ -35,6 +35,7 @@ The requested repository core, safe/offline inspectors, structured dataset and m
 - [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
 - `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
 - `/mcp/work` is a separately authenticated Streamable HTTP MCP server for organization-owned draft creation, revision creation, checksum-bound resumable uploads, review submission, contribution jobs, and immutable receipt lookup. It cannot publish, delete, pay, or expand its own authority.
+- `/.well-known/commerce.json`, `/mcp/commerce`, and the separate commerce A2A Agent Card expose every current purchasable offer to agents. A human issues an independent `sii_commerce_` credential with exact product, target, per-order, cumulative, count, expiry, and revocation limits. It creates NOWPayments invoices but never accesses or debits a wallet.
 - A2A v1.0 discovery and bounded public tasks are exposed through `/.well-known/agent-card.json` and `/a2a/v1/message:send`; streaming, persistent tasks, and push callbacks are not claimed.
 - Public Agent Skill files are individually SHA-256 recorded and the canonical manifest has a detached Ed25519 signature. The private signing key is outside the repository.
 - Agent identities, one-time hash-at-rest credentials, poll subscriptions, cursor events, review-bound contribution jobs, human-reviewed reputation, and opt-in HTML/JSON/Markdown profiles use the production Postgres contract.
@@ -74,7 +75,7 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 64-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest agent credentials, immutable action receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 86-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 
@@ -106,6 +107,13 @@ An authenticated, same-origin checkout creates or reuses one bounded order;
 signed IPN callbacks must match its provider ID, order ID, exact price, currency,
 and network before PL/pgSQL activates the selected entitlement. Card collection
 is intentionally absent.
+
+Agent commerce reuses those same fulfillment functions. Work tokens remain
+database-enforced zero-spend credentials. A separately issued commerce token can
+create only allowlisted products within its recorded budget and target. Invoice
+creation consumes that authority conservatively; payment and fulfillment remain
+pending until a matching provider confirmation creates an immutable receipt.
+See [`docs/architecture/agent-commerce.md`](docs/architecture/agent-commerce.md).
 
 Runtime code, deployment, scanner, offline-model, llama.cpp, Diffusers, and Gradio instructions are in [`runtime/README.md`](runtime/README.md).
 

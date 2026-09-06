@@ -1478,6 +1478,122 @@ export const agentIdentities = app.table(
   ],
 );
 
+export const commerceDelegations = app.table(
+  'commerce_delegations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    agentIdentityId: uuid('agent_identity_id').references(() => agentIdentities.id, { onDelete: 'set null' }),
+    createdByProfileId: uuid('created_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    tokenPrefix: text('token_prefix').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    scopes: text('scopes').array().notNull(),
+    allowedProducts: text('allowed_products').array().notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'cascade' }),
+    maxOrderAmountCents: integer('max_order_amount_cents').notNull(),
+    totalLimitCents: integer('total_limit_cents').notNull(),
+    authorizedAmountCents: integer('authorized_amount_cents').notNull().default(0),
+    maxOrders: integer('max_orders').notNull().default(1),
+    ordersCreated: integer('orders_created').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('commerce_delegations_active_idx').on(table.tokenHash, table.expiresAt),
+    index('commerce_delegations_profile_idx').on(table.profileId, table.createdAt),
+  ],
+);
+
+export const commerceOrders = app.table(
+  'commerce_orders',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    delegationId: uuid('delegation_id').notNull().references(() => commerceDelegations.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    agentIdentityId: uuid('agent_identity_id').references(() => agentIdentities.id, { onDelete: 'set null' }),
+    productId: text('product_id').notNull(),
+    idempotencyKey: text('idempotency_key').notNull(),
+    requestSha256: text('request_sha256').notNull(),
+    orderType: text('order_type').notNull(),
+    paymentOrderId: uuid('payment_order_id').references(() => paymentOrders.id, { onDelete: 'restrict' }).unique(),
+    participationOrderId: uuid('participation_order_id').references(() => participationOrders.id, { onDelete: 'restrict' }).unique(),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'restrict' }),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'restrict' }),
+    unitCount: integer('unit_count').notNull().default(1),
+    priceAmountCents: integer('price_amount_cents').notNull(),
+    priceCurrency: text('price_currency').notNull().default('usd'),
+    payCurrency: text('pay_currency').notNull().default('usdc'),
+    payNetwork: text('pay_network').notNull().default('eth'),
+    providerCreateState: text('provider_create_state').notNull().default('pending'),
+    providerCreateAttempts: integer('provider_create_attempts').notNull().default(0),
+    providerErrorCode: text('provider_error_code'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('commerce_orders_idempotency_idx').on(table.delegationId, table.idempotencyKey),
+    index('commerce_orders_delegation_created_idx').on(table.delegationId, table.createdAt),
+    index('commerce_orders_profile_created_idx').on(table.profileId, table.createdAt),
+  ],
+);
+
+export const commerceReceipts = app.table(
+  'commerce_receipts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    commerceOrderId: uuid('commerce_order_id').notNull().references(() => commerceOrders.id, { onDelete: 'restrict' }).unique(),
+    delegationId: uuid('delegation_id').notNull().references(() => commerceDelegations.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    agentIdentityId: uuid('agent_identity_id').references(() => agentIdentities.id, { onDelete: 'set null' }),
+    productId: text('product_id').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'restrict' }),
+    repositoryId: uuid('repository_id').references(() => repositories.id, { onDelete: 'restrict' }),
+    unitCount: integer('unit_count').notNull(),
+    priceAmountCents: integer('price_amount_cents').notNull(),
+    priceCurrency: text('price_currency').notNull(),
+    payCurrency: text('pay_currency').notNull(),
+    payNetwork: text('pay_network').notNull(),
+    provider: text('provider').notNull(),
+    providerPaymentId: text('provider_payment_id').notNull(),
+    evidenceSha256: text('evidence_sha256').notNull(),
+    paymentFinishedAt: timestamp('payment_finished_at', { withTimezone: true }).notNull(),
+    detail: jsonb('detail').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('commerce_receipts_delegation_idx').on(table.delegationId, table.createdAt),
+    index('commerce_receipts_profile_idx').on(table.profileId, table.createdAt),
+  ],
+);
+
+export const commerceQuoteRequests = app.table(
+  'commerce_quote_requests',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    delegationId: uuid('delegation_id').notNull().references(() => commerceDelegations.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    agentIdentityId: uuid('agent_identity_id').references(() => agentIdentities.id, { onDelete: 'set null' }),
+    idempotencyKey: text('idempotency_key').notNull(),
+    requestSha256: text('request_sha256').notNull(),
+    contactSubmissionId: uuid('contact_submission_id').notNull().references(() => contactSubmissions.id, { onDelete: 'restrict' }),
+    contactName: text('contact_name').notNull(),
+    contactEmail: text('contact_email').notNull(),
+    organizationName: text('organization_name').notNull(),
+    requirements: text('requirements').notNull(),
+    status: text('status').notNull().default('new'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('commerce_quote_requests_idempotency_idx').on(table.delegationId, table.idempotencyKey),
+    index('commerce_quote_requests_profile_idx').on(table.profileId, table.createdAt),
+  ],
+);
+
 export const agentAccessTokens = app.table(
   'agent_access_tokens',
   {

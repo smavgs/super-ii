@@ -1,0 +1,263 @@
+---
+import { commerceProducts } from '@/lib/commerce';
+
+const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$${(cents / 100).toFixed(2)} USD`;
+---
+
+<section class="account-card commerce-workspace" id="commerce" data-commerce-workspace>
+  <div class="repository-section__heading">
+    <div><p class="eyebrow">Agent commerce · USDC on Ethereum</p><h2>Let an agent prepare approved purchases</h2></div>
+    <a class="button button--secondary button--small" href="/agents#commerce-lane">Machine guide</a>
+  </div>
+  <p>Issue a separate, revocable commerce token with exact products, dollars, targets, order count, and expiry. It can create a NOWPayments invoice; it cannot open, sign, or debit any wallet.</p>
+
+  <div class="commerce-boundary" role="note">
+    <span><strong>Separate from Work tokens</strong><code>sii_agent_</code> tokens remain permanently zero-spend.</span>
+    <span><strong>External wallet only</strong>The payer—not Super ii—chooses whether to send USDC on Ethereum.</span>
+    <span><strong>Confirmed fulfillment</strong>Access changes only after a matching signed NOWPayments confirmation.</span>
+  </div>
+
+  <form class="commerce-form" data-commerce-form>
+    <div class="commerce-form__heading"><p class="eyebrow">01 · explicit authority</p><h3>Create a commerce delegation</h3></div>
+    <label>Agent identity <span>(optional)</span><select name="agent_identity_id" data-commerce-agent><option value="">External or unregistered agent</option></select></label>
+
+    <fieldset>
+      <legend>Allowed products</legend>
+      <div class="commerce-products">
+        {commerceProducts.map((product, index) => <label>
+          <input type="checkbox" name="allowed_products" value={product.id} checked={index === 0} />
+          <span><strong>{product.name}</strong><small>{money(product.unitAmountCents)}{product.kind === 'per_unit' ? ` per ${product.unit}` : ''}</small></span>
+        </label>)}
+      </div>
+    </fieldset>
+
+    <div class="form-grid form-grid--two">
+      <label>Target boundary<select name="boundary_type" data-commerce-boundary><option value="any">Any target I manage</option><option value="organization">One organization</option><option value="repository">One repository</option></select></label>
+      <label data-commerce-organization hidden>Organization<select name="organization_id"><option value="">Choose an organization</option></select></label>
+      <label data-commerce-repository hidden>Repository<select name="repository_id"><option value="">Choose a repository</option></select></label>
+    </div>
+
+    <div class="commerce-limits">
+      <label>Maximum per order <span>USD</span><input name="max_order_usd" type="number" min="0.01" max="1000000" step="0.01" value="200.00" required /></label>
+      <label>Total authorized <span>USD</span><input name="total_limit_usd" type="number" min="0.01" max="1000000" step="0.01" value="200.00" required /></label>
+      <label>Maximum orders<input name="max_orders" type="number" min="1" max="1000" value="1" required /></label>
+      <label>Expires after <span>hours</span><input name="expires_in_hours" type="number" min="0.25" max="720" step="0.25" value="24" required /></label>
+    </div>
+    <label class="commerce-confirm"><input type="checkbox" name="confirm" required /> I understand this token can prepare invoices within these limits, but payment still requires an external Ethereum wallet.</label>
+    <button class="button button--dark button--small" type="submit">Issue commerce token</button>
+  </form>
+
+  <section class="commerce-token" data-commerce-token hidden>
+    <p class="eyebrow">Shown once</p>
+    <h3>Copy the token into the agent’s secret store</h3>
+    <p>Do not paste it into prompts, URLs, screenshots, or public configuration.</p>
+    <textarea readonly rows="3" spellcheck="false" data-commerce-token-value></textarea>
+    <div class="button-row"><button class="button button--dark button--small" type="button" data-commerce-copy>Copy token</button><button class="button button--secondary button--small" type="button" data-commerce-clear>Clear</button></div>
+  </section>
+
+  <section class="commerce-connect">
+    <p class="eyebrow">02 · use from any compatible agent</p>
+    <div><span>Commerce MCP</span><code>https://superii.site/mcp/commerce</code></div>
+    <div><span>REST catalog</span><code>https://superii.site/api/commerce/catalog</code></div>
+    <div><span>A2A Agent Card</span><code>https://superii.site/.well-known/commerce-agent-card.json</code></div>
+  </section>
+
+  <section class="commerce-managed">
+    <div class="repository-section__heading"><div><p class="eyebrow">03 · revoke and audit</p><h3>Your delegations</h3></div><button class="text-button" type="button" data-commerce-refresh>Refresh</button></div>
+    <div data-commerce-list><p>Loading commerce delegations…</p></div>
+  </section>
+  <p class="form-status" data-commerce-status aria-live="polite"></p>
+</section>
+
+<script>
+  type Item = Record<string, unknown>;
+  const root = document.querySelector<HTMLElement>('[data-commerce-workspace]');
+  const form = root?.querySelector<HTMLFormElement>('[data-commerce-form]');
+  const status = root?.querySelector<HTMLElement>('[data-commerce-status]');
+  const list = root?.querySelector<HTMLElement>('[data-commerce-list]');
+  const agentSelect = root?.querySelector('[data-commerce-agent]') as unknown as HTMLSelectElement | null;
+  const boundarySelect = root?.querySelector('[data-commerce-boundary]') as unknown as HTMLSelectElement | null;
+  const organizationLabel = root?.querySelector<HTMLElement>('[data-commerce-organization]');
+  const repositoryLabel = root?.querySelector<HTMLElement>('[data-commerce-repository]');
+  const organizationSelect = organizationLabel?.querySelector('select') as unknown as HTMLSelectElement | null;
+  const repositorySelect = repositoryLabel?.querySelector('select') as unknown as HTMLSelectElement | null;
+  const tokenPanel = root?.querySelector<HTMLElement>('[data-commerce-token]');
+  const tokenValue = root?.querySelector<HTMLTextAreaElement>('[data-commerce-token-value]');
+
+  function setStatus(message: string, error = false) {
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = error ? 'error' : 'ok';
+  }
+
+  async function jsonRequest(url: string, init?: RequestInit) {
+    const response = await fetch(url, init);
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) throw new Error(String(body.message ?? body.error ?? 'Request failed.'));
+    return body;
+  }
+
+  function option(select: HTMLSelectElement | null | undefined, value: string, label: string) {
+    if (!select) return;
+    const item = document.createElement('option'); item.value = value; item.textContent = label; select.appendChild(item);
+  }
+
+  async function loadChoices() {
+    const [agentsBody, organizationsBody, repositoriesBody] = await Promise.all([
+      jsonRequest('/api/agents'), jsonRequest('/api/organizations?mine=1'), jsonRequest('/api/repositories'),
+    ]);
+    const agents = Array.isArray(agentsBody.agents) ? agentsBody.agents as Item[] : [];
+    const organizations = Array.isArray(organizationsBody.organizations) ? organizationsBody.organizations as Item[] : [];
+    const repositories = Array.isArray(repositoriesBody.repositories) ? repositoriesBody.repositories as Item[] : [];
+    for (const agent of agents) option(agentSelect, String(agent.id), `@${String(agent.handle)} · ${String(agent.organization_name)}`);
+    for (const organization of organizations) option(organizationSelect, String(organization.id), `${String(organization.full_name ?? organization.name)} (@${String(organization.handle)})`);
+    for (const repository of repositories) option(repositorySelect, String(repository.id), `${String(repository.owner_handle)}/${String(repository.slug)} · ${String(repository.kind)}`);
+  }
+
+  function renderDelegation(item: Item) {
+    const row = document.createElement('article');
+    const copy = document.createElement('div');
+    const title = document.createElement('strong'); title.textContent = String(item.token_prefix);
+    const scope = item.repository_slug
+      ? `${String(item.repository_owner)}/${String(item.repository_slug)}`
+      : item.organization_handle ? `@${String(item.organization_handle)}` : 'any managed target';
+    const meta = document.createElement('small');
+    meta.textContent = `${Number(item.orders_created)}/${Number(item.max_orders)} orders · $${(Number(item.authorized_amount_cents) / 100).toFixed(2)} of $${(Number(item.total_limit_cents) / 100).toFixed(2)} authorized · ${scope} · expires ${new Date(String(item.expires_at)).toLocaleString()}`;
+    const products = document.createElement('p'); products.textContent = Array.isArray(item.allowed_products) ? item.allowed_products.join(' · ') : '';
+    copy.appendChild(title as unknown as Node);
+    copy.appendChild(meta as unknown as Node);
+    copy.appendChild(products as unknown as Node);
+    row.appendChild(copy as unknown as Node);
+    if (item.revoked_at) {
+      const badge = document.createElement('span'); badge.className = 'status-badge'; badge.textContent = 'revoked'; row.appendChild(badge as unknown as Node);
+    } else {
+      const revoke = document.createElement('button'); revoke.type = 'button'; revoke.className = 'text-button'; revoke.textContent = 'Revoke';
+      revoke.addEventListener('click', async () => {
+        revoke.disabled = true;
+        try { await jsonRequest(`/api/commerce/delegations/${String(item.id)}`, { method: 'DELETE' }); setStatus('Commerce delegation revoked.'); await loadDelegations(); }
+        catch (error) { setStatus(error instanceof Error ? error.message : 'Delegation could not be revoked.', true); revoke.disabled = false; }
+      });
+      row.appendChild(revoke as unknown as Node);
+    }
+    return row;
+  }
+
+  async function loadDelegations() {
+    if (!list) return;
+    list.replaceChildren(Object.assign(document.createElement('p'), { textContent: 'Loading commerce delegations…' }));
+    try {
+      const body = await jsonRequest('/api/commerce/delegations');
+      const items = Array.isArray(body.delegations) ? body.delegations as Item[] : [];
+      if (!items.length) { list.replaceChildren(Object.assign(document.createElement('p'), { textContent: 'No commerce delegation yet.' })); return; }
+      const rows = document.createElement('div'); rows.className = 'commerce-delegation-list';
+      items.forEach((item) => rows.appendChild(renderDelegation(item) as unknown as Node)); list.replaceChildren(rows as unknown as Node);
+    } catch (error) {
+      list.replaceChildren(Object.assign(document.createElement('p'), { textContent: error instanceof Error ? error.message : 'Delegations unavailable.' }));
+    }
+  }
+
+  boundarySelect?.addEventListener('change', () => {
+    const value = boundarySelect.value;
+    if (organizationLabel) organizationLabel.hidden = value !== 'organization';
+    if (repositoryLabel) repositoryLabel.hidden = value !== 'repository';
+  });
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const selected = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="allowed_products"]:checked')).map((input) => input.value);
+    if (!selected.length) { setStatus('Choose at least one product.', true); return; }
+    const data = new FormData(form);
+    const perOrder = Math.round(Number(data.get('max_order_usd')) * 100);
+    const total = Math.round(Number(data.get('total_limit_usd')) * 100);
+    const expiryMinutes = Math.round(Number(data.get('expires_in_hours')) * 60);
+    if (!Number.isSafeInteger(perOrder) || !Number.isSafeInteger(total) || perOrder < 1 || total < perOrder) {
+      setStatus('Use exact limits; total authorized must cover the maximum per order.', true); return;
+    }
+    if (submit) submit.disabled = true;
+    try {
+      const boundary = String(data.get('boundary_type'));
+      const body = await jsonRequest('/api/commerce/delegations', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          agent_identity_id: data.get('agent_identity_id') || undefined,
+          allowed_products: selected,
+          organization_id: boundary === 'organization' ? data.get('organization_id') || undefined : undefined,
+          repository_id: boundary === 'repository' ? data.get('repository_id') || undefined : undefined,
+          max_order_amount_cents: perOrder,
+          total_limit_cents: total,
+          max_orders: Number(data.get('max_orders')),
+          expires_in_minutes: expiryMinutes,
+        }),
+      });
+      if (tokenPanel && tokenValue && typeof body.token === 'string') {
+        tokenValue.value = body.token; tokenPanel.hidden = false; tokenPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setStatus('Commerce token created. Copy it now; only its hash is stored.');
+      await loadDelegations();
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Commerce token could not be created.', true); }
+    if (submit) submit.disabled = false;
+  });
+
+  root?.querySelector('[data-commerce-copy]')?.addEventListener('click', async () => {
+    if (!tokenValue?.value) return;
+    try { await navigator.clipboard.writeText(tokenValue.value); setStatus('Commerce token copied. Store it as a secret.'); }
+    catch { tokenValue.select(); setStatus('Clipboard access was blocked; the token is selected.', true); }
+  });
+  root?.querySelector('[data-commerce-clear]')?.addEventListener('click', () => {
+    if (tokenValue) tokenValue.value = ''; if (tokenPanel) tokenPanel.hidden = true; setStatus('One-time token display cleared.');
+  });
+  root?.querySelector('[data-commerce-refresh]')?.addEventListener('click', () => { void loadDelegations(); });
+
+  if (root) Promise.all([loadChoices(), loadDelegations()]).catch(() => setStatus('Some commerce controls could not be loaded.', true));
+</script>
+
+<style>
+  .commerce-workspace { display: grid; gap: 1.4rem; }
+  .commerce-workspace > p { margin: 0; max-width: 76ch; color: var(--muted); }
+  .commerce-boundary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .commerce-boundary span { display: grid; gap: .25rem; padding: 1rem; color: var(--muted); }
+  .commerce-boundary span + span { border-left: 1px solid var(--line); }
+  .commerce-boundary strong { color: var(--ink); }
+  .commerce-boundary code { width: fit-content; }
+  .commerce-form, .commerce-managed { display: grid; gap: 1rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+  .commerce-form__heading h3, .commerce-form__heading p, .commerce-managed h3, .commerce-managed p { margin: 0; }
+  .commerce-form > label, .commerce-limits label { display: grid; gap: .4rem; font-weight: 700; }
+  .commerce-form label > span, .commerce-limits label > span { color: var(--muted); font-weight: 500; }
+  .commerce-form select, .commerce-form input:not([type='checkbox']), .commerce-form textarea { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 12px; padding: .7rem .8rem; background: var(--paper); color: var(--ink); font: inherit; }
+  .commerce-form fieldset { margin: 0; padding: 0; border: 0; }
+  .commerce-form legend { margin-bottom: .65rem; font-weight: 800; }
+  .commerce-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+  .commerce-products label { display: flex; align-items: flex-start; gap: .6rem; padding: .75rem; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+  .commerce-products label:has(input:checked) { border-color: var(--ink); background: color-mix(in srgb, var(--yellow) 22%, var(--surface)); }
+  .commerce-products input { margin-top: .2rem; }
+  .commerce-products span { display: grid; gap: .15rem; }
+  .commerce-products small { color: var(--muted); }
+  .commerce-limits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .7rem; }
+  .commerce-confirm { display: flex !important; align-items: flex-start; gap: .55rem !important; max-width: 78ch; color: var(--muted); font-weight: 600 !important; }
+  .commerce-confirm input { margin-top: .2rem; }
+  .commerce-token { padding: 1.2rem; border-radius: 18px; background: var(--yellow); color: #071a2f; }
+  .commerce-token[hidden] { display: none; }
+  .commerce-token h3, .commerce-token p { margin: 0 0 .55rem; }
+  .commerce-token textarea { width: 100%; resize: none; border: 1px solid rgba(7, 26, 47, .35); border-radius: 12px; padding: .75rem; font: .85rem/1.5 var(--font-mono); overflow-wrap: anywhere; }
+  .commerce-connect { display: grid; gap: .55rem; }
+  .commerce-connect > p { margin: 0 0 .2rem; }
+  .commerce-connect > div { display: grid; grid-template-columns: 10rem minmax(0, 1fr); align-items: center; gap: .7rem; padding: .65rem .8rem; background: #071a2f; color: white; border-radius: 12px; }
+  .commerce-connect code { color: white; overflow-wrap: anywhere; }
+  .commerce-delegation-list { display: grid; gap: .6rem; }
+  .commerce-delegation-list article { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--line); }
+  .commerce-delegation-list article > div { display: grid; gap: .2rem; min-width: 0; }
+  .commerce-delegation-list small, .commerce-delegation-list p { color: var(--muted); overflow-wrap: anywhere; }
+  .commerce-delegation-list p { margin: .15rem 0 0; font-size: .86rem; }
+  .commerce-workspace .form-status[data-state='error'] { color: #b42318; }
+  @media (max-width: 880px) {
+    .commerce-boundary, .commerce-products { grid-template-columns: 1fr; }
+    .commerce-boundary span + span { border-left: 0; border-top: 1px solid var(--line); }
+    .commerce-limits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .commerce-limits { grid-template-columns: 1fr; }
+    .commerce-connect > div { grid-template-columns: 1fr; }
+    .commerce-delegation-list article { flex-direction: column; }
+  }
+</style>

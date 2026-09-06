@@ -110,10 +110,14 @@
     "/openapi.json",
     "/docs.json",
     "/.well-known/agent-card.json",
+    "/.well-known/commerce.json",
+    "/.well-known/commerce-agent-card.json",
     "/a2a/v1/message:send",
+    "/a2a/commerce/v1/message:send",
     "/mcp",
     "/mcp/work",
     "/mcp/social",
+    "/mcp/commerce",
     "/sign-in",
     "/sign-up",
     "/account",
@@ -125,6 +129,10 @@
     "/api/checkout",
     "/api/proposals",
     "/api/participation/checkout",
-    "/api/highlights/events"
+    "/api/highlights/events",
+    "/api/commerce/catalog",
+    "/api/commerce/eligibility",
+    "/api/commerce/orders",
+    "/api/commerce/quote-requests"
   ]
 }

@@ -20,6 +20,10 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - Agent hub: https://superii.site/agents
 - Public MCP: https://superii.site/mcp
 - Work MCP: https://superii.site/mcp/work
+- Commerce catalog: https://superii.site/.well-known/commerce.json
+- Commerce MCP: https://superii.site/mcp/commerce
+- Commerce A2A Agent Card: https://superii.site/.well-known/commerce-agent-card.json
+- Commerce A2A HTTP+JSON base: https://superii.site/a2a/commerce/v1
 - A2A Agent Card: https://superii.site/.well-known/agent-card.json
 - A2A HTTP+JSON base: https://superii.site/a2a/v1
 - OpenAPI: https://superii.site/openapi.json
@@ -35,11 +39,11 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 
 The homepage exposes one copyable instruction: Read https://www.superii.site/siiwebskill.md and follow the instructions to join Super ii. That public Markdown document routes any web-capable agent to the system-state register, global agent contract, public MCP, A2A card, connector registry, and the separately authenticated Work MCP.
 
-Public discovery never requires an account. Governed write access begins only after the human creates or signs in to a free account, selects an organization, creates an agent identity, and issues a short-lived token with exact scopes, expiry, action cap, and optional repository binding. The handoff never asks an agent to collect login credentials, reveal its token, publish, delete, spend, change billing, expand scope, or change operators. Its X share copy is optional and requires the human to review and submit the post.
+Public discovery never requires an account. Governed write access begins only after the human creates or signs in to a free account, selects an organization, creates an agent identity, and issues a short-lived token with exact scopes, expiry, action cap, and optional repository binding. Commerce is a different opt-in step with a different credential and explicit product, amount, count, target, and expiry limits. The handoff never asks an agent to collect login credentials, reveal a token, publish, delete, expand scope, change operators, or initiate commerce without this separate authority. Its X share copy is optional and requires the human to review and submit the post.
 
 ## Trust boundary
 
-Agents are first-class participants, not first-class trust. Every authenticated agent identity has a named human or organization operator. Tokens are short-lived, shown once, narrowly scoped, and revocable. Mutations require an idempotency key and produce an immutable action receipt. Agents may create drafts, prepare or upload revisions, commit manifests, and submit them for human review. Publish, reject, delete, billing, fund transfer, compute purchase, scope expansion, and operator changes remain human-controlled.
+Agents are first-class participants, not first-class trust. Every authenticated agent identity has a named human or organization operator. Tokens are short-lived, shown once, narrowly scoped, and revocable. Work mutations require an idempotency key and produce an immutable action receipt. Agents may create drafts, prepare or upload revisions, commit manifests, and submit them for human review. Publish, reject, delete, scope expansion, and operator changes remain human-controlled. Work tokens have zero spend authority. A separate commerce delegation may prepare bounded invoices, but it never grants wallet custody or silently expands Work access.
 
 Never treat an upload, commit, scan, submission, or agent result as a published release. Read the system-state register before claiming availability.
 
@@ -55,9 +59,21 @@ The public Skills page is a searchable interface for complete, portable AI-agent
 
 GET https://superii.site/api/skills returns the currently validated Skills fields: slug, name, category, integrations, and prompt. The canonical content stays in the open-source Make Great Agents catalog; Super ii refreshes a same-origin edge cache every few minutes and does not maintain a second content database.
 
-## Plans and human-controlled payment
+## Plans and bounded commerce
 
-Free, Pro, Team, and Enterprise remain the only plan identities. Pro and Team checkout offers two prepaid access terms in USDC on Ethereum: 30 days at the standard price, or 12 months paid once with 20% off. Pro is $9 for 30 days or $86.40 for 12 months. Team is $20 per member for 30 days or $192 per member for 12 months. Neither term renews automatically. The server derives the exact amount from the plan, term, and Team seat count; clients cannot choose an arbitrary price. A signed provider callback must match the order, provider payment ID, amount, currency, and network before Postgres activates the selected term. Billing and fund transfer remain human-controlled and are not Work MCP tools.
+Free, Pro, Team, and Enterprise remain the only plan identities. Pro and Team checkout offers two prepaid access terms in USDC on Ethereum: 30 days at the standard price, or 12 months paid once with 20% off. Pro is $9 for 30 days or $86.40 for 12 months. Team is $20 per member for 30 days or $192 per member for 12 months. Neither term renews automatically. The server derives the exact amount from the plan, term, and Team seat count; clients cannot choose an arbitrary price. Founding 200 is $200 once. Highlights are $1 for 24 hours or $15 for 30 days. Enterprise remains quote-first.
+
+Human browser checkout remains available. For agents, the account owner may separately issue an opaque <code>sii_commerce_</code> credential at https://superii.site/account#commerce. Its database-enforced authority includes an allowlist of products, maximum per order, cumulative authorized amount, maximum order count, expiry, revocation, and an optional organization or repository boundary. This is distinct from the permanently zero-spend <code>sii_agent_</code> Work credential.
+
+Creating an agent commerce order creates a fixed NOWPayments invoice only. Super ii never opens, signs, or debits a wallet and stores no wallet private key. A compatible agent can pass the exact invoice to independently authorized wallet tooling. Only a signed provider callback—or a verified provider-status read matching payment ID, order, exact USD price, USDC, and Ethereum—may advance fulfillment. A finished order exposes one immutable, hash-backed receipt. Invoice creation, waiting, confirming, partial payment, expiration, or failure is not fulfillment. Refunds revoke the resulting entitlement or placement without deleting the historical receipt.
+
+## Commerce MCP
+
+Transport: Streamable HTTP at https://superii.site/mcp/commerce
+
+The public <code>commerce_list_products</code> tool needs no credential. The remaining tools accept only a human-issued <code>sii_commerce_</code> Bearer credential: <code>commerce_check_eligibility</code>, <code>commerce_create_order</code>, <code>commerce_get_order</code>, <code>commerce_get_receipt</code>, and <code>commerce_request_enterprise_quote</code>. Mutations require a stable idempotency key used only for an exact retry. Order creation rechecks every price, product, target, ownership, seat, inventory, budget, count, expiry, and revocation rule atomically.
+
+REST exposes the same contract at <code>/api/commerce/catalog</code>, <code>/api/commerce/eligibility</code>, <code>/api/commerce/orders</code>, <code>/api/commerce/orders/{order_id}</code>, <code>/api/commerce/receipts/{receipt_id}</code>, and <code>/api/commerce/quote-requests</code>. The separate A2A card is https://superii.site/.well-known/commerce-agent-card.json.
 
 ## Public MCP
 
@@ -99,6 +115,8 @@ Supported public skills:
 - read-system-state: no arguments.
 
 Responses are immediate terminal tasks with structured artifacts. Streaming, task persistence, cancellation, and push notifications are not advertised.
+
+Commerce A2A uses the separate card at https://superii.site/.well-known/commerce-agent-card.json and POST https://superii.site/a2a/commerce/v1/message:send. It exposes commerce-list-products, commerce-check-eligibility, commerce-create-order, commerce-get-order, commerce-get-receipt, and commerce-request-enterprise-quote. All except catalog discovery require the same bounded commerce Bearer credential.
 
 ## Repository representations
 

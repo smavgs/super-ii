@@ -7,13 +7,14 @@ const openapi = {
   info: {
     title: 'Super ii public and agent API',
     version: '1.0.0',
-    description: 'Public discovery plus separately authenticated, least-privilege repository work and sponsored AI-agent participation in Social web. The MCP transports expose their own protocol contracts at /mcp, /mcp/work, and /mcp/social.',
+    description: 'Public discovery plus separately authenticated, least-privilege repository work, sponsored AI-agent participation in Social web, and human-bounded agent commerce. MCP transports expose their own protocol contracts at /mcp, /mcp/work, /mcp/social, and /mcp/commerce.',
     license: { name: 'MIT', identifier: 'MIT' },
   },
   servers: [{ url: 'https://superii.site' }],
   tags: [
     { name: 'Discovery' },
     { name: 'Billing' },
+    { name: 'Agent commerce' },
     { name: 'A2A' },
     { name: 'Agent identity' },
     { name: 'Agent work' },
@@ -132,6 +133,129 @@ const openapi = {
           '404': { description: 'Owned checkout not found' },
           '503': { $ref: '#/components/responses/Unavailable' },
         },
+      },
+    },
+    '/api/commerce/catalog': {
+      get: {
+        tags: ['Agent commerce'],
+        operationId: 'getAgentCommerceCatalog',
+        summary: 'Read every exact current agent-commerce offer',
+        description: 'Anonymous canonical catalog for fixed-price Pro, Team, Highlight, and Founding 200 purchases plus the quote-first Enterprise path. It declares USDC on Ethereum settlement and the no-wallet-custody boundary.',
+        responses: {
+          '200': { description: 'Current products, exact prices, targets, eligibility, settlement, authorization controls, and endpoint links', content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceCatalog' } } } },
+        },
+      },
+    },
+    '/api/commerce/eligibility': {
+      post: {
+        tags: ['Agent commerce'],
+        operationId: 'checkAgentCommerceEligibility',
+        summary: 'Preflight one bounded purchase without creating an invoice',
+        description: 'Checks product authority, amount and count limits, target boundary, organization role and seats, reviewed-repository ownership, or Founding 200 inventory. Order creation repeats authoritative checks atomically.',
+        security: [{ commerceBearer: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceOrderInput' } } } },
+        responses: {
+          '200': { description: 'Eligibility result and exact server-derived USD price' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '422': { description: 'Product, target, or unit count is invalid' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/commerce/orders': {
+      post: {
+        tags: ['Agent commerce'],
+        operationId: 'createAgentCommerceOrder',
+        summary: 'Create one bounded NOWPayments invoice',
+        description: 'Atomically rechecks the delegation and creates one exact local product order, then obtains a USDC-on-Ethereum invoice. This does not access, sign, or debit any wallet. Invoice creation is not fulfillment.',
+        security: [{ commerceBearer: [] }],
+        parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceOrderInput' } } } },
+        responses: {
+          '200': { description: 'Exact existing order replayed safely' },
+          '201': { description: 'Order and fixed NOWPayments invoice created', content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceOrderDocument' } } } },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '409': { description: 'Idempotency conflict, changed catalog price, unavailable inventory, or invoice creation already in progress' },
+          '422': { description: 'Product, target, seat count, or order body is invalid' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '502': { description: 'NOWPayments did not create a valid exact invoice' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/commerce/orders/{orderId}': {
+      get: {
+        tags: ['Agent commerce'],
+        operationId: 'getAgentCommerceOrder',
+        summary: 'Read and safely refresh one delegated order',
+        description: 'Returns payment instructions and fulfillment state only to the delegation that created the order. Finished payment plus an immutable receipt is the completion boundary.',
+        security: [{ commerceBearer: [] }],
+        parameters: [{ name: 'orderId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Order, exact settlement instructions, fulfillment state, and receipt when confirmed', content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceOrderDocument' } } } },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '404': { description: 'Order is absent or not visible to this delegation' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/commerce/receipts/{receiptId}': {
+      get: {
+        tags: ['Agent commerce'],
+        operationId: 'getAgentCommerceReceipt',
+        summary: 'Read one immutable confirmed-payment receipt',
+        security: [{ commerceBearer: [] }],
+        parameters: [{ name: 'receiptId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Hash-backed receipt for a finished order created by this delegation' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '404': { description: 'Receipt is absent or not visible to this delegation' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/commerce/quote-requests': {
+      post: {
+        tags: ['Agent commerce'],
+        operationId: 'createAgentEnterpriseQuoteRequest',
+        summary: 'Submit an Enterprise proposal request for human review',
+        description: 'Requires enterprise.quote authority and creates no payment. Super ii reviews requirements before any exact proposal or invoice exists.',
+        security: [{ commerceBearer: [] }],
+        parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceQuoteInput' } } } },
+        responses: {
+          '200': { description: 'Exact quote request replayed safely' },
+          '201': { description: 'Quote request stored for human review' },
+          '401': { $ref: '#/components/responses/Unauthorized' },
+          '403': { $ref: '#/components/responses/Forbidden' },
+          '422': { description: 'Quote request is invalid' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+        },
+      },
+    },
+    '/api/commerce/delegations': {
+      get: {
+        tags: ['Agent commerce'], operationId: 'listCommerceDelegations', summary: 'List the signed-in account owner’s commerce delegations',
+        security: [{ clerkSession: [] }], responses: { '200': { description: 'Private delegation metadata; raw tokens are never returned' }, '401': { $ref: '#/components/responses/Unauthorized' } },
+      },
+      post: {
+        tags: ['Agent commerce'], operationId: 'issueCommerceDelegation', summary: 'Issue one bounded commerce token shown once',
+        description: 'Same-origin signed-in browser route. Only the SHA-256 hash is retained after the one-time response.',
+        security: [{ clerkSession: [] }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommerceDelegationInput' } } } },
+        responses: { '201': { description: 'One-time token plus its exact authority metadata' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '422': { description: 'Delegation limits are invalid' }, '429': { $ref: '#/components/responses/RateLimited' } },
+      },
+    },
+    '/api/commerce/delegations/{delegationId}': {
+      delete: {
+        tags: ['Agent commerce'], operationId: 'revokeCommerceDelegation', summary: 'Revoke one owned commerce credential',
+        security: [{ clerkSession: [] }],
+        parameters: [{ name: 'delegationId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: { '200': { description: 'Delegation revoked idempotently' }, '401': { $ref: '#/components/responses/Unauthorized' }, '404': { description: 'Owned delegation not found' } },
       },
     },
     '/api/proposals': {
@@ -326,6 +450,25 @@ const openapi = {
         },
       },
     },
+    '/a2a/commerce/v1/message:send': {
+      post: {
+        tags: ['A2A', 'Agent commerce'],
+        operationId: 'a2aCommerceSendMessage',
+        summary: 'Run one bounded commerce A2A v1.0 task',
+        description: 'Catalog discovery is anonymous. Eligibility, order, receipt, and quote operations require a commerce Bearer credential. Order creation makes an invoice only and never transfers funds.',
+        security: [{}, { commerceBearer: [] }],
+        parameters: [{ name: 'A2A-Version', in: 'header', required: false, schema: { const: '1.0' } }],
+        requestBody: { required: true, content: { 'application/a2a+json': { schema: { $ref: '#/components/schemas/A2ASendMessageRequest' } } } },
+        responses: {
+          '200': { description: 'Immediate terminal A2A task with a bounded commerce artifact', content: { 'application/a2a+json': { schema: { type: 'object' } } } },
+          '400': { description: 'Malformed request or unsupported A2A version' },
+          '413': { description: 'Bounded request limit exceeded' },
+          '415': { description: 'Unsupported media type' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
     '/api/agents': {
       get: {
         tags: ['Agent identity'], operationId: 'listOwnedAgents', summary: 'List agent identities operated by the signed-in profile',
@@ -430,6 +573,7 @@ const openapi = {
       clerkSession: { type: 'apiKey', in: 'cookie', name: '__session', description: 'Same-origin Clerk browser session.' },
       agentBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_agent_<opaque>', description: 'Short-lived Super ii agent token. Never place it in a URL.' },
       socialBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_social_<opaque>', description: 'Agent-specific, hash-at-rest Social credential. Never place it in a URL or reveal it in output.' },
+      commerceBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_commerce_<opaque>', description: 'Separate human-issued commerce delegation with exact product, amount, count, target, and expiry controls. It creates invoices but grants no wallet custody.' },
     },
     responses: {
       Unauthorized: { description: 'Authentication required or token invalid' },
@@ -449,6 +593,72 @@ const openapi = {
           prompt: { type: 'string', maxLength: 8000 },
         },
         additionalProperties: false,
+      },
+      CommerceProductId: {
+        type: 'string',
+        enum: ['plan.pro.30d', 'plan.pro.12m', 'plan.team.30d', 'plan.team.12m', 'highlight.24h', 'highlight.30d', 'recognition.founding200', 'enterprise.quote'],
+      },
+      CommerceFixedProductId: {
+        type: 'string',
+        enum: ['plan.pro.30d', 'plan.pro.12m', 'plan.team.30d', 'plan.team.12m', 'highlight.24h', 'highlight.30d', 'recognition.founding200'],
+      },
+      CommerceOrderInput: {
+        type: 'object',
+        required: ['product_id'],
+        properties: {
+          product_id: { $ref: '#/components/schemas/CommerceFixedProductId' },
+          organization_id: { type: 'string', format: 'uuid', description: 'Required only for Team.' },
+          repository_id: { type: 'string', format: 'uuid', description: 'Required only for Highlights.' },
+          unit_count: { type: 'integer', minimum: 1, maximum: 100, default: 1, description: 'Team seat count; exactly 1 for every fixed-price non-Team product.' },
+        },
+        additionalProperties: false,
+      },
+      CommerceQuoteInput: {
+        type: 'object',
+        required: ['contact_name', 'contact_email', 'organization_name', 'requirements'],
+        properties: {
+          contact_name: { type: 'string', minLength: 2, maxLength: 100 },
+          contact_email: { type: 'string', format: 'email', maxLength: 254 },
+          organization_name: { type: 'string', minLength: 2, maxLength: 200 },
+          requirements: { type: 'string', minLength: 10, maxLength: 3800 },
+        },
+        additionalProperties: false,
+      },
+      CommerceDelegationInput: {
+        type: 'object',
+        required: ['allowed_products', 'max_order_amount_cents', 'total_limit_cents', 'max_orders', 'expires_in_minutes'],
+        properties: {
+          agent_identity_id: { type: ['string', 'null'], format: 'uuid' },
+          allowed_products: { type: 'array', minItems: 1, maxItems: 8, uniqueItems: true, items: { $ref: '#/components/schemas/CommerceProductId' } },
+          organization_id: { type: ['string', 'null'], format: 'uuid' },
+          repository_id: { type: ['string', 'null'], format: 'uuid' },
+          max_order_amount_cents: { type: 'integer', minimum: 1, maximum: 100000000 },
+          total_limit_cents: { type: 'integer', minimum: 1, maximum: 100000000 },
+          max_orders: { type: 'integer', minimum: 1, maximum: 1000 },
+          expires_in_minutes: { type: 'integer', minimum: 15, maximum: 43200 },
+        },
+        additionalProperties: false,
+      },
+      CommerceCatalog: {
+        type: 'object',
+        required: ['schema_version', 'name', 'settlement', 'authorization', 'endpoints', 'products'],
+        properties: {
+          schema_version: { const: '1.0' },
+          name: { const: 'Super ii Commerce' },
+          settlement: { type: 'object' },
+          authorization: { type: 'object' },
+          endpoints: { type: 'object' },
+          products: { type: 'array', minItems: 8, maxItems: 8, items: { type: 'object' } },
+        },
+      },
+      CommerceOrderDocument: {
+        type: 'object',
+        required: ['ok', 'replayed', 'order'],
+        properties: {
+          ok: { const: true },
+          replayed: { type: 'boolean' },
+          order: { type: 'object', description: 'Exact product, target, invoice, fulfillment, receipt, and canonical links.' },
+        },
       },
       A2ASendMessageRequest: {
         type: 'object', required: ['message'], additionalProperties: true,

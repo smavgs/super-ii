@@ -180,6 +180,11 @@ function stateFor(execution: A2AExecution): string {
 export function a2aTaskResponse(
   execution: A2AExecution,
   requestMessage: z.infer<typeof a2aMessageRequestSchema>['message'],
+  presentation: {
+    artifactDescription?: string;
+    artifactMetadata?: Record<string, unknown>;
+    taskMetadata?: Record<string, unknown>;
+  } = {},
 ) {
   const taskId = crypto.randomUUID();
   const contextId = requestMessage.contextId ?? crypto.randomUUID();
@@ -217,12 +222,12 @@ export function a2aTaskResponse(
       artifacts: [{
         artifactId: crypto.randomUUID(),
         name: execution.skillId,
-        description: 'Bounded read-only result from reviewed public Super ii data.',
+        description: presentation.artifactDescription ?? 'Bounded read-only result from reviewed public Super ii data.',
         parts: [{ data: execution.output, mediaType: 'application/json' }],
-        metadata: { readOnly: true, executedRepositoryCode: false },
+        metadata: presentation.artifactMetadata ?? { readOnly: true, executedRepositoryCode: false },
       }],
       history: [requestMessage],
-      metadata: { skillId: execution.skillId, public: true, readOnly: true },
+      metadata: presentation.taskMetadata ?? { skillId: execution.skillId, public: true, readOnly: true },
     },
   };
 }

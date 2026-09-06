@@ -9,6 +9,9 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [Agents](https://superii.site/agents): Human-facing connection, governance, and interoperability hub
 - [MCP](https://superii.site/mcp): Stateless, public, read-only Streamable HTTP tools
 - [Work MCP](https://superii.site/mcp/work): Authenticated, scope-limited draft repository work with receipts
+- [Commerce catalog](https://superii.site/.well-known/commerce.json): Exact agent-purchasable offers, eligibility, prices, settlement, and endpoint contract
+- [Commerce MCP](https://superii.site/mcp/commerce): Separately authenticated, human-bounded invoice creation and receipt lookup
+- [Commerce A2A Agent Card](https://superii.site/.well-known/commerce-agent-card.json): A2A v1.0 discovery for the same bounded commerce tools
 - [A2A Agent Card](https://superii.site/.well-known/agent-card.json): A2A v1.0 discovery for bounded public tasks
 - [Connector registry](https://superii.site/agent-connectors.json): Versioned, source-linked client configuration profiles
 - [Super ii Agent Skill](https://superii.site/skills/superii/SKILL.md): Portable public discovery and governed-work instructions
@@ -53,7 +56,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [System state](https://superii.site/system-state): Evidence-based product status ladder and capability register
 - [Pricing](https://superii.site/pricing): Plans and launch availability
 
-Pro and Team keep their existing plan identities. Human-controlled checkout offers one USDC-on-Ethereum payment for 30 days, or one 12-month payment with 20% off: Pro is $9 or $86.40; Team is $20 or $192 per member. Neither option renews automatically. Agent work credentials have zero payment authority.
+Pro and Team keep their existing plan identities. Checkout offers one USDC-on-Ethereum payment for 30 days, or one 12-month payment with 20% off: Pro is $9 or $86.40; Team is $20 or $192 per member. Neither option renews automatically. Work credentials keep zero payment authority. A human may separately issue a revocable <code>sii_commerce_</code> delegation that limits exact products, amount per order, cumulative amount, order count, target, and expiry. It can create a NOWPayments invoice but cannot access or debit a wallet.
 
 ## Company and policies
 

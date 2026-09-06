@@ -111,13 +111,18 @@ function parsePayment(value: unknown): NowPayment {
     updated_at: payment.updated_at,
   };
   if ((typeof parsed.payment_id !== 'string' && typeof parsed.payment_id !== 'number')
+    || !String(parsed.payment_id).trim()
     || typeof parsed.payment_status !== 'string'
     || typeof parsed.pay_address !== 'string'
     || !parsed.pay_address
     || !Number.isFinite(parsed.price_amount)
+    || parsed.price_amount <= 0
     || !Number.isFinite(parsed.pay_amount)
+    || parsed.pay_amount <= 0
     || typeof parsed.price_currency !== 'string'
-    || typeof parsed.pay_currency !== 'string') {
+    || !parsed.price_currency.trim()
+    || typeof parsed.pay_currency !== 'string'
+    || !parsed.pay_currency.trim()) {
     throw new Error('NOWPayments returned an incomplete payment.');
   }
   return parsed as NowPayment;

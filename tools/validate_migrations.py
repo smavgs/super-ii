@@ -93,6 +93,10 @@ REQUIRED_TABLES = {
     "fame_slots",
     "highlight_campaigns",
     "highlight_events",
+    "commerce_delegations",
+    "commerce_orders",
+    "commerce_receipts",
+    "commerce_quote_requests",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -226,6 +230,40 @@ def main() -> int:
         errors.append("Highlights require reviewed ownership checks and equal rotation")
     if "record_highlight_event" not in lower or "rotation_count" not in lower:
         errors.append("Highlights require isolated attribution and creator statistics")
+    if "create_commerce_delegation" not in lower or "^sii_commerce_" not in lower:
+        errors.append("agent commerce requires a separate hash-at-rest delegation credential")
+    if "create_agent_commerce_order" not in lower or "commerce_delegation_limit_exceeded" not in lower:
+        errors.append("agent commerce orders require atomic product, budget, count, target, and expiry enforcement")
+    if "authorized_amount_cents + p_price_amount_cents" not in lower or "orders_created >= delegation.max_orders" not in lower:
+        errors.append("agent commerce authority must fail closed on cumulative spend and order count")
+    if "commerce_orders_underlying_shape" not in lower or "commerce_orders_product_shape" not in lower:
+        errors.append("agent commerce orders must map exact products to one existing fulfillment rail")
+    if "pay_currency text not null default 'usdc' check (pay_currency = 'usdc')" not in lower \
+            or "pay_network text not null default 'eth' check (pay_network = 'eth')" not in lower:
+        errors.append("agent commerce must stay fixed to USDC on Ethereum")
+    if "capture_commerce_payment_status" not in lower or "commerce_receipts_immutable" not in lower:
+        errors.append("confirmed agent purchases require immutable hash-backed receipts")
+    if "create_commerce_quote_request" not in lower or "'enterprise.quote'" not in lower:
+        errors.append("Enterprise agent commerce requires an idempotent human-reviewed proposal path")
+    for commerce_scope in (
+        "commerce:orders:create",
+        "commerce:orders:read",
+        "commerce:receipts:read",
+    ):
+        if f"'{commerce_scope}'" not in lower:
+            errors.append(f"Agent commerce scope is missing: {commerce_scope}")
+    for commerce_product in (
+        "plan.pro.30d",
+        "plan.pro.12m",
+        "plan.team.30d",
+        "plan.team.12m",
+        "highlight.24h",
+        "highlight.30d",
+        "recognition.founding200",
+        "enterprise.quote",
+    ):
+        if f"'{commerce_product}'" not in lower:
+            errors.append(f"Agent commerce product is missing: {commerce_product}")
     for social_scope in (
         "social.read",
         "social.post",
@@ -250,8 +288,8 @@ def main() -> int:
     expected_relations = len(created) + len(views)
     migration_runner = (ROOT / "tools" / "apply_migrations.py").read_text(encoding="utf-8")
     postgres_test = (ROOT / "scripts" / "test-postgres.sh").read_text(encoding="utf-8")
-    if f"table_count != {expected_relations}" not in migration_runner:
-        errors.append("production migration verification count is stale")
+    if f"relation_count < {expected_relations}" not in migration_runner:
+        errors.append("production migration minimum relation count is stale")
     if f'"$counts" != "{expected_relations}:0"' not in postgres_test:
         errors.append("PostgreSQL integration relation count is stale")
 

@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import { UUID_PATTERN } from '@/lib/agent-management';
+import { readBoundedJsonObject } from '@/lib/bounded-json';
 import { sqlClient } from '@/lib/db';
 import {
   isUsdcEthereumRoute,
@@ -8,18 +10,9 @@ import {
 } from '@/lib/nowpayments';
 
 export const POST: APIRoute = async ({ locals, request }) => {
-  const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
-  if (!contentType.startsWith('application/json')) {
-    return Response.json({ error: 'JSON required' }, { status: 415 });
-  }
-  const raw = await request.text();
-  if (raw.length > 100_000) return Response.json({ error: 'payload too large' }, { status: 413 });
-  let payload: Record<string, unknown>;
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    return Response.json({ error: 'invalid JSON' }, { status: 400 });
-  }
+  const body = await readBoundedJsonObject(request, 100_000);
+  if (!body.ok) return Response.json({ error: body.error }, { status: body.status });
+  const payload = body.value;
   if (!await verifyNowPaymentsIpn(locals, payload, request.headers.get('x-nowpayments-sig'))) {
     return Response.json({ error: 'invalid signature' }, { status: 401 });
   }
@@ -36,9 +29,11 @@ export const POST: APIRoute = async ({ locals, request }) => {
       : '';
   const priceAmount = Number(payload.price_amount);
   if ((typeof providerPaymentId !== 'string' && typeof providerPaymentId !== 'number')
+    || !String(providerPaymentId).trim()
     || !validPaymentStatus(status)
-    || !/^[0-9a-f-]{36}$/i.test(orderId)
+    || !UUID_PATTERN.test(orderId)
     || !Number.isFinite(priceAmount)
+    || priceAmount <= 0
     || typeof payload.price_currency !== 'string'
     || payload.price_currency.toLowerCase() !== 'usd'
     || !isUsdcEthereumRoute(payload)) {
@@ -66,8 +61,8 @@ export const POST: APIRoute = async ({ locals, request }) => {
       || String(order.price_currency).toLowerCase() !== 'usd'
       || String(order.pay_currency).toLowerCase() !== 'usdc'
       || String(order.pay_network).toLowerCase() !== 'eth'
-      || (order.provider_payment_id
-        && String(order.provider_payment_id) !== String(providerPaymentId))) {
+      || !order.provider_payment_id
+      || String(order.provider_payment_id) !== String(providerPaymentId)) {
       return Response.json({ error: 'payment does not match checkout' }, { status: 409 });
     }
     const rows = participationOrder

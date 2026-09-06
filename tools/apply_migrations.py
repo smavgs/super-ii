@@ -78,14 +78,37 @@ def main() -> int:
                 select
                   (select count(*)::integer from information_schema.tables where table_schema = 'app'),
                   (select count(*)::integer from app.repositories),
-                  (select count(*)::integer from app.search_public_repositories(null))
+                  (select count(*)::integer from app.search_public_repositories(null)),
+                  to_regclass('app.commerce_delegations') is not null,
+                  to_regclass('app.commerce_orders') is not null,
+                  to_regclass('app.commerce_receipts') is not null,
+                  to_regclass('app.commerce_quote_requests') is not null
                 """
             )
-            table_count, repository_count, public_count = cursor.fetchone()
-            if table_count != 83:
-                raise RuntimeError(f"unexpected app table count after migration: {table_count}")
+            (
+                relation_count,
+                repository_count,
+                public_count,
+                has_commerce_delegations,
+                has_commerce_orders,
+                has_commerce_receipts,
+                has_commerce_quotes,
+            ) = cursor.fetchone()
+            if relation_count < 87:
+                raise RuntimeError(
+                    f"too few app relations after migration: {relation_count}"
+                )
+            if not all(
+                (
+                    has_commerce_delegations,
+                    has_commerce_orders,
+                    has_commerce_receipts,
+                    has_commerce_quotes,
+                )
+            ):
+                raise RuntimeError("agent commerce relations are incomplete")
             print(
-                f"Verified: app_tables={table_count}, repositories={repository_count}, "
+                f"Verified: app_relations={relation_count}, repositories={repository_count}, "
                 f"public_search_rows={public_count}"
             )
     return 0
