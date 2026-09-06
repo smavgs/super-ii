@@ -140,7 +140,7 @@ superii plan owner/model`}</code></pre>
       <p>Model inspection derives conservative architecture, quantization, tensor format, model size, estimated minimum RAM and VRAM, accelerator support, llama.cpp support, MLX signals, and browser compatibility without loading model weights. A repository may provide a bounded <code>superii-compatibility.json</code> declaration with evidence URLs. Declared and derived records remain visibly distinct from verified benchmarks.</p>
 
       <h2 id="trusted-publishing">Trusted publishing</h2>
-      <p>Repository owners can bind an exact GitHub Actions OIDC subject and optional workflow ref. Super ii verifies GitHub’s live signing keys, issuer, audience, subject, repository, workflow, and short token lifetime before issuing an opaque repository-bound access token for no more than 10 minutes. Tokens are hashed at rest, scope-limited, revocable, and never replace the human publication review.</p>
+      <p>Repository owners can bind an exact GitHub Actions OIDC subject and optional workflow ref. Super ii verifies GitHub’s live signing keys, issuer, audience, subject, repository, workflow, and short token lifetime before issuing an opaque repository-bound access token for no more than 10 minutes. Tokens are hashed at rest, scope-limited, revocable, and cannot override the independent automatic publication policy.</p>
 
       <h2 id="capability-status">Current availability</h2>
       <p>Super ii features can depend on different services and runtime components. For the current status of each capability, see System state.</p>

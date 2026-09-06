@@ -19,11 +19,12 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
     if (!repository || !await canReadSdkRepository(locals, request, sql, {
       id: String(repository.id), visibility: String(repository.visibility), status: String(repository.status),
     })) return Response.json({ error: 'repository unavailable' }, { status: 404 });
+    const latestId = repository.latest_revision_id ? String(repository.latest_revision_id) : null;
     const releases = await sql`
       select id, commit_sha, manifest_sha256, total_size_bytes, sequence, published_at
       from app.repository_revisions where repository_id = ${String(repository.id)}::uuid
         and status = 'published'
-        and ((${requested}::text is null and id = ${String(repository.latest_revision_id)}::uuid)
+        and ((${requested}::text is null and id = ${latestId}::uuid)
           or commit_sha = ${requested}) limit 1
     `;
     const revision = releases[0];
@@ -39,13 +40,17 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
           order by d.created_at desc limit 1`,
     ]);
     const origin = new URL(request.url).origin;
+    const publication = decisions[0] ?? null;
+    const publishedEvidence = publication
+      ? (JSON.parse(String(publication.payload)) as { evidence?: { license?: string; provenance?: unknown } }).evidence
+      : null;
     return Response.json({
       schema: 'https://superii.site/schemas/sdk-manifest-v1.json',
       repository: { id: repository.id, kind: 'model', owner: repository.owner_handle,
-        slug: repository.slug, title: repository.title, license: repository.license,
+        slug: repository.slug, title: repository.title, license: publishedEvidence?.license ?? repository.license,
         visibility: repository.visibility },
-      revision, provenance: repository.provenance, compatibility: compatibility[0] ?? null,
-      publication: decisions[0] ?? null,
+      revision, provenance: publishedEvidence?.provenance ?? repository.provenance, compatibility: compatibility[0] ?? null,
+      publication,
       files: files.map(({ id, ...file }) => ({ ...file,
         download_url: `${origin}/api/repositories/${repository.id}/files/${id}`,
       })),

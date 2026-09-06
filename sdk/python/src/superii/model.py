@@ -79,7 +79,6 @@ class Model:
                 self._model, self._tokenizer = load(
                     path,
                     tokenizer_config={"trust_remote_code": False, "local_files_only": True},
-                    trust_remote_code=False,
                     lazy=lazy_weights,
                 )
             elif selected.runtime == "transformers":
@@ -204,7 +203,13 @@ class Model:
     ) -> Iterator[str]:
         if self._closed:
             raise SuperiiError("Model is closed")
-        if not isinstance(prompt, str) or not 1 <= max_tokens <= 8192 or not 0 <= temperature <= 2:
+        if (
+            not isinstance(prompt, str)
+            or type(max_tokens) is not int
+            or type(temperature) not in {int, float}
+            or not 1 <= max_tokens <= 8192
+            or not 0 <= temperature <= 2
+        ):
             raise ValueError("Prompt must be text; max_tokens 1–8192; temperature 0–2")
         if len(prompt.encode()) > 1024**2:
             raise ValueError("Prompt exceeds 1 MiB")

@@ -45,7 +45,9 @@ Public discovery never requires an account. Governed write access begins only af
 
 Agents are first-class participants, not first-class trust. Every authenticated agent identity has a named human or organization operator. Tokens are short-lived, shown once, narrowly scoped, and revocable. Mutations require an idempotency key and produce an immutable action receipt. Agents may create drafts, prepare or upload revisions, commit manifests, and submit them for automatic publication policy evaluation. The policy service alone approves publication. Delete, billing, fund transfer, compute purchase, scope expansion, and operator changes remain outside Work MCP.
 
-Never treat an upload, commit, scan, submission, or agent result as a published release. Read the system-state register before claiming availability.
+Work tokens have zero spend authority. A separate commerce delegation may prepare bounded invoices, but it never grants wallet custody or silently expands Work access.
+
+Never treat an upload, commit, scan, submission, or agent result as a published release. Verify the returned signed publication decision and published revision. Read the system-state register before claiming availability.
 
 ## Local AI Worker onboarding
 

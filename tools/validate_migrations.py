@@ -97,6 +97,8 @@ REQUIRED_TABLES = {
     "commerce_orders",
     "commerce_receipts",
     "commerce_quote_requests",
+    "publication_keys",
+    "publication_decisions",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -111,6 +113,9 @@ def main() -> int:
     combined = "\n".join(path.read_text(encoding="utf-8") for path in files)
     lower = combined.lower()
     errors: list[str] = []
+    prefixes = [path.name.split("_", 1)[0] for path in files]
+    if len(set(prefixes)) != len(prefixes):
+        errors.append("migration sequence numbers must be unique")
 
     if not re.search(r"\bbegin\s*;", lower) or not re.search(r"\bcommit\s*;", lower):
         errors.append("migrations must use an explicit transaction")

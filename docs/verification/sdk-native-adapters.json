@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "scope": "tiny random local fixture; no accuracy claim",
+  "results": [
+    {
+      "adapter": "transformers",
+      "accelerator": "cpu",
+      "generated_text": true,
+      "verified_snapshot": true,
+      "input_tokens": 1
+    },
+    {
+      "adapter": "mlx",
+      "accelerator": "metal",
+      "generated_text": true,
+      "verified_snapshot": true,
+      "input_tokens": 1
+    }
+  ]
+}

@@ -118,7 +118,7 @@ def create_app(model: Model, *, token: str):
                 "model": model.plan.repository,
                 "choices": [{"index": 0, **choice, "finish_reason": "stop"}],
             }
-        except (ValueError, RuntimeError) as error:
+        except (ValueError, TypeError, RuntimeError) as error:
             return JSONResponse({"error": str(error)[:500]}, status_code=422)
 
     # Avoid forward-reference resolution of locally imported Request by FastAPI.

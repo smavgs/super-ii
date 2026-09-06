@@ -9,6 +9,7 @@ description = "Verified Super ii model acquisition, hardware planning and local 
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
 dependencies = ["httpx>=0.28,<0.29", "filelock>=3.19,<4", "psutil>=7,<8", "cryptography>=46,<51"]
 
 [project.optional-dependencies]
