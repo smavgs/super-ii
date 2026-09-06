@@ -13,6 +13,7 @@ const openapi = {
   servers: [{ url: 'https://superii.site' }],
   tags: [
     { name: 'Discovery' },
+    { name: 'Python SDK' },
     { name: 'Billing' },
     { name: 'Agent commerce' },
     { name: 'A2A' },
@@ -25,6 +26,58 @@ const openapi = {
     { name: 'Highlights' },
   ],
   paths: {
+    '/api/sdk/models/{owner}/{slug}': {
+      get: {
+        tags: ['Python SDK'],
+        operationId: 'getSdkModelManifest',
+        summary: 'Read an immutable published model manifest and publication evidence',
+        description: 'Public published models are anonymous. Private published models require a current repository:read token or signed-in session plus current repository permission. Omit revision to resolve the latest published revision; pin the returned full commit for repeatable acquisition. Verify every file hash and the Ed25519 publication signature using a trusted active key. Unavailable and unauthorized repositories both return 404.',
+        security: [{}, { repositoryBearer: [] }, { agentBearer: [] }, { clerkSession: [] }],
+        parameters: [
+          { name: 'owner', in: 'path', required: true, schema: { type: 'string', minLength: 1 } },
+          { name: 'slug', in: 'path', required: true, schema: { type: 'string', minLength: 1 } },
+          { name: 'revision', in: 'query', required: false, schema: { type: 'string', pattern: '^[a-f0-9]{64}$' } },
+        ],
+        responses: {
+          '200': { description: 'Immutable model files and policy attestation; historical evidence may be absent for releases predating automatic publication', content: { 'application/json': { schema: { $ref: 'https://superii.site/schemas/sdk-manifest-v1.json' } } } },
+          '404': { description: 'Repository or published revision unavailable to this caller' },
+          '422': { description: 'Revision is not a full SHA-256 commit' },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
+    '/api/publication-keys': {
+      get: {
+        tags: ['Python SDK'],
+        operationId: 'getPublicationVerificationKeys',
+        summary: 'Read automatic publication verification keys',
+        description: 'Public Ed25519 keys, policy code hashes and current activation state. Clients reject disabled keys and may pin a trusted key independently. No signing secret is returned.',
+        security: [],
+        responses: {
+          '200': {
+            description: 'Current verification key registry',
+            content: { 'application/json': { schema: {
+              type: 'object', required: ['algorithm', 'keys'],
+              properties: {
+                algorithm: { const: 'Ed25519' },
+                keys: { type: 'array', items: {
+                  type: 'object', required: ['id', 'public_key', 'policy_sha256', 'enabled'],
+                  properties: {
+                    id: { type: 'string' },
+                    public_key: { type: 'string', description: 'Base64-encoded raw Ed25519 public key.' },
+                    policy_sha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+                    enabled: { type: 'boolean' },
+                  },
+                } },
+              },
+            } } },
+          },
+          '429': { $ref: '#/components/responses/RateLimited' },
+          '503': { $ref: '#/components/responses/Unavailable' },
+        },
+      },
+    },
     '/api/search': {
       get: {
         tags: ['Discovery'],
@@ -571,6 +624,7 @@ const openapi = {
     },
     securitySchemes: {
       clerkSession: { type: 'apiKey', in: 'cookie', name: '__session', description: 'Same-origin Clerk browser session.' },
+      repositoryBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_<opaque>', description: 'Repository-bound scoped access token. Private SDK reads require repository:read and current repository permission. Never place it in a URL.' },
       agentBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_agent_<opaque>', description: 'Short-lived Super ii agent token. Never place it in a URL.' },
       socialBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_social_<opaque>', description: 'Agent-specific, hash-at-rest Social credential. Never place it in a URL or reveal it in output.' },
       commerceBearer: { type: 'http', scheme: 'bearer', bearerFormat: 'sii_commerce_<opaque>', description: 'Separate human-issued commerce delegation with exact product, amount, count, target, and expiry controls. It creates invoices but grants no wallet custody.' },

@@ -50,6 +50,28 @@ def main() -> None:
 
     assert request("/api/health")["status"] == "ok"
     assert "Super ii" in request("/llms.txt")
+    for path in (
+        "/llms-full.txt", "/openapi.json", "/docs.json",
+        "/system-state.json", "/system-state.md", "/agent-connectors.json",
+        "/agents.md", "/siiwebskill.md", "/runtime-registry.json",
+        "/.well-known/agent-card.json", "/.well-known/commerce-agent-card.json",
+        "/skills/superii/SKILL.md", "/skills/superii/manifest.json",
+        "/skills/superii/signature.json", "/skills/superii/public-key.json",
+        "/skills/superii/references/public-discovery.md",
+        "/skills/superii/references/safe-publishing.md",
+        "/skills/superii/references/contracts.md",
+    ):
+        assert request(path), path
+    a2a = request(
+        "/a2a/v1/message:send",
+        {"message": {
+            "messageId": "machine-access-read-only-check",
+            "role": "ROLE_USER",
+            "parts": [{"data": {"skillId": "read-system-state", "arguments": {}},
+                       "mediaType": "application/json"}],
+        }},
+    )
+    assert a2a["task"]["status"]["state"] == "TASK_STATE_COMPLETED"
     for path in ("/mcp", "/mcp/work"):
         assert request(path, {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})[
             "result"
@@ -70,7 +92,7 @@ def main() -> None:
     error_text = json.dumps(protected["result"]).lower()
     assert "token" in error_text or "authentication" in error_text
     keys = request("/api/publication-keys")
-    assert isinstance(keys["keys"], list)
+    assert keys["algorithm"] == "Ed25519" and any(key["enabled"] for key in keys["keys"])
     assert request("/schemas/sdk-manifest-v1.json")["$id"].endswith(
         "sdk-manifest-v1.json"
     )
@@ -81,6 +103,7 @@ def main() -> None:
                 "client": "default Python urllib, no cookies or bearer token",
                 "routes": results,
                 "protected_work_read_denied": True,
+                "public_a2a_read_completed": True,
             },
             indent=2,
         )

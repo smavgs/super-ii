@@ -83,9 +83,8 @@ export const prerender = false;
       </ul>
 
       <h2 id="python-sdk">Python SDK</h2>
-      <p>The <a href="https://github.com/smavgs/super-ii/tree/main/sdk/python">Super ii Python SDK</a> provides <code>inspect</code>, <code>hardware</code>, <code>plan</code>, <code>pull</code>, <code>verify</code> and <code>load</code>. Install from the repository while its first PyPI release is being prepared. The catalogue fills through creator submissions; example model names are placeholders.</p>
-      <pre><code>{`git clone https://github.com/smavgs/super-ii.git
-python -m pip install ./super-ii/sdk/python
+      <p>The <a href="https://pypi.org/project/superii-sdk/">Super ii Python SDK</a> provides <code>inspect</code>, <code>hardware</code>, <code>plan</code>, <code>pull</code>, <code>verify</code> and <code>load</code>. Install <code>superii-sdk</code> with Python 3.11 or newer; the Python import and command are both <code>superii</code>. The catalogue fills through creator submissions; example model names are placeholders.</p>
+      <pre><code>{`python -m pip install superii-sdk
 superii hardware
 superii plan owner/model`}</code></pre>
       <p>Planning checks available memory and installed runtimes before downloading selected immutable files. Downloads resume, use parallel ranges and verify SHA-256 plus an Ed25519 publication attestation. The SDK supports local llama.cpp, MLX and supported Transformers/vLLM adapters. It loads verified local weights and tokenizers without automatic repository Python execution. Unknown architectures or oversized configurations return an actionable error.</p>
