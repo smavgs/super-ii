@@ -82,7 +82,8 @@ def main() -> int:
                   to_regclass('app.commerce_delegations') is not null,
                   to_regclass('app.commerce_orders') is not null,
                   to_regclass('app.commerce_receipts') is not null,
-                  to_regclass('app.commerce_quote_requests') is not null
+                  to_regclass('app.commerce_quote_requests') is not null,
+                  to_regclass('app.profile_likes') is not null
                 """
             )
             (
@@ -93,8 +94,9 @@ def main() -> int:
                 has_commerce_orders,
                 has_commerce_receipts,
                 has_commerce_quotes,
+                has_profile_likes,
             ) = cursor.fetchone()
-            if relation_count < 89:
+            if relation_count < 90:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )
@@ -104,9 +106,10 @@ def main() -> int:
                     has_commerce_orders,
                     has_commerce_receipts,
                     has_commerce_quotes,
+                    has_profile_likes,
                 )
             ):
-                raise RuntimeError("agent commerce relations are incomplete")
+                raise RuntimeError("required commerce and member-profile relations are incomplete")
             print(
                 f"Verified: app_relations={relation_count}, repositories={repository_count}, "
                 f"public_search_rows={public_count}"

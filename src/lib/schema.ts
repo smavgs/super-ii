@@ -62,6 +62,12 @@ export const profiles = app.table(
     displayName: text('display_name').notNull(),
     bio: text('bio'),
     avatarUrl: text('avatar_url'),
+    interests: jsonb('interests').$type<string[]>().notNull().default([]),
+    xUsername: text('x_username'),
+    githubUsername: text('github_username'),
+    linkedinUrl: text('linkedin_url'),
+    websiteUrl: text('website_url'),
+    youtubeUrl: text('youtube_url'),
     isPublic: boolean('is_public').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -823,6 +829,20 @@ export const likes = app.table(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.profileId, table.repositoryId] })],
+);
+
+export const profileLikes = app.table(
+  'profile_likes',
+  {
+    likerProfileId: uuid('liker_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    likedProfileId: uuid('liked_profile_id')
+      .notNull()
+      .references(() => profiles.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.likerProfileId, table.likedProfileId] })],
 );
 
 export const follows = app.table(

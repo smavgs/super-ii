@@ -1,0 +1,113 @@
+---
+import type { EditableMemberProfile } from '@/lib/member-profile';
+
+type WorkspaceProfile = EditableMemberProfile & {
+  id: string;
+  handle: string;
+  display_name: string;
+  avatar_url: string | null;
+};
+
+interface Props {
+  profile: WorkspaceProfile;
+}
+
+const { profile } = Astro.props;
+---
+
+<section class="account-card member-profile-workspace" id="profile" data-member-profile-workspace>
+  <div class="member-profile-workspace__heading">
+    <div>
+      <p class="eyebrow">Public profile</p>
+      <h2>How people find you</h2>
+      <p>Add a short introduction, your interests, and the places where people can see more of your work.</p>
+    </div>
+    <a class="button button--secondary button--small" href={`/people/${encodeURIComponent(profile.handle)}`}>View public profile <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+  </div>
+
+  <div class="member-profile-workspace__identity">
+    {profile.avatar_url
+      ? <img src={profile.avatar_url} alt="" referrerpolicy="no-referrer" />
+      : <span aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
+    <div><strong>{profile.display_name}</strong><small>@{profile.handle}</small></div>
+    <p>Your name and photo come from your login profile. You can change them in <a href="#identity">Login, name and photo</a> below.</p>
+  </div>
+
+  <form class="member-profile-form" data-member-profile-form>
+    <label class="member-profile-form__wide">
+      <span>About you</span>
+      <textarea name="bio" maxlength="500" rows="4" placeholder="What are you building or exploring?">{profile.bio ?? ''}</textarea>
+      <small>Up to 500 characters.</small>
+    </label>
+    <label class="member-profile-form__wide">
+      <span>Interests</span>
+      <input name="interests" type="text" maxlength="1000" value={profile.interests.join(', ')} placeholder="Local AI, agents, datasets" />
+      <small>Separate up to 12 interests with commas.</small>
+    </label>
+    <label>
+      <span><i class="ph ph-x-logo" aria-hidden="true"></i> X username</span>
+      <input name="x_username" type="text" maxlength="51" value={profile.x_username ?? ''} autocomplete="off" placeholder="superiisite" />
+    </label>
+    <label>
+      <span><i class="ph ph-github-logo" aria-hidden="true"></i> GitHub username</span>
+      <input name="github_username" type="text" maxlength="40" value={profile.github_username ?? ''} autocomplete="off" placeholder="your-name" />
+    </label>
+    <label>
+      <span><i class="ph ph-linkedin-logo" aria-hidden="true"></i> LinkedIn</span>
+      <input name="linkedin_url" type="url" maxlength="2048" value={profile.linkedin_url ?? ''} inputmode="url" placeholder="https://www.linkedin.com/in/…" />
+    </label>
+    <label>
+      <span><i class="ph ph-globe" aria-hidden="true"></i> Website</span>
+      <input name="website_url" type="url" maxlength="2048" value={profile.website_url ?? ''} inputmode="url" placeholder="https://…" />
+    </label>
+    <label class="member-profile-form__wide">
+      <span><i class="ph ph-youtube-logo" aria-hidden="true"></i> YouTube</span>
+      <input name="youtube_url" type="url" maxlength="2048" value={profile.youtube_url ?? ''} inputmode="url" placeholder="https://www.youtube.com/@…" />
+    </label>
+    <div class="member-profile-form__footer member-profile-form__wide">
+      <p><i class="ph ph-info" aria-hidden="true"></i> These are public links you provide; they are not verified connections.</p>
+      <button class="button button--dark button--small" type="submit">Save public profile</button>
+    </div>
+    <p class="form-status member-profile-form__wide" data-member-profile-status aria-live="polite"></p>
+  </form>
+</section>
+
+<script>
+  const workspace = document.querySelector<HTMLElement>('[data-member-profile-workspace]');
+  const form = workspace?.querySelector<HTMLFormElement>('[data-member-profile-form]');
+  const status = workspace?.querySelector<HTMLElement>('[data-member-profile-status]');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    const data = new FormData(form);
+    const interests = String(data.get('interests') ?? '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const payload = {
+      bio: String(data.get('bio') ?? ''),
+      interests,
+      x_username: String(data.get('x_username') ?? ''),
+      github_username: String(data.get('github_username') ?? ''),
+      linkedin_url: String(data.get('linkedin_url') ?? ''),
+      website_url: String(data.get('website_url') ?? ''),
+      youtube_url: String(data.get('youtube_url') ?? ''),
+    };
+    if (submit) submit.disabled = true;
+    if (status) status.textContent = 'Saving your public profile…';
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'Your profile could not be saved.');
+      if (status) status.textContent = 'Public profile saved.';
+    } catch (error) {
+      if (status) status.textContent = error instanceof Error ? error.message : 'Your profile could not be saved.';
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+</script>

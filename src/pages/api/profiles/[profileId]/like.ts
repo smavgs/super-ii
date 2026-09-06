@@ -15,10 +15,10 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503, headers: privateHeaders });
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401, headers: privateHeaders });
-  const rate = await consumeRateLimit(locals, request, sql, 'profile.follow', 120, 3600);
+  const rate = await consumeRateLimit(locals, request, sql, 'profile.like', 120, 3600);
   if (rate !== 'allowed') {
     return Response.json(
-      { error: rate === 'limited' ? 'profile follow limit reached' : 'safety service unavailable' },
+      { error: rate === 'limited' ? 'profile like limit reached' : 'safety service unavailable' },
       { status: rate === 'limited' ? 429 : 503, headers: { ...privateHeaders, ...(rate === 'limited' ? { 'retry-after': '3600' } : {}) } },
     );
   }
@@ -29,20 +29,16 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   }
   try {
     const rows = await sql`
-      with changed as materialized (
-        select app.set_profile_follow(
-          ${profile.profileId}::uuid,
-          ${targetProfileId}::uuid,
-          ${parsed.value.active}
-        ) as active
+      select active, likes_count
+      from app.set_profile_like(
+        ${profile.profileId}::uuid,
+        ${targetProfileId}::uuid,
+        ${parsed.value.active}
       )
-      select changed.active,
-             (select count(*)::integer from app.follows where followed_profile_id = ${targetProfileId}::uuid) as follower_count
-      from changed
     `;
     if (!rows.length) return Response.json({ error: 'profile not found' }, { status: 404, headers: privateHeaders });
-    return Response.json({ ok: true, active: rows[0]?.active === true, follower_count: Number(rows[0]?.follower_count ?? 0) }, { headers: privateHeaders });
+    return Response.json({ ok: true, active: rows[0]?.active === true, likes_count: Number(rows[0]?.likes_count ?? 0) }, { headers: privateHeaders });
   } catch {
-    return Response.json({ error: 'follow could not be updated' }, { status: 422, headers: privateHeaders });
+    return Response.json({ error: 'profile like could not be updated' }, { status: 422, headers: privateHeaders });
   }
 };

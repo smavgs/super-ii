@@ -63,10 +63,14 @@ docker exec -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
   < "$project_root/database/tests/commerce_smoke.sql" >/dev/null
 
+docker exec -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
+  < "$project_root/database/tests/profile_likes_smoke.sql" >/dev/null
+
 counts=$(docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atc \
   "select count(*) || ':' || (select count(*) from app.repositories) from information_schema.tables where table_schema = 'app'")
 
-if [ "$counts" != "89:0" ]; then
+if [ "$counts" != "90:0" ]; then
   echo "ERROR: unexpected post-test database state: $counts" >&2
   exit 1
 fi

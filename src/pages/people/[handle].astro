@@ -10,13 +10,22 @@ type PublicProfile = {
   display_name: string;
   bio: string | null;
   avatar_url: string | null;
+  interests: string[];
+  x_username: string | null;
+  github_username: string | null;
+  linkedin_url: string | null;
+  website_url: string | null;
+  youtube_url: string | null;
   created_at: string;
+  likes_count: number;
   follower_count: number;
   following_count: number;
+  viewer_likes: boolean;
   viewer_follows: boolean;
 };
 type ProfileProposal = { slug: string; title: string; status: string; human_votes: number; agent_votes: number };
 type ProfileAward = { rank: number; award_month: string; valid_human_votes: number; proposal_slug: string; proposal_title: string };
+type SocialLink = { label: string; href: string; icon: string };
 
 const handle = (Astro.params.handle ?? '').toLowerCase();
 const sql = sqlClient(Astro.locals);
@@ -31,9 +40,15 @@ if (sql) {
     viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
     const profiles = await sql`
       select profile.id, profile.handle, profile.display_name, profile.bio,
-             profile.avatar_url, profile.created_at,
+             profile.avatar_url, profile.interests, profile.x_username,
+             profile.github_username, profile.linkedin_url, profile.website_url,
+             profile.youtube_url, profile.created_at,
+             (select count(*)::integer from app.profile_likes liked where liked.liked_profile_id = profile.id) as likes_count,
              (select count(*)::integer from app.follows follow where follow.followed_profile_id = profile.id) as follower_count,
              (select count(*)::integer from app.follows follow where follow.follower_profile_id = profile.id) as following_count,
+             exists (select 1 from app.profile_likes liked
+               where liked.liker_profile_id = ${viewerProfileId}::uuid
+                 and liked.liked_profile_id = profile.id) as viewer_likes,
              exists (select 1 from app.follows follow
                where follow.follower_profile_id = ${viewerProfileId}::uuid
                  and follow.followed_profile_id = profile.id) as viewer_follows
@@ -43,6 +58,7 @@ if (sql) {
     `;
     profile = (profiles[0] as PublicProfile | undefined) ?? null;
     if (profile) {
+      profile.interests = Array.isArray(profile.interests) ? profile.interests : [];
       const [repositoryRows, proposalRows, awardRows] = await Promise.all([
         sql`
           select repository.id as repository_id, repository.kind, repository.owner_handle,
@@ -91,24 +107,49 @@ if (sql) {
 if (!profile) Astro.response.status = 404;
 const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
 const highlightedBy = Astro.url.searchParams.get('highlight');
+const socialLinks: SocialLink[] = profile ? [
+  profile.x_username && { label: 'X', href: `https://x.com/${encodeURIComponent(profile.x_username)}`, icon: 'ph-x-logo' },
+  profile.github_username && { label: 'GitHub', href: `https://github.com/${encodeURIComponent(profile.github_username)}`, icon: 'ph-github-logo' },
+  profile.linkedin_url && { label: 'LinkedIn', href: profile.linkedin_url, icon: 'ph-linkedin-logo' },
+  profile.website_url && { label: 'Website', href: profile.website_url, icon: 'ph-globe' },
+  profile.youtube_url && { label: 'YouTube', href: profile.youtube_url, icon: 'ph-youtube-logo' },
+].filter((link): link is SocialLink => Boolean(link)) : [];
 ---
 
 <BaseLayout title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} noindex={!profile}>
   {profile ? (
     <main class="shell person-page" data-profile-id={profile.id} data-highlight-campaign={highlightedBy}>
       <header class="person-header">
-        {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
+        {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar" aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
         <div class="person-header__identity">
           <p class="eyebrow">Public member profile</p>
           <h1>{profile.display_name}</h1>
           <p class="person-handle">@{profile.handle}</p>
-          {profile.bio && <p>{profile.bio}</p>}
+          {profile.bio && <p class="person-bio">{profile.bio}</p>}
+          {profile.interests.length > 0 && <ul class="person-interests" aria-label="Interests">{profile.interests.map((interest) => <li>{interest}</li>)}</ul>}
           <div class="profile-badges">
             {fameNumber && <a class="fame-badge" href="/fame">FAME ✦ · #{String(fameNumber).padStart(3, '0')}</a>}
             {awards.map((award) => <a class="leader-badge" href={`/proposals/${award.proposal_slug}`} title={`${award.proposal_title} · ${award.valid_human_votes} valid votes`}>{medal(award.rank)} Community #{award.rank} · {new Date(award.award_month).toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</a>)}
           </div>
         </div>
-        <div class="person-header__social"><p><strong>{Number(profile.follower_count)}</strong><span>followers</span></p><p><strong>{Number(profile.following_count)}</strong><span>following</span></p>{viewerProfileId && viewerProfileId !== profile.id && <button class:list={['button', 'button--small', profile.viewer_follows ? 'button--secondary' : 'button--dark']} type="button" data-profile-follow data-active={String(profile.viewer_follows)}>{profile.viewer_follows ? 'Following' : 'Follow'}</button>}</div>
+        <div class="person-header__engagement">
+          <div class="person-stats" aria-label="Profile activity">
+            <p><strong data-profile-like-count>{Number(profile.likes_count)}</strong><span>likes</span></p>
+            <p><strong data-profile-follower-count>{Number(profile.follower_count)}</strong><span>followers</span></p>
+            <p><strong>{Number(profile.following_count)}</strong><span>following</span></p>
+          </div>
+          {viewerProfileId === profile.id
+            ? <a class="button button--secondary button--small" href="/account#profile">Edit profile</a>
+            : viewerProfileId && <div class="person-actions">
+                <button class:list={['button', 'button--small', profile.viewer_follows ? 'button--secondary' : 'button--dark']} type="button" data-profile-follow data-active={String(profile.viewer_follows)} aria-pressed={profile.viewer_follows}>{profile.viewer_follows ? 'Following' : 'Follow'}</button>
+                <button class:list={['button', 'button--secondary', 'button--small', 'person-like-button', profile.viewer_likes && 'person-like-button--active']} type="button" data-profile-like data-active={String(profile.viewer_likes)} aria-pressed={profile.viewer_likes}><i class="ph ph-heart" aria-hidden="true"></i><span>{profile.viewer_likes ? 'Liked' : 'Like'}</span></button>
+              </div>}
+          {socialLinks.length > 0 && <div class="person-links" aria-label="Social links">
+            <span>Links</span>
+            {socialLinks.map((link) => <a href={link.href} target="_blank" rel="me nofollow noopener noreferrer" aria-label={link.label} title={link.label}><i class={`ph ${link.icon}`} aria-hidden="true"></i></a>)}
+          </div>}
+          <p class="person-action-status" data-profile-action-status aria-live="polite"></p>
+        </div>
       </header>
 
       <div class="person-layout">
@@ -132,11 +173,46 @@ const highlightedBy = Astro.url.searchParams.get('highlight');
   if (campaignId && /^[0-9a-f-]{36}$/i.test(campaignId)) {
     void fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: 'profile_view' }), keepalive: true }).catch(() => undefined);
   }
-  const follow = root?.querySelector<HTMLButtonElement>('[data-profile-follow]');
-  follow?.addEventListener('click', async () => {
-    const active = follow.dataset.active !== 'true'; follow.disabled = true;
-    const response = await fetch(`/api/profiles/${root?.dataset.profileId}/follow`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ active }) });
-    if (response.ok) { follow.dataset.active = String(active); follow.textContent = active ? 'Following' : 'Follow'; follow.classList.toggle('button--dark', !active); follow.classList.toggle('button--secondary', active); }
-    follow.disabled = false;
-  });
+
+  const status = root?.querySelector<HTMLElement>('[data-profile-action-status]');
+  async function changeProfileAction(kind: 'follow' | 'like', button: HTMLButtonElement) {
+    if (!root) return;
+    const requestedActive = button.dataset.active !== 'true';
+    button.disabled = true;
+    if (status) status.textContent = '';
+    try {
+      const response = await fetch(`/api/profiles/${root.dataset.profileId}/${kind}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ active: requestedActive }),
+      });
+      const result = await response.json().catch(() => ({})) as { error?: string; active?: boolean; follower_count?: number; likes_count?: number };
+      if (!response.ok || typeof result.active !== 'boolean') throw new Error(result.error || `This ${kind} could not be saved.`);
+      button.dataset.active = String(result.active);
+      button.setAttribute('aria-pressed', String(result.active));
+      if (kind === 'follow') {
+        button.textContent = result.active ? 'Following' : 'Follow';
+        button.classList.toggle('button--dark', !result.active);
+        button.classList.toggle('button--secondary', result.active);
+        const count = root.querySelector<HTMLElement>('[data-profile-follower-count]');
+        if (count && Number.isSafeInteger(result.follower_count)) count.textContent = String(result.follower_count);
+      } else {
+        button.classList.toggle('person-like-button--active', result.active);
+        const label = button.querySelector('span');
+        if (label) label.textContent = result.active ? 'Liked' : 'Like';
+        const count = root.querySelector<HTMLElement>('[data-profile-like-count]');
+        if (count && Number.isSafeInteger(result.likes_count)) count.textContent = String(result.likes_count);
+      }
+      if (status) status.textContent = `${kind === 'follow' ? 'Follow' : 'Like'} saved.`;
+    } catch (error) {
+      if (status) status.textContent = error instanceof Error ? error.message : `This ${kind} could not be saved.`;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  const followButton = root?.querySelector<HTMLButtonElement>('[data-profile-follow]');
+  const likeButton = root?.querySelector<HTMLButtonElement>('[data-profile-like]');
+  followButton?.addEventListener('click', () => void changeProfileAction('follow', followButton));
+  likeButton?.addEventListener('click', () => void changeProfileAction('like', likeButton));
 </script>}

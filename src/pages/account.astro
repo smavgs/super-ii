@@ -4,11 +4,26 @@ import AgentStarter from '@/components/AgentStarter.astro';
 import AgentWorkspace from '@/components/AgentWorkspace.astro';
 import AIWorkerStarter from '@/components/AIWorkerStarter.astro';
 import CommerceWorkspace from '@/components/CommerceWorkspace.astro';
+import MemberProfileWorkspace from '@/components/MemberProfileWorkspace.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
+
+type MemberProfile = {
+  id: string;
+  handle: string;
+  display_name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  interests: string[];
+  x_username: string | null;
+  github_username: string | null;
+  linkedin_url: string | null;
+  website_url: string | null;
+  youtube_url: string | null;
+};
 
 const authConfigured = authIsConfigured(Astro.locals);
 const sql = sqlClient(Astro.locals);
@@ -26,10 +41,19 @@ let bridgeSources: Array<{
   imported_at: string;
   sync_enabled: boolean;
 }> = [];
+let memberProfile: MemberProfile | null = null;
 if (sql) {
   try {
     const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
     if (profile) {
+      const profileRows = await sql`
+        select id, handle, display_name, bio, avatar_url, interests,
+               x_username, github_username, linkedin_url, website_url, youtube_url
+        from app.profiles
+        where id = ${profile.profileId}::uuid
+        limit 1
+      `;
+      memberProfile = (profileRows[0] as MemberProfile | undefined) ?? null;
       repositories = await sql`
         select r.id, r.kind, r.owner_handle, r.slug, r.title, r.status, rr.status as revision_status
         from app.repositories r
@@ -109,7 +133,7 @@ if (sql) {
       <a href="#ai-worker">AI Worker</a>
       <a href="#agents">Agents</a>
       <a href="#commerce">Agent commerce</a>
-      <a href="/account" aria-current="page">Profile</a>
+      <a href="#profile" aria-current="page">Profile</a>
       <a href="/bring-my-work">Bring my work</a>
       <a href="/new">Repositories</a>
       <a href="/organizations">Organizations</a>
@@ -134,6 +158,7 @@ if (sql) {
               <AIWorkerStarter />
               <AgentWorkspace />
               <CommerceWorkspace />
+              {memberProfile && <MemberProfileWorkspace profile={memberProfile} />}
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
                 {repositories.length ? <div class="account-list">{repositories.map((repository) => <a href={`/repositories/${repository.id}/edit`}><span><strong>{repository.owner_handle}/{repository.slug}</strong><small>{repository.kind} · {repository.revision_status}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div> : <div><p>You do not have a repository yet. Start fresh or bring work you already built.</p><div class="button-row"><a class="button button--dark button--small" href="/bring-my-work">Bring my work</a><a class="button button--secondary button--small" href="/new">Create from scratch</a></div></div>}
@@ -165,7 +190,7 @@ if (sql) {
                 {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString('en', { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
                 {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · {payment.billing_term === '12_months' ? '12 months' : '30 days'} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
               </section>
-              <section class="account-card"><p class="eyebrow">Identity and security</p><h2>Profile settings</h2><UserProfile
+              <section class="account-card" id="identity"><p class="eyebrow">Identity and security</p><h2>Login, name and photo</h2><p>Manage your login details, account name, and profile photo here.</p><UserProfile
                 routing="hash"
                 appearance={{
                   elements: {

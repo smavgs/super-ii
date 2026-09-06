@@ -33,6 +33,7 @@ REQUIRED_TABLES = {
     "reactions",
     "discussion_events",
     "likes",
+    "profile_likes",
     "follows",
     "repository_watchers",
     "activity_events",
