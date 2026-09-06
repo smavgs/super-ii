@@ -11,7 +11,7 @@ metadata:
 
 # Super ii
 
-Use Super ii as an evidence-first AI repository hub. Prefer machine-readable representations and preserve the human review boundary.
+Use Super ii as an evidence-first AI repository hub. Prefer machine-readable representations and preserve the independent automatic publication policy.
 
 ## Public discovery
 

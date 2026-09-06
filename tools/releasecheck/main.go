@@ -270,7 +270,7 @@ func main() {
 		filepath.Join("src", "lib", "work-mcp-server.ts"): {
 			"createMcpHandler", "create_draft_repository", "create_revision", "prepare_resumable_upload",
 			"submit_revision_for_review", "claim_contribution_job", "submit_contribution_job", "get_action_receipt",
-			"This tool cannot publish",
+			"The agent cannot override or sign policy approval.",
 		},
 		filepath.Join("database", "migrations", "0012_agent_participation.sql"): {
 			"spend_limit_cents = 0", "consume_agent_access_token", "agent_create_repository_with_receipt",

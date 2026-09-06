@@ -189,7 +189,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 <div class="bridge-step__content">
                   <p class="eyebrow">Verified arrival</p>
                   <h2 id="bridge-progress-heading">Import activity</h2>
-                  <p>Super ii copies the exact version you selected, checks every file, records where it came from, and waits for human review before publishing.</p>
+                  <p>Super ii copies the exact version you selected, checks every file, records where it came from, and publishes automatically when every required policy check passes.</p>
                   <div class="bridge-job-list" data-bridge-job-list>
                     {jobs.length ? jobs.map((job) => (
                       <article class="bridge-job" data-job-row={job.id}>
@@ -246,7 +246,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                   <li><i class="ph ph-check-circle" aria-hidden="true"></i> Exact revision recorded</li>
                   <li><i class="ph ph-check-circle" aria-hidden="true"></i> Checksums and provenance kept</li>
                   <li><i class="ph ph-check-circle" aria-hidden="true"></i> Secrets are never copied</li>
-                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Human review before publishing</li>
+                  <li><i class="ph ph-check-circle" aria-hidden="true"></i> Independent policy checks before publishing</li>
                 </ul>
               </section>
               <section>

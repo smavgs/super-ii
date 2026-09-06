@@ -12,6 +12,12 @@ uv sync --directory "$project_dir/runtime" --extra test --frozen
 uv run --directory "$project_dir/runtime" ruff format --check .
 uv run --directory "$project_dir/runtime" ruff check .
 uv run --directory "$project_dir/runtime" pytest
+"$project_dir/runtime/.venv/bin/python" "$project_dir/tools/check_publication_service.py"
+uv sync --directory "$project_dir/sdk/python" --extra test --frozen
+uv run --directory "$project_dir/sdk/python" ruff format --check .
+uv run --directory "$project_dir/sdk/python" ruff check .
+uv run --directory "$project_dir/sdk/python" pytest
+uv build --directory "$project_dir/sdk/python"
 uv lock --directory "$project_dir/runtime/space-image" --check
 uv lock --directory "$project_dir/runtime/notebook-image" --check
 
@@ -19,4 +25,8 @@ docker build --tag superii/notebook-executor:0.1.0 "$project_dir/runtime/noteboo
 docker build --tag superii/transfer:0.1.0 "$project_dir/rust"
 SUPERII_DATABASE_URL="postgresql://example.invalid/db" \
 SUPERII_RUNTIME_TOKEN="01234567890123456789012345678901" \
+SUPERII_POLICY_DATABASE_URL="postgresql://policy@example.invalid/db" \
+SUPERII_POLICY_TOKEN="01234567890123456789012345678901" \
+SUPERII_POLICY_SIGNING_KEY="CONFIG_VALIDATION_ONLY" \
+SUPERII_POLICY_KEY_ID="CONFIG_VALIDATION_ONLY" \
   docker compose --file "$project_dir/runtime/compose.yaml" config --quiet

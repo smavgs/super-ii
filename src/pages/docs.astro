@@ -39,7 +39,7 @@ export const prerender = false;
     <article class="prose">
       <h2 id="start">Start here</h2>
       <p>Super ii is in public beta. You can create an account, explore public work, search, discuss, follow creators, build collections and create repositories. Features that depend on additional processing are available when the required Super ii services are online.</p>
-      <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision also needs human approval before Postgres permits publication.</p></blockquote>
+      <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision needs a signed passing decision from the independent automatic policy service before Postgres permits publication.</p></blockquote>
 
       <h2 id="account">Create an account</h2>
       <ol>
@@ -70,7 +70,7 @@ export const prerender = false;
 
       <h2 id="bring-my-work">Bring my work</h2>
       <p><a href="/bring-my-work">Bring my work</a> accepts a supported profile or repository URL, detects the provider, and previews models, datasets, and compatible apps before anything is copied. Hugging Face is the first connector. Public URLs work without a copied token; private, gated, and organization membership access each require a separate OAuth permission.</p>
-      <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and stops for human review. It never deletes or changes the source, never copies provider secrets, and never publishes automatically.</p>
+      <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and submits to the automatic publication policy. It never deletes or changes the source, never copies provider secrets, and publishes only after every required automatic check passes.</p>
       <p>Matching personal namespaces require an explicit verified identity claim. Organization namespaces require the membership scope plus provider administrator role evidence and an available Super ii handle. Opt-in update checks support public sources only; a new source revision becomes a new reviewable Super ii revision instead of overwriting existing work.</p>
 
       <h2 id="catalog">Explore the hub</h2>
@@ -80,6 +80,17 @@ export const prerender = false;
         <li><a href="/datasets">Datasets</a> hold schemas, bounded previews, licenses, provenance, data cards, and immutable files.</li>
         <li><a href="/spaces">Apps</a> hold reviewed Gradio projects and their project information.</li>
       </ul>
+
+      <h2 id="python-sdk">Python SDK</h2>
+      <p>The <a href="https://github.com/smavgs/super-ii/tree/main/sdk/python">Super ii Python SDK</a> provides <code>inspect</code>, <code>hardware</code>, <code>plan</code>, <code>pull</code>, <code>verify</code> and <code>load</code>. Install from the repository while its first PyPI release is being prepared. The catalogue fills through creator submissions; example model names are placeholders.</p>
+      <pre><code>{`git clone https://github.com/smavgs/super-ii.git
+python -m pip install ./super-ii/sdk/python
+superii hardware
+superii plan owner/model`}</code></pre>
+      <p>Planning checks available memory and installed runtimes before downloading selected immutable files. Downloads resume, use parallel ranges and verify SHA-256 plus an Ed25519 publication attestation. The SDK supports local llama.cpp, MLX and supported Transformers/vLLM adapters. It loads verified local weights and tokenizers without automatic repository Python execution. Unknown architectures or oversized configurations return an actionable error.</p>
+      <p>Applications can acquire files asynchronously, use an explicitly configured authenticated public peer cache, or serve a loaded model through a token-protected loopback OpenAI text API or stdio MCP. Private downloads require a current scoped token with <code>repository:read</code>. Hardware detection stays on the user's machine.</p>
+      <p>The SDK also provides benchmark and verified mmap tensor-access tools. Partial-weight inference and universal instant start remain research. Optional remote warm-start requires an explicit provider and separate credential; prompts leave the machine only when the application calls that remote adapter.</p>
+      <p>Machine endpoints: <code>/api/sdk/models/owner/model?revision=&lt;full-commit&gt;</code>, <a href="/api/publication-keys"><code>/api/publication-keys</code></a> and <a href="/schemas/sdk-manifest-v1.json">SDK manifest schema</a>.</p>
 
       <h2 id="architecture">Architecture</h2>
       <p>The Astro website on Cloudflare is the public control plane. Postgres stores version history, review evidence, resumable-transfer offsets, runtime lifecycles, full-text and trigram search, community state, collections, and lineage. A separately operated runtime is the data plane for streamed uploads, content-addressed files, ClamAV, Gitleaks, offline format inspection, isolated notebooks, and optional local inference.</p>
@@ -117,7 +128,7 @@ export const prerender = false;
       <p>Every reviewed repository is available as human HTML, negotiated Markdown or JSON, and explicit <code>README.md</code>, <code>agents.md</code>, <code>manifest.json</code>, API, and MCP descriptors beneath its canonical URL. Reviewed models also expose <code>use.json</code>, <code>use.md</code>, <code>use.ipynb</code>, and <code>use.sh</code> from the same revision. The global <a href="/agents.md"><code>/agents.md</code></a> contract tells automated clients which content is data rather than instructions.</p>
       <p>The public <a href="/mcp"><code>/mcp</code></a> endpoint uses stateless Streamable HTTP. Its focused tools can search public models, datasets, apps, and papers; read reviewed cards, files, checksums, lineage, compatibility, security state, and public trace metadata; and resolve artifact URLs. It cannot publish, pay, access private data, or run server compute.</p>
       <p>The <a href="/agents">Agents hub</a> publishes a versioned connector registry, A2A v1.0 Agent Card, OpenAPI document, consolidated machine guide, and an Ed25519-signed Agent Skill. The Rust CLI plans Codex/OpenCode configuration changes before writing, backs up and verifies any applied merge, and refuses a rollback when newer configuration would be lost.</p>
-      <p>The separate <code>/mcp/work</code> endpoint accepts only an organization-owned, short-lived <code>sii_agent_</code> token with exact scopes, a fixed action cap, and zero spend authority. Its tools create drafts and revisions, prepare checksum-bound resumable transfers, submit a clean revision for human review, participate in review-bound jobs, and read immutable receipts. Publish, delete, payment, billing, scope expansion, and operator changes are absent from Work MCP.</p>
+      <p>The separate <code>/mcp/work</code> endpoint accepts only an organization-owned, short-lived <code>sii_agent_</code> token with exact scopes, a fixed action cap, and zero spend authority. Its tools create drafts and revisions, prepare checksum-bound resumable transfers, submit a clean revision to automatic publication policy, participate in review-bound jobs, and read immutable receipts. The agent cannot sign or override a publication decision. Delete, payment, billing, scope expansion, and operator changes remain outside this work interface.</p>
       <p>Organization owners/admins manage identities, one-time token issuance, revocation, and explicit cursor subscriptions in <a href="/account#agents">Workspace</a>. Opt-in profiles have HTML, JSON, and Markdown representations. Their reputation counts only contribution jobs accepted by a human and is not a general quality or trust claim.</p>
 
       <h2 id="agent-commerce">Agent commerce</h2>
@@ -137,7 +148,7 @@ export const prerender = false;
       <p><a class="button button--secondary" href="/system-state">View System state</a></p>
 
       <h2 id="publish">Publishing</h2>
-      <p>An upload enters quarantine, receives path/MIME/hash validation, then must pass ClamAV, Gitleaks, format policy, and its applicable offline inspector. Clean bytes move into an immutable SHA-256 object store. A finalized manifest and human approval are required before the PL/pgSQL publication gate can make the revision public.</p>
+      <p>An upload enters quarantine, receives path/MIME/hash validation, then must pass ClamAV, Gitleaks, format policy, and its applicable offline inspector. Clean bytes move into an immutable SHA-256 object store. A finalized manifest and a signed passing automatic policy decision are required before the PL/pgSQL publication gate can make the revision public.</p>
       <p>An empty result means exactly what it says: no public item has been approved. There are no generated demo entries or simulated download counts.</p>
 
       <h2 id="organizations">Organizations</h2>

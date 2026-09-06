@@ -94,7 +94,7 @@ def main() -> int:
                 has_commerce_receipts,
                 has_commerce_quotes,
             ) = cursor.fetchone()
-            if relation_count < 87:
+            if relation_count < 89:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )

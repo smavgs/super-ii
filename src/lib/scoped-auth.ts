@@ -2,6 +2,7 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ensureAuthenticatedProfile, sameOrigin } from './auth';
 
 export const repositoryScopes = [
+  'repository:read',
   'repository:upload',
   'repository:commit',
   'repository:submit',

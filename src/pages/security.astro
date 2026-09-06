@@ -22,7 +22,7 @@ export const prerender = false;
         <li>Database access is server-side. Connection strings and secret keys are stored as deployment secrets, not committed to source.</li>
         <li>Cross-origin state-changing requests are checked, and browser security headers are set at the edge.</li>
         <li>Repository files remain quarantined until local ClamAV and Gitleaks scans, format policy, immutable hashing, and applicable offline inspection pass.</li>
-        <li>Postgres refuses publication unless every file is available and clean, required scan evidence passed, and a human review approved the revision.</li>
+        <li>Postgres refuses publication unless every file is available and clean, required scan evidence passed, and an independent automatic policy service signed approval of the exact manifest, metadata, and versioned evidence.</li>
         <li>Published browser-model and download routes resolve only files from the approved immutable revision.</li>
         <li>Notebook files receive strict nbformat and size validation; the public reader never starts a kernel and drops HTML, JavaScript, SVG, widgets, attachments, and custom output types.</li>
         <li>The public MCP endpoint is read-only, rate limited, Origin-checked for browser clients, and restricted to reviewed public data.</li>

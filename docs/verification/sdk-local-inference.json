@@ -1,0 +1,32 @@
+{
+  "scope": "Local SDK acquisition and real inference smoke test; not a quality benchmark",
+  "public_catalog_mutated": false,
+  "model_bytes": 55135072,
+  "runs": [
+    {
+      "cache": "empty-sdk-cache",
+      "load_seconds": 0.5090558330412023,
+      "first_output_seconds_from_start": 0.5161263750051148,
+      "generation_seconds": 0.047829374962020665,
+      "output_characters": 49,
+      "transferred_bytes": 55135072,
+      "verified": true,
+      "runtime": "llama.cpp"
+    },
+    {
+      "cache": "warm-sdk-cache",
+      "load_seconds": 0.4150245829951018,
+      "first_output_seconds_from_start": 0.4255046659964137,
+      "generation_seconds": 0.04284529195865616,
+      "output_characters": 49,
+      "transferred_bytes": 0,
+      "verified": true,
+      "runtime": "llama.cpp"
+    }
+  ],
+  "limitations": [
+    "OS file cache was not cleared",
+    "Existing local model; no accuracy claim",
+    "Full verified weights acquired before inference"
+  ]
+}

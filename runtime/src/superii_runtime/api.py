@@ -64,7 +64,7 @@ from .transfers import (
 )
 from .web_search import WebSearchUnavailable, run_web_search
 from .workspace_cache import PersistentWorkspaceCache
-from .workspaces import materialized_revision, revision_manifest, revision_manifest_document
+from .workspaces import materialized_revision
 
 app = FastAPI(
     title="Super ii Runtime",
@@ -387,7 +387,28 @@ def ready(
         )
     except (httpx.HTTPError, RuntimeError, ValueError):
         transfer_ready = False
-    ready_state = database_ready and storage_ready and transfer_ready and all(scanners.values())
+    policy_ready = False
+    if settings.policy_token is not None:
+        try:
+            with httpx.Client(timeout=2, trust_env=False, follow_redirects=False) as client:
+                policy_ready = (
+                    client.get(
+                        f"{settings.policy_url}/ready",
+                        headers={
+                            "x-superii-policy-token": settings.policy_token.get_secret_value()
+                        },
+                    ).status_code
+                    == 200
+                )
+        except httpx.HTTPError:
+            pass
+    ready_state = (
+        database_ready
+        and storage_ready
+        and transfer_ready
+        and policy_ready
+        and all(scanners.values())
+    )
     return {
         "status": "ready" if ready_state else "blocked",
         "database": database_ready,
@@ -395,6 +416,7 @@ def ready(
         "transfer_service": transfer_ready,
         "required_scanners": scanners,
         "publishing_enabled": ready_state,
+        "publication_policy": policy_ready,
     }
 
 
@@ -482,34 +504,33 @@ def finalize_revision(
     _auth: RuntimeAuth,
     database: RepositoryDatabase = Depends(get_database),
 ) -> dict[str, Any]:
-    if not database.revision_is_ready_for_review(revision_id):
-        raise HTTPException(status_code=409, detail="revision contains pending or rejected files")
-    if not database.revision_analysis_passed(repository_id, revision_id):
+    try:
+        finalized = database.finalize_for_policy(repository_id, revision_id)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    settings = get_settings()
+    if settings.policy_token is None:
         raise HTTPException(
-            status_code=409, detail="applicable offline repository analysis has not passed"
+            status_code=503, detail="independent publication policy is not configured"
         )
-    files = database.list_revision_files(revision_id)
-    if any(file.repository_id != repository_id for file in files):
-        raise HTTPException(status_code=404, detail="revision not found")
-    manifest_sha256 = revision_manifest(files)
-    manifest = revision_manifest_document(files)
-    commit_sha = database.update_revision_manifest(
-        revision_id,
-        manifest_sha256,
-        len(files),
-        sum(file.size_bytes for file in files),
-        manifest,
-    )
-    database.set_revision_status(revision_id, "review")
+    try:
+        with httpx.Client(timeout=25, trust_env=False, follow_redirects=False) as client:
+            response = client.post(
+                f"{settings.policy_url}/v1/repositories/{repository_id}/revisions/{revision_id}/publish",
+                headers={"x-superii-policy-token": settings.policy_token.get_secret_value()},
+            )
+            response.raise_for_status()
+            publication = response.json()
+    except (httpx.HTTPError, ValueError) as error:
+        raise HTTPException(
+            status_code=503, detail="publication policy unavailable; retry safely"
+        ) from error
     return {
         "repository_id": str(repository_id),
         "revision_id": str(revision_id),
-        "status": "review",
-        "manifest_sha256": manifest_sha256,
-        "commit_sha": commit_sha,
-        "manifest": manifest,
-        "file_count": len(files),
-        "total_size_bytes": sum(file.size_bytes for file in files),
+        **finalized,
+        **publication,
+        "human_review_required": False,
     }
 
 

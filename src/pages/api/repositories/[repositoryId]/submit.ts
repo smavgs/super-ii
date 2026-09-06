@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     }
   }
   if (!runtimeIsConfigured(locals)) {
-    return Response.json({ error: 'secure review runtime is not connected yet' }, { status: 503 });
+    return Response.json({ error: 'secure publication runtime is not connected yet' }, { status: 503 });
   }
   const rateLimit = await consumeRateLimit(locals, request, sql, 'repository.submit', 20, 3600);
   if (rateLimit !== 'allowed') {
@@ -100,14 +100,15 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (!finalize) return Response.json({ error: 'revision could not be finalized' }, { status: 503 });
   const finalized = await finalize.json().catch(() => ({})) as Record<string, unknown>;
   if (!finalize.ok) {
-    return Response.json({ error: 'revision is not ready for human review', detail: finalized.detail }, { status: finalize.status });
+    return Response.json({ error: 'revision could not complete automatic publication', detail: finalized.detail }, { status: finalize.status });
   }
 
   const detail = {
-    status: 'review',
+    status: finalized.status,
+    decision: finalized.decision,
     repository_id: repository.id,
     revision_id: repository.revision_id,
-    human_review_required: true,
+    human_review_required: false,
     revision: finalized,
     analysis: inspectionPayload,
   };
@@ -124,12 +125,12 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
         requestSha256,
         resultSha256: await jsonSha256(detail),
         status: 'succeeded',
-        reviewBoundary: 'human-review-required',
+        reviewBoundary: 'automatic-policy',
         detail,
       });
     } catch {
       return Response.json({
-        error: 'submission reached review but its immutable receipt could not be recorded; retry with the same Idempotency-Key',
+        error: 'submission finished policy evaluation but its immutable receipt could not be recorded; retry with the same Idempotency-Key',
         revision_id: repository.revision_id,
         retryable: true,
       }, { status: 503 });
@@ -140,9 +141,9 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
       insert into app.notifications (profile_id, event_type, title, body, href, metadata)
       values (
         ${authorization.actor.profileId}::uuid,
-        'repository.review_submitted',
-        'Repository submitted for review ✅',
-        'All automated checks passed. A human reviewer will make the final publication decision.',
+        'repository.publication_evaluated',
+        ${finalized.status === 'published' ? 'Repository published ✅' : 'Publication checks need attention'},
+        ${finalized.status === 'published' ? 'All required checks passed and this release was published automatically.' : 'Open the workspace for the automatic policy decision and steps to resolve it.'},
         ${`/repositories/${repository.id}/edit`},
         ${JSON.stringify({ repository_id: repository.id, revision_id: repository.revision_id })}::jsonb
       )

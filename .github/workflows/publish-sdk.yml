@@ -1,0 +1,28 @@
+name: Publish Super ii Python SDK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.11.24
+      - run: uv sync --directory sdk/python --extra test --frozen
+      - run: uv run --directory sdk/python ruff format --check .
+      - run: uv run --directory sdk/python ruff check .
+      - run: uv run --directory sdk/python pytest
+      - run: uv build --directory sdk/python
+      - run: uv publish --trusted-publishing always sdk/python/dist/*

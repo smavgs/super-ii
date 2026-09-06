@@ -49,6 +49,8 @@ services:
       SUPERII_RUNTIME_TOKEN: ${SUPERII_RUNTIME_TOKEN:?set SUPERII_RUNTIME_TOKEN}
       SUPERII_TRANSFER_URL: http://127.0.0.1:8790
       SUPERII_TRANSFER_TOKEN: ${SUPERII_RUNTIME_TOKEN:?set SUPERII_RUNTIME_TOKEN}
+      SUPERII_POLICY_URL: http://127.0.0.1:8791
+      SUPERII_POLICY_TOKEN: ${SUPERII_POLICY_TOKEN:?set SUPERII_POLICY_TOKEN}
       SUPERII_CLAMAV_COMMAND: clamdscan
       SUPERII_CLAMAV_CONFIG_FILE: /etc/clamav/clamd-client.conf
       SUPERII_GITLEAKS_COMMAND: gitleaks
@@ -85,6 +87,28 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  policy:
+    image: superii/runtime:0.1.0
+    command: ["superii-policy"]
+    restart: unless-stopped
+    depends_on:
+      runtime:
+        condition: service_started
+    network_mode: service:runtime
+    environment:
+      SUPERII_DATABASE_URL: ${SUPERII_POLICY_DATABASE_URL:?set restricted SUPERII_POLICY_DATABASE_URL}
+      SUPERII_POLICY_TOKEN: ${SUPERII_POLICY_TOKEN:?set SUPERII_POLICY_TOKEN}
+      SUPERII_POLICY_SIGNING_KEY: ${SUPERII_POLICY_SIGNING_KEY:?set SUPERII_POLICY_SIGNING_KEY}
+      SUPERII_POLICY_KEY_ID: ${SUPERII_POLICY_KEY_ID:?set SUPERII_POLICY_KEY_ID}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
 
   transfer:
     build:

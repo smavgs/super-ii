@@ -8,7 +8,7 @@ Super ii separates repository work from publication.
 - Prepare an immutable revision.
 - Upload files to that draft revision.
 - Commit the revision manifest.
-- Submit the revision for human review.
+- Submit the revision for automatic publication policy evaluation.
 
 ## Human-only boundary
 

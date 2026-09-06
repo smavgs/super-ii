@@ -703,6 +703,59 @@ class RepositoryDatabase:
             ).fetchone()
         return bool(row and row["has_files"] and row["all_clean"])
 
+    def finalize_for_policy(self, repository_id: UUID, revision_id: UUID) -> dict[str, Any]:
+        from .workspaces import revision_manifest, revision_manifest_document
+
+        with self.connect() as connection:
+            revision = connection.execute(
+                "select * from app.repository_revisions where id = %s and repository_id = %s "
+                "for update",
+                (revision_id, repository_id),
+            ).fetchone()
+            if not revision:
+                raise ValueError("revision not found")
+            if revision["status"] in {"review", "published"}:
+                return {
+                    "commit_sha": revision["commit_sha"],
+                    "manifest_sha256": revision["manifest_sha256"],
+                    "manifest": revision["manifest"],
+                    "file_count": revision["file_count"],
+                    "total_size_bytes": revision["total_size_bytes"],
+                }
+            rows = connection.execute(
+                "select * from app.repository_files where revision_id = %s order by path",
+                (revision_id,),
+            ).fetchall()
+            if not rows or any(
+                row["storage_state"] != "available" or row["scan_status"] != "clean" for row in rows
+            ):
+                raise ValueError("revision contains pending or rejected files")
+            files = [
+                RevisionFile(**{key: row[key] for key in RevisionFile.__dataclass_fields__})
+                for row in rows
+            ]
+            checksum, manifest = revision_manifest(files), revision_manifest_document(files)
+            size = sum(file.size_bytes for file in files)
+            result = connection.execute(
+                """
+                update app.repository_revisions set manifest_sha256 = %s, manifest = %s,
+                  file_count = %s, total_size_bytes = %s, status = 'review',
+                  commit_sha = encode(digest(coalesce((select parent.commit_sha
+                    from app.repository_revisions parent
+                    where parent.id = repository_revisions.parent_revision_id), '')
+                    || E'\\n' || %s || E'\\n' || message || E'\\n' || id::text, 'sha256'), 'hex')
+                where id = %s returning commit_sha
+                """,
+                (checksum, Jsonb(manifest), len(files), size, checksum, revision_id),
+            ).fetchone()
+            return {
+                "commit_sha": result["commit_sha"],
+                "manifest_sha256": checksum,
+                "manifest": manifest,
+                "file_count": len(files),
+                "total_size_bytes": size,
+            }
+
     def revision_analysis_passed(self, repository_id: UUID, revision_id: UUID) -> bool:
         with self.connect() as connection:
             row = connection.execute(

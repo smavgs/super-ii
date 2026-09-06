@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     bridge_max_repository_bytes: int = Field(default=20 * 1024**3, ge=1)
     bridge_max_import_bytes: int = Field(default=25 * 1024**3, ge=1)
     bridge_max_files: int = Field(default=5_000, ge=1, le=20_000)
+    policy_url: str = "http://127.0.0.1:8791"
+    policy_token: SecretStr | None = None
     bridge_runtime_url: str = "http://127.0.0.1:8788"
     transfer_url: str = "http://127.0.0.1:8790"
     transfer_token: SecretStr | None = None
@@ -76,7 +78,7 @@ class Settings(BaseSettings):
             raise ValueError("SUPERII_TRANSFER_URL cannot contain credentials, query, or fragment")
         return value.rstrip("/")
 
-    @field_validator("bridge_runtime_url")
+    @field_validator("bridge_runtime_url", "policy_url")
     @classmethod
     def loopback_bridge_runtime_url(cls, value: str) -> str:
         parsed = urlsplit(value.rstrip("/"))

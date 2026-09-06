@@ -2,7 +2,7 @@
 
 > Super ii is a public AI collaboration hub for models, datasets, browser apps, community discussions, collections, and provenance.
 
-The public catalog intentionally contains no seeded models, datasets, or apps. Real repositories appear only after their files pass automated security and format checks plus human review. Account access supports email, Google, and GitHub. Upload and publishing paths fail closed whenever the separate self-hosted runtime is not ready.
+The public catalog intentionally contains no seeded models, datasets, or apps. Real repositories appear only after their files pass automated security and format checks and independent automatic publication policy. Account access supports email, Google, and GitHub. Upload and publishing paths fail closed whenever the separate self-hosted runtime is not ready.
 
 ## Agent access
 

@@ -8,6 +8,9 @@ export type ManagedRepository = {
   slug: string;
   title: string;
   summary: string;
+  license: string;
+  visibility: string;
+  provenance: { rights_declaration?: { basis?: string; source_url?: string } };
   status: string;
   revision_id: string;
   revision_status: string;
@@ -56,6 +59,9 @@ export async function managedRepository(
         r.slug,
         r.title,
         r.summary,
+        r.license,
+        r.visibility,
+        r.provenance,
         r.status,
         rr.id as revision_id,
         rr.status as revision_status,
@@ -102,6 +108,9 @@ export async function scopedManagedRepository(
         r.slug,
         r.title,
         r.summary,
+        r.license,
+        r.visibility,
+        r.provenance,
         r.status,
         rr.id as revision_id,
         rr.status as revision_status,
