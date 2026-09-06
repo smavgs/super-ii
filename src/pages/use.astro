@@ -1,0 +1,184 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+const accountHref = isSignedIn
+  ? '/account#repositories'
+  : `/sign-up?redirect_url=${encodeURIComponent('/account#repositories')}`;
+const publishModelHref = isSignedIn
+  ? '/new?kind=model'
+  : `/sign-up?redirect_url=${encodeURIComponent('/new?kind=model')}`;
+const publishSpaceHref = isSignedIn
+  ? '/new?kind=space'
+  : `/sign-up?redirect_url=${encodeURIComponent('/new?kind=space')}`;
+const publishAnyHref = isSignedIn
+  ? '/new'
+  : `/sign-up?redirect_url=${encodeURIComponent('/new')}`;
+const pythonExample = `from transformers import AutoModel, AutoTokenizer
+
+# Every reviewed model page supplies its exact local revision path.
+model_dir = "./superii-owner-model-r1"
+tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
+model = AutoModel.from_pretrained(
+    model_dir,
+    local_files_only=True,
+    use_safetensors=True,
+)
+print(type(model).__name__, type(tokenizer).__name__)`;
+const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
+---
+
+<BaseLayout
+  title="Use Super ii your way"
+  description="Run reviewed models locally, build with Python, or publish your work with one public link. Start where you already work."
+>
+  <section class="use-way-hero">
+    <div class="shell use-way-hero__inner">
+      <div>
+        <p class="eyebrow">Run · Code · Share</p>
+        <h1>Use Super ii your way <span aria-hidden="true">😊</span></h1>
+        <p>Start where you already work.</p>
+      </div>
+      <nav class="use-path-nav" aria-label="Choose how to use Super ii">
+        <a href="#run"><span>01</span>Run models locally<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
+        <a href="#code"><span>02</span>Build with Python<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
+        <a href="#share"><span>03</span>Share with one link<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
+      </nav>
+    </div>
+  </section>
+
+  <section class="use-way-section use-way-section--run" id="run" data-use-way-section>
+    <div class="shell use-way-section__grid">
+      <div class="use-way-section__number" aria-hidden="true">RUN</div>
+      <div class="use-way-section__content">
+        <p class="eyebrow">01 · Local</p>
+        <h2>Run models locally.</h2>
+        <p class="use-way-section__lead">For Ollama, LM Studio, ComfyUI and local AI users.</p>
+        <div class="use-brand-row" aria-label="Supported local paths">
+          <span class="use-brand"><img src="/brand/use/ollama.svg" alt="" /><strong>Ollama</strong></span>
+          <span class="use-brand"><img src="/brand/use/lm-studio.svg" alt="" /><strong>LM Studio</strong></span>
+          <span class="use-brand"><img src="/brand/use/comfyui.svg" alt="" /><strong>ComfyUI</strong><small>docs reviewed</small></span>
+        </div>
+        <ol class="use-step-list">
+          <li><span>01</span><p><strong>Find a model on Super ii.</strong><br />Public model pages stay open—no signup is required to inspect a model or copy its instructions.</p></li>
+          <li><span>02</span><p><strong>Choose your local runtime.</strong><br />Super ii matches the reviewed revision to supported runtimes.</p></li>
+          <li><span>03</span><p><strong>Get the exact compatible file and setup/run command.</strong><br />Downloads are tied to the published revision and its SHA-256 checksums.</p></li>
+          <li><span>04</span><p><strong>Run it on your computer.</strong><br />Your hardware does the inference; Super ii provides the path around it.</p></li>
+        </ol>
+        <div class="button-row">
+          <a class="button button--dark" href="/models">Find a model</a>
+          <a class="button button--secondary" href={accountHref}>Save your work</a>
+          <a class="button button--secondary" href={publishSpaceHref}>Publish as a Space</a>
+        </div>
+        <p class="use-way-note"><i class="ph ph-lock-key-open" aria-hidden="true"></i>No forced signup just to look at a model or copy instructions. An account becomes useful when you want to keep or publish what you made.</p>
+        <div class="use-loop" aria-label="Local workflow"><strong>LOCAL</strong><span>Find</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Run</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Build</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Publish</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="use-way-section use-way-section--code" id="code" data-use-way-section>
+    <div class="shell use-way-section__grid">
+      <div class="use-way-section__number" aria-hidden="true">CODE</div>
+      <div class="use-way-section__content">
+        <p class="eyebrow">02 · Python</p>
+        <h2>Build with Python.</h2>
+        <p class="use-way-section__lead">For developers, researchers and people already working in code.</p>
+        <div class="use-brand-row">
+          <span class="use-brand"><img src="/brand/use/python.svg" alt="" /><strong>Python</strong></span>
+          <span class="use-brand use-brand--text"><i class="ph ph-brackets-curly" aria-hidden="true"></i><strong>Transformers</strong></span>
+        </div>
+        <div class="use-python-example">
+          <div class="use-python-example__top"><span>Reviewed local model example</span><button type="button" data-copy-use data-copy-text={pythonExample}>Copy Python</button></div>
+          <pre><code>{pythonExample}</code></pre>
+        </div>
+        <p>Every reviewed model page provides the correct immutable files, local revision path and relevant <code>from_pretrained()</code> example. The example above shows the safe local-only pattern; use the exact generated path on the model you choose.</p>
+        <div class="use-resource-row" aria-label="Available model resources">
+          <a href="/models"><i class="ph ph-notebook" aria-hidden="true"></i>Notebook</a>
+          <a href="/models"><i class="ph ph-terminal-window" aria-hidden="true"></i>Shell</a>
+          <a href="/models"><i class="ph ph-brackets-curly" aria-hidden="true"></i>JSON manifest</a>
+          <a href="/models"><i class="ph ph-download-simple" aria-hidden="true"></i>Download files</a>
+        </div>
+        <div class="button-row">
+          <a class="button button--dark" href="/models">Choose a reviewed model</a>
+          <a class="button button--secondary" href={publishModelHref}>Publish my model</a>
+          <a class="button button--secondary" href={publishModelHref}>Push my fine-tune</a>
+        </div>
+        <div class="use-loop" aria-label="Python workflow"><strong>PYTHON</strong><span>Find</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Code</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Fine-tune</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Publish</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="use-way-section use-way-section--share" id="share" data-use-way-section>
+    <div class="shell use-way-section__grid">
+      <div class="use-way-section__number" aria-hidden="true">SHARE</div>
+      <div class="use-way-section__content">
+        <p class="eyebrow">03 · Labs</p>
+        <h2>Share with one link <span aria-hidden="true">🔗</span></h2>
+        <p class="use-way-section__lead">For classes, labs, papers and research groups.</p>
+        <div class="use-share-flow">
+          <div><span>01</span><strong>Upload your work.</strong><small>Model · Dataset · Notebook · App</small></div>
+          <i class="ph ph-arrow-down" aria-hidden="true"></i>
+          <div><span>02</span><strong>Super ii reviews and publishes it.</strong><small>Required checks stay attached to the release.</small></div>
+          <i class="ph ph-arrow-down" aria-hidden="true"></i>
+          <div><span>03</span><strong>You receive one public URL.</strong><small>Use the same link wherever people need your work.</small></div>
+        </div>
+        <div class="use-public-link">
+          <code>{publicLinkExample}</code>
+          <button class="button button--dark button--small" type="button" data-copy-use data-copy-text={publicLinkExample}>Copy public link</button>
+        </div>
+        <p class="use-share-places"><strong>Use it in:</strong><span>papers</span><span>GitHub READMEs</span><span>assignments</span><span>course material</span><span>research groups</span><span>Slack / Discord</span><span>X posts</span></p>
+        <div class="button-row">
+          <a class="button button--dark" href={publishAnyHref}>Upload your work</a>
+          <a class="button button--secondary" href="/models">See public examples</a>
+        </div>
+        <div class="use-loop" aria-label="Labs workflow"><strong>LABS</strong><span>Upload</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Link</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Share</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Discover</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="use-way-finale">
+    <div class="shell use-way-finale__inner">
+      <p class="eyebrow">One open home</p>
+      <h2>Whatever you build, give it a home.</h2>
+      <p>Models. Datasets. Apps. Research.</p>
+      <strong>Run it. Code it. Share it.</strong>
+      <a class="button button--yellow" href="/models">Start with Super ii 😊 <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+    </div>
+  </section>
+
+  <p class="sr-only" data-use-copy-status aria-live="polite"></p>
+</BaseLayout>
+
+<script>
+  const status = document.querySelector('[data-use-copy-status]');
+  document.querySelectorAll('[data-copy-use]').forEach((control) => {
+    control.addEventListener('click', async () => {
+      if (!(control instanceof HTMLButtonElement)) return;
+      const value = control.dataset.copyText ?? '';
+      const original = control.textContent ?? 'Copy';
+      try {
+        await navigator.clipboard.writeText(value);
+        control.textContent = 'Copied ✓';
+        if (status instanceof HTMLElement) status.textContent = 'Copied to clipboard.';
+        window.setTimeout(() => { control.textContent = original; }, 1800);
+      } catch {
+        if (status instanceof HTMLElement) status.textContent = 'Copy was blocked. Select the text and copy it manually.';
+      }
+    });
+  });
+
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    document.documentElement.classList.add('use-motion-ready');
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    }, { threshold: 0.08 });
+    document.querySelectorAll('[data-use-way-section]').forEach((section) => observer.observe(section));
+  }
+</script>

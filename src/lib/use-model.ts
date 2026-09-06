@@ -233,6 +233,10 @@ function selectedPrimaryFiles(
   const fileBased = matchedFormats.filter((format) => ['gguf', 'dduf'].includes(format));
   const selected = fileBased.flatMap((format) => formatFiles(repository, format));
   if (selected.length) return selected;
+  if (integration.id === 'comfyui' && matchedFormats.includes('safetensors')) {
+    const checkpoints = formatFiles(repository, 'safetensors');
+    return checkpoints.length === 1 ? checkpoints : [];
+  }
   if (integration.id === 'lm-studio' && matchedFormats.includes('mlx')) {
     return [formatFiles(repository, 'safetensors')[0] ?? formatFiles(repository, 'mlx')[0] ?? null];
   }
@@ -297,10 +301,13 @@ function makeCandidate(
   const fileSuffix = primaryFile ? `-${safeName(primaryFile.path.split('/').at(-1) ?? 'file', 'file')}` : '';
   const modelId = safeName(`${repository.owner_handle}-${repository.slug}${fileSuffix}`, 'superii-model');
   const dockerModel = `local/superii-${safeName(repository.owner_handle, 'owner')}-${safeName(repository.slug, 'model')}:${repository.revision_sequence}`;
+  const primaryUrl = primaryFile ? fileDownloadUrl(repository, primaryFile, origin) : '';
   const tokens = {
     model_dir: localDirectory,
     model_id: modelId,
     primary_file: fileLocalPath,
+    primary_name: primaryFile?.path.split('/').at(-1) ?? '',
+    primary_url: primaryUrl,
     docker_model: dockerModel,
   };
   const commands = integration.commands
@@ -337,7 +344,7 @@ function makeCandidate(
       localPath: fileLocalPath,
       sha256: primaryFile.sha256,
       sizeBytes: primaryFile.size_bytes,
-      downloadUrl: fileDownloadUrl(repository, primaryFile, origin),
+      downloadUrl: primaryUrl,
     } : null,
     commands,
     generatedFiles,
@@ -361,12 +368,27 @@ function makeCandidate(
   };
 }
 
+function integrationMatchesRepository(
+  integration: RegistryIntegration,
+  repository: RepositoryBundle,
+  matchedFormats: ModelFormat[],
+): boolean {
+  if (integration.id !== 'comfyui') return true;
+  if (!matchedFormats.includes('safetensors')) return false;
+  const context = [repository.task, repository.library, repository.modality]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  return /(^|[^a-z])(comfy|diffusion|stable diffusion|text-to-image|image-to-image|image generation|image-generation|sdxl|flux|image)([^a-z]|$)/.test(context);
+}
+
 export function modelUseCandidates(repository: RepositoryBundle, origin: string): ModelUseCandidate[] {
   const formats = detectModelFormats(repository);
   if (!formats.length) return [];
   return runtimeRegistry.integrations.flatMap((integration) => {
     const matched = integration.formats.filter((format) => formats.includes(format));
     if (!matched.length) return [];
+    if (!integrationMatchesRepository(integration, repository, matched)) return [];
     return selectedPrimaryFiles(repository, integration, matched)
       .map((primaryFile) => makeCandidate(repository, integration, matched, primaryFile, origin));
   }).sort((left, right) => left.priority - right.priority || left.name.localeCompare(right.name));

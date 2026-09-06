@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
-  "publishedAt": "2026-08-31",
+  "publishedAt": "2026-09-06",
   "reviewCadenceDays": 90,
   "allowedTemplateTokens": [
     "model_dir",
     "model_id",
     "primary_file",
+    "primary_name",
+    "primary_url",
     "docker_model"
   ],
   "integrations": [
@@ -230,6 +232,58 @@
         "chatPath": "/chat/completions"
       },
       "warnings": ["Select and load the imported model in LM Studio before using its API server."]
+    },
+    {
+      "id": "comfyui",
+      "name": "ComfyUI",
+      "category": "desktop-app",
+      "status": "registry-supported",
+      "summary": "Install a reviewed standalone image checkpoint into a dedicated local ComfyUI workspace.",
+      "documentation": "https://docs.comfy.org/basic-concepts/models",
+      "verifiedAt": "2026-09-06",
+      "expiresAt": "2026-12-05",
+      "verification": "Official ComfyUI model-directory guidance and Comfy CLI 1.5.3 install, model download, filename, workspace, and launch contracts reviewed; the safe help probes ran in an isolated environment without installing ComfyUI or a model.",
+      "platforms": ["macos-arm64", "macos-x64", "linux-arm64", "linux-x64", "windows-x64"],
+      "formats": ["safetensors"],
+      "accelerators": ["cpu", "metal", "cuda", "rocm"],
+      "capabilities": ["desktop-app", "local-runtime"],
+      "priority": 27,
+      "commands": [
+        {
+          "id": "install-cli",
+          "kind": "install",
+          "label": "Install the reviewed Comfy CLI in an active virtual environment",
+          "executable": "python3",
+          "args": ["-m", "pip", "install", "comfy-cli==1.5.3"]
+        },
+        {
+          "id": "install-cpu",
+          "kind": "setup",
+          "label": "Install the latest stable ComfyUI CPU baseline",
+          "executable": "comfy",
+          "args": ["--skip-prompt", "--no-enable-telemetry", "--workspace=./superii-comfy", "install", "--version", "latest", "--skip-manager", "--cpu"]
+        },
+        {
+          "id": "download-checkpoint",
+          "kind": "setup",
+          "label": "Download the reviewed checkpoint into ComfyUI",
+          "executable": "comfy",
+          "args": ["--skip-prompt", "--no-enable-telemetry", "--workspace=./superii-comfy", "model", "download", "--url", "{{primary_url}}", "--relative-path", "models/checkpoints", "--filename", "{{primary_name}}"]
+        },
+        {
+          "id": "launch",
+          "kind": "run",
+          "label": "Launch ComfyUI on loopback",
+          "executable": "comfy",
+          "args": ["--skip-prompt", "--no-enable-telemetry", "--workspace=./superii-comfy", "launch", "--", "--listen", "127.0.0.1", "--port", "8188"]
+        }
+      ],
+      "warnings": [
+        "Safetensors is a container, not proof of ComfyUI compatibility. Super ii exposes this path only for a single-file repository declaring image or diffusion context; confirm the matching ComfyUI workflow and loader.",
+        "The generated setup uses a portable CPU baseline. Follow ComfyUI's official install guidance to choose a platform-specific accelerator option.",
+        "Use the checksum-bound Super ii download script when integrity verification is required; Comfy CLI's model download command does not verify Super ii's published SHA-256 itself.",
+        "No custom nodes are installed automatically."
+      ]
     },
     {
       "id": "jan",

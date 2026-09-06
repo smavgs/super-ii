@@ -144,6 +144,48 @@ try {
   assert.equal(pytorchCandidate.snippets.length, 0);
   assert.ok(pytorchCandidate.warnings.some((warning) => warning.includes('deserialization review')));
 
+  const imageRepository = {
+    ...repository,
+    slug: 'reviewed-image-model',
+    task: 'text-to-image',
+    library: 'diffusers',
+    modality: 'image',
+    files: [{ ...repository.files[0], path: 'reviewed-image-model.safetensors' }],
+    compatibility: {
+      ...repository.compatibility,
+      tensor_format: 'safetensors',
+      quantization: null,
+      llama_cpp_compatible: false,
+    },
+  };
+  const imageManifest = useModel.buildUseManifest(imageRepository, origin);
+  const comfyCandidate = imageManifest.integrations.find((candidate) => candidate.integrationId === 'comfyui');
+  assert.ok(comfyCandidate, 'single-file image Safetensors repository must expose the reviewed ComfyUI path');
+  assert.equal(comfyCandidate.status, 'registry-supported');
+  assert.equal(comfyCandidate.primaryFile.path, 'reviewed-image-model.safetensors');
+  const comfyDownload = comfyCandidate.commands.find((command) => command.id === 'download-checkpoint');
+  const comfyLaunch = comfyCandidate.commands.find((command) => command.id === 'launch');
+  assert.match(comfyDownload.posix, /model download/);
+  assert.match(comfyDownload.posix, /--relative-path models\/checkpoints/);
+  assert.match(comfyDownload.posix, /--filename reviewed-image-model\.safetensors/);
+  assert.match(comfyDownload.posix, /https:\/\/superii\.site\/api\/repositories\//);
+  assert.match(comfyLaunch.posix, /--listen 127\.0\.0\.1 --port 8188/);
+  assert.ok(comfyCandidate.warnings.some((warning) => warning.includes('not proof of ComfyUI compatibility')));
+
+  const textSafetensorsRepository = {
+    ...imageRepository,
+    slug: 'text-safetensors-model',
+    task: 'text-generation',
+    library: 'transformers',
+    modality: 'text',
+  };
+  const textSafetensorsManifest = useModel.buildUseManifest(textSafetensorsRepository, origin);
+  assert.equal(
+    textSafetensorsManifest.integrations.some((candidate) => candidate.integrationId === 'comfyui'),
+    false,
+    'text Safetensors must not be presented as ComfyUI compatible',
+  );
+
   const profile = {
     os: 'macos',
     architecture: 'arm64',
@@ -174,7 +216,7 @@ try {
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   }
 
-  console.log(`OK: generated and checked Use Manifest, deterministic ranking, 4 representations, ${manifest.integrations.length} candidates, quoted paths, and shell syntax`);
+  console.log(`OK: generated and checked Use Manifest, conservative ComfyUI routing, deterministic ranking, 4 representations, ${manifest.integrations.length} candidates, quoted paths, and shell syntax`);
 } finally {
   await vite.close();
 }

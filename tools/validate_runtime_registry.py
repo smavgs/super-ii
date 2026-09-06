@@ -24,6 +24,7 @@ EXPECTED_INTEGRATIONS = {
     "diffusers",
     "transformers-js",
     "lm-studio",
+    "comfyui",
     "jan",
     "docker-model-runner",
     "vllm",
@@ -42,6 +43,7 @@ INTEGRATION_DOCUMENTATION_HOSTS = {
     "diffusers": "huggingface.co",
     "transformers-js": "huggingface.co",
     "lm-studio": "lmstudio.ai",
+    "comfyui": "docs.comfy.org",
     "jan": "jan.ai",
     "docker-model-runner": "docs.docker.com",
     "vllm": "docs.vllm.ai",
@@ -197,6 +199,24 @@ def main() -> int:
                     errors.append(f"{prefix} command contains malformed template syntax")
             if len(command_ids) != len(set(command_ids)):
                 errors.append(f"{prefix} command ids must be unique")
+
+            if integration_id == "comfyui":
+                comfy_commands = json.dumps(commands, sort_keys=True)
+                for marker in (
+                    "comfy-cli==1.5.3",
+                    "--skip-prompt",
+                    "--no-enable-telemetry",
+                    "--workspace=./superii-comfy",
+                    "models/checkpoints",
+                    "{{primary_url}}",
+                    "{{primary_name}}",
+                    "127.0.0.1",
+                    "8188",
+                ):
+                    if marker not in comfy_commands:
+                        errors.append(f"{prefix} reviewed command contract is missing {marker}")
+                if status != "registry-supported":
+                    errors.append(f"{prefix} must remain docs reviewed rather than runtime verified")
 
             api = integration.get("api")
             if api is not None:

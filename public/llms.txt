@@ -37,6 +37,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 ## Explore
 
 - [Home](https://superii.site/): Product overview and launch principles
+- [Use Super ii](https://superii.site/use): Choose a reviewed local-runtime, Python, or public-link workflow
 - [Models](https://superii.site/models): Public model catalog and local browser inference tools
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog

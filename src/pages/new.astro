@@ -6,6 +6,8 @@ import { sqlClient } from '@/lib/db';
 
 type OwnerOption = { id: string | null; handle: string; label: string; kind: 'profile' | 'organization' };
 const sql = sqlClient(Astro.locals);
+const requestedKind = Astro.url.searchParams.get('kind');
+const selectedKind = requestedKind === 'dataset' || requestedKind === 'space' ? requestedKind : 'model';
 let owners: OwnerOption[] = [];
 if (sql) {
   try {
@@ -52,9 +54,9 @@ if (sql) {
       <div class="form-grid form-grid--two">
         <label>Repository type
           <select name="kind" required data-repository-kind>
-            <option value="model">Model 🤖</option>
-            <option value="dataset">Dataset 🗂️</option>
-            <option value="space">App / Space ✨</option>
+            <option value="model" selected={selectedKind === 'model'}>Model 🤖</option>
+            <option value="dataset" selected={selectedKind === 'dataset'}>Dataset 🗂️</option>
+            <option value="space" selected={selectedKind === 'space'}>App / Space ✨</option>
           </select>
         </label>
         <label>Owner

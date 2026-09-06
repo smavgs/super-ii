@@ -173,6 +173,7 @@ const derivedCount = manifest.derivedVersions.length;
                   ))}
                   {candidate.integrationId === 'transformers-js' && <a class="button button--secondary button--small" href="#model-tools">Open browser Try model</a>}
                   {candidate.integrationId === 'jan' && <p class="use-model__manual">In Jan, open Settings → Model Providers → Llama.cpp → Import, then select the reviewed GGUF file. No undocumented app link is opened.</p>}
+                  {candidate.integrationId === 'comfyui' && <p class="use-model__manual">The generated commands install the reviewed file into a dedicated loopback-only workspace. Select it in the matching ComfyUI loader and workflow. No custom nodes are installed automatically.</p>}
                   {candidate.integrationId === 'superii-runtime' && <a class="button button--secondary button--small" href="#model-tools">Check Super ii Runtime</a>}
                   <details class="use-option__evidence">
                     <summary>Verification and cautions</summary>
