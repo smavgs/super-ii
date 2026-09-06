@@ -23,7 +23,7 @@ Current expression:
   or starts_with(http.request.uri.path, "/.well-known/")
   or starts_with(http.request.uri.path, "/schemas/")
   or starts_with(http.request.uri.path, "/skills/superii/")
-  or http.request.uri.path in {"/llms.txt" "/llms-full.txt" "/robots.txt" "/sitemap-index.xml" "/runtime-registry.json" "/openapi.json" "/docs.json" "/system-state.json" "/system-state.md" "/agent-connectors.json" "/siiwebskill.md"}
+  or http.request.uri.path in {"/llms.txt" "/llms-full.txt" "/robots.txt" "/sitemap-index.xml" "/sitemap.xml" "/runtime-registry.json" "/openapi.json" "/docs.json" "/system-state.json" "/system-state.md" "/agent-connectors.json" "/siiwebskill.md"}
   or ends_with(http.request.uri.path, "/manifest.json")
   or ends_with(http.request.uri.path, "/use.json")
   or ends_with(http.request.uri.path, "/README.md")

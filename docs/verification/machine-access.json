@@ -1,0 +1,176 @@
+{
+  "verified_at": "2026-09-06T12:38:46.331580+00:00",
+  "client": "default Python urllib, no cookies or bearer token",
+  "routes": [
+    {
+      "path": "/api/health",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "path": "/llms.txt",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/plain"
+    },
+    {
+      "path": "/llms-full.txt",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/plain"
+    },
+    {
+      "path": "/robots.txt",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/plain; charset=utf-8"
+    },
+    {
+      "path": "/sitemap.xml",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/xml"
+    },
+    {
+      "path": "/openapi.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/docs.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/system-state.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/system-state.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8"
+    },
+    {
+      "path": "/agent-connectors.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/agents.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown; charset=utf-8"
+    },
+    {
+      "path": "/siiwebskill.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown"
+    },
+    {
+      "path": "/runtime-registry.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/.well-known/agent-card.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/.well-known/commerce-agent-card.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "path": "/skills/superii/SKILL.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown"
+    },
+    {
+      "path": "/skills/superii/manifest.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/skills/superii/signature.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/skills/superii/public-key.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/skills/superii/references/public-discovery.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown"
+    },
+    {
+      "path": "/skills/superii/references/safe-publishing.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown"
+    },
+    {
+      "path": "/skills/superii/references/contracts.md",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/markdown"
+    },
+    {
+      "path": "/a2a/v1/message:send",
+      "method": "POST",
+      "status": 200,
+      "content_type": "application/a2a+json; charset=utf-8"
+    },
+    {
+      "path": "/mcp",
+      "method": "POST",
+      "status": 200,
+      "content_type": "text/event-stream"
+    },
+    {
+      "path": "/mcp/work",
+      "method": "POST",
+      "status": 200,
+      "content_type": "text/event-stream"
+    },
+    {
+      "path": "/mcp/work",
+      "method": "POST",
+      "status": 200,
+      "content_type": "text/event-stream"
+    },
+    {
+      "path": "/api/publication-keys",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    },
+    {
+      "path": "/schemas/sdk-manifest-v1.json",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json"
+    }
+  ],
+  "protected_work_read_denied": true,
+  "public_a2a_read_completed": true
+}

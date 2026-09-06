@@ -51,7 +51,7 @@ def main() -> None:
     assert request("/api/health")["status"] == "ok"
     assert "Super ii" in request("/llms.txt")
     for path in (
-        "/llms-full.txt", "/openapi.json", "/docs.json",
+        "/llms-full.txt", "/robots.txt", "/sitemap.xml", "/openapi.json", "/docs.json",
         "/system-state.json", "/system-state.md", "/agent-connectors.json",
         "/agents.md", "/siiwebskill.md", "/runtime-registry.json",
         "/.well-known/agent-card.json", "/.well-known/commerce-agent-card.json",

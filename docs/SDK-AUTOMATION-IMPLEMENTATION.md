@@ -4,8 +4,10 @@ Authorized on 2026-09-05 following discussion of `super ii tech .pages`.
 Baseline: `3c03dfa5b764c3457448018c7da179ff4e1b6c39`.
 
 The existing join journeys, empty pre-launch catalogue, pricing, and older Drive
-and Documents checkouts are preserved. This branch adds capabilities to the
-current GitHub version. It does not seed public content.
+and Documents checkouts are preserved. The implementation was merged in
+[PR #1](https://github.com/smavgs/super-ii/pull/1) at `b99a307` and integrated
+with the newer member profiles and Builders directory through `6df2076`.
+No public content was seeded.
 
 ## Acceptance criteria
 
@@ -32,21 +34,55 @@ current GitHub version. It does not seed public content.
 
 ## Verification and deployment record
 
-This section is updated as implementation and verification complete. An entry
-in the acceptance list above is a requirement, not a claim of completion.
+Verified on 2026-09-06. The evidence below distinguishes live service checks,
+isolated integration tests, and local inference measurements.
 
-- Dependencies installed in the isolated checkout; baseline npm audit: zero
-  vulnerabilities.
-- Cloudflare zone: `7af416fae17419da625a210264535500`. Ordinary urllib requests
-  received Error 1010 on health and both MCP endpoints. Wrangler OAuth has
-  deployment permissions but cannot read or edit zone security rules.
-
-- The approved Cloudflare configuration rule is active: `Super ii machine routes - browser integrity exception v1`, ID `099f15f878fe40aea5807eb4841c5abc`. It turns Browser Integrity Check off only for the canonical host's API, MCP and machine resource paths. Other settings remain unchanged. Ordinary Python urllib requests now return JSON/SSE/text instead of Error 1010. Rollback: disable this named configuration rule in the zone Rules overview.
-- Python distribution: `superii-sdk` 0.1.0; import and CLI: `superii`. PyPI rejected the original distribution name; the user approved the alternative. A pending trusted publisher is registered for `smavgs/super-ii`, `publish-sdk.yml`, environment `pypi`. The GitHub environment allows only `main`.
-- SDK: 28 tests passed, including authenticated local HTTP serving, a real stdio MCP handshake/call, immutable signature checks, interrupted transfers, cache integrity and explicit remote-provider isolation. Real local llama.cpp inference passed on an existing 55 MB GGUF; the second acquisition transferred zero bytes. See `verification/sdk-local-inference.json`; these are smoke measurements, not model-quality or large-model latency benchmarks.
-- Runtime: 78 tests passed. Real Ed25519 and restricted-role PostgreSQL publication integration passed; scanner evidence in that isolated integration test is deliberately a fixture. The complete Rust/Python/container verification script passed.
-- Live policy service is running on loopback port 8791 with a dedicated restricted database login and Keychain-held secrets. Its ready check and the main runtime ready check passed; real ClamAV, Gitleaks, storage, transfer service and automatic publication are enabled. The public catalogue remains empty.
-- The upgrade is being integrated with upstream `065e194`, preserving the six newer Skills, commerce, homepage and CSP commits. Automatic publication uses migration `0017` to follow upstream agent-commerce migration `0016`. The schema is rerunnable; no publication data is seeded.
+- **Public Python release:** [superii-sdk 0.1.0](https://pypi.org/project/superii-sdk/0.1.0/)
+  was published from `b99a307` by the successful
+  [GitHub release workflow](https://github.com/smavgs/super-ii/actions/runs/34007539909).
+  Trusted Publishing is scoped to `smavgs/super-ii`, `publish-sdk.yml`, and
+  environment `pypi`; that environment allows only `main`. Install with
+  `python -m pip install superii-sdk` on Python 3.11 or newer. The import and CLI
+  remain `superii`. A fresh isolated installation from public PyPI imported
+  version 0.1.0, ran `superii hardware`, and completed real llama.cpp inference.
+  [Release evidence](verification/sdk-pypi-release.json) records both distribution
+  hashes and the published wheel's empty-cache and warm-cache measurements.
+- **Machine access:** the approved Cloudflare rule
+  `Super ii machine routes - browser integrity exception v1`
+  (`099f15f878fe40aea5807eb4841c5abc`) is active for `superii.site` and
+  `www.superii.site`. It disables Browser Integrity Check on API, MCP, A2A and
+  machine-readable resource routes. The [scope and rollback procedure](operations/MACHINE-ACCESS.md)
+  record the deployed expression. [All 28 ordinary urllib requests passed](verification/machine-access.json),
+  including public A2A execution, MCP discovery, the SDK manifest schema and
+  active publication keys. A protected Work receipt read was correctly denied
+  without a token. Authentication, rate limits, WAF and DDoS protections remain
+  active. The [live signed Skill](verification/signed-skill-live.json) passed
+  Ed25519 verification and all four exact file hashes against the pinned key.
+- **SDK verification:** 28 tests passed, including authenticated local HTTP
+  serving, a real stdio MCP handshake/call, immutable signature checks,
+  interrupted transfers, cache integrity and explicit remote-provider isolation.
+  [Local llama.cpp inference](verification/sdk-local-inference.json) and the
+  public PyPI wheel both used an existing 55 MB GGUF; their second acquisitions
+  transferred zero bytes. These are smoke measurements, not model-quality or
+  large-model latency benchmarks. The OS file cache was not cleared.
+- **Automatic publication:** 78 runtime tests passed. Real Ed25519 and
+  restricted-role PostgreSQL integration passed; scanner evidence in that
+  isolated integration test is deliberately a fixture. The live policy service
+  runs on loopback port 8791 with a dedicated restricted database login and
+  Keychain-held secrets. [Production readiness](verification/runtime-publication-ready.json)
+  confirms the database, storage, transfer service, real ClamAV and Gitleaks,
+  publication policy, and matching active public key. The public catalogue is
+  empty; the first real creator release remains pending.
+- **Combined source and database:** the implementation
+  [passed full CI](https://github.com/smavgs/super-ii/actions/runs/34007248531),
+  including SDK/runtime tests, Rust checks, container builds and website checks.
+  The final source preserves upstream Skills, commerce, homepage, CSP, richer
+  member profiles (`452b06e`) and Builders discovery (`6df2076`). Local Astro
+  checking reports 271 files with zero errors, warnings or hints; the build
+  scans 353 release files and passes CSP checks. All 18 database migrations
+  apply twice and their transactional suites pass. Migration `0017` adds
+  automatic publication; `0018` adds member profiles. Production has 89 tables
+  and one view, with no public repository seed rows.
 
 ## Supported execution and research limits
 
