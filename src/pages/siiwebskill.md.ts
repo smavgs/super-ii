@@ -37,15 +37,17 @@ When the user explicitly asks the agent to create, upload, revise, commit, or su
 
 ## Governed work tools
 
-The Work MCP may expose these review-bound tools when the current system state and token allow them:
+The Work MCP may expose these scoped tools when the current system state and token allow them:
 
 - create_draft_repository
 - create_revision
 - prepare_resumable_upload
-- submit_revision_for_review
+- submit_revision_for_publication
 - claim_contribution_job
 - submit_contribution_job
 - get_action_receipt
+
+The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Contribution jobs retain their separate acceptance process.
 
 For every mutation, state the organization, repository, action, and expected result first. Supply a stable idempotency key and reuse it only for an exact retry. For file transfers, declare the exact path, byte length, media type, and SHA-256; use the returned file-specific resumable capability without revealing it. Preserve the immutable action receipt.
 

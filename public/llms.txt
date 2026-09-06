@@ -28,6 +28,9 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [Use Manifest schema](https://superii.site/schemas/use-manifest-v1.json): Per-model deterministic execution contract
 - [Runtime registry](https://superii.site/runtime-registry.json): Reviewed libraries, runtimes, desktop apps, API servers, agents, notebooks, and verification dates
 - [Runtime registry schema](https://superii.site/schemas/runtime-registry-v1.json): Versioned registry validation contract
+- [Python SDK](https://superii.site/docs#python-sdk): Install superii-sdk from PyPI for verified acquisition, hardware planning and local inference
+- [SDK manifest schema](https://superii.site/schemas/sdk-manifest-v1.json): Immutable files, compatibility and signed publication evidence
+- [Publication keys](https://superii.site/api/publication-keys): Ed25519 policy verification keys and current activation state
 
 Every reviewed repository exposes README.md, agents.md, manifest.json, api, and mcp resources beneath its canonical URL. Reviewed models also expose use.json, use.md, use.ipynb, and use.sh from that same immutable revision. Default repository URLs also negotiate text/markdown and application/json. Public paper pages expose Markdown and JSON representations.
 

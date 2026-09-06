@@ -1,0 +1,41 @@
+{
+  "verified_at": "2026-09-06T12:38:34.940845+00:00",
+  "runtime": {
+    "status": "ready",
+    "database": true,
+    "storage": true,
+    "transfer_service": true,
+    "required_scanners": {
+      "clamav": true,
+      "gitleaks": true
+    },
+    "publishing_enabled": true,
+    "publication_policy": true
+  },
+  "policy": {
+    "state": "ready",
+    "policy_version": "superii-auto-publish-v1",
+    "policy_sha256": "5d6bc2670d5087fb2f4041444a4352ddd94a37781bd55bd32c77e27a32d94b18"
+  },
+  "publication_keys": {
+    "status": 200,
+    "url": "https://superii.site/api/publication-keys",
+    "keys": [
+      {
+        "id": "superii-publication-v1-5d6bc2670d50",
+        "public_key": "mhQ0XL9UwMrl5X5LrNME+Mmzvzj3V91xROcxFWMr7ew=",
+        "policy_sha256": "5d6bc2670d5087fb2f4041444a4352ddd94a37781bd55bd32c77e27a32d94b18",
+        "enabled": true
+      }
+    ]
+  },
+  "www_handoff": {
+    "status": 200,
+    "url": "https://www.superii.site/siiwebskill.md"
+  },
+  "catalogue": {
+    "model": 0,
+    "dataset": 0,
+    "space": 0
+  }
+}

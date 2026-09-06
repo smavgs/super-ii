@@ -2,7 +2,9 @@
 
 The production website for [superii.site](https://superii.site): a fast public collaboration hub for Ai models, datasets, apps, and organizations.
 
-The launch catalog intentionally contains zero models, datasets, or apps. Every listing must arrive through the real upload, quarantine, inspection, immutable-manifest, and human-review pipeline; no demonstration repositories are presented as community content.
+The launch catalog intentionally contains zero models, datasets, or apps. Every listing must arrive through upload, quarantine, inspection, an immutable manifest, and a signed independent automatic publication decision. Failed or unknown checks block publication with reasons; no demonstration repositories are presented as community content.
+
+Install the Python SDK with `python -m pip install superii-sdk` (Python 3.11+). The import and CLI are `superii`. See the [SDK guide](sdk/python/README.md) for verified downloads, hardware planning, local inference, authenticated local serving, and measured research limits, and the [implementation record](docs/SDK-AUTOMATION-IMPLEMENTATION.md) for release evidence.
 
 ## Stack
 
@@ -34,7 +36,7 @@ The requested repository core, safe/offline inspectors, structured dataset and m
 
 - [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
 - `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
-- `/mcp/work` is a separately authenticated Streamable HTTP MCP server for organization-owned draft creation, revision creation, checksum-bound resumable uploads, review submission, contribution jobs, and immutable receipt lookup. It cannot publish, delete, pay, or expand its own authority.
+- `/mcp/work` is a separately authenticated Streamable HTTP MCP server for organization-owned draft creation, revision creation, checksum-bound resumable uploads, automatic policy submission, contribution jobs, and immutable receipt lookup. Only the independent policy service can approve publication; agents cannot override it, delete, pay, or expand their own authority.
 - `/.well-known/commerce.json`, `/mcp/commerce`, and the separate commerce A2A Agent Card expose every current purchasable offer to agents. A human issues an independent `sii_commerce_` credential with exact product, target, per-order, cumulative, count, expiry, and revocation limits. It creates NOWPayments invoices but never accesses or debits a wallet.
 - A2A v1.0 discovery and bounded public tasks are exposed through `/.well-known/agent-card.json` and `/a2a/v1/message:send`; streaming, persistent tasks, and push callbacks are not claimed.
 - Public Agent Skill files are individually SHA-256 recorded and the canonical manifest has a detached Ed25519 signature. The private signing key is outside the repository.
@@ -75,7 +77,7 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 89-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, member-profile likes and links, automatic-publication policy, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 89-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, member-profile likes and links, publication verification keys and signed automatic decisions, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 

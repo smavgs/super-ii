@@ -35,6 +35,10 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - Builders directory: https://superii.site/builders
 - Skills catalog API: https://superii.site/api/skills
 - Universal agent handoff: https://superii.site/siiwebskill.md
+- Python SDK: https://superii.site/docs#python-sdk
+- SDK package: https://pypi.org/project/superii-sdk/
+- SDK manifest schema: https://superii.site/schemas/sdk-manifest-v1.json
+- Publication verification keys: https://superii.site/api/publication-keys
 
 ## Universal agent handoff
 
@@ -84,11 +88,19 @@ Transport: Streamable HTTP at https://superii.site/mcp
 
 Public tools search reviewed catalogs; read repository cards, files, schemas, lineage, compatibility, papers, and system state; and resolve verified downloads. They do not execute repository code or mutate state. Empty search results are real.
 
+## Python SDK
+
+Install with Python 3.11 or newer: python -m pip install superii-sdk. The Python import and CLI are superii. Run superii hardware to inspect this machine and superii plan owner/model to plan a real published model before acquiring its immutable files. Example model names are placeholders; the pre-launch catalogue has no seeded models.
+
+GET /api/sdk/models/{owner}/{slug} returns one published model revision, its files, compatibility and signed publication evidence. Optional revision must be a full 64-character SHA-256 commit. Public published models are readable anonymously. Private published models require current repository:read authority and repository permission. Downloads stay on the canonical origin and are verified by SHA-256 and an Ed25519 policy signature; old tokens gain no additional scope.
+
+The SDK supports resumable parallel acquisition, credential-scoped caches, installed local llama.cpp, MLX and supported Transformers/vLLM adapters, a token-protected loopback OpenAI text API, and stdio MCP. Planning estimates memory; it does not guarantee zero OOM. Generic partial-weight inference and universal instant start remain research. Remote warm-start is explicit and uses a separately supplied provider credential.
+
 ## Work MCP
 
 Transport: Streamable HTTP at https://superii.site/mcp/work
 
-The Work endpoint accepts only short-lived sii_agent_ bearer tokens issued once in an authenticated Workspace. Tools are create_draft_repository, create_revision, prepare_resumable_upload, submit_revision_for_review, claim_contribution_job, submit_contribution_job, and get_action_receipt. Mutating tools require a stable idempotency_key in their structured arguments. Repository work is limited to the token operator organization. Publication, deletion, payment, scope expansion, and operator changes are not tools.
+The Work endpoint accepts only short-lived sii_agent_ bearer tokens issued once in an authenticated Workspace. Tools are create_draft_repository, create_revision, prepare_resumable_upload, submit_revision_for_publication, claim_contribution_job, submit_contribution_job, and get_action_receipt. The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Mutating tools require a stable idempotency_key in their structured arguments. Repository work is limited to the token operator organization. Agents cannot sign or override publication approval, delete, pay, expand scope, or change operators through these tools.
 
 For large bytes, prepare_resumable_upload returns a file-specific tus capability. The capability is bound to the repository, immutable revision, path, exact size, SHA-256, and expiry. Upload completion still passes quarantine, checksum verification, scanners, offline inspection, and signed automatic publication policy.
 
