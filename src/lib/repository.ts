@@ -41,6 +41,12 @@ export type RepositoryBundle = {
   id: string;
   kind: RepositoryKind;
   owner_handle: string;
+  creator_handle: string | null;
+  creator_display_name: string | null;
+  creator_avatar_url: string | null;
+  owner_organization_handle: string | null;
+  owner_organization_name: string | null;
+  owner_organization_logo_url: string | null;
   slug: string;
   title: string;
   summary: string;
@@ -120,6 +126,12 @@ export type RepositoryBundle = {
     title: string;
     summary: string;
     match_score: number;
+    creator_handle: string | null;
+    creator_display_name: string | null;
+    creator_avatar_url: string | null;
+    owner_organization_handle: string | null;
+    owner_organization_name: string | null;
+    owner_organization_logo_url: string | null;
   }>;
   agent_traces: Array<{
     trace_id: string;
@@ -148,6 +160,12 @@ export async function getPublicRepository(
         r.id,
         r.kind,
         r.owner_handle,
+        creator.handle as creator_handle,
+        creator.display_name as creator_display_name,
+        creator.avatar_url as creator_avatar_url,
+        owner_organization.handle as owner_organization_handle,
+        coalesce(owner_organization.full_name, owner_organization.name) as owner_organization_name,
+        owner_organization.logo_url as owner_organization_logo_url,
         r.slug,
         r.title,
         r.summary,
@@ -393,15 +411,31 @@ export async function getPublicRepository(
             'slug', related.slug,
             'title', related.title,
             'summary', related.summary,
+            'creator_handle', related.creator_handle,
+            'creator_display_name', related.creator_display_name,
+            'creator_avatar_url', related.creator_avatar_url,
+            'owner_organization_handle', related.owner_organization_handle,
+            'owner_organization_name', related.owner_organization_name,
+            'owner_organization_logo_url', related.owner_organization_logo_url,
             'match_score', related.match_score
           ) order by related.match_score desc, related.updated_at desc)
           from (
             select candidate.*,
+              related_creator.handle as creator_handle,
+              related_creator.display_name as creator_display_name,
+              related_creator.avatar_url as creator_avatar_url,
+              related_organization.handle as owner_organization_handle,
+              coalesce(related_organization.full_name, related_organization.name) as owner_organization_name,
+              related_organization.logo_url as owner_organization_logo_url,
               (case when candidate.task is not null and r.task is not null and lower(candidate.task) = lower(r.task) then 4 else 0 end
                + case when candidate.library is not null and r.library is not null and lower(candidate.library) = lower(r.library) then 3 else 0 end
                + case when candidate.modality is not null and r.modality is not null and lower(candidate.modality) = lower(r.modality) then 2 else 0 end
                + case when candidate.owner_handle = r.owner_handle then 1 else 0 end) as match_score
             from app.repositories candidate
+            left join app.profiles related_creator
+              on related_creator.id = candidate.owner_profile_id and related_creator.is_public
+            left join app.organizations related_organization
+              on related_organization.id = candidate.owner_organization_id and related_organization.is_public
             where candidate.id <> r.id
               and candidate.visibility = 'public' and candidate.status = 'published'
               and (
@@ -431,6 +465,9 @@ export async function getPublicRepository(
         ), '[]'::jsonb) as agent_traces
       from app.repositories r
       join app.repository_revisions rr on rr.id = r.latest_revision_id
+      left join app.profiles creator on creator.id = r.owner_profile_id and creator.is_public
+      left join app.organizations owner_organization
+        on owner_organization.id = r.owner_organization_id and owner_organization.is_public
       where r.kind = ${kind}::repository_kind
         and lower(r.owner_handle) = lower(${owner})
         and lower(r.slug) = lower(${slug})

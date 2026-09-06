@@ -1,4 +1,5 @@
 ---
+import CreatorLink from '@/components/CreatorLink.astro';
 import type { RepositoryBundle } from '@/lib/repository';
 import { buildUseManifest, type IntegrationCategory } from '@/lib/use-model';
 
@@ -251,7 +252,7 @@ const derivedCount = manifest.derivedVersions.length;
       <section class="use-model__section use-provenance" aria-labelledby="use-provenance-title">
         <div class="use-model__section-heading"><div><p class="eyebrow">Where this model came from 🛡️</p><h3 id="use-provenance-title">Provenance</h3></div></div>
         <dl>
-          <div><dt>Creator</dt><dd>{repository.owner_handle}</dd></div>
+          <div><dt>Creator</dt><dd>{repository.creator_handle ? <CreatorLink compact handle={repository.creator_handle} displayName={repository.creator_display_name} avatarUrl={repository.creator_avatar_url} /> : repository.owner_organization_handle ? <CreatorLink compact kind="organization" handle={repository.owner_organization_handle} displayName={repository.owner_organization_name} avatarUrl={repository.owner_organization_logo_url} /> : repository.owner_handle}</dd></div>
           <div><dt>License</dt><dd>{repository.license ?? 'Not declared'}</dd></div>
           <div><dt>Architecture</dt><dd>{manifest.model.architecture ?? 'Not identified'}</dd></div>
           <div><dt>Quantization</dt><dd>{manifest.model.quantization ?? 'Not identified'}</dd></div>

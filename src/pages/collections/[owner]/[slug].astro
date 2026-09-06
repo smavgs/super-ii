@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
 import type { RepositoryKind } from '@/lib/catalog';
 import { sqlClient } from '@/lib/db';
 import { kindPath } from '@/lib/repository';
@@ -8,6 +9,12 @@ type CollectionItem = {
   id: string;
   kind: RepositoryKind;
   owner_handle: string;
+  creator_handle: string | null;
+  creator_display_name: string | null;
+  creator_avatar_url: string | null;
+  owner_organization_handle: string | null;
+  owner_organization_name: string | null;
+  owner_organization_logo_url: string | null;
   slug: string;
   title: string;
   summary: string;
@@ -21,6 +28,8 @@ type CollectionView = {
   summary: string;
   updated_at: string;
   owner_handle: string;
+  owner_name: string;
+  owner_avatar_url: string | null;
   items: CollectionItem[];
 };
 
@@ -33,10 +42,17 @@ if (sql) {
     const rows = await sql`
       select
         c.id, c.slug, c.title, c.summary, c.updated_at, p.handle as owner_handle,
+        p.display_name as owner_name, p.avatar_url as owner_avatar_url,
         coalesce(jsonb_agg(jsonb_build_object(
           'id', r.id,
           'kind', r.kind,
           'owner_handle', r.owner_handle,
+          'creator_handle', repository_creator.handle,
+          'creator_display_name', repository_creator.display_name,
+          'creator_avatar_url', repository_creator.avatar_url,
+          'owner_organization_handle', repository_organization.handle,
+          'owner_organization_name', coalesce(repository_organization.full_name, repository_organization.name),
+          'owner_organization_logo_url', repository_organization.logo_url,
           'slug', r.slug,
           'title', r.title,
           'summary', r.summary,
@@ -47,11 +63,15 @@ if (sql) {
       left join app.collection_items ci on ci.collection_id = c.id
       left join app.repositories r on r.id = ci.repository_id
         and r.visibility = 'public' and r.status = 'published'
+      left join app.profiles repository_creator
+        on repository_creator.id = r.owner_profile_id and repository_creator.is_public
+      left join app.organizations repository_organization
+        on repository_organization.id = r.owner_organization_id and repository_organization.is_public
       where lower(p.handle) = lower(${owner})
         and lower(c.slug) = lower(${slug})
         and c.visibility = 'public'
         and p.is_public
-      group by c.id, p.handle
+      group by c.id, p.id
       limit 1
     `;
     collection = (rows[0] as CollectionView | undefined) ?? null;
@@ -65,16 +85,23 @@ if (!collection) Astro.response.status = 404;
     {collection ? (
       <>
         <header class="repository-header">
-          <p class="eyebrow">Collection by {collection.owner_handle}</p>
+          <p class="eyebrow">Public collection</p>
+          <div class="repository-path repository-path--creator"><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /></div>
           <h1>{collection.title}</h1>
           <p>{collection.summary}</p>
         </header>
         <div class="catalog-results">
           {collection.items.map((item) => (
-            <a class="catalog-card" href={`/${kindPath(item.kind)}/${item.owner_handle}/${item.slug}`}>
-              <div class="catalog-card__topline"><span>{item.kind}</span><span>{item.owner_handle} / {item.slug}</span></div>
-              <h2>{item.title}</h2><p>{item.note || item.summary}</p>
-            </a>
+            <article class="catalog-card">
+              <div class="catalog-card__topline">
+                {item.creator_handle ? <CreatorLink compact handle={item.creator_handle} displayName={item.creator_display_name} avatarUrl={item.creator_avatar_url} />
+                  : item.owner_organization_handle ? <CreatorLink compact kind="organization" handle={item.owner_organization_handle} displayName={item.owner_organization_name} avatarUrl={item.owner_organization_logo_url} />
+                  : <span>{item.owner_handle}</span>}
+                <span>{item.kind}</span>
+              </div>
+              <h2><a class="catalog-card__title-link" href={`/${kindPath(item.kind)}/${encodeURIComponent(item.owner_handle)}/${encodeURIComponent(item.slug)}`}>{item.title}</a></h2><p>{item.note || item.summary}</p>
+              <a class="catalog-card__open" href={`/${kindPath(item.kind)}/${encodeURIComponent(item.owner_handle)}/${encodeURIComponent(item.slug)}`}>Open repository <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+            </article>
           ))}
         </div>
       </>

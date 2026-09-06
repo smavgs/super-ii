@@ -1,0 +1,103 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
+import { getPublicBuilders } from '@/lib/builders';
+
+const requestedPage = Number(Astro.url.searchParams.get('page') ?? '1');
+const result = await getPublicBuilders(Astro.locals, Astro.url.searchParams.get('q') ?? '', requestedPage);
+const pageHref = (page: number) => {
+  const parameters = new URLSearchParams();
+  if (result.query) parameters.set('q', result.query);
+  if (page > 1) parameters.set('page', String(page));
+  const suffix = parameters.toString();
+  return `/builders${suffix ? `?${suffix}` : ''}`;
+};
+const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'builder' : 'builders'}`;
+---
+
+<BaseLayout title="Builders" description="Discover the people publishing models, datasets, apps, posts, and proposals on Super ii." className="builders-page">
+  <header class="builders-hero">
+    <div class="shell builders-hero__inner">
+      <div>
+        <p class="eyebrow">People building in public</p>
+        <h1>Builders</h1>
+        <p>Meet the people behind Super ii’s models, datasets, apps, posts, and ideas. Open a profile to see the work and context together.</p>
+      </div>
+      <p class="builders-hero__index" aria-label={totalLabel}><strong>{result.state === 'ok' ? result.total.toLocaleString() : '—'}</strong><span>public builders</span></p>
+    </div>
+  </header>
+
+  <section class="builders-main shell" aria-labelledby="builders-directory-title">
+    <form class="builders-toolbar" method="get" action="/builders" role="search" data-builders-form>
+      <label class="builders-search" for="builders-search">
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <span class="sr-only">Search builders</span>
+        <input id="builders-search" type="search" name="q" value={result.query} placeholder="Search a name, handle, bio, or interest…" maxlength="80" autocomplete="off" data-builders-search />
+      </label>
+      <button class="button button--dark" type="submit">Search</button>
+      {result.query && <a class="button button--secondary" href="/builders">Clear</a>}
+    </form>
+
+    <div class="builders-heading">
+      <div><p class="eyebrow">Public member directory</p><h2 id="builders-directory-title">{result.query ? `Results for “${result.query}”` : 'People making things'}</h2></div>
+      <p aria-live="polite" data-builders-visible>{result.state === 'ok' ? totalLabel : 'Directory unavailable'}</p>
+    </div>
+
+    {result.state !== 'ok' ? (
+      <div class="empty-state builders-empty"><span class="builders-empty__mark" aria-hidden="true">↻</span><h2>Builders are temporarily unavailable.</h2><p>The public directory could not be loaded just now. Please try again shortly.</p></div>
+    ) : result.builders.length ? (
+      <div class="builders-grid" data-builders-grid>
+        {result.builders.map((builder) => (
+          <article
+            class="builder-entry"
+            data-builder
+            data-builder-search-text={`${builder.display_name} ${builder.handle} ${builder.bio ?? ''} ${builder.interests.join(' ')}`.toLowerCase()}
+          >
+            <CreatorLink handle={builder.handle} displayName={builder.display_name} avatarUrl={builder.avatar_url} />
+            <div class="builder-entry__story">
+              <p>{builder.bio || 'Building openly on Super ii.'}</p>
+              {builder.interests.length > 0 && <ul aria-label={`${builder.display_name}'s interests`}>{builder.interests.slice(0, 6).map((interest) => <li>{interest}</li>)}</ul>}
+            </div>
+            <dl class="builder-entry__work" aria-label={`${builder.display_name}'s public activity`}>
+              <div><dt>Work</dt><dd>{builder.repositories_count}</dd></div>
+              <div><dt>Posts</dt><dd>{builder.posts_count}</dd></div>
+              <div><dt>Ideas</dt><dd>{builder.proposals_count}</dd></div>
+              <div><dt>Followers</dt><dd>{builder.followers_count}</dd></div>
+            </dl>
+            <a class="builder-entry__open" href={`/people/${encodeURIComponent(builder.handle)}`} aria-label={`View ${builder.display_name}'s public profile`}><span>View profile</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state builders-empty"><span class="builders-empty__mark" aria-hidden="true">⌁</span><h2>{result.query ? 'No builders match that search.' : 'The directory is ready for its first builder.'}</h2><p>{result.query ? 'Try a different name, handle, bio phrase, or interest.' : 'Public member profiles will appear here as people join.'}</p>{result.query && <a class="button button--secondary" href="/builders">Show all builders</a>}</div>
+    )}
+
+    {result.state === 'ok' && result.totalPages > 1 && (
+      <nav class="builders-pagination" aria-label="Builders directory pages">
+        {result.page > 1 ? <a rel="prev" href={pageHref(result.page - 1)}><i class="ph ph-arrow-left" aria-hidden="true"></i> Previous</a> : <span aria-hidden="true"></span>}
+        <span>Page {result.page} of {result.totalPages}</span>
+        {result.page < result.totalPages ? <a rel="next" href={pageHref(result.page + 1)}>Next <i class="ph ph-arrow-right" aria-hidden="true"></i></a> : <span aria-hidden="true"></span>}
+      </nav>
+    )}
+  </section>
+
+  <section class="builders-invitation">
+    <div class="shell builders-invitation__inner"><div><p class="eyebrow">Make your work findable</p><h2>Your public profile connects the person to the work.</h2><p>Add your story and interests, then publish models, datasets, apps, posts, or proposals under one identity.</p></div><div class="button-row"><a class="button button--yellow" href="/sign-up">Join Super ii</a><a class="button button--secondary" href="/account#profile">Edit my profile</a></div></div>
+  </section>
+</BaseLayout>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-builders-search]');
+  const entries = [...document.querySelectorAll<HTMLElement>('[data-builder]')];
+  const visible = document.querySelector<HTMLElement>('[data-builders-visible]');
+  input?.addEventListener('input', () => {
+    const query = input.value.trim().toLocaleLowerCase();
+    let count = 0;
+    entries.forEach((entry) => {
+      const matches = !query || (entry.dataset.builderSearchText ?? '').includes(query);
+      entry.hidden = !matches;
+      if (matches) count += 1;
+    });
+    if (visible) visible.textContent = query ? `${count} on this page · press Enter to search everyone` : `${entries.length} on this page`;
+  });
+</script>

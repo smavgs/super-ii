@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
 import PageHero from '@/components/PageHero.astro';
 import { sqlClient } from '@/lib/db';
 
@@ -10,6 +11,8 @@ type CollectionSummary = {
   summary: string;
   updated_at: string;
   owner_handle: string;
+  owner_name: string;
+  owner_avatar_url: string | null;
   item_count: number;
 };
 
@@ -26,12 +29,14 @@ if (sql) {
         c.summary,
         c.updated_at,
         p.handle as owner_handle,
+        p.display_name as owner_name,
+        p.avatar_url as owner_avatar_url,
         count(ci.repository_id)::integer as item_count
       from app.collections c
       join app.profiles p on p.id = c.owner_profile_id
       left join app.collection_items ci on ci.collection_id = c.id
       where c.visibility = 'public' and p.is_public
-      group by c.id, p.handle
+      group by c.id, p.id
       order by c.updated_at desc
       limit 100
     ` as CollectionSummary[];
@@ -56,10 +61,10 @@ if (sql) {
     {collections.length ? (
       <div class="capability-grid">
         {collections.map((collection) => (
-          <a class="capability-card" href={`/collections/${collection.owner_handle}/${collection.slug}`}>
-            <div><p class="eyebrow">{collection.item_count} items</p><h2>{collection.title}</h2><p>{collection.summary}</p></div>
-            <span class="card-link"><span>{collection.owner_handle}</span><i class="ph ph-arrow-up-right"></i></span>
-          </a>
+          <article class="capability-card collection-card">
+            <div><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /><p class="eyebrow">{collection.item_count} items</p><h2><a class="content-card__title-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}>{collection.title}</a></h2><p>{collection.summary}</p></div>
+            <a class="card-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}><span>Open collection</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          </article>
         ))}
       </div>
     ) : (

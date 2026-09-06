@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import UseModel from '@/components/UseModel.astro';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
@@ -62,7 +63,14 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
     <main class="repository-page shell" data-highlight-campaign={highlightedBy}>
       <header class="repository-header">
         <p class="eyebrow">{repository.kind} repository</p>
-        <p class="repository-path">{repository.owner_handle} / {repository.slug}</p>
+        <div class="repository-path repository-path--creator">
+          {repository.creator_handle ? (
+            <CreatorLink compact handle={repository.creator_handle} displayName={repository.creator_display_name} avatarUrl={repository.creator_avatar_url} />
+          ) : repository.owner_organization_handle ? (
+            <CreatorLink compact kind="organization" handle={repository.owner_organization_handle} displayName={repository.owner_organization_name} avatarUrl={repository.owner_organization_logo_url} />
+          ) : <span>{repository.owner_handle}</span>}
+          <span aria-hidden="true">/</span><span>{repository.slug}</span>
+        </div>
         <h1>{repository.title}</h1>
         <p>{repository.summary}</p>
         <div class="repository-badges">
@@ -399,10 +407,16 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             <h3>Related models, datasets, and apps 🧭</h3>
             <div class="catalog-results">
               {repository.related.map((related) => (
-                <a class="catalog-card" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>
-                  <div class="catalog-card__topline"><span>{related.kind}</span><span>match {related.match_score}</span></div>
-                  <h3>{related.title}</h3><p>{related.summary}</p>
-                </a>
+                <article class="catalog-card">
+                  <div class="catalog-card__topline">
+                    {related.creator_handle ? <CreatorLink compact handle={related.creator_handle} displayName={related.creator_display_name} avatarUrl={related.creator_avatar_url} />
+                      : related.owner_organization_handle ? <CreatorLink compact kind="organization" handle={related.owner_organization_handle} displayName={related.owner_organization_name} avatarUrl={related.owner_organization_logo_url} />
+                      : <span>{related.owner_handle}</span>}
+                    <span>{related.kind} · match {related.match_score}</span>
+                  </div>
+                  <h3><a class="catalog-card__title-link" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>{related.title}</a></h3><p>{related.summary}</p>
+                  <a class="catalog-card__open" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>Open repository <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+                </article>
               ))}
             </div>
           </div>
@@ -425,7 +439,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                 <div><span>{discussion.status}</span><span>{discussion.comment_count} comments</span></div>
                 <h3>{discussion.title}</h3>
                 <p>{discussion.body}</p>
-                <small>Started by {discussion.author}</small>
+                <small>Started by <a href={`/people/${encodeURIComponent(discussion.author)}`}>@{discussion.author}</a></small>
                 <div class="reaction-row" aria-label="React to discussion">
                   {(['helpful', 'celebrate', 'heart', 'eyes'] as const).map((reaction) => (
                     <button type="button" data-reaction data-target-type="discussion" data-target-id={discussion.id} data-reaction-name={reaction} data-active="false">
@@ -438,7 +452,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                     {discussion.comments.map((comment) => (
                       <div class="comment-card">
                         <p>{comment.body}</p>
-                        <small>{comment.author}</small>
+                        <small><a href={`/people/${encodeURIComponent(comment.author)}`}>@{comment.author}</a></small>
                         <div class="reaction-row" aria-label="React to comment">
                           {(['helpful', 'heart'] as const).map((reaction) => (
                             <button type="button" data-reaction data-target-type="comment" data-target-id={comment.id} data-reaction-name={reaction} data-active="false">

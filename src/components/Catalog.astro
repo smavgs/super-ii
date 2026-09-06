@@ -1,5 +1,6 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 import {
   repositoryPath,
@@ -129,12 +130,16 @@ const emptyState = {
     {result.items.length ? (
       <div class="catalog-results" aria-live="polite">
         {result.items.map((item) => (
-          <a class="catalog-card" href={repositoryPath(item)}>
+          <article class="catalog-card">
             <div class="catalog-card__topline">
-              <span>{item.owner_handle} / {item.slug}</span>
+              {item.creator_handle ? (
+                <CreatorLink compact handle={item.creator_handle} displayName={item.creator_display_name} avatarUrl={item.creator_avatar_url} />
+              ) : item.owner_organization_handle ? (
+                <CreatorLink compact kind="organization" handle={item.owner_organization_handle} displayName={item.owner_organization_name} avatarUrl={item.owner_organization_logo_url} />
+              ) : <span>{item.owner_handle}</span>}
               <span>{item.license ?? 'License pending'}</span>
             </div>
-            <h2>{item.title}</h2>
+            <h2><a class="catalog-card__title-link" href={repositoryPath(item)}>{item.title}</a></h2>
             <p>{item.summary}</p>
             <div class="catalog-card__metadata">
               {item.task && <span>{item.task}</span>}
@@ -150,7 +155,8 @@ const emptyState = {
               {item.minimum_vram_bytes !== null && Number(item.minimum_vram_bytes) > 0 && <span>VRAM ≥ {(Number(item.minimum_vram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
               {item.compatibility_confidence && <span>{item.compatibility_confidence} compatibility</span>}
             </div>
-          </a>
+            <a class="catalog-card__open" href={repositoryPath(item)} aria-label={`Open ${item.title}`}><span>Open {repositoryKind === 'space' ? 'app' : repositoryKind}</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          </article>
         ))}
       </div>
     ) : (

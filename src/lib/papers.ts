@@ -4,6 +4,8 @@ import type { RepositoryKind } from './catalog';
 export type PublicPaper = {
   id: string;
   owner: string;
+  owner_name: string;
+  owner_avatar_url: string | null;
   slug: string;
   title: string;
   abstract: string;
@@ -30,7 +32,8 @@ export async function searchPublicPapers(
   const normalized = query.trim().slice(0, 300);
   try {
     const rows = await sql`
-      select paper.id, profile.handle as owner, paper.slug, paper.title, paper.abstract,
+      select paper.id, profile.handle as owner, profile.display_name as owner_name,
+             profile.avatar_url as owner_avatar_url, paper.slug, paper.title, paper.abstract,
              paper.canonical_url, paper.doi, paper.published_on, paper.created_at,
              coalesce((
                select jsonb_agg(jsonb_build_object(
@@ -47,7 +50,7 @@ export async function searchPublicPapers(
                  and repository.status = 'published'
              ), '[]'::jsonb) as repositories
       from app.papers paper
-      join app.profiles profile on profile.id = paper.owner_profile_id
+      join app.profiles profile on profile.id = paper.owner_profile_id and profile.is_public
       where paper.is_public
         and (
           ${normalized} = ''
@@ -78,7 +81,8 @@ export async function getPublicPaper(
   if (!sql) return { state: 'unconfigured', paper: null };
   try {
     const rows = await sql`
-      select paper.id, profile.handle as owner, paper.slug, paper.title, paper.abstract,
+      select paper.id, profile.handle as owner, profile.display_name as owner_name,
+             profile.avatar_url as owner_avatar_url, paper.slug, paper.title, paper.abstract,
              paper.canonical_url, paper.doi, paper.published_on, paper.created_at,
              coalesce((
                select jsonb_agg(jsonb_build_object(
@@ -95,7 +99,7 @@ export async function getPublicPaper(
                  and repository.status = 'published'
              ), '[]'::jsonb) as repositories
       from app.papers paper
-      join app.profiles profile on profile.id = paper.owner_profile_id
+      join app.profiles profile on profile.id = paper.owner_profile_id and profile.is_public
       where paper.is_public
         and lower(profile.handle) = lower(${owner.slice(0, 120)})
         and lower(paper.slug) = lower(${slug.slice(0, 96)})

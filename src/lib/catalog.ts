@@ -23,6 +23,12 @@ export type PublicRepository = {
   repository_id: string;
   kind: RepositoryKind;
   owner_handle: string;
+  creator_handle: string | null;
+  creator_display_name: string | null;
+  creator_avatar_url: string | null;
+  owner_organization_handle: string | null;
+  owner_organization_name: string | null;
+  owner_organization_logo_url: string | null;
   slug: string;
   title: string;
   summary: string;
@@ -112,6 +118,12 @@ export async function searchCatalog(
         )
       )
       select matches.*,
+             creator.handle as creator_handle,
+             creator.display_name as creator_display_name,
+             creator.avatar_url as creator_avatar_url,
+             owner_organization.handle as owner_organization_handle,
+             coalesce(owner_organization.full_name, owner_organization.name) as owner_organization_name,
+             owner_organization.logo_url as owner_organization_logo_url,
              coalesce(metrics.downloads_count, 0)::integer as downloads_count,
              coalesce(metrics.likes_count, 0)::integer as likes_count,
              coalesce(metrics.trend_score, 0)::integer as trend_score,
@@ -130,6 +142,10 @@ export async function searchCatalog(
              compatibility.browser_compatible
       from matches
       join app.repositories repository on repository.id = matches.repository_id
+      left join app.profiles creator
+        on creator.id = repository.owner_profile_id and creator.is_public
+      left join app.organizations owner_organization
+        on owner_organization.id = repository.owner_organization_id and owner_organization.is_public
       left join app.repository_compatibility compatibility
         on compatibility.revision_id = repository.latest_revision_id
       left join lateral (

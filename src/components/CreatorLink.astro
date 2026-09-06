@@ -1,0 +1,34 @@
+---
+interface Props {
+  handle: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  kind?: 'person' | 'organization';
+  compact?: boolean;
+  showHandle?: boolean;
+}
+
+const {
+  handle,
+  displayName = null,
+  avatarUrl = null,
+  kind = 'person',
+  compact = false,
+  showHandle = true,
+} = Astro.props;
+const name = displayName?.trim() || handle;
+const href = kind === 'organization'
+  ? `/organizations/${encodeURIComponent(handle)}`
+  : `/people/${encodeURIComponent(handle)}`;
+const label = kind === 'organization' ? `Open ${name} organization` : `Open ${name}'s public profile`;
+---
+
+<a class:list={['creator-link', compact && 'creator-link--compact', `creator-link--${kind}`]} href={href} aria-label={label}>
+  {avatarUrl
+    ? <img src={avatarUrl} alt="" loading="lazy" referrerpolicy="no-referrer" />
+    : <span class="creator-link__fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>}
+  <span class="creator-link__text">
+    <strong>{name}</strong>
+    {showHandle && <small>@{handle}</small>}
+  </span>
+</a>
