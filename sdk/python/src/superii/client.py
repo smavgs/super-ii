@@ -107,7 +107,7 @@ class Client:
     def _headers(self, url: str) -> dict[str, str]:
         if origin(url) != self.base_url:
             raise IntegrityError("Refusing to send repository credentials to another origin")
-        result = {"User-Agent": "superii-python/0.1.0", "Accept-Encoding": "identity"}
+        result = {"User-Agent": "superii-python/0.2.0", "Accept-Encoding": "identity"}
         if self.token:
             result["Authorization"] = f"Bearer {self.token}"
         return result
@@ -127,13 +127,17 @@ class Client:
             raise SuperiiError("Repository, immutable revision, or file is unavailable")
         response.raise_for_status()
 
-    def inspect(self, repository: str, *, revision: str | None = None) -> Manifest:
+    def inspect(
+        self, repository: str, *, revision: str | None = None, kind: str = "model"
+    ) -> Manifest:
+        if kind not in {"model", "dataset"}:
+            raise ValueError("SDK acquisition supports model or dataset repositories")
         parts = repository.split("/")
         if len(parts) != 2 or any(not p or p in {".", ".."} for p in parts):
             raise ValueError("Use owner/model")
-        url = (
-            f"{self.base_url}/api/sdk/models/{quote(parts[0], safe='')}/{quote(parts[1], safe='')}"
-        )
+        collection = "models" if kind == "model" else "datasets"
+        url = f"{self.base_url}/api/sdk/{collection}/"
+        url += f"{quote(parts[0], safe='')}/{quote(parts[1], safe='')}"
         with self.http.stream(
             "GET",
             url,
@@ -151,6 +155,8 @@ class Client:
                 if len(body) > 16 * 1024**2:
                     raise IntegrityError("Manifest exceeds 16 MiB")
         manifest = Manifest.parse(json.loads(body), self.base_url, revision=revision)
+        if manifest.kind != kind:
+            raise IntegrityError("Server returned a different repository kind")
         if manifest.repository.casefold() != repository.casefold():
             raise IntegrityError("Server returned a different repository")
         if self.require_attestation or manifest.publication:
@@ -283,10 +289,15 @@ class Client:
                 raise
 
     def pull(
-        self, repository: str, *, revision: str | None = None, files: tuple[str, ...] | None = None
+        self,
+        repository: str,
+        *,
+        revision: str | None = None,
+        files: tuple[str, ...] | None = None,
+        kind: str = "model",
     ) -> Snapshot:
         # Fetch a fresh authorized manifest even on cache hits (visibility/revocation).
-        manifest = self.inspect(repository, revision=revision)
+        manifest = self.inspect(repository, revision=revision, kind=kind)
         selected = tuple(f.path for f in manifest.files) if files is None else files
         if not selected or not set(selected) <= {f.path for f in manifest.files}:
             raise IntegrityError("Requested files are not present in the immutable manifest")
@@ -315,9 +326,18 @@ class Client:
         return snapshot
 
     async def apull(
-        self, repository: str, *, revision: str | None = None, files: tuple[str, ...] | None = None
+        self,
+        repository: str,
+        *,
+        revision: str | None = None,
+        files: tuple[str, ...] | None = None,
+        kind: str = "model",
     ) -> Snapshot:
-        return await asyncio.to_thread(self.pull, repository, revision=revision, files=files)
+        return await asyncio.to_thread(
+            self.pull, repository, revision=revision, files=files, kind=kind
+        )
 
-    def prefetch(self, repository: str, *, revision: str | None = None) -> Snapshot:
-        return self.pull(repository, revision=revision)
+    def prefetch(
+        self, repository: str, *, revision: str | None = None, kind: str = "model"
+    ) -> Snapshot:
+        return self.pull(repository, revision=revision, kind=kind)

@@ -113,3 +113,36 @@ Sources: [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/to
 [vLLM](https://docs.vllm.ai/en/latest/),
 [safetensors](https://huggingface.co/docs/safetensors/),
 [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk).
+
+## Engineering recipes (0.2)
+
+`superii pull owner/dataset --kind dataset --revision <commit>` extends the same
+verified acquisition contract to datasets. Model acquisition remains compatible.
+
+Create a project at https://superii.site/build or save a request JSON and run
+`superii recipe request.json new-project`. The request selects `rag`, `api`, or
+`sft`, and supplies `generator`, plus `embedding` for RAG or `dataset` for SFT.
+Each input is an object containing `repository` and a full immutable `revision`.
+The command writes verified text files to a new directory; it never installs or
+executes the project. Source access is checked again when the project runs.
+
+The `rag`, `train`, `serve`, and `observe` extras supply optional runtime packages.
+Recipes use Python 3.12 and pin tested dependencies. CPU/Apple fixture tests cover
+local embeddings, bounded FAISS retrieval, ingestion, evaluation, authenticated
+APIs and CPU LoRA. Apple FAISS runs in an isolated local process to avoid the
+PyTorch/FAISS OpenMP wheel conflict. GPU exports remain explicitly unverified.
+
+`superii-recipe.json` binds exact input revisions, file selections, settings and
+template versions with an RFC 8785 SHA-256. `superii-run.json` records actual local
+execution and output hashes; it never creates an independently verified badge.
+RAG citations are source references, not an independent truth or entailment test.
+SFT uses a content-deduplicated held-out split and reports language-model loss,
+not general task quality. LoRA outputs use safetensors without pickled trainer
+settings. `superii.recipes.training.load_adapter` checks the run artifacts before
+attaching an adapter to its explicitly acquired base.
+
+`publish.py` in a training export returns the recorded adapter to an existing
+editable repository revision. It verifies destination bytes and attaches reported
+lineage before optional central-policy submission. It requires a repository-bound
+scoped token, current rights declarations and accessible lineage sources; it does
+not create repositories or weaken publication policy.

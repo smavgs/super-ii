@@ -1,0 +1,398 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "https://superii.site/schemas/superii-recipe-v1.json"
+    },
+    "recipe_version": {
+      "const": 1
+    },
+    "recipe_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "outcome": {
+      "enum": [
+        "rag",
+        "api",
+        "sft"
+      ]
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "version": {
+          "const": "1.0.0"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ]
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "model",
+                "dataset"
+              ]
+            },
+            "repository": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"
+            },
+            "revision": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "manifest_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "files": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20000,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "repository",
+            "revision",
+            "manifest_sha256",
+            "files"
+          ]
+        },
+        "embedding": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "model",
+                    "dataset"
+                  ]
+                },
+                "repository": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "files": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20000,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "repository",
+                "revision",
+                "manifest_sha256",
+                "files"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dataset": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "model",
+                    "dataset"
+                  ]
+                },
+                "repository": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "manifest_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "files": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20000,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "repository",
+                "revision",
+                "manifest_sha256",
+                "files"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "generator",
+        "embedding",
+        "dataset"
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accelerator": {
+          "enum": [
+            "cpu",
+            "metal",
+            "cuda"
+          ]
+        },
+        "python": {
+          "const": "3.12"
+        },
+        "runtime": {
+          "enum": [
+            "auto",
+            "llama.cpp",
+            "transformers",
+            "mlx",
+            "vllm"
+          ]
+        }
+      },
+      "required": [
+        "accelerator",
+        "python",
+        "runtime"
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 4096
+        },
+        "chunk_overlap": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2048
+        },
+        "top_k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "context_size": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 131072
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "min_score": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "embedding_max_tokens": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 4096
+        },
+        "query_prefix": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "document_prefix": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "max_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "gradient_accumulation_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "sequence_length": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 32768
+        },
+        "lora_rank": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "learning_rate": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 0.01
+        },
+        "adapter": {
+          "enum": [
+            "lora",
+            "qlora"
+          ]
+        },
+        "framework": {
+          "enum": [
+            "python",
+            "langchain"
+          ]
+        },
+        "ui": {
+          "enum": [
+            "none",
+            "gradio"
+          ]
+        },
+        "observability": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "chunk_size",
+        "chunk_overlap",
+        "top_k",
+        "context_size",
+        "max_tokens",
+        "min_score",
+        "embedding_max_tokens",
+        "query_prefix",
+        "document_prefix",
+        "seed",
+        "max_steps",
+        "batch_size",
+        "gradient_accumulation_steps",
+        "sequence_length",
+        "lora_rank",
+        "learning_rate",
+        "adapter",
+        "framework",
+        "ui",
+        "observability"
+      ]
+    },
+    "dependencies": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 80
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "const": "template-fixture-tests"
+        },
+        "model_quality": {
+          "const": "not-established"
+        },
+        "hardware": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "cpu",
+              "metal",
+              "cuda"
+            ]
+          }
+        }
+      },
+      "required": [
+        "scope",
+        "model_quality",
+        "hardware"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "recipe_version",
+    "recipe_sha256",
+    "outcome",
+    "template",
+    "inputs",
+    "target",
+    "configuration",
+    "dependencies",
+    "verification"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/superii-recipe-v1.json",
+  "title": "Super ii engineering recipe v1"
+}

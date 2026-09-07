@@ -25,6 +25,8 @@ def check_config(snapshot: Snapshot) -> None:
         file = snapshot.path / name
         if not file.exists():
             continue
+        if name not in snapshot.files:
+            raise IntegrityError("Loader configuration is outside the verified selection")
         if file.stat().st_size > 4 * 1024**2:
             raise IntegrityError("Configuration exceeds 4 MiB")
         config = json.loads(file.read_text())

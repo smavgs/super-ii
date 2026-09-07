@@ -4,19 +4,29 @@ build-backend = "hatchling.build"
 
 [project]
 name = "superii-sdk"
-version = "0.1.0"
-description = "Verified Super ii model acquisition, hardware planning and local inference"
+version = "0.2.0"
+description = "Verified Super ii acquisition, inference and reproducible engineering recipes"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
-dependencies = ["httpx>=0.28,<0.29", "filelock>=3.19,<4", "psutil>=7,<8", "cryptography>=46,<51"]
+dependencies = [
+    "httpx>=0.28,<0.29",
+    "filelock>=3.19,<4",
+    "psutil>=7,<8",
+    "cryptography>=46,<51",
+    "jsonschema>=4.25,<5",
+    "rfc8785>=0.1.4,<1",
+]
 
 [project.optional-dependencies]
 mlx = ["mlx-lm>=0.30,<1; sys_platform == 'darwin'"]
 transformers = ["transformers>=5,<6", "torch>=2.8,<3", "safetensors>=0.6,<1", "accelerate>=1.10,<2"]
-serve = ["fastapi>=0.115,<1", "uvicorn>=0.35,<1", "mcp>=1.20,<2"]
-test = ["pytest>=9,<10", "ruff>=0.16,<1", "fastapi>=0.115,<1", "mcp>=1.20,<2"]
+serve = ["prometheus-client>=0.23,<1", "fastapi>=0.115,<1", "uvicorn>=0.35,<1", "mcp>=1.20,<2"]
+rag = ["transformers>=5,<6", "torch>=2.8,<3", "safetensors>=0.6,<1", "accelerate>=1.10,<2", "faiss-cpu>=1.12,<2", "numpy>=2,<3", "prometheus-client>=0.23,<1"]
+train = ["transformers>=5,<6", "torch>=2.8,<3", "safetensors>=0.6,<1", "accelerate>=1.10,<2", "peft>=0.18,<1", "trl>=0.24,<2", "datasets>=4,<6"]
+observe = ["opentelemetry-sdk>=1.36,<2", "opentelemetry-exporter-otlp-proto-http>=1.36,<2"]
+test = ["pytest>=9,<10", "ruff>=0.16,<1", "fastapi>=0.115,<1", "mcp>=1.20,<2", "jsonschema>=4.25,<5"]
 
 [project.scripts]
 superii = "superii.cli:main"

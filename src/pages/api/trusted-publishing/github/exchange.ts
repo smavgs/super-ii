@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { githubWorkflowRef } from '@/lib/github-oidc';
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
@@ -59,7 +60,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     return Response.json({ error: 'GitHub OIDC signature or claims are invalid' }, { status: 401 });
   }
   const subject = typeof verified.sub === 'string' ? verified.sub : '';
-  const workflowRef = typeof verified.job_workflow_ref === 'string' ? verified.job_workflow_ref : null;
+  const workflowRef = githubWorkflowRef(verified);
   if (verified.iss !== issuer || !subject || !subject.startsWith('repo:')) {
     return Response.json({ error: 'GitHub OIDC issuer or subject is not trusted' }, { status: 403 });
   }
@@ -107,7 +108,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     return Response.json({ error: 'requested scope is not allowed for this publisher' }, { status: 403 });
   }
 
-  if (publisher.workflow_ref && verified.job_workflow_ref !== publisher.workflow_ref) {
+  if (publisher.workflow_ref && workflowRef !== publisher.workflow_ref) {
     return Response.json({ error: 'GitHub workflow claim does not match the trusted workflow' }, { status: 403 });
   }
 

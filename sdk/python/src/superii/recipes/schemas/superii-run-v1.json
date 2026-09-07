@@ -1,0 +1,132 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "https://superii.site/schemas/superii-run-v1.json"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "recipe_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "stage": {
+      "enum": [
+        "ingest",
+        "evaluate",
+        "train",
+        "package"
+      ]
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed"
+      ]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "reported"
+        },
+        "independent_verification": {
+          "const": false
+        }
+      },
+      "required": [
+        "classification",
+        "independent_verification"
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "null"
+        ]
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "number",
+          "integer",
+          "string",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "path",
+          "sha256",
+          "size_bytes"
+        ]
+      }
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "recipe_sha256",
+    "stage",
+    "status",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "evidence",
+    "environment",
+    "metrics",
+    "artifacts",
+    "error"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superii.site/schemas/superii-run-v1.json",
+  "title": "Super ii reported execution evidence v1"
+}
