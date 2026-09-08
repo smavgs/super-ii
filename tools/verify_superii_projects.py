@@ -29,8 +29,21 @@ ROOT = Path("private-project-verification").resolve()
 
 def checked(response):
     if not response.is_success:
+        detail = ""
+        if response.headers.get("content-type", "").startswith("application/json"):
+            error = response.json().get("error")
+            if error in {
+                "no matching trusted publisher",
+                "requested scope is not allowed for this publisher",
+                "GitHub repository claim does not match the trusted subject",
+                "GitHub OIDC signature or claims are invalid",
+                "GitHub OIDC token lifetime is outside the accepted window",
+                "scoped access token could not be issued",
+                "trusted publishing service unavailable",
+            }:
+                detail = f": {error}"
         raise RuntimeError(
-            f"{response.request.method} {response.request.url.path}: HTTP {response.status_code}"
+            f"{response.request.method} {response.request.url.path}: HTTP {response.status_code}{detail}"
         )
     return response
 

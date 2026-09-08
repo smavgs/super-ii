@@ -4,7 +4,7 @@ export const prerender = true;
 
 const documents = {
   schema_version: '1.0.0',
-  updated: '2026-09-06',
+  updated: '2026-09-08',
   service: 'Super ii',
   canonical_origin: 'https://superii.site',
   documents: [
@@ -13,6 +13,10 @@ const documents = {
     { id: 'skills-api', title: 'Skills catalog API', media_type: 'application/json', url: 'https://superii.site/api/skills' },
     { id: 'python-sdk', title: 'Python SDK installation and verified local inference', media_type: 'text/html', url: 'https://superii.site/docs#python-sdk' },
     { id: 'sdk-manifest-schema', title: 'Immutable SDK manifest schema', media_type: 'application/schema+json', url: 'https://superii.site/schemas/sdk-manifest-v1.json' },
+    { id: 'build-ship', title: 'Build & Ship engineering projects', media_type: 'text/html', url: 'https://superii.site/build' },
+    { id: 'recipe-schema', title: 'Immutable engineering recipe', media_type: 'application/schema+json', url: 'https://superii.site/schemas/superii-recipe-v1.json' },
+    { id: 'run-schema', title: 'Reported execution record', media_type: 'application/schema+json', url: 'https://superii.site/schemas/superii-run-v1.json' },
+    { id: 'sdk-dataset-schema', title: 'Immutable dataset SDK manifest', media_type: 'application/schema+json', url: 'https://superii.site/schemas/sdk-manifest-v2.json' },
     { id: 'publication-keys', title: 'Automatic publication verification keys', media_type: 'application/json', url: 'https://superii.site/api/publication-keys' },
     { id: 'llms', title: 'Compact machine guide', media_type: 'text/plain', url: 'https://superii.site/llms.txt' },
     { id: 'llms-full', title: 'Full machine guide', media_type: 'text/plain', url: 'https://superii.site/llms-full.txt' },

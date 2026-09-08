@@ -71,3 +71,8 @@ Pro and Team keep their existing plan identities. Checkout offers one USDC-on-Et
 - [Terms](https://superii.site/legal/terms): Terms of service
 
 Build & Ship: https://superii.site/build — immutable engineering recipes, RAG, APIs and LoRA projects.
+- Project API: POST https://superii.site/api/recipes/generate; exact request fields in OpenAPI.
+- Recipe schema: https://superii.site/schemas/superii-recipe-v1.json
+- Run schema: https://superii.site/schemas/superii-run-v1.json
+- Dataset SDK schema: https://superii.site/schemas/sdk-manifest-v2.json
+- SDK 0.2: superii recipe request.json new-project; use frozen installation with the included uv.lock. NVIDIA execution remains unverified.
