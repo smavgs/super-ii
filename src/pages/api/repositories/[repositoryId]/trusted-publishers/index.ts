@@ -4,8 +4,8 @@ import { managedRepository, textValue } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { repositoryScopes, type RepositoryScope } from '@/lib/scoped-auth';
+import { validGithubSubject } from '@/lib/github-oidc';
 
-const githubSubjectPattern = /^repo:[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+:(?:ref:refs\/(?:heads|tags)\/[A-Za-z0-9._/-]+|environment:[^\r\n]{1,200}|pull_request)$/;
 const workflowPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/\.github\/workflows\/[A-Za-z0-9._/-]+@refs\/(?:heads|tags)\/[A-Za-z0-9._/-]+$/;
 const canonicalAudience = 'https://superii.site';
 
@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     ? [...new Set(body.allowed_scopes.map((value) => textValue(value, 80)).filter(Boolean))]
     : ['repository:upload', 'repository:commit', 'repository:submit'];
   const allowedScopes = requestedScopes.filter((scope): scope is RepositoryScope => repositoryScopes.includes(scope as RepositoryScope));
-  if (!githubSubjectPattern.test(subject)) {
+  if (!validGithubSubject(subject)) {
     return Response.json({ error: 'GitHub subject must bind one repository to a branch, tag, environment, or pull request' }, { status: 422 });
   }
   if (workflowRef && !workflowPattern.test(workflowRef)) {

@@ -38,8 +38,21 @@ def main():
 
         def checked(response):
             if not response.is_success:
+                detail = ""
+                if response.headers.get("content-type", "").startswith("application/json"):
+                    error = response.json().get("error")
+                    if error in {
+                        "no matching trusted publisher",
+                        "requested scope is not allowed for this publisher",
+                        "GitHub repository claim does not match the trusted subject",
+                        "GitHub OIDC signature or claims are invalid",
+                        "GitHub OIDC token lifetime is outside the accepted window",
+                        "scoped access token could not be issued",
+                        "trusted publishing service unavailable",
+                    }:
+                        detail = f": {error}"
                 raise RuntimeError(
-                    f"Integration request returned HTTP {response.status_code}"
+                    f"{response.request.method} {response.request.url.path}: HTTP {response.status_code}{detail}"
                 )
             return response
 
@@ -58,7 +71,9 @@ def main():
             headers={"authorization": "Bearer " + oidc},
             json={"repository_id": repository_id, "scopes": ["repository:trace"]},
         )
-        assert denied.status_code == 403, "Scope expansion was not rejected"
+        assert denied.status_code == 403 and denied.json().get("error") == (
+            "requested scope is not allowed for this publisher"
+        ), "Scope expansion was not rejected by the matched publisher"
         invalid = http.post(
             exchange,
             headers={"authorization": "Bearer " + oidc[:-10] + "invalidxyz"},

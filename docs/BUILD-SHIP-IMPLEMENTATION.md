@@ -74,5 +74,10 @@ PyTorch wheels. Local fixture archives remain distinct from live verification.
 The manual GitHub verification workflow is bound to fixed private synthetic
 fixtures. It checks OIDC scope/signature rejection, independent publication,
 private authenticated acquisition, actual generated API/RAG/SFT execution and
-adapter return. Live execution and final website deployment are pending; fixture
-execution does not establish model quality.
+adapter return. The website was deployed from `b42391d` on 2026-09-08 and its
+production Build & Ship interface was checked in Chrome. Live GitHub execution
+is still pending: the first attempt hit Cloudflare Bot Fight Mode; after the
+approved setting change, the request reached Super ii and exposed a mismatch
+with GitHub's newer immutable subject format. The compatibility fix preserves
+exact subjects and independently compares embedded owner/repository IDs with
+the signed claims. Fixture execution does not establish model quality.

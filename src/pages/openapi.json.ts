@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { recipeApiPaths } from '@/lib/recipe-openapi';
 
 export const prerender = true;
 
@@ -14,6 +15,7 @@ const openapi = {
   tags: [
     { name: 'Discovery' },
     { name: 'Python SDK' },
+    { name: 'Build & Ship' },
     { name: 'Billing' },
     { name: 'Agent commerce' },
     { name: 'A2A' },
@@ -26,6 +28,7 @@ const openapi = {
     { name: 'Highlights' },
   ],
   paths: {
+    ...recipeApiPaths,
     '/api/sdk/models/{owner}/{slug}': {
       get: {
         tags: ['Python SDK'],

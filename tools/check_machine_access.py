@@ -93,9 +93,11 @@ def main() -> None:
     assert "token" in error_text or "authentication" in error_text
     keys = request("/api/publication-keys")
     assert keys["algorithm"] == "Ed25519" and any(key["enabled"] for key in keys["keys"])
-    assert request("/schemas/sdk-manifest-v1.json")["$id"].endswith(
-        "sdk-manifest-v1.json"
-    )
+    for schema in (
+        "sdk-manifest-v1.json", "sdk-manifest-v2.json",
+        "superii-recipe-v1.json", "superii-run-v1.json",
+    ):
+        assert request("/schemas/" + schema)["$id"].endswith(schema)
     print(
         json.dumps(
             {

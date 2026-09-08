@@ -10,9 +10,11 @@ const temporary = await mkdtemp(path.join(tmpdir(), 'superii-recipes-'));
 const bundle = path.join(temporary, 'recipes.mjs');
 await build({ entryPoints: ['src/lib/engineering-recipes.ts'], outfile: bundle, bundle: true, platform: 'node', format: 'esm', loader: { '.toml': 'text', '.lock': 'text', '.py': 'text', '.yml': 'text' }, logLevel: 'silent' });
 const { generateProject, recipeRequest } = await import(pathToFileURL(bundle));
+await build({ entryPoints: ['src/lib/recipe-openapi.ts'], outfile: path.join(temporary, 'openapi.mjs'), bundle: true, platform: 'node', format: 'esm', loader: { '.toml': 'text', '.lock': 'text', '.py': 'text', '.yml': 'text' }, logLevel: 'silent' });
+const { recipeApiPaths } = await import(pathToFileURL(path.join(temporary, 'openapi.mjs')));
 await build({ entryPoints: ['src/lib/recipe-zip.ts'], outfile: path.join(temporary, 'zip.mjs'), bundle: true, platform: 'node', format: 'esm', logLevel: 'silent' });
 const { projectZip } = await import(pathToFileURL(path.join(temporary, 'zip.mjs')));
-const { githubWorkflowRef } = await import('../src/lib/github-oidc.ts');
+const { githubWorkflowRef, githubRepositoryMatchesSubject, validGithubSubject } = await import('../src/lib/github-oidc.ts');
 const { recipeInputRequest } = await import('../src/lib/recipe-access.ts');
 const credentials = new Request('https://superii.site/api/recipes/generate', { headers: { authorization: 'Bearer destination', cookie: 'session=fixture', 'x-superii-generator-token': 'sii_' + 'a'.repeat(64), 'x-superii-dataset-token': 'sii_' + 'b'.repeat(64) } });
 const isolated = recipeInputRequest(credentials, 'generator');
@@ -25,10 +27,23 @@ assert.throws(() => recipeInputRequest(new Request(credentials.url, { headers: {
 const regular = 'smavgs/super-ii/.github/workflows/publish-project.yml@refs/heads/main';
 assert.equal(githubWorkflowRef({ workflow_ref: regular }), regular);
 assert.equal(githubWorkflowRef({ workflow_ref: regular, job_workflow_ref: 'invalid' }), null);
+assert.equal(githubWorkflowRef({ workflow_ref: regular, job_workflow_ref: null }), null);
 assert.equal(githubWorkflowRef({ workflow_ref: regular, job_workflow_ref: regular.replace('publish-project', 'reusable') }), regular.replace('publish-project', 'reusable'));
+const immutableIdentity = { sub: 'repo:fixture@123/project@456:ref:refs/heads/main', repository: 'fixture/project', repository_owner_id: '123', repository_id: '456' };
+assert.ok(validGithubSubject(immutableIdentity.sub));
+assert.ok(githubRepositoryMatchesSubject(immutableIdentity));
+assert.ok(githubRepositoryMatchesSubject({ sub: 'repo:fixture/project:ref:refs/heads/main', repository: 'fixture/project' }));
+for (const changed of [
+ { repository: 'other/project' }, { repository_owner_id: '124' }, { repository_id: '457' },
+ { repository_id: undefined }, { repository_owner_id: 123 },
+ { sub: 'repo:fixture@123/project:ref:refs/heads/main' },
+ { sub: 'repo:fixture/project@456:ref:refs/heads/main' },
+ { sub: 'repo:fixture@123/project@456:ref:refs/heads/main\n' },
+]) assert.equal(githubRepositoryMatchesSubject({ ...immutableIdentity, ...changed }), false);
 const schema = JSON.parse(await readFile('public/schemas/superii-recipe-v1.json', 'utf8'));
 const ajv = new Ajv({ strict: false });
 const validate = ajv.compile(schema);
+const validateRequest = ajv.compile(recipeApiPaths['/api/recipes/generate'].post.requestBody.content['application/json'].schema);
 function source(role) {
  const kind = role === 'dataset' ? 'dataset' : 'model';
  return { repository: { kind, owner: 'fixture', slug: role }, revision: { commit_sha: 'c'.repeat(64), manifest_sha256: 'a'.repeat(64) }, compatibility: { architecture: role === 'embedding' ? 'bert' : 'gpt2' }, files: (kind === 'dataset' ? ['data.jsonl'] : ['config.json', 'tokenizer.json', 'model.safetensors']).map(name => ({ path: name, size_bytes: 100, sha256: 'b'.repeat(64) })) };
@@ -38,6 +53,7 @@ const ref = role => ({ repository: `fixture/${role}`, revision: 'c'.repeat(64) }
 const projects = [];
 for (const outcome of ['rag', 'api', 'sft']) {
  const request = { outcome, generator: ref('generator'), embedding: outcome === 'rag' ? ref('embedding') : null, dataset: outcome === 'sft' ? ref('dataset') : null, configuration: { learning_rate: 0.000001, observability: true, ...(outcome === 'rag' ? { framework: 'langchain', ui: 'gradio' } : {}) } };
+ assert.ok(validateRequest(request), JSON.stringify(validateRequest.errors));
  const project = generateProject(request, resolved);
  assert.ok(validate(project.recipe), JSON.stringify(validate.errors));
  assert.equal(project.recipe.configuration.seed, 42);
@@ -52,6 +68,17 @@ for (const outcome of ['rag', 'api', 'sft']) {
 }
 assert.equal(recipeRequest.safeParse({ outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), accelerator: 'metal' }).success, false);
 assert.equal(recipeRequest.safeParse({ outcome: 'rag', generator: ref('generator') }).success, false);
+for (const invalid of [
+ { outcome: 'api', generator: { ...ref('generator'), revision: 'main' } },
+ { outcome: 'api', generator: ref('generator'), command: 'arbitrary-code' },
+ { outcome: 'rag', generator: ref('generator') },
+ { outcome: 'rag', generator: ref('generator'), embedding: null },
+ { outcome: 'sft', generator: ref('generator'), dataset: null },
+ { outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), accelerator: 'metal' },
+ { outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), configuration: { ui: 'gradio' } },
+ { outcome: 'api', generator: ref('generator'), runtime: 'mlx' },
+]) assert.equal(validateRequest(invalid), false, JSON.stringify(invalid));
+assert.ok(validateRequest({ outcome: 'api', generator: ref('generator'), runtime: 'mlx', accelerator: 'metal' }));
 assert.throws(() => projectZip({ '../unsafe': 'bad' }));
 for (const name of ['superii-recipe-v1.json', 'superii-run-v1.json']) assert.equal(await readFile('public/schemas/' + name, 'utf8'), await readFile('sdk/python/src/superii/recipes/schemas/' + name, 'utf8'));
 // Cross-language checksum, archive CRC/path safety and Python syntax validation.

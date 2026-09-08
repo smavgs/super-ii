@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { githubWorkflowRef } from '@/lib/github-oidc';
+import { githubRepositoryMatchesSubject, githubWorkflowRef } from '@/lib/github-oidc';
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
@@ -74,9 +74,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   ) {
     return Response.json({ error: 'GitHub OIDC token lifetime is outside the accepted window' }, { status: 401 });
   }
-  const repositoryClaim = typeof verified.repository === 'string' ? verified.repository : '';
-  const subjectRepository = subject.split(':')[1] ?? '';
-  if (!repositoryClaim || repositoryClaim.toLowerCase() !== subjectRepository.toLowerCase()) {
+  if (!githubRepositoryMatchesSubject(verified)) {
     return Response.json({ error: 'GitHub repository claim does not match the trusted subject' }, { status: 403 });
   }
 

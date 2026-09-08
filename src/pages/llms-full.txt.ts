@@ -103,6 +103,18 @@ GET /api/sdk/models/{owner}/{slug} returns one published model revision, its fil
 
 The SDK supports resumable parallel acquisition, credential-scoped caches, installed local llama.cpp, MLX and supported Transformers/vLLM adapters, a token-protected loopback OpenAI text API, and stdio MCP. Planning estimates memory; it does not guarantee zero OOM. Generic partial-weight inference and universal instant start remain research. Remote warm-start is explicit and uses a separately supplied provider credential.
 
+## Build & Ship engineering recipes
+
+SDK 0.2 adds dataset acquisition through GET /api/sdk/datasets/{owner}/{slug}; use kind="dataset" in Python or --kind dataset in the CLI. Fresh read authorization, immutable hashes and signed publication evidence also apply to datasets.
+
+POST /api/recipes/generate accepts a bounded 16 KiB JSON request with outcome (rag, api or sft), an immutable generator reference, required embedding for RAG and dataset for SFT, and supported execution settings. It returns text files, their SHA-256 hashes and a recipe. superii recipe request.json new-project downloads and verifies those files without executing them. Downloads include uv.lock; use frozen installation. RAG performs local document ingestion, retrieval, cited answers or abstention, and measured retrieval evaluation. SFT uses CPU LoRA and reports held-out loss; it does not establish task quality. NVIDIA QLoRA/vLLM exports require explicit opt-in and remain unverified on GPU hardware.
+
+For independent private input credentials, set SUPERII_GENERATOR_TOKEN, SUPERII_EMBEDDING_TOKEN and SUPERII_DATASET_TOKEN. The SDK sends the corresponding x-superii-{role}-token headers only to the canonical recipe API. Do not put credentials in recipe or run records. These credentials do not expand the destination publisher's authority.
+
+GET /api/repositories/{repositoryId}/recipe reads the selected revision and clean file hashes with repository:read authority. POST attaches a completed reported SFT run and exact uploaded recipe/artifacts using repository:commit authority and current source read access. Existing upload and independent publication policy still apply. The manual generated GitHub workflow requests its bounded publication token only after training.
+
+Schemas: https://superii.site/schemas/superii-recipe-v1.json and https://superii.site/schemas/superii-run-v1.json. Human interface: https://superii.site/build. Exact request fields and access rules are in https://superii.site/openapi.json.
+
 ## Work MCP
 
 Transport: Streamable HTTP at https://superii.site/mcp/work

@@ -5,7 +5,7 @@ The approved Cloudflare configuration rule is active in the `superii.site` zone:
 - Name: `Super ii machine routes - browser integrity exception v1`
 - Rule ID: `099f15f878fe40aea5807eb4841c5abc`
 - Only setting: **Browser Integrity Check off** for matching requests.
-- Authentication, rate limits, WAF, DDoS and other controls remain active.
+- Authentication, rate limits, WAF and DDoS protections remain active.
 
 The initial API/MCP exception was completed on 2026-09-06 after default Python
 requests showed Error 1010 on discovery documents, A2A and the signed Skill
@@ -44,3 +44,25 @@ read is denied without a token. It creates no repository or content fixture.
 Rollback: disable this named rule in Cloudflare **Rules → Overview**. This
 restores the zone's browser check on these paths and may block ordinary clients
 again. The expression grants no repository or publication authority.
+
+## Bot Fight Mode
+
+On 2026-09-08, a real GitHub Actions request to
+`/api/trusted-publishing/github/exchange` received a Managed Challenge from
+**Bot Fight Mode** (Ray `a37b3fca88c1c090`). The GitHub publishing verification
+stopped before a successful token exchange. This was a separate edge protection
+from the scoped Browser Integrity Check rule.
+
+[Cloudflare documents](https://developers.cloudflare.com/bots/get-started/bot-fight-mode/)
+that Free-plan Bot Fight Mode cannot exclude API routes or be skipped by WAF
+custom rules. After explicit user approval, Bot Fight Mode was turned off for
+the `superii.site` zone. A dashboard reload confirmed the setting remained off;
+Browser Integrity Check remained enabled with its existing scoped exception,
+and managed WAF rules and HTTP DDoS protection remained active. Repository
+authentication, scopes, central publication policy and application rate limits
+were unchanged.
+
+Rollback: turn **Security → Settings → Bot fight mode** on. This may challenge
+legitimate software clients again. Rerun the manual GitHub publication workflow
+as well as the local machine-access check after any change: success from one
+network alone does not establish access from hosted automation.
