@@ -1,0 +1,23 @@
+name: Verify GitHub to Super ii publication
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-private-fixture:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.11.24
+      - run: uv sync --directory sdk/python --frozen
+      - run: sdk/python/.venv/bin/python tools/verify_superii_publishing.py
+        env:
+          SUPERII_VERIFY_REPOSITORY_ID: ${{ vars.SUPERII_VERIFY_REPOSITORY_ID }}

@@ -10,7 +10,7 @@ from .model import Model
 from .planner import Plan
 from .planner import plan as _plan
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "Client",
     "Peer",
@@ -32,9 +32,11 @@ __all__ = [
 ]
 
 
-def inspect(repository: str, *, revision: str | None = None, **client_options) -> Manifest:
+def inspect(
+    repository: str, *, revision: str | None = None, kind: str = "model", **client_options
+) -> Manifest:
     with Client(**client_options) as client:
-        return client.inspect(repository, revision=revision)
+        return client.inspect(repository, revision=revision, kind=kind)
 
 
 def plan(
@@ -54,14 +56,28 @@ def plan(
     return _plan(manifest, machine or hardware(), runtime=runtime, context_size=context_size)
 
 
-def pull(repository: str, *, revision: str | None = None, **client_options) -> Snapshot:
+def pull(
+    repository: str,
+    *,
+    revision: str | None = None,
+    kind: str = "model",
+    files: tuple[str, ...] | None = None,
+    **client_options,
+) -> Snapshot:
     with Client(**client_options) as client:
-        return client.pull(repository, revision=revision)
+        return client.pull(repository, revision=revision, kind=kind, files=files)
 
 
-async def apull(repository: str, *, revision: str | None = None, **client_options) -> Snapshot:
+async def apull(
+    repository: str,
+    *,
+    revision: str | None = None,
+    kind: str = "model",
+    files: tuple[str, ...] | None = None,
+    **client_options,
+) -> Snapshot:
     with Client(**client_options) as client:
-        return await client.apull(repository, revision=revision)
+        return await client.apull(repository, revision=revision, kind=kind, files=files)
 
 
 def verify(snapshot: Snapshot) -> bool:

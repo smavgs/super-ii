@@ -1,0 +1,28 @@
+name: Train and submit Super ii adapter
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  train-and-submit:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SUPERII_GENERATOR_TOKEN: ${{ secrets.SUPERII_GENERATOR_TOKEN }}
+      SUPERII_DATASET_TOKEN: ${{ secrets.SUPERII_DATASET_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.11.24
+      - run: uv sync --extra train
+      - run: uv run pytest
+      - run: uv run python train.py
+      - run: uv run python publish_ci.py
+        env:
+          SUPERII_DESTINATION_ID: ${{ vars.SUPERII_DESTINATION_ID }}

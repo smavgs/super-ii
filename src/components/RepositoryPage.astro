@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import UseModel from '@/components/UseModel.astro';
+import BuildShip from '@/components/BuildShip.astro';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
@@ -90,9 +91,11 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
               <button class="button button--yellow button--small" type="button" data-use-model-open aria-expanded="false" aria-controls="use-model">
                 <i class="ph ph-play-circle" aria-hidden="true"></i><span>Use Model</span>
               </button>
+              <button class="button button--secondary button--small" type="button" data-build-ship-open aria-expanded="false" aria-controls="build-ship">Build &amp; Ship</button>
               <a class="button button--secondary button--small" href="#model-tools">Try model</a>
             </>
           )}
+          {kind === 'dataset' && <button class="button button--secondary button--small" type="button" data-build-ship-open aria-expanded="false" aria-controls="build-ship">Build &amp; Ship</button>}
           <button class="button button--secondary button--small" type="button" data-copy-public-link>
             <i class="ph ph-link" aria-hidden="true"></i><span>Copy public link</span>
           </button>
@@ -127,6 +130,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
       </header>
 
       {kind === 'model' && <UseModel repository={repository} origin={Astro.url.origin} />}
+      {(kind === 'model' || kind === 'dataset') && <BuildShip source={repository} />}
 
       <nav class="repository-tabs" aria-label="Repository sections">
         <a href="#card">{cardTitle}</a>

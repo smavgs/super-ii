@@ -65,6 +65,7 @@ class Manifest:
     visibility: str
     compatibility: dict[str, Any]
     publication: dict[str, Any] | None = None
+    kind: str = "model"
 
     @classmethod
     def parse(cls, data: dict[str, Any], base_url: str, *, revision: str | None = None) -> Manifest:
@@ -105,6 +106,9 @@ class Manifest:
             if sum(f.size_bytes for f in files) != int(release["total_size_bytes"]):
                 raise IntegrityError("Release size does not match manifest")
             visibility = repo["visibility"]
+            kind = repo.get("kind", "model")
+            if kind not in {"model", "dataset"}:
+                raise IntegrityError("Unsupported repository kind")
             if visibility not in {"public", "private"}:
                 raise IntegrityError("Unknown repository visibility")
             return cls(
@@ -117,6 +121,7 @@ class Manifest:
                 visibility,
                 data.get("compatibility") or {},
                 data.get("publication"),
+                kind,
             )
         except (KeyError, TypeError, ValueError) as error:
             raise IntegrityError("Invalid repository manifest") from error

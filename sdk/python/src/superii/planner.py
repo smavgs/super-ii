@@ -56,6 +56,8 @@ def plan(
     context_size: int = 4096,
     memory_fraction: float = 0.75,
 ) -> Plan:
+    if manifest.kind != "model":
+        raise PlanError("Inference planning requires a model repository")
     if not 512 <= context_size <= 131072 or not 0.1 <= memory_fraction <= 0.85:
         raise PlanError("Context must be 512–131072; memory fraction must be 0.1–0.85")
     budget = int(machine.available_ram_bytes * memory_fraction)

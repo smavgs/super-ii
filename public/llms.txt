@@ -69,3 +69,5 @@ Pro and Team keep their existing plan identities. Checkout offers one USDC-on-Et
 - [Contact](https://superii.site/contact): Contact form
 - [Privacy](https://superii.site/legal/privacy): Privacy policy
 - [Terms](https://superii.site/legal/terms): Terms of service
+
+Build & Ship: https://superii.site/build — immutable engineering recipes, RAG, APIs and LoRA projects.
