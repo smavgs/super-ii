@@ -112,7 +112,7 @@ def main():
                 checked(
                     http.post(
                         route + "/files",
-                        headers=headers,
+                        headers={**headers, "origin": ORIGIN},
                         data={"path": "verification.jsonl"},
                         files={
                             "file": ("verification.jsonl", DATA, "application/x-ndjson")
@@ -127,7 +127,7 @@ def main():
                     json={"license": "mit", "basis": "original", "confirmed": True},
                 )
             )
-            publication = checked(http.post(route + "/submit", headers=headers)).json()
+            publication = checked(http.post(route + "/submit", headers=headers, json={})).json()
             assert publication["status"] == "published", (
                 "Central policy did not publish the fixture"
             )

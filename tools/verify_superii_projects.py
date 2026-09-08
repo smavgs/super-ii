@@ -179,7 +179,7 @@ def prepare(http, target, directory):
             checked(
                 http.post(
                     route + "/files",
-                    headers=headers,
+                    headers={**headers, "origin": ORIGIN},
                     data={"path": item.name},
                     files={"file": (item.name, content, "application/octet-stream")},
                 )
@@ -191,7 +191,7 @@ def prepare(http, target, directory):
                 json={"license": "mit", "basis": "original", "confirmed": True},
             )
         )
-        result = checked(http.post(route + "/submit", headers=headers)).json()
+        result = checked(http.post(route + "/submit", headers=headers, json={})).json()
         assert result["status"] == "published", (
             "Independent publication policy did not publish the fixture"
         )
