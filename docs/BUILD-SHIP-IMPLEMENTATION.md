@@ -62,6 +62,17 @@ Local verification on 2026-09-07:
 - GPU vendor dependencies resolve for Linux/Python 3.12. QLoRA and vLLM have
   explicit opt-in scripts and separate recipe hashes; NVIDIA execution is unverified.
 
-Release integration, exported transitive dependency lock, a fresh generated-project
-installation and real GitHub publication verification remain pending. Fixture
-execution does not establish model quality. No production status is claimed yet.
+SDK 0.2.0 was published on 2026-09-08 through the existing scoped PyPI trusted
+publisher. The public wheel hash matches the clean Python 3.12 artifact that
+passed all 39 tests. Release receipts are in `verification/sdk-0.2.0-release.json`.
+
+Projects include the resolved `uv.lock`, distribution hashes and frozen install
+commands. A fresh generated project installs from PyPI with the requested
+LangChain, Gradio and observability extras. Linux projects select official CPU
+PyTorch wheels. Local fixture archives remain distinct from live verification.
+
+The manual GitHub verification workflow is bound to fixed private synthetic
+fixtures. It checks OIDC scope/signature rejection, independent publication,
+private authenticated acquisition, actual generated API/RAG/SFT execution and
+adapter return. Live execution and final website deployment are pending; fixture
+execution does not establish model quality.

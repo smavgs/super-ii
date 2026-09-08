@@ -21,3 +21,38 @@ jobs:
       - run: sdk/python/.venv/bin/python tools/verify_superii_publishing.py
         env:
           SUPERII_VERIFY_REPOSITORY_ID: ${{ vars.SUPERII_VERIFY_REPOSITORY_ID }}
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: github-superii-publishing
+          path: reports/github-superii-publishing.json
+          retention-days: 7
+
+  verify-generated-projects:
+    needs: verify-private-fixture
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.11.24
+      - name: Install the published SDK from the project lock
+        run: |
+          mkdir "$RUNNER_TEMP/superii-project-environment"
+          cp src/data/recipes/project.toml "$RUNNER_TEMP/superii-project-environment/pyproject.toml"
+          cp src/data/recipes/uv.lock "$RUNNER_TEMP/superii-project-environment/uv.lock"
+          uv sync --project "$RUNNER_TEMP/superii-project-environment" --frozen --extra train
+      - name: Execute generated projects and publish a private adapter
+        run: '"$RUNNER_TEMP/superii-project-environment/.venv/bin/python" tools/verify_superii_projects.py'
+        env:
+          SUPERII_PROJECT_FIXTURES: ${{ vars.SUPERII_PROJECT_FIXTURES }}
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: generated-projects
+          path: reports/generated-projects.json
+          retention-days: 7
