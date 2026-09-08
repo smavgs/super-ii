@@ -485,6 +485,96 @@ def test_publication_reuses_verified_destination_and_rejects_changed_output(tmp_
     assert len(requests) == 3
 
 
+def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_path):
+    import base64
+    import hashlib
+    from uuid import uuid4
+
+    from superii.recipes.publication import publish
+
+    dataset = tmp_path / "data"
+    dataset.mkdir()
+    (dataset / "data.jsonl").write_text('{"text":"fixture"}')
+    selected = recipe("sft", dataset=snapshot(dataset, "dataset"))
+    adapter = tmp_path / "adapter"
+    adapter.mkdir()
+    weights = adapter / "adapter_model.safetensors"
+    weights.write_bytes(b"synthetic adapter")
+    report = RunRecord(selected, "train", directory=tmp_path / "runs").finish(
+        artifacts={"adapter_model.safetensors": weights}, metrics={"loss": 1.0}
+    )
+    transfers, uploaded = {}, {}
+
+    def handle(request):
+        assert request.url.host == "superii.site"
+        # Match the production framework's form-origin boundary. Machine JSON
+        # and TUS chunks are allowed; a bodyless POST without Content-Type is not.
+        if request.method == "POST":
+            content_type = request.headers.get("content-type", "")
+            if not content_type or content_type.startswith(
+                ("text/plain", "multipart/form-data", "application/x-www-form-urlencoded")
+            ):
+                return httpx.Response(403, text="Cross-site POST form submissions are forbidden")
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "status": "draft",
+                    "branch_id": "branch",
+                    "revision_id": "revision",
+                    "files": list(uploaded.values()),
+                },
+            )
+        if request.url.path.endswith("/transfers"):
+            metadata = json.loads(request.content)
+            transfer_id = str(uuid4())
+            transfers[transfer_id] = {**metadata, "content": b""}
+            return httpx.Response(
+                201,
+                json={
+                    "transfer_id": transfer_id,
+                    "transfer_token": "fixture-capability",
+                    "upload_url": "https://untrusted.invalid/must-not-follow",
+                },
+            )
+        if "/api/transfers/" in request.url.path:
+            transfer_id = request.url.path.split("/")[3]
+            transfer = transfers[transfer_id]
+            assert request.headers["tus-resumable"] == "1.0.0"
+            assert request.headers["x-superii-transfer-token"] == "fixture-capability"
+            if request.method == "PATCH":
+                assert request.headers["upload-offset"] == str(len(transfer["content"]))
+                expected = base64.b64encode(hashlib.sha256(request.content).digest()).decode()
+                assert request.headers["upload-checksum"] == "sha256 " + expected
+                transfer["content"] += request.content
+                return httpx.Response(204, headers={"upload-offset": str(len(transfer["content"]))})
+            assert request.url.path.endswith("/commit") and json.loads(request.content) == {}
+            assert hashlib.sha256(transfer["content"]).hexdigest() == transfer["sha256"]
+            uploaded[transfer["path"]] = {
+                "path": transfer["path"],
+                "sha256": transfer["sha256"],
+                "size_bytes": len(transfer["content"]),
+            }
+            return httpx.Response(200, json={"status": "ready"})
+        if request.url.path.endswith("/recipe"):
+            assert len(uploaded) == 3
+            assert json.loads(request.content)["recipe"]["recipe_sha256"] == selected.sha256
+            return httpx.Response(200, json={"ok": True})
+        assert request.url.path.endswith("/submit") and json.loads(request.content) == {}
+        return httpx.Response(200, json={"status": "published"})
+
+    result = publish(
+        selected,
+        report,
+        "00000000-0000-4000-8000-000000000001",
+        token="sii_" + "a" * 64,
+        directory=adapter,
+        submit=True,
+        transport=httpx.MockTransport(handle),
+    )
+    assert result["status"] == "published" and len(transfers) == 3
+
+
 def test_real_generated_api_and_framework_exports(tiny_models, tmp_path):
     from importlib.util import find_spec
 

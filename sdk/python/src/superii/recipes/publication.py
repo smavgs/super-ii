@@ -132,7 +132,7 @@ def publish(
                     offset += len(chunk)
                     if response.headers.get("upload-offset") != str(offset):
                         raise IntegrityError("The transfer offset differs")
-            request("POST", transfer_route + "/commit", headers=headers)
+            request("POST", transfer_route + "/commit", headers=headers, json={})
         verified = request("GET", route + "/recipe", params=branch).json()
         if verified["revision_id"] != destination["revision_id"] or not all(
             any(
@@ -159,7 +159,9 @@ def publish(
             "evidence": "reported",
         }
         if submit:
-            result["publication"] = request("POST", route + "/submit", params=branch).json()
+            result["publication"] = request(
+                "POST", route + "/submit", params=branch, json={}
+            ).json()
             result["status"] = result["publication"].get("status", "evaluated")
         return result
 
