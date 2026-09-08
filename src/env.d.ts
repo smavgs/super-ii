@@ -18,3 +18,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare namespace App {
+  interface Locals {
+    locale?: 'en' | 'ru';
+    localizedRewrite?: URL;
+  }
+}

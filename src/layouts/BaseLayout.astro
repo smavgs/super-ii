@@ -36,10 +36,11 @@ const canonical = absoluteUrl(Astro.url.pathname);
 const imageUrl = absoluteUrl(image);
 const imageWidthContent = String(imageWidth);
 const imageHeightContent = String(imageHeight);
+const locale = Astro.locals.locale ?? 'en';
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang={locale} data-theme="light" data-locale={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -80,6 +81,11 @@ const imageHeightContent = String(imageHeight);
         } catch {}
       })();
     </script>
+    {locale === 'ru' && (
+      <script>
+        import '@/scripts/clerk-locale';
+      </script>
+    )}
   </head>
   <body class={className}>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -89,5 +95,6 @@ const imageHeightContent = String(imageHeight);
     </main>
     <Footer />
     <script is:inline src="/scripts/site.js" defer></script>
+    {locale === 'ru' && <script is:inline src="/scripts/localize-ru.js" defer></script>}
   </body>
 </html>

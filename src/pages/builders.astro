@@ -55,8 +55,8 @@ const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'bui
           >
             <CreatorLink handle={builder.handle} displayName={builder.display_name} avatarUrl={builder.avatar_url} />
             <div class="builder-entry__story">
-              <p>{builder.bio || 'Building openly on Super ii.'}</p>
-              {builder.interests.length > 0 && <ul aria-label={`${builder.display_name}'s interests`}>{builder.interests.slice(0, 6).map((interest) => <li>{interest}</li>)}</ul>}
+              {builder.bio ? <p data-no-translate>{builder.bio}</p> : <p>Building openly on Super ii.</p>}
+              {builder.interests.length > 0 && <ul aria-label={`${builder.display_name}'s interests`}>{builder.interests.slice(0, 6).map((interest) => <li data-no-translate>{interest}</li>)}</ul>}
             </div>
             <dl class="builder-entry__work" aria-label={`${builder.display_name}'s public activity`}>
               <div><dt>Work</dt><dd>{builder.repositories_count}</dd></div>
@@ -87,6 +87,7 @@ const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'bui
 </BaseLayout>
 
 <script>
+  const russian = document.documentElement.lang === 'ru';
   const input = document.querySelector<HTMLInputElement>('[data-builders-search]');
   const entries = [...document.querySelectorAll<HTMLElement>('[data-builder]')];
   const visible = document.querySelector<HTMLElement>('[data-builders-visible]');
@@ -98,6 +99,14 @@ const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'bui
       entry.hidden = !matches;
       if (matches) count += 1;
     });
-    if (visible) visible.textContent = query ? `${count} on this page · press Enter to search everyone` : `${entries.length} on this page`;
+    if (visible) {
+      visible.textContent = russian
+        ? query
+          ? `${count} на этой странице · нажмите Enter для поиска по всему каталогу`
+          : `${entries.length} на этой странице`
+        : query
+          ? `${count} on this page · press Enter to search everyone`
+          : `${entries.length} on this page`;
+    }
   });
 </script>

@@ -4,6 +4,8 @@ import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
 
 const connectors = agentConnectorRegistry.connectors;
+const russian = Astro.locals.locale === 'ru';
+const dateLocale = russian ? 'ru-RU' : 'en';
 let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -73,7 +75,7 @@ if (sql) {
       <div class="agents-filter" role="group" aria-label="Filter connectors">
         <button type="button" data-agent-filter="ready" aria-pressed="true">Ready now</button>
         <button type="button" data-agent-filter="all" aria-pressed="false">All clients</button>
-        <span>Registry updated {new Date(`${agentConnectorRegistry.registry_updated}T00:00:00Z`).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })}</span>
+        <span>{russian ? 'Реестр обновлён' : 'Registry updated'} {new Date(`${agentConnectorRegistry.registry_updated}T00:00:00Z`).toLocaleDateString(dateLocale, { dateStyle: 'medium', timeZone: 'UTC' })}</span>
       </div>
 
       <div class="agents-connector-list" data-agent-connectors>
@@ -82,8 +84,10 @@ if (sql) {
             <div class="agents-connector__identity">
               <span class="agents-connector__index">{String(index + 1).padStart(2, '0')}</span>
               <div>
-                <h3>{connector.name}</h3>
-                <p>{connector.vendor} · {connector.configuration_version ?? 'verification pending'}</p>
+                <h3 data-no-translate>{connector.name}</h3>
+                <p><span data-no-translate>{connector.vendor}</span> · {connector.configuration_version
+                  ? <span data-no-translate>{connector.configuration_version}</span>
+                  : <span>verification pending</span>}</p>
               </div>
             </div>
             <div class="agents-connector__status">

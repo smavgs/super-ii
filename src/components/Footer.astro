@@ -7,7 +7,7 @@ const year = new Date().getFullYear();
 <footer class="site-footer">
   <div class="shell footer-grid">
     <div class="footer-intro">
-      <a class="brand-lockup" href="/" aria-label="Super ii home">
+      <a class="brand-lockup" href="/" aria-label="Super ii home" data-no-translate>
         <LogoMark size="small" />
         <span>Super <strong>ii</strong></span>
       </a>
@@ -54,13 +54,17 @@ const year = new Date().getFullYear();
       <a href="/security">Security</a>
       <a href="/legal/privacy">Privacy</a>
       <a href="/legal/terms">Terms</a>
-      <a href="https://x.com/superiisite" rel="me external">X · @superiisite</a>
+      <a href="https://x.com/superiisite" rel="me external" data-no-translate>X · @superiisite</a>
       <a class="footer-join-team" href="/join-team">Join Team <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
     </div>
   </div>
 
   <div class="shell footer-bottom">
     <span>© {year} Super ii</span>
-    <span>Open by design · Clear controls when needed</span>
+    <span class="footer-principle">Open by design · Clear controls when needed</span>
+    <span class="footer-language-group">
+      <span class="footer-language-separator" aria-hidden="true">·</span>
+      <a class="footer-language-switch" href="/ru" data-language-switch="ru" lang="ru" hreflang="ru" aria-label="Русский">ru</a>
+    </span>
   </div>
 </footer>

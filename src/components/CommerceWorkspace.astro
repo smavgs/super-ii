@@ -122,7 +122,7 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
       ? `${String(item.repository_owner)}/${String(item.repository_slug)}`
       : item.organization_handle ? `@${String(item.organization_handle)}` : 'any managed target';
     const meta = document.createElement('small');
-    meta.textContent = `${Number(item.orders_created)}/${Number(item.max_orders)} orders · $${(Number(item.authorized_amount_cents) / 100).toFixed(2)} of $${(Number(item.total_limit_cents) / 100).toFixed(2)} authorized · ${scope} · expires ${new Date(String(item.expires_at)).toLocaleString()}`;
+    meta.textContent = `${Number(item.orders_created)}/${Number(item.max_orders)} orders · $${(Number(item.authorized_amount_cents) / 100).toFixed(2)} of $${(Number(item.total_limit_cents) / 100).toFixed(2)} authorized · ${scope} · expires ${new Date(String(item.expires_at)).toLocaleString(document.documentElement.lang === 'ru' ? 'ru-RU' : 'en')}`;
     const products = document.createElement('p'); products.textContent = Array.isArray(item.allowed_products) ? item.allowed_products.join(' · ') : '';
     copy.appendChild(title as unknown as Node);
     copy.appendChild(meta as unknown as Node);

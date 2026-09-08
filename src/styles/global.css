@@ -769,6 +769,7 @@ h3 {
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -964,6 +965,23 @@ pre {
 
 .menu-toggle {
   display: none;
+}
+
+@media (min-width: 1701px) {
+  html[data-locale='ru'] .header-inner {
+    width: min(calc(100% - 2rem), 1680px);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 1700px) {
+  html[data-locale='ru'] .desktop-nav {
+    display: none;
+  }
+
+  html[data-locale='ru'] .menu-toggle {
+    display: inline-grid;
+  }
 }
 
 .mobile-nav {
@@ -4515,6 +4533,37 @@ pre {
   font-size: 0.7rem;
 }
 
+.footer-language-group {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.footer-language-separator,
+.footer-language-switch {
+  color: color-mix(in srgb, var(--muted-soft) 52%, transparent);
+}
+
+.footer-language-switch {
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0.34rem 0.42rem;
+  text-decoration: none;
+  text-transform: lowercase;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.footer-language-switch:hover,
+.footer-language-switch:focus-visible {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+}
+
 .sii-clerk-avatar {
   width: 2.25rem;
   height: 2.25rem;
@@ -5926,6 +5975,11 @@ pre {
   .footer-bottom {
     flex-direction: column;
     gap: 0.45rem;
+  }
+
+  .footer-language-group {
+    align-self: flex-end;
+    margin-left: 0;
   }
 
   .status-row {
@@ -11430,7 +11484,7 @@ pre {
   .join-team-fit__inner ul,
   .join-team-contributions,
   .join-team-path__steps {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .join-team-fit__inner li:nth-child(odd),

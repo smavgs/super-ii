@@ -4,6 +4,7 @@ import {
   type NotebookImageOutput,
 } from '@/lib/notebooks';
 import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
+import { localizeOfficialNotebookMarkdown } from '@/lib/official-notebook-localization';
 
 interface Props {
   notebook: NotebookDocumentType;
@@ -26,6 +27,7 @@ const {
   colabUrl,
   official = false,
 } = Astro.props;
+const locale = Astro.locals.locale ?? 'en';
 
 function imageSource(output: NotebookImageOutput): string {
   return `data:${output.mime_type};base64,${output.data}`;
@@ -40,7 +42,7 @@ function imageSource(output: NotebookImageOutput): string {
   <header class="notebook-reader__header">
     <div>
       <p class="eyebrow">{official ? 'Official Super ii notebook' : 'Reviewed repository notebook'}</p>
-      <h1>{notebook.path.split('/').at(-1)?.replace(/\.ipynb$/i, '')}</h1>
+      <h1 data-no-translate>{notebook.path.split('/').at(-1)?.replace(/\.ipynb$/i, '')}</h1>
       <p><code>{notebook.path}</code></p>
     </div>
     <div class="button-row notebook-reader__actions">
@@ -72,11 +74,15 @@ function imageSource(output: NotebookImageOutput): string {
     {notebook.cells.map((cell) => (
       <section class:list={['notebook-cell', `notebook-cell--${cell.type}`]} id={`cell-${cell.index + 1}`}>
         <a class="notebook-cell__anchor" href={`#cell-${cell.index + 1}`} aria-label={`Link to cell ${cell.index + 1}`}>
-          {cell.type === 'code' ? `[${cell.execution_count ?? ' '}]` : cell.type === 'markdown' ? 'M' : 'R'}
+          <span data-no-translate>{cell.type === 'code' ? `[${cell.execution_count ?? ' '}]` : cell.type === 'markdown' ? 'M' : 'R'}</span>
         </a>
         <div class="notebook-cell__body">
           {cell.type === 'markdown' ? (
-            <div class="notebook-markdown" set:html={renderNotebookMarkdown(cell.source)} />
+            <div
+              class="notebook-markdown"
+              data-no-translate={official ? undefined : ''}
+              set:html={renderNotebookMarkdown(official ? localizeOfficialNotebookMarkdown(cell.source, locale) : cell.source)}
+            />
           ) : (
             <pre class="notebook-source"><code>{cell.source}</code></pre>
           )}

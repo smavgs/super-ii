@@ -2,9 +2,11 @@
 import { SignUp } from '@clerk/astro/components';
 import AuthStory from '@/components/AuthStory.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { localizedHref, localizedPath, stripLocalePrefix } from '@/lib/i18n';
 import { authIsConfigured } from '@/lib/site';
 
 const authConfigured = authIsConfigured(Astro.locals);
+const locale = Astro.locals.locale ?? 'en';
 const agentStarterRedirect = '/account?welcome=agent-starter#agent-starter';
 const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
 const agentAccessRedirect = '/account#agents';
@@ -19,12 +21,15 @@ const allowedRedirects = new Set([
   frontierSetupRedirect,
 ]);
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const postSignUpRedirect = requestedRedirect && allowedRedirects.has(requestedRedirect)
-  ? requestedRedirect
+const requestedPlainRedirect = requestedRedirect ? stripLocalePrefix(requestedRedirect) : null;
+const plainPostSignUpRedirect = requestedPlainRedirect && allowedRedirects.has(requestedPlainRedirect)
+  ? requestedPlainRedirect
   : agentStarterRedirect;
-const signInUrl = postSignUpRedirect === agentStarterRedirect
+const postSignUpRedirect = localizedHref(plainPostSignUpRedirect, locale);
+const plainSignInUrl = plainPostSignUpRedirect === agentStarterRedirect
   ? '/sign-in'
-  : `/sign-in?redirect_url=${encodeURIComponent(postSignUpRedirect)}`;
+  : `/sign-in?redirect_url=${encodeURIComponent(plainPostSignUpRedirect)}`;
+const signInUrl = locale === 'ru' ? `/ru${plainSignInUrl}` : plainSignInUrl;
 ---
 
 <BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">
@@ -37,7 +42,7 @@ const signInUrl = postSignUpRedirect === agentStarterRedirect
         {authConfigured ? (
           <SignUp
             routing="path"
-            path="/sign-up"
+            path={localizedPath('/sign-up', locale)}
             signInUrl={signInUrl}
             forceRedirectUrl={postSignUpRedirect}
             fallbackRedirectUrl={postSignUpRedirect}
@@ -59,7 +64,11 @@ const signInUrl = postSignUpRedirect === agentStarterRedirect
             <a class="button button--secondary button--block" href="/">Return home</a>
           </div>
         )}
-        <p class="auth-config-note">By creating an account, you agree to the <a href="/legal/terms">Terms</a> and acknowledge the <a href="/legal/privacy">Privacy Policy</a>.</p>
+        {locale === 'ru' ? (
+          <p class="auth-config-note">Создавая аккаунт, вы соглашаетесь с <a href="/legal/terms">Условиями использования</a> и подтверждаете, что ознакомились с <a href="/legal/privacy">Политикой конфиденциальности</a>.</p>
+        ) : (
+          <p class="auth-config-note">By creating an account, you agree to the <a href="/legal/terms">Terms</a> and acknowledge the <a href="/legal/privacy">Privacy Policy</a>.</p>
+        )}
       </div>
     </section>
   </div>

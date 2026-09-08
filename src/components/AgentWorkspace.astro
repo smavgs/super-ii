@@ -233,7 +233,7 @@
         const copy = element('span');
         const bound = token.repository_id ? repositories.find((repository) => repository.id === token.repository_id) : null;
         const boundary = bound ? `${bound.owner_handle}/${bound.slug}` : token.repository_id ? 'one repository' : 'organization-wide';
-        add(copy, element('strong', token.token_prefix), element('small', `${token.actions_used}/${token.max_actions} actions · ${boundary} · expires ${new Date(token.expires_at).toLocaleDateString()}`));
+        add(copy, element('strong', token.token_prefix), element('small', `${token.actions_used}/${token.max_actions} actions · ${boundary} · expires ${new Date(token.expires_at).toLocaleDateString(document.documentElement.lang === 'ru' ? 'ru-RU' : 'en')}`));
         add(row, copy);
         if (token.revoked_at) add(row, element('span', 'revoked', 'status-badge'));
         else {

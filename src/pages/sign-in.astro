@@ -2,9 +2,11 @@
 import { SignIn } from '@clerk/astro/components';
 import AuthStory from '@/components/AuthStory.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { localizedHref, localizedPath, stripLocalePrefix } from '@/lib/i18n';
 import { authIsConfigured } from '@/lib/site';
 
 const authConfigured = authIsConfigured(Astro.locals);
+const locale = Astro.locals.locale ?? 'en';
 const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
 const agentAccessRedirect = '/account#agents';
 const skillsRedirect = '/skills';
@@ -18,12 +20,15 @@ const allowedRedirects = new Set([
   frontierSetupRedirect,
 ]);
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const postSignInRedirect = requestedRedirect && allowedRedirects.has(requestedRedirect)
-  ? requestedRedirect
+const requestedPlainRedirect = requestedRedirect ? stripLocalePrefix(requestedRedirect) : null;
+const plainPostSignInRedirect = requestedPlainRedirect && allowedRedirects.has(requestedPlainRedirect)
+  ? requestedPlainRedirect
   : '/account';
-const signUpUrl = postSignInRedirect === '/account'
+const postSignInRedirect = localizedHref(plainPostSignInRedirect, locale);
+const plainSignUpUrl = plainPostSignInRedirect === '/account'
   ? '/sign-up'
-  : `/sign-up?redirect_url=${encodeURIComponent(postSignInRedirect)}`;
+  : `/sign-up?redirect_url=${encodeURIComponent(plainPostSignInRedirect)}`;
+const signUpUrl = locale === 'ru' ? `/ru${plainSignUpUrl}` : plainSignUpUrl;
 ---
 
 <BaseLayout title="Log in" description="Log in to Super ii with email, Google, or GitHub." noindex className="auth-body">
@@ -36,7 +41,7 @@ const signUpUrl = postSignInRedirect === '/account'
         {authConfigured ? (
           <SignIn
             routing="path"
-            path="/sign-in"
+            path={localizedPath('/sign-in', locale)}
             signUpUrl={signUpUrl}
             forceRedirectUrl={postSignInRedirect}
             fallbackRedirectUrl={postSignInRedirect}

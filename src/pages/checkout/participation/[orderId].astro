@@ -25,6 +25,7 @@ type ParticipationOrder = {
 };
 
 const orderId = Astro.params.orderId ?? '';
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let order: ParticipationOrder | null = null;
 let authenticated = false;
@@ -73,7 +74,7 @@ const productTitle = fame
               <div class="payment-warning"><i class="ph ph-warning" aria-hidden="true"></i><p><strong>Send only USDC on Ethereum (ETH/ERC-20).</strong> A different asset or network can be lost. The wallet network fee is separate.</p></div>
               <label class="payment-copy-field">Exact amount<span><code data-pay-amount>{order.pay_amount}</code><button type="button" data-copy={order.pay_amount}>Copy</button></span></label>
               <label class="payment-copy-field">Deposit address<span><code data-pay-address>{order.pay_address}</code><button type="button" data-copy={order.pay_address}>Copy</button></span></label>
-              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time>.</p>}
+              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</time>.</p>}
               <p class="form-status" data-checkout-message aria-live="polite">Waiting for the Ethereum payment and confirmations…</p>
             </>
           ) : (

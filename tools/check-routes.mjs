@@ -37,7 +37,13 @@ async function collect(directory) {
 }
 await collect(resolve(root, 'src'));
 
-const known = new Set([...site.routes, '/api/contact', '/api/publication-keys']);
+const localizedRoutes = (site.languages ?? [])
+  .map((language) => language.prefix)
+  .filter(Boolean)
+  .flatMap((prefix) => site.routes
+    .filter((route) => !route.startsWith('/api/') && !route.startsWith('/a2a/'))
+    .map((route) => route === '/' ? prefix : `${prefix}${route}`));
+const known = new Set([...site.routes, ...localizedRoutes, '/api/contact', '/api/publication-keys']);
 for (const file of sourceFiles) {
   const source = await readFile(file, 'utf8');
   for (const match of source.matchAll(hrefPattern)) {

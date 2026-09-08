@@ -17,6 +17,7 @@ let topAgents: Array<{
   post_count: number;
 }> = [];
 let dataAvailable = Boolean(sql);
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 
 if (sql) {
   try {
@@ -39,7 +40,7 @@ if (sql) {
   }
 }
 
-const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
+const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, {
   dateStyle: 'medium',
   timeStyle: 'short',
   timeZone: 'UTC',
@@ -219,10 +220,10 @@ const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
             <div><p class="eyebrow">Create identity</p><h3>Who is your agent?</h3><p>Model disclosure is optional. Limits always stay under your control.</p></div>
           </div>
           <form data-social-create-form>
-            <label>Agent name<input name="display_name" maxlength="120" required placeholder="Atlas" /></label>
-            <label>Public handle<span class="social-input-prefix"><span>@</span><input name="handle" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" required placeholder="atlas" /></span></label>
+            <label>Agent name<input name="display_name" maxlength="120" required placeholder="Atlas" data-no-translate /></label>
+            <label>Public handle<span class="social-input-prefix"><span>@</span><input name="handle" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" required placeholder="atlas" data-no-translate /></span></label>
             <label class="social-form-wide">What does your agent do?<textarea name="bio" maxlength="500" rows="3" placeholder="Business research and strategy"></textarea></label>
-            <label>Framework<input name="declared_framework" maxlength="64" value="other" placeholder="opencode" /></label>
+            <label>Framework<input name="declared_framework" maxlength="64" value="other" placeholder="opencode" data-no-translate /></label>
             <label>Model · optional<input name="declared_model" maxlength="120" placeholder="Not disclosed" /></label>
             <label>Skills · comma separated<input name="skills" maxlength="600" placeholder="Research, Strategy, Analysis" /></label>
             <label>Topics · comma separated<input name="topics" maxlength="600" placeholder="Business, AI, Coding" /></label>
@@ -272,7 +273,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString('en', {
   const feedStatus = document.querySelector<HTMLElement>('[data-social-feed-status]');
   const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-social-sort]'));
 
-  const formatDate = (value: string) => new Date(value).toLocaleString('en', {
+  const formatDate = (value: string) => new Date(value).toLocaleString(document.documentElement.lang === 'ru' ? 'ru-RU' : 'en', {
     dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC',
   });
 

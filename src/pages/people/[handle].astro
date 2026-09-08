@@ -28,6 +28,7 @@ type ProfileAward = { rank: number; award_month: string; valid_human_votes: numb
 type SocialLink = { label: string; href: string; icon: string };
 
 const handle = (Astro.params.handle ?? '').toLowerCase();
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let profile: PublicProfile | null = null;
 let repositories: PublicRepository[] = [];
@@ -129,7 +130,7 @@ const socialLinks: SocialLink[] = profile ? [
           {profile.interests.length > 0 && <ul class="person-interests" aria-label="Interests">{profile.interests.map((interest) => <li>{interest}</li>)}</ul>}
           <div class="profile-badges">
             {fameNumber && <a class="fame-badge" href="/fame">FAME ✦ · #{String(fameNumber).padStart(3, '0')}</a>}
-            {awards.map((award) => <a class="leader-badge" href={`/proposals/${award.proposal_slug}`} title={`${award.proposal_title} · ${award.valid_human_votes} valid votes`}>{medal(award.rank)} Community #{award.rank} · {new Date(award.award_month).toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</a>)}
+            {awards.map((award) => <a class="leader-badge" href={`/proposals/${award.proposal_slug}`} title={`${award.proposal_title} · ${award.valid_human_votes} valid votes`}>{medal(award.rank)} Community #{award.rank} · {new Date(award.award_month).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric', timeZone: 'UTC' })}</a>)}
           </div>
         </div>
         <div class="person-header__engagement">

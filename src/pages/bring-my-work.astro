@@ -10,6 +10,7 @@ import { authIsConfigured } from '@/lib/site';
 const authConfigured = authIsConfigured(Astro.locals);
 const configured = bridgeIsConfigured(Astro.locals);
 const sql = sqlClient(Astro.locals);
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 let profile: { id: string; handle: string } | null = null;
 let connections: Array<{
   id: string;
@@ -195,7 +196,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                       <article class="bridge-job" data-job-row={job.id}>
                         <div>
                           <strong>{job.selected_count} {job.selected_count === 1 ? 'repository' : 'repositories'}</strong>
-                          <span>{new Date(job.created_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                          <span>{new Date(job.created_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                         </div>
                         <div class="bridge-job__state">
                           <span class:list={['status-badge', `status-badge--${job.status}`]} data-job-status>{job.status}</span>

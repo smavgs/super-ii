@@ -9,6 +9,25 @@ const glyphs: Record<string, string> = {
   success: '◎',
 };
 
+const russian = document.documentElement.lang === 'ru';
+const categoryRussian: Record<string, string> = {
+  All: 'Все',
+  Marketing: 'Маркетинг',
+  Ops: 'Операции',
+  Personal: 'Личное',
+  Productivity: 'Продуктивность',
+  Sales: 'Продажи',
+  Success: 'Работа с клиентами',
+};
+
+function ui(english: string, russianText: string) {
+  return russian ? russianText : english;
+}
+
+function categoryLabel(category: string) {
+  return russian ? categoryRussian[category] ?? category : category;
+}
+
 function required<T extends Element>(selector: string): T {
   const element = document.querySelector(selector);
   if (!element) throw new Error(`Skills interface is missing ${selector}`);
@@ -80,13 +99,13 @@ function visibleSkills() {
 }
 
 function integrationLabel(skill: Skill) {
-  if (!skill.integrations.length) return 'No integration required';
+  if (!skill.integrations.length) return ui('No integration required', 'Интеграция не требуется');
   const visible = skill.integrations.slice(0, 2).join(' · ');
   return skill.integrations.length > 2 ? `${visible} · +${skill.integrations.length - 2}` : visible;
 }
 
 function skillShareUrl(skill: Skill) {
-  const url = new URL('/skills', document.baseURI);
+  const url = new URL(russian ? '/ru/skills' : '/skills', document.baseURI);
   url.searchParams.set('skill', skill.slug);
   return url.toString();
 }
@@ -100,15 +119,20 @@ function clearActionStatus(button: HTMLButtonElement, className: string) {
 
 function openSkill(skill: Skill) {
   activeSkill = skill;
+  dialogTitle.setAttribute('data-no-translate', '');
+  dialogPrompt.setAttribute('data-no-translate', '');
   dialogTitle.textContent = skill.name;
-  dialogCategory.textContent = skill.category;
+  dialogCategory.textContent = categoryLabel(skill.category);
   dialogMark.textContent = glyph(skill.category);
   dialogPrompt.textContent = skill.prompt;
   dialogStatus.textContent = '';
   dialogIntegrations.replaceChildren();
-  const names = skill.integrations.length ? skill.integrations : ['No integration required'];
+  const names = skill.integrations.length
+    ? skill.integrations
+    : [ui('No integration required', 'Интеграция не требуется')];
   names.forEach((name) => {
     const item = document.createElement('span');
+    if (skill.integrations.length) item.setAttribute('data-no-translate', '');
     item.textContent = name;
     dialogIntegrations.appendChild(item);
   });
@@ -120,8 +144,9 @@ function makeCard(skill: Skill, index: number) {
   const card = document.createElement('button');
   card.type = 'button';
   card.className = 'skill-card';
+  card.setAttribute('data-no-translate', '');
   card.dataset.skillSlug = skill.slug;
-  card.setAttribute('aria-label', `Open ${skill.name} skill`);
+  card.setAttribute('aria-label', russian ? `Открыть навык «${skill.name}»` : `Open ${skill.name} skill`);
 
   const top = document.createElement('span');
   top.className = 'skill-card__top';
@@ -141,7 +166,7 @@ function makeCard(skill: Skill, index: number) {
   const meta = document.createElement('span');
   meta.className = 'skill-card__meta';
   const category = document.createElement('b');
-  category.textContent = skill.category;
+  category.textContent = categoryLabel(skill.category);
   const integrations = document.createElement('small');
   integrations.textContent = integrationLabel(skill);
   meta.appendChild(category);
@@ -161,8 +186,20 @@ function renderCards() {
   grid.setAttribute('aria-busy', 'false');
   empty.hidden = visible.length !== 0;
   grid.hidden = visible.length === 0;
-  const suffix = activeCategory === 'All' ? '' : ` in ${activeCategory}`;
-  count.textContent = `${visible.length} ${visible.length === 1 ? 'skill' : 'skills'}${suffix}`;
+  if (russian) {
+    const mod10 = visible.length % 10;
+    const mod100 = visible.length % 100;
+    const noun = mod10 === 1 && mod100 !== 11
+      ? 'навык'
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? 'навыка'
+        : 'навыков';
+    const suffix = activeCategory === 'All' ? '' : ` в категории «${categoryLabel(activeCategory)}»`;
+    count.textContent = `${visible.length} ${noun}${suffix}`;
+  } else {
+    const suffix = activeCategory === 'All' ? '' : ` in ${activeCategory}`;
+    count.textContent = `${visible.length} ${visible.length === 1 ? 'skill' : 'skills'}${suffix}`;
+  }
 }
 
 function renderFilters() {
@@ -172,7 +209,7 @@ function renderFilters() {
   ['All', ...categories].forEach((category) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = category;
+    button.textContent = categoryLabel(category);
     button.dataset.skillsCategory = category;
     button.setAttribute('aria-pressed', String(category === activeCategory));
     button.addEventListener('click', () => {
@@ -191,7 +228,7 @@ async function loadSkills() {
   if (loading) return;
   loading = true;
   error.hidden = true;
-  count.textContent = 'Loading skills…';
+  count.textContent = ui('Loading skills…', 'Загружаем навыки…');
   retry.disabled = true;
   try {
     const response = await fetch('/api/skills', {
@@ -212,7 +249,7 @@ async function loadSkills() {
     grid.hidden = true;
     empty.hidden = true;
     error.hidden = false;
-    count.textContent = 'Skills unavailable';
+    count.textContent = ui('Skills unavailable', 'Навыки недоступны');
   } finally {
     loading = false;
     retry.disabled = false;
@@ -259,11 +296,14 @@ copyButton.addEventListener('click', async () => {
   try {
     if (!navigator.clipboard?.writeText) throw new Error('copy unavailable');
     await navigator.clipboard.writeText(activeSkill.prompt);
-    dialogStatus.textContent = 'Complete prompt copied.';
+    dialogStatus.textContent = ui('Complete prompt copied.', 'Полный промпт скопирован.');
     copyButton.classList.add('is-copied');
     clearActionStatus(copyButton, 'is-copied');
   } catch {
-    dialogStatus.textContent = 'Copy was blocked. Select the prompt manually.';
+    dialogStatus.textContent = ui(
+      'Copy was blocked. Select the prompt manually.',
+      'Копирование заблокировано. Выделите промпт вручную.',
+    );
   }
 });
 shareButton.addEventListener('click', async () => {
@@ -279,11 +319,11 @@ shareButton.addEventListener('click', async () => {
     if (typeof navigator.share === 'function'
       && (typeof navigator.canShare !== 'function' || navigator.canShare(shareData))) {
       await navigator.share(shareData);
-      dialogStatus.textContent = 'Skill shared.';
+      dialogStatus.textContent = ui('Skill shared.', 'Навыком поделились.');
     } else {
       if (!navigator.clipboard?.writeText) throw new Error('share unavailable');
       await navigator.clipboard.writeText(url);
-      dialogStatus.textContent = 'Share link copied.';
+      dialogStatus.textContent = ui('Share link copied.', 'Ссылка скопирована.');
     }
     shareButton.classList.add('is-shared');
     clearActionStatus(shareButton, 'is-shared');
@@ -292,11 +332,14 @@ shareButton.addEventListener('click', async () => {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('copy unavailable');
       await navigator.clipboard.writeText(url);
-      dialogStatus.textContent = 'Share link copied.';
+      dialogStatus.textContent = ui('Share link copied.', 'Ссылка скопирована.');
       shareButton.classList.add('is-shared');
       clearActionStatus(shareButton, 'is-shared');
     } catch {
-      dialogStatus.textContent = 'Sharing is unavailable. Copy the link from your browser.';
+      dialogStatus.textContent = ui(
+        'Sharing is unavailable. Copy the link from your browser.',
+        'Поделиться не удалось. Скопируйте ссылку из браузера.',
+      );
     }
   }
 });

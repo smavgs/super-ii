@@ -137,20 +137,20 @@ const emptyState = {
               ) : item.owner_organization_handle ? (
                 <CreatorLink compact kind="organization" handle={item.owner_organization_handle} displayName={item.owner_organization_name} avatarUrl={item.owner_organization_logo_url} />
               ) : <span>{item.owner_handle}</span>}
-              <span>{item.license ?? 'License pending'}</span>
+              {item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}
             </div>
-            <h2><a class="catalog-card__title-link" href={repositoryPath(item)}>{item.title}</a></h2>
-            <p>{item.summary}</p>
+            <h2><a class="catalog-card__title-link" href={repositoryPath(item)}><span data-no-translate>{item.title}</span></a></h2>
+            <p data-no-translate>{item.summary}</p>
             <div class="catalog-card__metadata">
-              {item.task && <span>{item.task}</span>}
-              {item.library && <span>{item.library}</span>}
-              {item.modality && <span>{item.modality}</span>}
+              {item.task && <span data-no-translate>{item.task}</span>}
+              {item.library && <span data-no-translate>{item.library}</span>}
+              {item.modality && <span data-no-translate>{item.modality}</span>}
               <span>{Number(item.total_size_bytes).toLocaleString()} bytes</span>
               <span>⬇️ {item.downloads_count}</span>
               <span>❤️ {item.likes_count}</span>
               {item.trend_score > 0 && <span>🔥 {item.trend_score}</span>}
-              {item.architecture && <span>🧠 {item.architecture}</span>}
-              {item.quantization && <span>{item.quantization}</span>}
+              {item.architecture && <span data-no-translate>🧠 {item.architecture}</span>}
+              {item.quantization && <span data-no-translate>{item.quantization}</span>}
               {item.minimum_ram_bytes !== null && <span>RAM ≥ {(Number(item.minimum_ram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
               {item.minimum_vram_bytes !== null && Number(item.minimum_vram_bytes) > 0 && <span>VRAM ≥ {(Number(item.minimum_vram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
               {item.compatibility_confidence && <span>{item.compatibility_confidence} compatibility</span>}

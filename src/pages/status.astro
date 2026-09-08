@@ -4,6 +4,10 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 import { pingDatabase, sqlClient } from '@/lib/db';
 import { pingRuntime } from '@/lib/runtime';
+import { translateKnown } from '@/lib/i18n';
+
+const locale = Astro.locals.locale ?? 'en';
+const display = (value: string) => translateKnown(value, locale);
 
 const authStatus = authIsConfigured(Astro.locals) ? 'Operational' : 'Activation pending';
 const databaseHealth = await pingDatabase(Astro.locals);
@@ -32,6 +36,11 @@ if (sql) {
 const allOperational = authStatus === 'Operational'
   && databaseStatus === 'Operational'
   && runtimeHealth.state === 'ready';
+const checkedAt = new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', {
+  dateStyle: 'long',
+  timeStyle: 'medium',
+  timeZone: 'UTC',
+}).format(new Date());
 ---
 
 <BaseLayout title="Status" description="Current operational status for the Super ii website, authentication, database, and public catalogs." noindex>
@@ -46,16 +55,16 @@ const allOperational = authStatus === 'Operational'
     <div class="shell status-board">
       <div class="status-summary">
         <i class:list={['ph', allOperational ? 'ph-check-circle' : 'ph-info']} aria-hidden="true"></i>
-        {allOperational ? 'Super ii is operating normally' : 'Super ii is online, but one or more services need attention'}
+        {display(allOperational ? 'Super ii is operating normally' : 'Super ii is online, but one or more services need attention')}
       </div>
       <div class="status-row"><span>Public website</span><span class="status-value">Operational</span></div>
-      <div class="status-row"><span>Account authentication</span><span class="status-value">{authStatus}</span></div>
-      <div class="status-row"><span>Application database</span><span class="status-value">{databaseStatus}</span></div>
-      <div class="status-row"><span>Public catalog</span><span class="status-value">Operational · {publicItems} items</span></div>
-      <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{runtimeStatus}</span></div>
-      <div class="status-row"><span>Artifact publishing</span><span class="status-value">{publishingStatus}</span></div>
+      <div class="status-row"><span>Account authentication</span><span class="status-value">{display(authStatus)}</span></div>
+      <div class="status-row"><span>Application database</span><span class="status-value">{display(databaseStatus)}</span></div>
+      <div class="status-row"><span>Public catalog</span><span class="status-value">{display('Operational')} · {publicItems.toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-US')} {locale === 'ru' ? 'объектов' : 'items'}</span></div>
+      <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{display(runtimeStatus)}</span></div>
+      <div class="status-row"><span>Artifact publishing</span><span class="status-value">{display(publishingStatus)}</span></div>
       <p>Publishing stays closed if any required storage or security check is unavailable. Passing releases publish automatically; failed or unknown checks return actionable reasons.</p>
-      <p>Checked at request time: <time datetime={new Date().toISOString()}>{new Date().toUTCString()}</time></p>
+      <p>Checked at request time: <time datetime={new Date().toISOString()}>{checkedAt} UTC</time></p>
     </div>
   </section>
 </BaseLayout>

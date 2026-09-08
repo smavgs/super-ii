@@ -11,6 +11,10 @@
     "catalogStatus": "Review-first publishing",
     "date": "2026-08-27"
   },
+  "languages": [
+    { "code": "en", "name": "English", "prefix": "", "status": "production", "default": true },
+    { "code": "ru", "name": "Русский", "prefix": "/ru", "status": "production", "default": false }
+  ],
   "catalog": {
     "models": [],
     "datasets": [],
