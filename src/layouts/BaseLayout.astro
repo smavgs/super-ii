@@ -19,13 +19,28 @@ interface Props {
   className?: string;
 }
 
+const locale = Astro.locals.locale ?? 'en';
+const defaultSocialCard = locale === 'ru'
+  ? {
+      image: '/brand/super-ii-social-card-ru.png',
+      alt: 'Подключите своего ИИ-агента к Super ii — публичный поиск в интернете и безопасная работа с разрешёнными репозиториями.',
+      width: 1698,
+      height: 952,
+    }
+  : {
+      image: '/brand/super-ii-social-card.png',
+      alt: 'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.',
+      width: 1200,
+      height: 630,
+    };
+
 const {
   title,
   description = site.brand.description,
-  image = '/brand/super-ii-social-card.png',
-  imageAlt = 'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.',
-  imageWidth = 1200,
-  imageHeight = 630,
+  image = defaultSocialCard.image,
+  imageAlt = defaultSocialCard.alt,
+  imageWidth = defaultSocialCard.width,
+  imageHeight = defaultSocialCard.height,
   imageType = 'image/png',
   noindex = false,
   className = '',
@@ -36,7 +51,6 @@ const canonical = absoluteUrl(Astro.url.pathname);
 const imageUrl = absoluteUrl(image);
 const imageWidthContent = String(imageWidth);
 const imageHeightContent = String(imageHeight);
-const locale = Astro.locals.locale ?? 'en';
 ---
 
 <!doctype html>

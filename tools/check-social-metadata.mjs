@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -31,6 +32,7 @@ function pngDimensions(relativePath) {
 
 const expectedPngs = new Map([
   ['public/brand/super-ii-social-card.png', [1200, 630]],
+  ['public/brand/super-ii-social-card-ru.png', [1698, 952]],
   ['public/brand/apple-touch-icon.png', [180, 180]],
   ['public/brand/super-ii-icon-192.png', [192, 192]],
   ['public/brand/super-ii-icon-512.png', [512, 512]],
@@ -45,8 +47,21 @@ for (const [relativePath, [expectedWidth, expectedHeight]] of expectedPngs) {
   assert(bytes > 0, `${relativePath} is empty`);
 }
 
-const socialCard = pngDimensions('public/brand/super-ii-social-card.png');
-assert(socialCard.bytes < 5 * 1024 * 1024, 'social card must remain below 5 MB');
+for (const relativePath of [
+  'public/brand/super-ii-social-card.png',
+  'public/brand/super-ii-social-card-ru.png',
+]) {
+  const socialCard = pngDimensions(relativePath);
+  assert(socialCard.bytes < 5 * 1024 * 1024, `${relativePath} must remain below 5 MB`);
+}
+
+const russianSocialCardHash = createHash('sha256')
+  .update(read('public/brand/super-ii-social-card-ru.png'))
+  .digest('hex');
+assert(
+  russianSocialCardHash === '64425a0b52be1a8884b200de9fce98f840f0ca7491d4050d99d2a55cf53b6843',
+  'the Russian social card must remain the approved supplied image',
+);
 
 const favicon = read('public/favicon.ico');
 assert(favicon.readUInt16LE(0) === 0 && favicon.readUInt16LE(2) === 1, 'favicon.ico has an invalid ICO header');
@@ -54,7 +69,13 @@ assert(favicon.readUInt16LE(4) >= 4, 'favicon.ico must contain at least 16, 32, 
 
 const layout = read('src/layouts/BaseLayout.astro').toString('utf8');
 const requiredLayoutSnippets = [
-  "image = '/brand/super-ii-social-card.png'",
+  "const defaultSocialCard = locale === 'ru'",
+  "image: '/brand/super-ii-social-card.png'",
+  "image: '/brand/super-ii-social-card-ru.png'",
+  'image = defaultSocialCard.image',
+  'imageAlt = defaultSocialCard.alt',
+  'imageWidth = defaultSocialCard.width',
+  'imageHeight = defaultSocialCard.height',
   'property="og:image:secure_url"',
   'property="og:image:type"',
   'property="og:image:width"',
@@ -83,4 +104,4 @@ for (const expected of [
   assert(manifestIcons.has(expected), `site.webmanifest is missing ${expected}`);
 }
 
-console.log('Social metadata check passed: 1200x630 share card, structured Open Graph/X tags, and multi-size Super ii icons.');
+console.log('Social metadata check passed: English and Russian share cards, locale-specific Open Graph/X tags, and multi-size Super ii icons.');
