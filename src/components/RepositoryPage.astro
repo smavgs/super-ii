@@ -96,6 +96,9 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             </>
           )}
           {kind === 'dataset' && <button class="button button--secondary button--small" type="button" data-build-ship-open aria-expanded="false" aria-controls="build-ship">Build &amp; Ship</button>}
+          <button class="button button--secondary button--small" type="button" data-copy-public-link>
+            <i class="ph ph-link" aria-hidden="true"></i><span>Copy public link</span>
+          </button>
           <button class="button button--secondary button--small" type="button" data-like-button data-active="false">
             <i class="ph ph-heart" aria-hidden="true"></i><span>Like</span>
           </button>
@@ -883,6 +886,19 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
   if (actions instanceof HTMLElement && actions.dataset.repositoryId) {
     const repositoryId = actions.dataset.repositoryId;
     const actionsStatus = actions.querySelector('[data-community-status]');
+    const copyPublicLink = actions.querySelector('[data-copy-public-link]');
+    copyPublicLink?.addEventListener('click', async () => {
+      if (!(copyPublicLink instanceof HTMLButtonElement)) return;
+      const label = copyPublicLink.querySelector('span');
+      try {
+        await navigator.clipboard.writeText(new URL(location.pathname, location.origin).toString());
+        if (label) label.textContent = 'Copied ✓';
+        statusFor(actionsStatus as Element, 'Public link copied.');
+        window.setTimeout(() => { if (label) label.textContent = 'Copy public link'; }, 1800);
+      } catch {
+        statusFor(actionsStatus as Element, 'Copy was blocked. Copy the address from your browser.', true);
+      }
+    });
     const like = actions.querySelector('[data-like-button]');
     like?.addEventListener('click', async () => {
       if (!(like instanceof HTMLButtonElement)) return;

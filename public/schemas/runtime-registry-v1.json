@@ -24,7 +24,7 @@
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": { "enum": ["model_dir", "model_id", "primary_file", "docker_model"] }
+      "items": { "enum": ["model_dir", "model_id", "primary_file", "primary_name", "primary_url", "docker_model"] }
     },
     "integrations": {
       "type": "array",

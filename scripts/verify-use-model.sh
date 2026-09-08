@@ -49,6 +49,7 @@ probe "llama.cpp" llama-cli --version
 probe "Ollama" ollama --version
 probe_python_package "MLX LM" mlx_lm.generate mlx-lm
 probe "LM Studio CLI" lms --version
+probe_python_package "Comfy CLI" comfy comfy-cli
 probe "Docker" docker --version
 probe "uv" uv --version
 probe "Node.js" node --version

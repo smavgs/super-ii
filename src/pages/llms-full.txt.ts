@@ -17,6 +17,7 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 ## Canonical roots
 
 - Website: https://superii.site/
+- Use pathways: https://superii.site/use
 - Agent hub: https://superii.site/agents
 - Public MCP: https://superii.site/mcp
 - Work MCP: https://superii.site/mcp/work
@@ -59,6 +60,12 @@ Never treat an upload, commit, scan, submission, or agent result as a published 
 The signed-in Workspace includes a separate, collapsed AI Worker guide for a member who wants to run Ollama and OpenCode on their own Mac, Windows, or Linux computer. Its four manual steps install Ollama, pull qwen3.5:4b, recommend at least 64K context for coding tools, and run ollama launch opencode. Checklist state stays in that browser's local storage. Super ii cannot inspect the computer or confirm that any command succeeded. Local inference has no Super ii AI subscription or per-token charge, but uses the member's hardware, storage, electricity, and internet connection.
 
 The optional final connection uses opencode mcp add, the remote name superii, https://superii.site/mcp, and opencode mcp list. That MCP is public and read-only. It cannot publish, access private data, invoke hosted compute, change identity, or pay.
+
+## Use Super ii pathways
+
+https://superii.site/use is the public starting page for three existing workflows: run a reviewed model on local hardware, build from reviewed local files in Python, or publish work with one canonical public link. Browsing model pages and copying instructions do not require an account. Saving or publishing work uses the authenticated repository path.
+
+Every reviewed model page—not the overview page—derives its exact immutable download URLs, SHA-256 checksums, local path, commands, Python snippets, shell script, notebook, and JSON manifest. Ollama and LM Studio remain registry-supported for matching GGUF revisions. ComfyUI is exposed only for a single Safetensors file whose repository declares image or diffusion context; its CLI contract is documentation-reviewed, not runtime-verified, and the page warns that the matching loader and workflow still need confirmation. Every public repository page provides a client-side control that copies its canonical query-free URL.
 
 ## Skills library
 

@@ -82,6 +82,10 @@ export const prerender = false;
         <li><a href="/spaces">Apps</a> hold reviewed Gradio projects and their project information.</li>
       </ul>
 
+      <h2 id="use-superii">Use Super ii your way</h2>
+      <p><a href="/use">Use Super ii</a> is the open starting page for three paths: run a reviewed model with a supported local runtime, build from reviewed local files in Python, or publish work with one canonical public link. Anyone can inspect public model pages and copy their instructions without creating an account. Saving and publishing use the authenticated repository workflow.</p>
+      <p>The overview never invents a one-size-fits-all command. Each reviewed model page derives its exact immutable files, SHA-256 checksums, local revision path, runtime commands, Python examples, shell script, notebook, and JSON manifest. The ComfyUI path is shown only for a single Safetensors file in a repository declaring image or diffusion context. Its Comfy CLI contract is documentation-reviewed rather than runtime-verified, and the model page keeps the required workflow, loader, accelerator, and checksum cautions visible.</p>
+
       <h2 id="python-sdk">Python SDK</h2>
       <p>The <a href="https://pypi.org/project/superii-sdk/">Super ii Python SDK</a> provides <code>inspect</code>, <code>hardware</code>, <code>plan</code>, <code>pull</code>, <code>verify</code> and <code>load</code>. Install <code>superii-sdk</code> with Python 3.11 or newer; the Python import and command are both <code>superii</code>. The catalogue fills through creator submissions; example model names are placeholders.</p>
       <pre><code>{`python -m pip install superii-sdk
@@ -180,6 +184,7 @@ superii plan owner/model`}</code></pre>
         <a href="#skills">Skills</a>
         <a href="#bring-my-work">Bring my work</a>
         <a href="#catalog">Explore the hub</a>
+        <a href="#use-superii">Use Super ii</a>
         <a href="#architecture">Architecture</a>
         <a href="#use-model">Use Model</a>
         <a href="#notebooks">Notebooks</a>
