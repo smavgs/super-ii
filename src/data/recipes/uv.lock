@@ -1654,9 +1654,9 @@ requires-dist = [
     { name = "prometheus-client", specifier = "==0.26.0" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "safetensors", specifier = "==0.8.0" },
-    { name = "superii-sdk", extras = ["observe"], marker = "extra == 'observe'", specifier = "==0.2.1" },
-    { name = "superii-sdk", extras = ["rag", "serve"], specifier = "==0.2.1" },
-    { name = "superii-sdk", extras = ["train"], marker = "extra == 'train'", specifier = "==0.2.1" },
+    { name = "superii-sdk", extras = ["observe"], marker = "extra == 'observe'", specifier = "==0.2.2" },
+    { name = "superii-sdk", extras = ["rag", "serve"], specifier = "==0.2.2" },
+    { name = "superii-sdk", extras = ["train"], marker = "extra == 'train'", specifier = "==0.2.2" },
     { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.14.0" },
     { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.14.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "transformers", specifier = "==5.16.1" },
@@ -1667,7 +1667,7 @@ provides-extras = ["train", "langchain", "gradio", "apple", "observe"]
 
 [[package]]
 name = "superii-sdk"
-version = "0.2.1"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -1677,9 +1677,9 @@ dependencies = [
     { name = "psutil" },
     { name = "rfc8785" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/19/d5/fd1ff810ce679086aef8efb9494a753c354137f50d1591fd9b535c2b5074/superii_sdk-0.2.1.tar.gz", hash = "sha256:1308d8badaac73ca837f50d7c909bf8efc91b382b7a1f0126c73da5fc9aa6612", size = 257115, upload-time = "2026-09-08T16:12:32.302Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/4a/c2c7be7d6cb65ed5e6bb586cc52e7469a59cabfceaa9bcc8cd75a092d107/superii_sdk-0.2.2.tar.gz", hash = "sha256:a5994fd868a3870e46bdd380f791d50ee5e042071bf1425c0c489c6f23765711", size = 258334, upload-time = "2026-09-09T12:15:05.101Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/a1/421f76a0d415fdb679746227321772bfe223ec86a300d04e910e7d1073c5/superii_sdk-0.2.1-py3-none-any.whl", hash = "sha256:31bef11eb6a729dc20f9972fca86be390d82cbfab5d075557c090316f23abab2", size = 57161, upload-time = "2026-09-08T16:12:31.189Z" },
+    { url = "https://files.pythonhosted.org/packages/41/ad/a52e77b1f6d9a41f7b45697b7cba75c2407b145c70581ecb87f4ef3bde31/superii_sdk-0.2.2-py3-none-any.whl", hash = "sha256:2abb62bcdca860908ed43b18f6f5951f96db08c92adbac80b4b3d07ec9d20b50", size = 57613, upload-time = "2026-09-09T12:15:04.081Z" },
 ]
 
 [package.optional-dependencies]

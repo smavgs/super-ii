@@ -52,7 +52,7 @@ export type SdkInput = {
   files: { path: string; size_bytes: number; sha256: string }[];
 };
 export const dependencies = {
-  'superii-sdk': '0.2.1', torch: '2.14.0', transformers: '5.16.1', accelerate: '1.14.0',
+  'superii-sdk': '0.2.2', torch: '2.14.0', transformers: '5.16.1', accelerate: '1.14.0',
   'faiss-cpu': '1.15.0', numpy: '2.5.2', peft: '0.20.0', trl: '1.12.0', datasets: '5.0.1',
   fastapi: '0.141.1', uvicorn: '0.52.4', 'prometheus-client': '0.26.0', safetensors: '0.8.0',
 };

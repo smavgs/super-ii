@@ -3,17 +3,17 @@ name = "superii-project"
 version = "1.0.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-  "superii-sdk[rag,serve]==0.2.1", "torch==2.14.0", "transformers==5.16.1",
+  "superii-sdk[rag,serve]==0.2.2", "torch==2.14.0", "transformers==5.16.1",
   "accelerate==1.14.0", "faiss-cpu==1.15.0", "numpy==2.5.2",
   "fastapi==0.141.1", "uvicorn==0.52.4", "prometheus-client==0.26.0",
   "safetensors==0.8.0", "pytest==9.1.1"
 ]
 [project.optional-dependencies]
-train = ["superii-sdk[train]==0.2.1", "peft==0.20.0", "trl==1.12.0", "datasets==5.0.1"]
+train = ["superii-sdk[train]==0.2.2", "peft==0.20.0", "trl==1.12.0", "datasets==5.0.1"]
 langchain = ["langchain-core==1.6.2"]
 gradio = ["gradio==6.26.0"]
 apple = ["mlx-lm==0.31.3; sys_platform == 'darwin'"]
-observe = ["superii-sdk[observe]==0.2.1", "opentelemetry-sdk==1.44.0", "opentelemetry-exporter-otlp-proto-http==1.44.0"]
+observe = ["superii-sdk[observe]==0.2.2", "opentelemetry-sdk==1.44.0", "opentelemetry-exporter-otlp-proto-http==1.44.0"]
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
