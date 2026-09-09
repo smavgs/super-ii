@@ -1,0 +1,23 @@
+{
+  "verified_at": "2026-09-09T01:09:59.687869+00:00",
+  "sdk": "superii-sdk",
+  "version": "0.2.1",
+  "source_commit": "e7bb3de9447f7afe3f98783da6ecedd0213a354d",
+  "pull_request": "https://github.com/smavgs/super-ii/pull/6",
+  "ci": "https://github.com/smavgs/super-ii/actions/runs/34248924748",
+  "publisher_run": "https://github.com/smavgs/super-ii/actions/runs/34249601801",
+  "python_3_12_clean_wheel_tests": 40,
+  "python_3_13_tests": 40,
+  "wheel_matches_tested_artifact": true,
+  "gpu_execution": "unverified",
+  "files": [
+    {
+      "filename": "superii_sdk-0.2.1-py3-none-any.whl",
+      "sha256": "31bef11eb6a729dc20f9972fca86be390d82cbfab5d075557c090316f23abab2"
+    },
+    {
+      "filename": "superii_sdk-0.2.1.tar.gz",
+      "sha256": "1308d8badaac73ca837f50d7c909bf8efc91b382b7a1f0126c73da5fc9aa6612"
+    }
+  ]
+}

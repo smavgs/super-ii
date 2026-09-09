@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import secrets
 import subprocess
+import time
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
@@ -230,6 +232,87 @@ def command(directory, *arguments):
     return result.stdout
 
 
+def refresh_inputs(http, targets):
+    for role in ("generator", "embedding", "dataset"):
+        os.environ[f"SUPERII_{role.upper()}_TOKEN"] = exchange(
+            http, targets[role]["id"], ["repository:read"]
+        )
+
+
+def verify_container(project, http, targets):
+    image = f"superii-project-verification:{project.name}"
+    build = subprocess.run(
+        ["docker", "build", "--quiet", "-t", image, "."],
+        cwd=project,
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=600,
+    )
+    if build.returncode:
+        print(build.stderr[-3000:])
+        raise RuntimeError("Generated Docker image did not build")
+    refresh_inputs(http, targets)
+    arguments = ["docker", "run", "--detach", "--rm", "-p", "127.0.0.1::8000"]
+    for name in (
+        "SUPERII_APP_TOKEN",
+        "SUPERII_GENERATOR_TOKEN",
+        "SUPERII_EMBEDDING_TOKEN",
+        "SUPERII_DATASET_TOKEN",
+    ):
+        arguments.extend(["-e", name])
+    container = subprocess.check_output(
+        [*arguments, image], text=True, timeout=30
+    ).strip()
+    try:
+        binding = subprocess.check_output(
+            ["docker", "port", container, "8000/tcp"], text=True, timeout=30
+        ).strip()
+        assert binding.startswith("127.0.0.1:") and binding.count(":") == 1
+        base = "http://" + binding
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            try:
+                if http.get(base + "/health", timeout=3).status_code == 200:
+                    break
+            except httpx.HTTPError:
+                pass
+            time.sleep(1)
+        else:
+            raise RuntimeError("Generated container did not become healthy")
+        assert http.get(base + "/ready").status_code == 401
+        headers = {"authorization": "Bearer " + os.environ["SUPERII_APP_TOKEN"]}
+        assert http.get(base + "/ready", headers=headers).status_code == 200
+        assert (
+            http.post(
+                base + "/v1/predict",
+                headers=headers,
+                json={"text": "the apple is red ."},
+            ).status_code
+            == 200
+        )
+        assert (
+            subprocess.check_output(
+                ["docker", "exec", container, "id", "-u"], text=True, timeout=30
+            ).strip()
+            == "10001"
+        )
+        return {
+            "private_model_loaded": True,
+            "authenticated_prediction": True,
+            "uid": 10001,
+            "host_binding": "127.0.0.1",
+        }
+    finally:
+        subprocess.run(
+            ["docker", "rm", "--force", container],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=30,
+        )
+
+
 def main():
     targets = json.loads(os.environ["SUPERII_PROJECT_FIXTURES"])
     for role in ("generator", "embedding", "dataset", "adapter"):
@@ -244,6 +327,7 @@ def main():
         for role in ("generator", "embedding", "dataset"):
             token, refs[role] = prepare(http, targets[role], files[role])
             os.environ[f"SUPERII_{role.upper()}_TOKEN"] = token
+        refresh_inputs(http, targets)
         # A read credential from a different repository cannot manage the adapter.
         denied = http.get(
             ORIGIN + "/api/repositories/" + targets["adapter"]["id"] + "/recipe",
@@ -254,6 +338,8 @@ def main():
         assert denied.status_code == 403
         records = {}
         for outcome in ("api", "rag", "sft"):
+            print(f"Verifying generated {outcome} project", flush=True)
+            refresh_inputs(http, targets)
             project = ROOT / outcome
             request = {
                 "outcome": outcome,
@@ -278,6 +364,11 @@ def main():
                 request["dataset"] = refs["dataset"]
             with Client() as client:
                 export_project(request, destination=project, client=client)
+            assert Recipe.read(project / "superii-recipe.json").document[
+                "dependencies"
+            ]["superii-sdk"] == importlib.metadata.version("superii-sdk"), (
+                "Live exports must use the same published SDK as the verification environment"
+            )
             assert (project / "uv.lock").is_file(), (
                 "A generated project must include the resolved lock"
             )
@@ -305,6 +396,7 @@ def main():
                 (report,) = project.glob("runs/*/superii-run.json")
                 run = json.loads(report.read_text())
                 assert run["status"] == "completed"
+                refresh_inputs(http, targets)
                 token = exchange(http, targets["adapter"]["id"], SCOPES)
                 route = ORIGIN + "/api/repositories/" + targets["adapter"]["id"]
                 state = checked(
@@ -389,6 +481,7 @@ with TestClient(app, base_url='http://localhost') as http:
                     "recipe": Recipe.read(project / "superii-recipe.json").sha256,
                     "generated_code_executed": True,
                     "api_auth_and_origin_checks": True,
+                    "container": verify_container(project, http, targets),
                 }
         output = Path("reports/generated-projects.json")
         output.parent.mkdir(exist_ok=True)
@@ -398,6 +491,8 @@ with TestClient(app, base_url='http://localhost') as http:
                     "status": "passed",
                     "hardware": "cpu",
                     "sources": "private synthetic fixtures",
+                    "source_revisions": refs,
+                    "sdk_version": importlib.metadata.version("superii-sdk"),
                     "scope": "execution; not model quality",
                     "cross_repository_token_rejected": True,
                     "projects": records,
