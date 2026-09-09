@@ -46,7 +46,7 @@ const validate = ajv.compile(schema);
 const validateRequest = ajv.compile(recipeApiPaths['/api/recipes/generate'].post.requestBody.content['application/json'].schema);
 function source(role) {
  const kind = role === 'dataset' ? 'dataset' : 'model';
- return { repository: { kind, owner: 'fixture', slug: role }, revision: { commit_sha: 'c'.repeat(64), manifest_sha256: 'a'.repeat(64) }, compatibility: { architecture: role === 'embedding' ? 'bert' : 'gpt2' }, files: (kind === 'dataset' ? ['data.jsonl'] : ['config.json', 'tokenizer.json', 'model.safetensors']).map(name => ({ path: name, size_bytes: 100, sha256: 'b'.repeat(64) })) };
+ return { repository: { kind, owner: 'fixture', slug: role }, revision: { commit_sha: 'c'.repeat(64), manifest_sha256: 'a'.repeat(64) }, compatibility: { architecture: role === 'embedding' ? 'BertModel' : 'GPT2LMHeadModel' }, files: (kind === 'dataset' ? ['data.jsonl'] : ['config.json', 'tokenizer.json', 'model.safetensors']).map(name => ({ path: name, size_bytes: 100, sha256: 'b'.repeat(64) })) };
 }
 const resolved = { generator: source('generator'), embedding: source('embedding'), dataset: source('dataset') };
 const ref = role => ({ repository: `fixture/${role}`, revision: 'c'.repeat(64) });
@@ -65,6 +65,19 @@ for (const outcome of ['rag', 'api', 'sft']) {
  assert.throws(() => generateProject({ ...request, generator: { ...ref('generator'), revision: 'd'.repeat(64) } }, resolved));
  assert.throws(() => generateProject({ ...request, generator: { ...ref('generator'), files: ['../escape'] } }, resolved));
  projects.push(directory);
+}
+const ragRequest = { outcome: 'rag', generator: ref('generator'), embedding: ref('embedding') };
+for (const [generator, embedding] of [['gpt2', 'bert'], ['GPTNeoXForCausalLM', 'XLMRobertaModel']]) {
+ assert.ok(generateProject(ragRequest, {
+  ...resolved,
+  generator: { ...resolved.generator, compatibility: { architecture: generator } },
+  embedding: { ...resolved.embedding, compatibility: { architecture: embedding } },
+ }).recipe.inputs.embedding);
+}
+for (const role of ['generator', 'embedding']) {
+ for (const architecture of ['UntrustedCustomModel', 'BertForSequenceClassification', 'GPT2LMHeadModelCustom']) {
+  assert.throws(() => generateProject(ragRequest, { ...resolved, [role]: { ...resolved[role], compatibility: { architecture } } }));
+ }
 }
 assert.equal(recipeRequest.safeParse({ outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), accelerator: 'metal' }).success, false);
 assert.equal(recipeRequest.safeParse({ outcome: 'rag', generator: ref('generator') }).success, false);
