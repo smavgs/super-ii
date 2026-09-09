@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
 import secrets
@@ -363,6 +364,11 @@ def main():
                 request["dataset"] = refs["dataset"]
             with Client() as client:
                 export_project(request, destination=project, client=client)
+            assert Recipe.read(project / "superii-recipe.json").document[
+                "dependencies"
+            ]["superii-sdk"] == importlib.metadata.version("superii-sdk"), (
+                "Live exports must use the same published SDK as the verification environment"
+            )
             assert (project / "uv.lock").is_file(), (
                 "A generated project must include the resolved lock"
             )
@@ -485,6 +491,8 @@ with TestClient(app, base_url='http://localhost') as http:
                     "status": "passed",
                     "hardware": "cpu",
                     "sources": "private synthetic fixtures",
+                    "source_revisions": refs,
+                    "sdk_version": importlib.metadata.version("superii-sdk"),
                     "scope": "execution; not model quality",
                     "cross_repository_token_rejected": True,
                     "projects": records,
