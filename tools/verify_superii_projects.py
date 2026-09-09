@@ -391,6 +391,12 @@ def main():
                     + "\n"
                 )
                 command(project, "python", "evaluate.py", "cases.jsonl")
+                evaluation = next(
+                    value
+                    for path in project.glob("runs/*/superii-run.json")
+                    if (value := json.loads(path.read_text()))["stage"] == "evaluate"
+                )
+                assert evaluation["status"] == "completed"
             if outcome == "sft":
                 command(project, "python", "train.py")
                 (report,) = project.glob("runs/*/superii-run.json")
@@ -443,20 +449,27 @@ def main():
                     project,
                     "python",
                     "-c",
-                    """from pathlib import Path
+                    """import sys
+from pathlib import Path
 from superii import Client
 from superii.recipes import Recipe
 from superii.recipes.training import load_adapter
+directory = Path(sys.argv[1])
 with Client() as client:
-    with load_adapter(Recipe.read(), client, next(Path('runs').glob('*/superii-run.json'))) as model:
+    with load_adapter(Recipe.read(directory / 'superii-recipe.json'), client, directory / 'superii-run.json', directory=directory) as model:
         assert isinstance(model.generate('the apple', max_tokens=4), str)
 """,
+                    str(adapter.path),
                 )
                 records[outcome] = {
                     "recipe": run["recipe_sha256"],
                     "run": run["run_id"],
                     "adapter_publication": publication["status"],
                     "adapter_hashes_verified": True,
+                    "downloaded_adapter_reloaded": True,
+                    "adapter_revision": adapter.manifest.revision,
+                    "adapter_manifest_sha256": adapter.manifest.manifest_sha256,
+                    "training_metrics": run["metrics"],
                 }
             else:
                 os.environ["SUPERII_APP_TOKEN"] = secrets.token_urlsafe(32)
@@ -483,6 +496,8 @@ with TestClient(app, base_url='http://localhost') as http:
                     "api_auth_and_origin_checks": True,
                     "container": verify_container(project, http, targets),
                 }
+                if outcome == "rag":
+                    records[outcome]["retrieval_evaluation"] = evaluation["metrics"]
         output = Path("reports/generated-projects.json")
         output.parent.mkdir(exist_ok=True)
         output.write_text(
