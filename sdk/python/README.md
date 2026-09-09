@@ -137,7 +137,11 @@ template versions with an RFC 8785 SHA-256. `superii-run.json` records actual lo
 execution and output hashes; it never creates an independently verified badge.
 RAG citations are source references, not an independent truth or entailment test.
 SFT uses a content-deduplicated held-out split and reports language-model loss,
-not general task quality. LoRA outputs use safetensors without pickled trainer
+not general task quality. JSONL rows accept `text` or `prompt`/`completion`, with
+an optional string `id` (1–512 characters). IDs are ignored during training and
+do not alter content deduplication or the held-out split, so a text dataset can
+also retain its RAG document identifiers. Other fields remain rejected.
+LoRA outputs use safetensors without pickled trainer
 settings. `superii.recipes.training.load_adapter` checks the run artifacts before
 attaching an adapter to its explicitly acquired base.
 

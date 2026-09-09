@@ -101,6 +101,11 @@ def training_rows(snapshot: Snapshot, *, seed: int) -> tuple[list[dict], list[di
             row = json.loads(line)
             if not isinstance(row, dict):
                 raise ValueError("Each training row must be an object")
+            # RAG document identifiers are metadata, never training text or split keys.
+            if "id" in row:
+                identity = row.pop("id")
+                if not isinstance(identity, str) or not 1 <= len(identity) <= 512:
+                    raise ValueError("Optional document ids must be non-empty bounded strings")
             if set(row) == {"text"} and isinstance(row["text"], str):
                 clean = row
             elif set(row) == {"prompt", "completion"} and all(

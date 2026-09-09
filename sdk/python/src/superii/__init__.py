@@ -10,7 +10,7 @@ from .model import Model
 from .planner import Plan
 from .planner import plan as _plan
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __all__ = [
     "Client",
     "Peer",

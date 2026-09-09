@@ -267,6 +267,48 @@ def test_plan_prevents_predictable_oom_and_chooses_existing_variant():
         plan(manifest, replace(machine, runtimes=()))
 
 
+def test_plan_accepts_inspected_architecture_names_without_relaxing_other_checks():
+    manifest = Manifest.parse(
+        document({"model.safetensors": b"weights", "config.json": b"{}"}), ORIGIN
+    )
+    machine = Hardware(
+        "linux", "x86_64", "cpu", 16 * 1024**3, 12 * 1024**3, runtimes=("transformers",)
+    )
+    architecture_names = {
+        "llama": "LlamaForCausalLM",
+        "mistral": "MistralForCausalLM",
+        "qwen2": "Qwen2ForCausalLM",
+        "qwen3": "Qwen3ForCausalLM",
+        "gemma": "GemmaForCausalLM",
+        "gemma2": "Gemma2ForCausalLM",
+        "gemma3_text": "Gemma3ForCausalLM",
+        "phi3": "Phi3ForCausalLM",
+        "gpt2": "GPT2LMHeadModel",
+        "gpt_neox": "GPTNeoXForCausalLM",
+        "opt": "OPTForCausalLM",
+        "falcon": "FalconForCausalLM",
+        "stablelm": "StableLmForCausalLM",
+        "olmo": "OlmoForCausalLM",
+        "olmo2": "Olmo2ForCausalLM",
+    }
+    for model_type, class_name in architecture_names.items():
+        canonical = replace(manifest, compatibility={"architecture": model_type})
+        inspected = replace(manifest, compatibility={"architecture": class_name})
+        assert plan(inspected, machine) == plan(canonical, machine)
+        with pytest.raises(PlanError):
+            plan(inspected, replace(machine, available_ram_bytes=1024))
+        with pytest.raises(PlanError):
+            plan(inspected, replace(machine, runtimes=()))
+        without_config = replace(
+            inspected, files=tuple(f for f in inspected.files if f.path != "config.json")
+        )
+        with pytest.raises(PlanError):
+            plan(without_config, machine)
+    for name in ("", "CustomModel", "GPT2LMHeadModelCustom", "BertModel"):
+        with pytest.raises(PlanError):
+            plan(replace(manifest, compatibility={"architecture": name}), machine)
+
+
 class FakeModel:
     plan = type("Plan", (), {"repository": "owner/model", "revision": "c" * 64})()
 

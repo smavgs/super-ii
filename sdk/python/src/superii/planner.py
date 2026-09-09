@@ -28,6 +28,25 @@ ARCHITECTURES = frozenset(
         "olmo2",
     }
 )
+# The repository inspector reports config.architectures class names. Configuration
+# validation still checks the model_type allowlist above before loading any code.
+ARCHITECTURE_TYPES = {
+    "llamaforcausallm": "llama",
+    "mistralforcausallm": "mistral",
+    "qwen2forcausallm": "qwen2",
+    "qwen3forcausallm": "qwen3",
+    "gemmaforcausallm": "gemma",
+    "gemma2forcausallm": "gemma2",
+    "gemma3forcausallm": "gemma3_text",
+    "phi3forcausallm": "phi3",
+    "gpt2lmheadmodel": "gpt2",
+    "gptneoxforcausallm": "gpt_neox",
+    "optforcausallm": "opt",
+    "falconforcausallm": "falcon",
+    "stablelmforcausallm": "stablelm",
+    "olmoforcausallm": "olmo",
+    "olmo2forcausallm": "olmo2",
+}
 
 
 @dataclass(frozen=True)
@@ -116,6 +135,7 @@ def plan(
         if f.path.endswith((".safetensors", ".json", ".model", ".txt", ".tiktoken"))
     )
     architecture = str(manifest.compatibility.get("architecture", "")).lower()
+    architecture = ARCHITECTURE_TYPES.get(architecture, architecture)
     # Loading unrecognized architecture-specific code is never an implicit fallback.
     if weights and "config.json" in paths and architecture in ARCHITECTURES:
         needed = int(sum(f.size_bytes for f in weights) * 1.2) + overhead
