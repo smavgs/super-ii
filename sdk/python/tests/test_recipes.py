@@ -216,7 +216,10 @@ def tiny_models(tmp_path):
             pad_token_id=0,
         )
     ).save_pretrained(generator)
-    return snapshot(generator), snapshot(encoder, architecture="bert")
+    return (
+        snapshot(generator, architecture="GPT2LMHeadModel"),
+        snapshot(encoder, architecture="BertModel"),
+    )
 
 
 def test_real_encoder_retrieval_citations_and_integrity(tiny_models, tmp_path):
@@ -276,6 +279,28 @@ def test_real_encoder_retrieval_citations_and_integrity(tiny_models, tmp_path):
         documents(corpus)
 
 
+def test_training_document_ids_do_not_change_text_deduplication_or_split(tmp_path):
+    from superii.recipes.training import training_rows
+
+    data = tmp_path / "data.jsonl"
+    rows = [{"text": f"example {i}"} for i in range(20)] + [{"text": "example 0"}]
+
+    def prepare(values):
+        data.write_text("\n".join(json.dumps(row) for row in values))
+        return snapshot(tmp_path, "dataset")
+
+    plain = training_rows(prepare(rows), seed=42)
+    identified = [{**row, "id": f"document-{i}"} for i, row in enumerate(rows)]
+    assert training_rows(prepare(identified), seed=42) == plain
+    assert len(plain[0]) == 18 and len(plain[1]) == 2
+    assert all(set(row) == {"text"} for group in plain for row in group)
+    for invalid in (None, 123, [], "", "x" * 513):
+        with pytest.raises(ValueError, match="document ids"):
+            training_rows(prepare([*rows, {"text": "extra", "id": invalid}]), seed=42)
+    with pytest.raises(ValueError, match="SFT JSONL"):
+        training_rows(prepare([*rows, {"text": "extra", "id": "ok", "code": "no"}]), seed=42)
+
+
 def test_real_lora_training_and_reload(tiny_models, tmp_path):
     pytest.importorskip("trl")
     from peft import PeftModel
@@ -287,7 +312,10 @@ def test_real_lora_training_and_reload(tiny_models, tmp_path):
     dataset_dir = tmp_path / "dataset"
     dataset_dir.mkdir()
     (dataset_dir / "train.jsonl").write_text(
-        "\n".join(json.dumps({"text": "red apple is a fruit " + "blue " * i}) for i in range(20))
+        "\n".join(
+            json.dumps({"id": f"fixture-{i}", "text": "red apple is a fruit " + "blue " * i})
+            for i in range(20)
+        )
     )
     data = snapshot(dataset_dir, "dataset")
     selected = recipe("sft", generator=gen, dataset=data)
