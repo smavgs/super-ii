@@ -824,13 +824,13 @@ name = "mlx-lm"
 version = "0.31.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jinja2", marker = "sys_platform != 'linux'" },
+    { name = "jinja2", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
     { name = "mlx", marker = "sys_platform == 'darwin'" },
-    { name = "numpy", marker = "sys_platform != 'linux'" },
-    { name = "protobuf", marker = "sys_platform != 'linux'" },
-    { name = "pyyaml", marker = "sys_platform != 'linux'" },
-    { name = "sentencepiece", marker = "sys_platform != 'linux'" },
-    { name = "transformers", marker = "sys_platform != 'linux'" },
+    { name = "numpy", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "protobuf", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "pyyaml", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "sentencepiece", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "transformers", marker = "sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/84/94/9a38d6b0c6fcca995b9136c94eb7da1e9c5165652edf228b96b29960fa7a/mlx_lm-0.31.3.tar.gz", hash = "sha256:61eb0e3ba09444f77f874aff295401d7ccd20b39495cbbce0c782a15474ce733", size = 304318, upload-time = "2026-04-22T07:37:27.922Z" }
 wheels = [
@@ -1654,9 +1654,9 @@ requires-dist = [
     { name = "prometheus-client", specifier = "==0.26.0" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "safetensors", specifier = "==0.8.0" },
-    { name = "superii-sdk", extras = ["observe"], marker = "extra == 'observe'", specifier = "==0.2.0" },
-    { name = "superii-sdk", extras = ["rag", "serve"], specifier = "==0.2.0" },
-    { name = "superii-sdk", extras = ["train"], marker = "extra == 'train'", specifier = "==0.2.0" },
+    { name = "superii-sdk", extras = ["observe"], marker = "extra == 'observe'", specifier = "==0.2.1" },
+    { name = "superii-sdk", extras = ["rag", "serve"], specifier = "==0.2.1" },
+    { name = "superii-sdk", extras = ["train"], marker = "extra == 'train'", specifier = "==0.2.1" },
     { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.14.0" },
     { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.14.0", index = "https://download.pytorch.org/whl/cpu" },
     { name = "transformers", specifier = "==5.16.1" },
@@ -1667,7 +1667,7 @@ provides-extras = ["train", "langchain", "gradio", "apple", "observe"]
 
 [[package]]
 name = "superii-sdk"
-version = "0.2.0"
+version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
@@ -1677,9 +1677,9 @@ dependencies = [
     { name = "psutil" },
     { name = "rfc8785" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/6d/186d185b2c4679c8256c7e1d917e0ec8d6f4669ba4e004b403edce4db2bc/superii_sdk-0.2.0.tar.gz", hash = "sha256:df603bf6d7ddddb08ef84ba7d6b2ac650930fc484c753e9b24059a0906e9977f", size = 256331, upload-time = "2026-09-08T04:22:58.813Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/d5/fd1ff810ce679086aef8efb9494a753c354137f50d1591fd9b535c2b5074/superii_sdk-0.2.1.tar.gz", hash = "sha256:1308d8badaac73ca837f50d7c909bf8efc91b382b7a1f0126c73da5fc9aa6612", size = 257115, upload-time = "2026-09-08T16:12:32.302Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/6a/9f5674f02005a9de351e84de4de17c4fffd1fa27f778b44bdee2357c5cef/superii_sdk-0.2.0-py3-none-any.whl", hash = "sha256:4780bec952f968938a5c07f135adac9784a3ba57e35c0a623e8abc1d107ab07c", size = 57153, upload-time = "2026-09-08T04:22:57.668Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/a1/421f76a0d415fdb679746227321772bfe223ec86a300d04e910e7d1073c5/superii_sdk-0.2.1-py3-none-any.whl", hash = "sha256:31bef11eb6a729dc20f9972fca86be390d82cbfab5d075557c090316f23abab2", size = 57161, upload-time = "2026-09-08T16:12:31.189Z" },
 ]
 
 [package.optional-dependencies]
