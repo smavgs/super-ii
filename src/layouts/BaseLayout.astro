@@ -19,13 +19,28 @@ interface Props {
   className?: string;
 }
 
+const locale = Astro.locals.locale ?? 'en';
+const defaultSocialCard = locale === 'ru'
+  ? {
+      image: '/brand/super-ii-social-card-ru.png',
+      alt: 'Подключите своего ИИ-агента к Super ii — публичный поиск в интернете и безопасная работа с разрешёнными репозиториями.',
+      width: 1698,
+      height: 952,
+    }
+  : {
+      image: '/brand/super-ii-social-card.png',
+      alt: 'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.',
+      width: 1200,
+      height: 630,
+    };
+
 const {
   title,
   description = site.brand.description,
-  image = '/brand/super-ii-social-card.png',
-  imageAlt = 'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.',
-  imageWidth = 1200,
-  imageHeight = 630,
+  image = defaultSocialCard.image,
+  imageAlt = defaultSocialCard.alt,
+  imageWidth = defaultSocialCard.width,
+  imageHeight = defaultSocialCard.height,
   imageType = 'image/png',
   noindex = false,
   className = '',
@@ -39,7 +54,7 @@ const imageHeightContent = String(imageHeight);
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang={locale} data-theme="light" data-locale={locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -80,6 +95,11 @@ const imageHeightContent = String(imageHeight);
         } catch {}
       })();
     </script>
+    {locale === 'ru' && (
+      <script>
+        import '@/scripts/clerk-locale';
+      </script>
+    )}
   </head>
   <body class={className}>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -89,5 +109,6 @@ const imageHeightContent = String(imageHeight);
     </main>
     <Footer />
     <script is:inline src="/scripts/site.js" defer></script>
+    {locale === 'ru' && <script is:inline src="/scripts/localize-ru.js" defer></script>}
   </body>
 </html>

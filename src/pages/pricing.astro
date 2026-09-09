@@ -353,7 +353,8 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
         });
         const data = await response.json() as Record<string, unknown>;
         if (response.status === 401) {
-          location.assign(`/sign-in?redirect_url=${encodeURIComponent(location.pathname)}`);
+          const signInPath = document.documentElement.lang === 'ru' ? '/ru/sign-in' : '/sign-in';
+          location.assign(`${signInPath}?redirect_url=${encodeURIComponent(location.pathname)}`);
           return;
         }
         if (!response.ok || typeof data.href !== 'string') {

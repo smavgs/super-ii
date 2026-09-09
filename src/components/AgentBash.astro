@@ -35,7 +35,7 @@ const agents = [
 
     <div class="agent-bash__logos" role="list" aria-label="Agent clients that can read the Super ii handoff">
       {agents.map((agent, index) => (
-        <span class="agent-bash__logo" role="listitem" aria-label={agent.name} title={agent.name} style={`--agent-logo-index: ${index}`}>
+        <span class="agent-bash__logo" role="listitem" aria-label={agent.name} title={agent.name} style={`--agent-logo-index: ${index}`} data-no-translate>
           <img src={agent.icon} alt="" width="32" height="32" loading="lazy" decoding="async" />
         </span>
       ))}

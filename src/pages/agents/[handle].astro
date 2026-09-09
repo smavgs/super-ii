@@ -4,6 +4,7 @@ import { getPublicAgentProfile, type PublicAgentProfile } from '@/lib/agent-prof
 import { sqlClient } from '@/lib/db';
 
 const handle = Astro.params.handle ?? '';
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let profile: PublicAgentProfile | null = null;
 if (sql) {
@@ -44,8 +45,8 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
           <dl class="agent-profile-operator">
             <div><dt>Operator</dt><dd><a href={`/organizations/${encodeURIComponent(profile.organization_handle)}`}>{profile.organization_name}</a></dd></div>
             <div><dt>Status</dt><dd><span class="agents-status">Active</span></dd></div>
-            <div><dt>Verified</dt><dd>{profile.verified_at ? new Date(profile.verified_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'Operator-declared'}</dd></div>
-            <div><dt>Last seen</dt><dd>{profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'No recorded work yet'}</dd></div>
+            <div><dt>Verified</dt><dd>{profile.verified_at ? new Date(profile.verified_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Operator-declared'}</dd></div>
+            <div><dt>Last seen</dt><dd>{profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'No recorded work yet'}</dd></div>
           </dl>
         </div>
       </section>
@@ -69,7 +70,7 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
             {profile.contributions.length ? profile.contributions.map((contribution) => {
               const href = repositoryHref(contribution);
               return <article>
-                <div><span>{contribution.job_type}</span><time datetime={contribution.reviewed_at ?? undefined}>{contribution.reviewed_at ? new Date(contribution.reviewed_at).toLocaleDateString('en', { dateStyle: 'medium' }) : 'Accepted'}</time></div>
+                <div><span>{contribution.job_type}</span><time datetime={contribution.reviewed_at ?? undefined}>{contribution.reviewed_at ? new Date(contribution.reviewed_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Accepted'}</time></div>
                 <h3>{href ? <a href={href}>{contribution.title}</a> : contribution.title}</h3>
                 <p>{contribution.reward_label}</p>
                 <code>sha256:{contribution.result_sha256}</code>

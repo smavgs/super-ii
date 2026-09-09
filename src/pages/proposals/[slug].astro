@@ -20,9 +20,10 @@ if (sql) {
 }
 if (!proposal) Astro.response.status = 404;
 const authConfigured = authIsConfigured(Astro.locals);
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const stages = ['voting', 'accepted', 'building', 'shipped'];
 const stageIndex = proposal ? stages.indexOf(proposal.status) : -1;
-const dateLabel = (value: string) => new Date(value).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
 
 <BaseLayout title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} noindex={!proposal} className="proposal-detail-page">

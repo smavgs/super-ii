@@ -16,6 +16,7 @@ import {
 import { authIsConfigured } from '@/lib/site';
 
 const sql = sqlClient(Astro.locals);
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const requestedStatus = Astro.url.searchParams.get('status');
 const statusFilter = ['voting', 'accepted', 'building', 'shipped'].includes(requestedStatus ?? '')
   ? requestedStatus as ProposalStatus
@@ -139,7 +140,7 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
         ))}
         {!allTimeLeaders.length && <li class="leader-list__empty">The all-time board begins with the first valid vote.</li>}
       </ol>
-      {permanentBadges.length > 0 && <div class="leader-awards"><h3>Permanent monthly badges</h3>{permanentBadges.slice(0, 6).map((award) => <a href={`/people/${award.handle}`}><span>{medal(award.rank)}</span><span><strong>{award.display_name}</strong><small>{new Date(award.award_month).toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' })} · Community #{award.rank}</small></span></a>)}</div>}
+      {permanentBadges.length > 0 && <div class="leader-awards"><h3>Permanent monthly badges</h3>{permanentBadges.slice(0, 6).map((award) => <a href={`/people/${award.handle}`}><span>{medal(award.rank)}</span><span><strong>{award.display_name}</strong><small>{new Date(award.award_month).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric', timeZone: 'UTC' })} · Community #{award.rank}</small></span></a>)}</div>}
     </aside>
   </main>
 

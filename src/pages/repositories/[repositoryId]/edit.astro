@@ -6,6 +6,8 @@ import { managedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { pingRuntime } from '@/lib/runtime';
 
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+
 type DraftFile = {
   id: string;
   path: string;
@@ -152,7 +154,7 @@ const published = repository?.revision_status === 'published';
                 <div><strong>{publisher.subject}</strong><span>{publisher.enabled ? 'active' : 'disabled'}</span></div>
                 {publisher.workflow_ref && <code>{publisher.workflow_ref}</code>}
                 <p>{publisher.allowed_scopes.join(' · ')}</p>
-                <small>{publisher.last_used_at ? `Last exchanged ${new Date(publisher.last_used_at).toLocaleString()}` : 'Never exchanged'}</small>
+                <small>{publisher.last_used_at ? `Last exchanged ${new Date(publisher.last_used_at).toLocaleString(dateLocale)}` : 'Never exchanged'}</small>
                 {publisher.enabled && <button class="text-button" type="button" data-disable-publisher={publisher.id}>Disable and revoke tokens</button>}
               </article>
             ))}

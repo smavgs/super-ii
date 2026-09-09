@@ -20,6 +20,7 @@ type CheckoutOrder = {
 };
 
 const orderId = Astro.params.orderId ?? '';
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let order: CheckoutOrder | null = null;
 let authenticated = false;
@@ -70,7 +71,7 @@ const termLabel = order?.billing_term === '12_months' ? '12 months' : '30 days';
               <label class="payment-copy-field">Deposit address
                 <span><code data-pay-address>{order.pay_address}</code><button type="button" data-copy={order.pay_address}>Copy</button></span>
               </label>
-              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time>. Create a fresh checkout if it expires.</p>}
+              {order.expires_at && <p class="form-hint">Quote expiry: <time datetime={order.expires_at}>{new Date(order.expires_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</time>. Create a fresh checkout if it expires.</p>}
               <p class="form-status" data-checkout-message aria-live="polite">Waiting for the Ethereum payment and confirmations…</p>
             </>
           ) : (

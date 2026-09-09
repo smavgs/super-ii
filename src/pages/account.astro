@@ -26,6 +26,7 @@ type MemberProfile = {
 };
 
 const authConfigured = authIsConfigured(Astro.locals);
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }> = [];
 let organizations: Array<{ handle: string; full_name: string; role: string }> = [];
@@ -174,7 +175,7 @@ if (sql) {
                   {bridgeSources.map((source) => <div>
                     <span>
                       <strong>{source.provider_repo_id}</strong>
-                      <small>{source.source_visibility} · revision {source.source_revision.slice(0, 8)} · imported {new Date(source.imported_at).toLocaleDateString('en', { dateStyle: 'medium' })}</small>
+                      <small>{source.source_visibility} · revision {source.source_revision.slice(0, 8)} · imported {new Date(source.imported_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</small>
                     </span>
                     {source.source_visibility === 'public' ? <button class:list={['button', 'button--small', source.sync_enabled ? 'button--secondary' : 'button--dark']} type="button" data-bridge-sync={source.repository_id} data-enabled={String(source.sync_enabled)}>{source.sync_enabled ? 'Pause checks' : 'Check for updates'}</button> : <span class="status-badge">manual only</span>}
                   </div>)}
@@ -183,11 +184,11 @@ if (sql) {
               </section>}
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Notifications 🔔</p><h2>Recent activity</h2></div></div>
-                {notifications.length ? <div class="notification-list">{notifications.map((notification) => <article data-notification={notification.id} data-read={String(Boolean(notification.read_at))}><div><strong>{notification.title}</strong><p>{notification.body}</p><time datetime={notification.created_at}>{new Date(notification.created_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</time></div>{notification.href && <a href={notification.href}>Open</a>}{!notification.read_at && <button class="text-button" type="button" data-mark-read>Mark read</button>}</article>)}</div> : <p>No notifications yet.</p>}
+                {notifications.length ? <div class="notification-list">{notifications.map((notification) => <article data-notification={notification.id} data-read={String(Boolean(notification.read_at))}><div><strong>{notification.title}</strong><p>{notification.body}</p><time datetime={notification.created_at}>{new Date(notification.created_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</time></div>{notification.href && <a href={notification.href}>Open</a>}{!notification.read_at && <button class="text-button" type="button" data-mark-read>Mark read</button>}</article>)}</div> : <p>No notifications yet.</p>}
               </section>
               <section class="account-card">
                 <div class="repository-section__heading"><div><p class="eyebrow">Plan and payments 💳</p><h2>Billing</h2></div><a class="button button--secondary button--small" href="/pricing">View plans</a></div>
-                {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString('en', { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
+                {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
                 {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · {payment.billing_term === '12_months' ? '12 months' : '30 days'} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
               </section>
               <section class="account-card" id="identity"><p class="eyebrow">Identity and security</p><h2>Login, name and photo</h2><p>Manage your login details, account name, and profile photo here.</p><UserProfile

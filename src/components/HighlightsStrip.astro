@@ -40,14 +40,14 @@ const label = kind === 'model' ? 'models' : kind === 'dataset' ? 'datasets' : 'a
           <h3><a
             href={`${publicRepositoryPath(item)}?highlight=${item.campaign_id}`}
             data-highlight-event="repository_open"
-          >{item.title}</a></h3>
-          <p>{item.summary}</p>
+          ><span data-no-translate>{item.title}</span></a></h3>
+          <p data-no-translate>{item.summary}</p>
           <div class="highlight-mini__foot">
             <a
               href={`/people/${encodeURIComponent(item.creator_handle)}?highlight=${item.campaign_id}`}
               data-highlight-event="profile_view"
-            >@{item.creator_handle}</a>
-            <span>{item.license ?? 'License pending'}</span>
+            ><span data-no-translate>@{item.creator_handle}</span></a>
+            {item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}
           </div>
         </article>
       ))}

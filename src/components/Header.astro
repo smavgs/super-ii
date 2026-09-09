@@ -5,9 +5,10 @@ import {
   UserButton,
 } from '@clerk/astro/components';
 import { authIsConfigured } from '@/lib/site';
+import { stripLocalePrefix } from '@/lib/i18n';
 import LogoMark from './LogoMark.astro';
 
-const path = Astro.url.pathname;
+const path = stripLocalePrefix(Astro.url.pathname);
 const authConfigured = authIsConfigured(Astro.locals);
 
 const nav = [
@@ -28,7 +29,7 @@ const nav = [
 
 <header class="site-header" data-site-header>
   <div class="shell header-inner">
-    <a class="brand-lockup" href="/" aria-label="Super ii home">
+    <a class="brand-lockup" href="/" aria-label="Super ii home" data-no-translate>
       <LogoMark size="small" priority />
       <span>Super <strong>ii</strong></span>
     </a>

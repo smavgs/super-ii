@@ -17,16 +17,16 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
     </label>
     <div class="build-inputs">
       <fieldset><legend>Text generation model</legend>
-        <label>Repository<input name="generator" required value={model ? identity : ''} readonly={model} placeholder="owner/model" autocomplete="off" /></label>
+        <label>Repository<input name="generator" required value={model ? identity : ''} readonly={model} placeholder="owner/model" autocomplete="off" data-no-translate /></label>
         <label>Published commit SHA-256<input name="generator_revision" required pattern="[a-f0-9]{64}" value={model ? source?.commit_sha ?? '' : ''} readonly={model} placeholder="Full 64-character revision" autocomplete="off" /></label>
       </fieldset>
       <fieldset data-embedding-fields><legend>Embedding model</legend>
-        <label>Repository<input name="embedding" placeholder="owner/embedding-model" autocomplete="off" /></label>
+        <label>Repository<input name="embedding" placeholder="owner/embedding-model" autocomplete="off" data-no-translate /></label>
         <label>Published commit SHA-256<input name="embedding_revision" pattern="[a-f0-9]{64}" placeholder="Full 64-character revision" autocomplete="off" /></label>
         <p class="build-hint">BERT, RoBERTa, DistilBERT or XLM-R with mean pooling and safetensors. The local preflight checks the exact files.</p>
       </fieldset>
       <fieldset data-dataset-fields><legend>Dataset <span data-dataset-optional>(optional)</span></legend>
-        <label>Repository<input name="dataset" value={dataset ? identity : ''} readonly={dataset} placeholder="owner/dataset" autocomplete="off" /></label>
+        <label>Repository<input name="dataset" value={dataset ? identity : ''} readonly={dataset} placeholder="owner/dataset" autocomplete="off" data-no-translate /></label>
         <label>Published commit SHA-256<input name="dataset_revision" pattern="[a-f0-9]{64}" value={dataset ? source?.commit_sha ?? '' : ''} readonly={dataset} placeholder="Full 64-character revision" autocomplete="off" /></label>
         <p class="build-hint" data-dataset-help>Leave empty to ingest documents from a local folder.</p>
       </fieldset>
@@ -51,7 +51,7 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
   </form>
   <div data-build-result hidden>
     <div class="build-result-heading"><p>Review your project files, then download and run locally.</p><button class="button button--yellow" type="button" data-build-download>Download ZIP</button></div>
-    <label>Preview file<select data-build-file></select></label>
+    <label>Preview file<select data-build-file data-no-translate></select></label>
     <pre class="build-preview" tabindex="0"><code data-build-preview></code></pre>
   </div>
 </section>
@@ -61,6 +61,50 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
     const panel = document.querySelector<HTMLElement>('[data-build-ship]');
     if (!panel || panel.dataset.ready) return;
     panel.dataset.ready = 'true';
+    const russian = document.documentElement.lang === 'ru';
+    const copy = (english: string, translated: string) => russian ? translated : english;
+    const errorTranslations: Record<string, string> = {
+      'invalid origin': 'Недопустимый источник запроса.',
+      'database unavailable': 'База данных временно недоступна.',
+      'Recipe generation is temporarily unavailable': 'Создание проекта временно недоступно.',
+      'Project generation is unavailable': 'Создание проекта временно недоступно.',
+      'Recipe generation failed': 'Не удалось создать проект.',
+      'Project generation failed': 'Не удалось создать проект.',
+      'The resolved source does not match the requested immutable input': 'Полученный источник не соответствует выбранной неизменяемой версии.',
+      'SFT requires a JSONL dataset': 'Для SFT требуется набор данных JSONL.',
+      'Select a BERT, RoBERTa, DistilBERT or XLM-R safetensors encoder with mean pooling': 'Выберите энкодер BERT, RoBERTa, DistilBERT или XLM-R в формате safetensors с усреднением.',
+      'This template needs a supported text-generation architecture and safetensors, or a complete GGUF file': 'Для этого шаблона нужна поддерживаемая архитектура генерации текста с safetensors или полный файл GGUF.',
+      'SFT requires Transformers training weights': 'Для SFT требуются обучающие веса Transformers.',
+      'Select existing MLX-compatible weights': 'Выберите существующие веса, совместимые с MLX.',
+      'A required source could not be resolved': 'Не удалось получить обязательный источник.',
+      'Overlap must be smaller than chunk size': 'Перекрытие должно быть меньше размера фрагмента.',
+      'Reserve context for the input and answer': 'Оставьте достаточно контекста для входных данных и ответа.',
+      'RAG needs an embedding model and immutable revision': 'Для RAG нужны модель эмбеддингов и её неизменяемая версия.',
+      'SFT needs a dataset and immutable revision': 'Для SFT нужны набор данных и его неизменяемая версия.',
+      'The verified SFT recipe uses Transformers on CPU': 'Проверенный рецепт SFT использует Transformers на CPU.',
+      'Framework and UI exports are available for inference projects': 'Экспорт фреймворка и интерфейса доступен для проектов инференса.',
+      'MLX needs an Apple target': 'Для MLX требуется устройство Apple.',
+    };
+    const roleTranslations: Record<string, string> = {
+      generator: 'генеративной модели',
+      embedding: 'модели эмбеддингов',
+      dataset: 'набора данных',
+    };
+    const localizeError = (message: string) => {
+      if (!russian) return message;
+      if (errorTranslations[message]) return errorTranslations[message];
+      let match = message.match(/^The (generator|embedding|dataset) revision is unavailable or access is denied$/);
+      if (match) {
+        const role = roleTranslations[match[1]];
+        return `Версия ${role} недоступна или доступ запрещён.`;
+      }
+      match = message.match(/^Select available (generator|embedding|dataset) files$/);
+      if (match) {
+        const role = roleTranslations[match[1]];
+        return `Выберите доступные файлы ${role}.`;
+      }
+      return 'Не удалось создать проект. Проверьте выбранные данные и повторите попытку.';
+    };
     const form = panel.querySelector<HTMLFormElement>('[data-build-form]')!;
     const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
     const opener = document.querySelector<HTMLButtonElement>('[data-build-ship-open]');
@@ -73,7 +117,9 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
       for (const name of ['embedding', 'embedding_revision']) { field(name).required = rag; field(name).disabled = !rag; }
       for (const name of ['dataset', 'dataset_revision']) { field(name).required = train; field(name).disabled = !rag && !train; }
       panel!.querySelector<HTMLElement>('[data-dataset-optional]')!.hidden = train;
-      panel!.querySelector<HTMLElement>('[data-dataset-help]')!.textContent = train ? 'JSONL with text or prompt/completion. At least ten distinct examples for a held-out split.' : 'Leave empty to ingest documents from a local folder.';
+      panel!.querySelector<HTMLElement>('[data-dataset-help]')!.textContent = train
+        ? copy('JSONL with text or prompt/completion. At least ten distinct examples for a held-out split.', 'JSONL с полем text или парой prompt/completion. Для отложенной выборки нужно не менее десяти различных примеров.')
+        : copy('Leave empty to ingest documents from a local folder.', 'Оставьте пустым, чтобы загрузить документы из локальной папки.');
       panel!.querySelectorAll<HTMLElement>('[data-train-setting]').forEach(el => el.hidden = !train);
       panel!.querySelectorAll<HTMLElement>('[data-rag-setting]').forEach(el => el.hidden = !rag);
       panel!.querySelectorAll<HTMLElement>('[data-inference-setting]').forEach(el => el.hidden = train);
@@ -92,7 +138,7 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
-      button.disabled = true; result.hidden = true; status.textContent = 'Resolving your exact revisions and generating the project…';
+      button.disabled = true; result.hidden = true; status.textContent = copy('Resolving your exact revisions and generating the project…', 'Проверяем точные версии и создаём проект…');
       const input = (role: string) => field(role).disabled || !field(role).value.trim() ? null : { repository: field(role).value.trim(), revision: field(role + '_revision').value.trim() };
       try {
         const configuration = Object.fromEntries(['context_size', 'max_tokens', 'top_k', 'max_steps', 'sequence_length'].map(name => [name, Number(field(name).value)]));
@@ -105,8 +151,8 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
         files = data.files; filename = data.filename;
         chooser.replaceChildren(...Object.keys(files).sort().map(name => new Option(name, name)));
         chooser.value = 'README.md'; show(); result.hidden = false;
-        status.textContent = 'Project generated. Run it locally to produce execution evidence.';
-      } catch (error) { status.textContent = error instanceof Error ? error.message : 'Project generation failed'; }
+        status.textContent = copy('Project generated. Run it locally to produce execution evidence.', 'Проект создан. Запустите его локально, чтобы получить подтверждение выполнения.');
+      } catch (error) { status.textContent = localizeError(error instanceof Error ? error.message : 'Project generation failed'); }
       finally { button.disabled = false; }
     });
     panel.querySelector('[data-build-download]')?.addEventListener('click', () => {

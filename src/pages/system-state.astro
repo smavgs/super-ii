@@ -2,35 +2,45 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import { systemState } from '@/lib/system-state';
+import { localizeCapability, localizeCapabilityStatus } from '@/lib/system-state-localization';
+
+const locale = Astro.locals.locale ?? 'en';
+const russian = locale === 'ru';
+const capabilities = systemState.capabilities.map((item) => localizeCapability(item, locale));
 ---
 
-<BaseLayout title="System state" description="Canonical, evidence-based capability and availability status for Super ii.">
+<BaseLayout
+  title={russian ? 'Состояние системы' : 'System state'}
+  description={russian ? 'Канонический статус возможностей и доступности Super ii, основанный на подтверждениях.' : 'Canonical, evidence-based capability and availability status for Super ii.'}
+>
   <PageHero
-    eyebrow="What is available now 🧭"
-    title="Super ii system state"
-    description={`Snapshot ${systemState.snapshot}. See what has been built, what is available now, and the evidence behind each capability.`}
+    eyebrow={russian ? 'Что доступно сейчас 🧭' : 'What is available now 🧭'}
+    title={russian ? 'Состояние системы Super ii' : 'Super ii system state'}
+    description={russian
+      ? `Снимок от ${systemState.snapshot}. Что уже создано, что доступно сейчас и чем подтверждается каждая возможность.`
+      : `Snapshot ${systemState.snapshot}. See what has been built, what is available now, and the evidence behind each capability.`}
     compact
   >
     <div class="button-row">
-      <a class="button button--dark" href="/system-state.json">View JSON</a>
-      <a class="button button--secondary" href="/system-state.md">View Markdown</a>
+      <a class="button button--dark" href="/system-state.json">{russian ? 'Открыть JSON' : 'View JSON'}</a>
+      <a class="button button--secondary" href="/system-state.md">{russian ? 'Открыть Markdown' : 'View Markdown'}</a>
     </div>
   </PageHero>
 
   <main class="section shell system-state-page">
     <section class="repository-section">
       <div class="repository-section__heading">
-        <div><p class="eyebrow">Evidence register</p><h2>Capabilities</h2></div>
-        <span>{systemState.capabilities.length} tracked</span>
+        <div><p class="eyebrow">{russian ? 'Реестр подтверждений' : 'Evidence register'}</p><h2>{russian ? 'Возможности' : 'Capabilities'}</h2></div>
+        <span>{systemState.capabilities.length} {russian ? 'в реестре' : 'tracked'}</span>
       </div>
       <div class="comparison-scroll">
         <table class="comparison-table">
-          <thead><tr><th>Capability</th><th>Status</th><th>Availability</th><th>Evidence and boundary</th></tr></thead>
+          <thead><tr><th>{russian ? 'Возможность' : 'Capability'}</th><th>{russian ? 'Статус' : 'Status'}</th><th>{russian ? 'Доступность' : 'Availability'}</th><th>{russian ? 'Подтверждения и границы' : 'Evidence and boundary'}</th></tr></thead>
           <tbody>
-            {systemState.capabilities.map((item) => (
-              <tr>
+            {capabilities.map((item) => (
+              <tr data-no-translate>
                 <th scope="row">{item.capability}</th>
-                <td><code>{item.status}</code></td>
+                <td><code>{localizeCapabilityStatus(item.status, locale)}</code></td>
                 <td>{item.availability}</td>
                 <td>{item.evidence}</td>
               </tr>
@@ -41,11 +51,13 @@ import { systemState } from '@/lib/system-state';
     </section>
 
     <section class="repository-section">
-      <div class="repository-section__heading"><div><p class="eyebrow">Shared vocabulary</p><h2>Status ladder</h2></div></div>
+      <div class="repository-section__heading"><div><p class="eyebrow">{russian ? 'Общие определения' : 'Shared vocabulary'}</p><h2>{russian ? 'Уровни статуса' : 'Status ladder'}</h2></div></div>
       <ol class="status-ladder">
-        {systemState.statusLadder.map((status, index) => <li><span>{index + 1}</span><code>{status}</code></li>)}
+        {systemState.statusLadder.map((status, index) => <li data-no-translate><span>{index + 1}</span><code>{localizeCapabilityStatus(status, locale)}</code></li>)}
       </ol>
-      <p>If a required check is unavailable, Super ii treats that capability as unavailable instead of skipping the check. The public MCP endpoint is read-only; compute, publishing, private data, and payments are outside its authority.</p>
+      <p>{russian
+        ? 'Если обязательная проверка недоступна, Super ii считает возможность недоступной, а не пропускает проверку. Публичная конечная точка MCP работает только на чтение; вычисления, публикация, приватные данные и платежи не входят в её полномочия.'
+        : 'If a required check is unavailable, Super ii treats that capability as unavailable instead of skipping the check. The public MCP endpoint is read-only; compute, publishing, private data, and payments are outside its authority.'}</p>
     </section>
   </main>
 </BaseLayout>

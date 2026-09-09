@@ -50,8 +50,9 @@ if (sql) {
 }
 
 if (serviceAvailable && !profile) Astro.response.status = 404;
-const joined = profile ? new Date(profile.created_at).toLocaleDateString('en', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
-const dateLabel = (value: string) => new Date(value).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const joined = profile ? new Date(profile.created_at).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
 
 <BaseLayout

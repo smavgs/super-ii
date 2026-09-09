@@ -26,9 +26,9 @@ const label = kind === 'organization' ? `Open ${name} organization` : `Open ${na
 <a class:list={['creator-link', compact && 'creator-link--compact', `creator-link--${kind}`]} href={href} aria-label={label}>
   {avatarUrl
     ? <img src={avatarUrl} alt="" loading="lazy" referrerpolicy="no-referrer" />
-    : <span class="creator-link__fallback" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>}
+    : <span class="creator-link__fallback" aria-hidden="true" data-no-translate>{name.slice(0, 1).toUpperCase()}</span>}
   <span class="creator-link__text">
-    <strong>{name}</strong>
-    {showHandle && <small>@{handle}</small>}
+    <strong data-no-translate>{name}</strong>
+    {showHandle && <small data-no-translate>@{handle}</small>}
   </span>
 </a>

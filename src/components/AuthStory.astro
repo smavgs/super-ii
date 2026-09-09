@@ -8,6 +8,7 @@ interface Props {
 
 const { mode } = Astro.props;
 const signingUp = mode === 'sign-up';
+const russian = Astro.locals.locale === 'ru';
 ---
 
 <section class="auth-story">
@@ -17,18 +18,24 @@ const signingUp = mode === 'sign-up';
       <h1>{signingUp ? 'Join Super ii.' : 'Welcome back.'}</h1>
       {signingUp && <InfoTip term="joinFree" label="joining Super ii" />}
     </div>
-    <p>{signingUp ? 'Explore, build, publish and collaborate around open intelligence.' : 'Return to your workspace, repositories, organizations and agents.'}</p>
+    <p>{signingUp
+      ? russian
+        ? 'Изучайте, создавайте, публикуйте и работайте вместе над открытым интеллектом.'
+        : 'Explore, build, publish and collaborate around open intelligence.'
+      : russian
+        ? 'Вернитесь к рабочему пространству, репозиториям, организациям и агентам.'
+        : 'Return to your workspace, repositories, organizations and agents.'}</p>
     <div class="auth-points">
       {signingUp ? (
         <>
-          <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Continue with email</div>
+          <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> {russian ? 'Продолжить с электронной почтой' : 'Continue with email'}</div>
           <div class="auth-point"><i class="ph ph-google-logo" aria-hidden="true"></i> Continue with Google</div>
           <div class="auth-point"><i class="ph ph-github-logo" aria-hidden="true"></i> Continue with GitHub</div>
           <div class="auth-point"><i class="ph ph-credit-card" aria-hidden="true"></i> Free to join. No card required.</div>
         </>
       ) : (
         <>
-          <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> Fast email sign-in</div>
+          <div class="auth-point"><i class="ph ph-envelope-simple" aria-hidden="true"></i> {russian ? 'Быстрый вход по электронной почте' : 'Fast email sign-in'}</div>
           <div class="auth-point"><i class="ph ph-google-logo" aria-hidden="true"></i> Continue with Google</div>
           <div class="auth-point"><i class="ph ph-github-logo" aria-hidden="true"></i> Continue with GitHub</div>
         </>

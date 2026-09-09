@@ -15,6 +15,7 @@ interface Props {
 }
 
 const { kind, owner, slug } = Astro.props;
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const result = await getPublicRepository(Astro.locals, kind, owner, slug);
 const repository = result.repository;
 if (!repository) Astro.response.status = result.state === 'error' ? 503 : 404;
@@ -232,7 +233,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         <div class="version-list">
           {repository.versions.map((version) => (
             <article>
-              <div><strong>Revision {version.sequence}</strong><time datetime={version.published_at}>{new Date(version.published_at).toLocaleDateString('en', { dateStyle: 'medium', timeZone: 'UTC' })}</time></div>
+              <div><strong>Revision {version.sequence}</strong><time datetime={version.published_at}>{new Date(version.published_at).toLocaleDateString(dateLocale, { dateStyle: 'medium', timeZone: 'UTC' })}</time></div>
               <p>{version.message || 'No release message.'}</p>
               <small>{version.branch_name ?? 'main'} · {version.file_count} files · {Number(version.total_size_bytes).toLocaleString()} bytes · <code>{version.commit_sha?.slice(0, 12) ?? version.manifest_sha256.slice(0, 12)}…</code></small>
             </article>
