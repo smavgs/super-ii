@@ -81,3 +81,17 @@ approved setting change, the request reached Super ii and exposed a mismatch
 with GitHub's newer immutable subject format. The compatibility fix preserves
 exact subjects and independently compares embedded owner/repository IDs with
 the signed claims. Fixture execution does not establish model quality.
+
+Live verification on 2026-09-09:
+
+- SDK 0.2.1 is published with matching tested artifacts and 40 passing SDK tests.
+  The website exports its frozen lock and separate private-input token settings.
+- [GitHub run 34299576104](https://github.com/smavgs/super-ii/actions/runs/34299576104)
+  passed the private dataset upload, central policy publication, signed SDK
+  download, scope/signature rejection and anonymous-access rejection checks.
+  The exact job artifact is `verification/github-superii-publishing.json`.
+- Three additional private synthetic model/dataset inputs also published and
+  passed SDK verification. The subsequent project export exposed a mismatch
+  between inspector class names such as `GPT2LMHeadModel` and model types such
+  as `gpt2`. Explicit aliases preserve the supported-family restrictions.
+  Generated project execution remains pending until the follow-up run passes.

@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "repository_id": "c3728508-cf9e-4d82-b2b8-a465ccb4120d",
+  "repository": "smavgs/build-ship-verification",
+  "revision": "0b2633c66a8c3563fe835bf9f23a5696ddd600f0335b0ea27b9566eacb237ce3",
+  "manifest_sha256": "5d71202734bd693f257f1629d17922090898668145088a510164d696134c6326",
+  "visibility": "private",
+  "files_verified": 1,
+  "scope_expansion_rejected": true,
+  "invalid_signature_rejected": true,
+  "public_access_rejected": true,
+  "publication_attestation_verified": true,
+  "uploaded_this_run": true,
+  "data": "synthetic fixture; no user data"
+}

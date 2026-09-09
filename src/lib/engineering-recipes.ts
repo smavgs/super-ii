@@ -64,6 +64,15 @@ export function canonical(value: unknown): string {
 export const checksum = (text: string) => bytesToHex(sha256(new TextEncoder().encode(text)));
 const encoders = new Set(['bert', 'roberta', 'distilbert', 'xlm-roberta']);
 const generators = new Set(['llama', 'mistral', 'qwen2', 'qwen3', 'gemma', 'gemma2', 'gemma3_text', 'phi3', 'gpt2', 'gpt_neox', 'opt', 'falcon', 'stablelm', 'olmo', 'olmo2']);
+// The inspector records config.architectures (class names); imported metadata
+// can instead contain model_type. Accept explicit aliases for the same families.
+const architectureTypes = new Map(Object.entries({
+  LlamaForCausalLM: 'llama', MistralForCausalLM: 'mistral', Qwen2ForCausalLM: 'qwen2', Qwen3ForCausalLM: 'qwen3',
+  GemmaForCausalLM: 'gemma', Gemma2ForCausalLM: 'gemma2', Gemma3ForCausalLM: 'gemma3_text', Phi3ForCausalLM: 'phi3',
+  GPT2LMHeadModel: 'gpt2', GPTNeoXForCausalLM: 'gpt_neox', OPTForCausalLM: 'opt', FalconForCausalLM: 'falcon',
+  StableLmForCausalLM: 'stablelm', OlmoForCausalLM: 'olmo', Olmo2ForCausalLM: 'olmo2',
+  BertModel: 'bert', RobertaModel: 'roberta', DistilBertModel: 'distilbert', XLMRobertaModel: 'xlm-roberta',
+}).map(([name, type]) => [name.toLowerCase(), type]));
 
 function artifact(role: 'generator' | 'embedding' | 'dataset', selected: InputRequest, source: SdkInput, request: RecipeRequest) {
   const kind = role === 'dataset' ? 'dataset' : 'model';
@@ -73,7 +82,8 @@ function artifact(role: 'generator' | 'embedding' | 'dataset', selected: InputRe
     ? /\.(jsonl|csv|txt|md)$/.test(name) && !/(^|\/)(readme|license)(\.|$)/i.test(name)
     : /\.(safetensors|json|model|txt|tiktoken|gguf)$/.test(name));
   if (!files.length || files.some(name => !names.includes(name) || !path.safeParse(name).success)) throw new Error(`Select available ${role} files`);
-  const architecture = source.compatibility?.architecture?.toLowerCase() ?? '';
+  const declaredArchitecture = source.compatibility?.architecture?.toLowerCase() ?? '';
+  const architecture = architectureTypes.get(declaredArchitecture) ?? declaredArchitecture;
   if (role === 'dataset' && request.outcome === 'sft' && !files.some(name => name.endsWith('.jsonl'))) throw new Error('SFT requires a JSONL dataset');
   if (role === 'embedding' && (!encoders.has(architecture) || !files.includes('config.json') || !files.some(name => name.endsWith('.safetensors')))) throw new Error('Select a BERT, RoBERTa, DistilBERT or XLM-R safetensors encoder with mean pooling');
   if (role === 'generator') {
