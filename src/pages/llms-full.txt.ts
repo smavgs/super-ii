@@ -23,6 +23,10 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - Work MCP: https://superii.site/mcp/work
 - Commerce catalog: https://superii.site/.well-known/commerce.json
 - Commerce MCP: https://superii.site/mcp/commerce
+- Robot hub: https://superii.site/robot
+- Robot MCP: https://superii.site/mcp/robot
+- Robot A2A Agent Card: https://superii.site/.well-known/robot-agent-card.json
+- Robot machine guide: https://superii.site/robot/agents.md
 - Commerce A2A Agent Card: https://superii.site/.well-known/commerce-agent-card.json
 - Commerce A2A HTTP+JSON base: https://superii.site/a2a/commerce/v1
 - A2A Agent Card: https://superii.site/.well-known/agent-card.json
@@ -95,6 +99,12 @@ Transport: Streamable HTTP at https://superii.site/mcp
 
 Public tools search reviewed catalogs; read repository cards, files, schemas, lineage, compatibility, papers, and system state; and resolve verified downloads. They do not execute repository code or mutate state. Empty search results are real.
 
+## Super ii Robot
+
+The English-only human surface is https://superii.site/robot. Its initial reference system is Rover One with a Raspberry Pi 5 front door and a Jetson Orin Nano Super advanced path. Component profiles preserve official or manufacturer sources, checked dates, conditions, unknowns, and one of four evidence states: verified, declared, derived, or unknown. Unknown is not compatible. Plans are starting design records, not safety approval or procurement advice.
+
+Robot MCP at https://superii.site/mcp/robot and Robot A2A at https://superii.site/a2a/robot/v1 expose anonymous read-only component search, component retrieval, exact pairwise compatibility lookup, deterministic planning, and real public Robot retrieval. Public personal Robots are Free. Private personal Robots and My Hardware require Pro. Organization Robots, shared hardware, and governed agent work require Team or Enterprise. Manufacturer profile changes enter a review queue; approved maintainers may read anonymous agent-discovery aggregates. Payment never changes compatibility ranking. Procurement is not available.
+
 ## Python SDK
 
 Install with Python 3.11 or newer: python -m pip install superii-sdk. The Python import and CLI are superii. Run superii hardware to inspect this machine and superii plan owner/model to plan a real published model before acquiring its immutable files. Example model names are placeholders; the pre-launch catalogue has no seeded models.
@@ -119,7 +129,7 @@ Schemas: https://superii.site/schemas/superii-recipe-v1.json and https://superii
 
 Transport: Streamable HTTP at https://superii.site/mcp/work
 
-The Work endpoint accepts only short-lived sii_agent_ bearer tokens issued once in an authenticated Workspace. Tools are create_draft_repository, create_revision, prepare_resumable_upload, submit_revision_for_publication, claim_contribution_job, submit_contribution_job, and get_action_receipt. The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Mutating tools require a stable idempotency_key in their structured arguments. Repository work is limited to the token operator organization. Agents cannot sign or override publication approval, delete, pay, expand scope, or change operators through these tools.
+The Work endpoint accepts only short-lived sii_agent_ bearer tokens issued once in an authenticated Workspace. Repository tools are create_draft_repository, create_revision, prepare_resumable_upload, submit_revision_for_publication, claim_contribution_job, and submit_contribution_job. Robot tools are create_robot, create_robot_version, and get_organization_robot. get_action_receipt reads the agent's immutable receipts. The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Mutating tools require a stable idempotency_key in their structured arguments. Repository and Robot work is limited to the token operator organization. Agents cannot sign or override publication or physical safety approval, control actuators, delete, pay, expand scope, or change operators through these tools.
 
 For large bytes, prepare_resumable_upload returns a file-specific tus capability. The capability is bound to the repository, immutable revision, path, exact size, SHA-256, and expiry. Upload completion still passes quarantine, checksum verification, scanners, offline inspection, and signed automatic publication policy.
 

@@ -1,7 +1,9 @@
 ---
 import LogoMark from './LogoMark.astro';
+import { isLocalizablePath } from '@/lib/i18n';
 
 const year = new Date().getFullYear();
+const hasTranslation = isLocalizablePath(Astro.url.pathname);
 ---
 
 <footer class="site-footer">
@@ -20,6 +22,7 @@ const year = new Date().getFullYear();
       <a href="/models">Models</a>
       <a href="/datasets">Datasets</a>
       <a href="/spaces">Apps</a>
+      <a href="/robot">Make Robot</a>
       <a href="/skills">Skills</a>
       <a href="/builders">Builders</a>
       <a href="/collections">Collections</a>
@@ -45,6 +48,7 @@ const year = new Date().getFullYear();
       <a href="/system-state">System state</a>
       <a href="/docs#agent-native">MCP</a>
       <a href="/mcp/social">Social MCP</a>
+      <a href="/mcp/robot">Robot MCP</a>
     </div>
 
     <div class="footer-column">
@@ -62,9 +66,9 @@ const year = new Date().getFullYear();
   <div class="shell footer-bottom">
     <span>© {year} Super ii</span>
     <span class="footer-principle">Open by design · Clear controls when needed</span>
-    <span class="footer-language-group">
+    {hasTranslation && <span class="footer-language-group">
       <span class="footer-language-separator" aria-hidden="true">·</span>
       <a class="footer-language-switch" href="/ru" data-language-switch="ru" lang="ru" hreflang="ru" aria-label="Русский">ru</a>
-    </span>
+    </span>}
   </div>
 </footer>

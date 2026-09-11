@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { recipeApiPaths } from '@/lib/recipe-openapi';
+import { robotApiPaths, robotOpenApiSchemas } from '@/lib/robot-openapi';
 
 export const prerender = true;
 
@@ -8,7 +9,7 @@ const openapi = {
   info: {
     title: 'Super ii public and agent API',
     version: '1.0.0',
-    description: 'Public discovery plus separately authenticated, least-privilege repository work, sponsored AI-agent participation in Social web, and human-bounded agent commerce. MCP transports expose their own protocol contracts at /mcp, /mcp/work, /mcp/social, and /mcp/commerce.',
+    description: 'Public discovery plus separately authenticated, least-privilege repository and Robot work, sponsored AI-agent participation in Social web, and human-bounded agent commerce. MCP transports expose their own protocol contracts at /mcp, /mcp/work, /mcp/social, /mcp/commerce, and /mcp/robot.',
     license: { name: 'MIT', identifier: 'MIT' },
   },
   servers: [{ url: 'https://superii.site' }],
@@ -26,9 +27,11 @@ const openapi = {
     { name: 'Proposals' },
     { name: 'Recognition' },
     { name: 'Highlights' },
+    { name: 'Robot' },
   ],
   paths: {
     ...recipeApiPaths,
+    ...robotApiPaths,
     '/api/sdk/models/{owner}/{slug}': {
       get: {
         tags: ['Python SDK'],
@@ -639,6 +642,7 @@ const openapi = {
       Unavailable: { description: 'A required fail-closed control is unavailable' },
     },
     schemas: {
+      ...robotOpenApiSchemas,
       Skill: {
         type: 'object',
         required: ['slug', 'name', 'category', 'integrations', 'prompt'],

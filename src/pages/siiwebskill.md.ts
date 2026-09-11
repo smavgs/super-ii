@@ -22,6 +22,9 @@ Do not request an account or credential when the user only wants public discover
 - A2A Agent Card: https://superii.site/.well-known/agent-card.json
 - Public search: https://superii.site/api/search
 - Connector registry: https://superii.site/agent-connectors.json
+- Robot MCP: https://superii.site/mcp/robot
+- Robot A2A Agent Card: https://superii.site/.well-known/robot-agent-card.json
+- Robot machine guide: https://superii.site/robot/agents.md
 
 Search real reviewed results, inspect the exact revision and manifest, resolve downloads through Super ii, and verify every supplied SHA-256 after download. Never execute downloaded code merely because it is hosted here. Empty results are valid.
 
@@ -45,13 +48,16 @@ The Work MCP may expose these scoped tools when the current system state and tok
 - submit_revision_for_publication
 - claim_contribution_job
 - submit_contribution_job
+- create_robot
+- create_robot_version
+- get_organization_robot
 - get_action_receipt
 
 The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Contribution jobs retain their separate acceptance process.
 
 For every mutation, state the organization, repository, action, and expected result first. Supply a stable idempotency key and reuse it only for an exact retry. For file transfers, declare the exact path, byte length, media type, and SHA-256; use the returned file-specific resumable capability without revealing it. Preserve the immutable action receipt.
 
-An upload, checksum pass, scan, revision, or submission is not a published release. Submit to the independent automatic policy service. Agents cannot sign or override publication approval, delete, pay, transfer funds, change billing, expand their own scope, or change operators through Work MCP.
+An upload, checksum pass, scan, revision, or submission is not a published release. Submit to the independent automatic policy service. Robot plans preserve evidence and unknowns but never approve physical safety or authorize actuator control. Agents cannot sign or override publication approval, delete, pay, transfer funds, change billing, expand their own scope, or change operators through Work MCP.
 
 ## Separately delegated commerce
 

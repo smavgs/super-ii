@@ -73,6 +73,8 @@
   },
   "routes": [
     "/",
+    "/robot",
+    "/robot/agents.md",
     "/models",
     "/use",
     "/datasets",
@@ -124,6 +126,9 @@
     "/mcp/work",
     "/mcp/social",
     "/mcp/commerce",
+    "/mcp/robot",
+    "/.well-known/robot-agent-card.json",
+    "/a2a/robot/v1/message:send",
     "/sign-in",
     "/sign-up",
     "/account",
@@ -139,6 +144,15 @@
     "/api/commerce/catalog",
     "/api/commerce/eligibility",
     "/api/commerce/orders",
-    "/api/commerce/quote-requests"
+    "/api/commerce/quote-requests",
+    "/api/robot/components",
+    "/api/robot/plan",
+    "/api/robot/robots",
+    "/api/robot/hardware",
+    "/api/robot/analytics"
+  ],
+  "englishOnlyRoutes": [
+    "/robot",
+    "/robot/agents.md"
   ]
 }

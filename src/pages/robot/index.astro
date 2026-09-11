@@ -1,0 +1,235 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { robotCatalog } from '@/lib/robot';
+import { listPublicRobots } from '@/lib/robot-store';
+import { sqlClient } from '@/lib/db';
+import '@/styles/robot.css';
+
+export const prerender = false;
+
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const signedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+let publicRobots: Awaited<ReturnType<typeof listPublicRobots>> = [];
+let organizationOwners: Array<{ id: string; handle: string; name: string }> = [];
+const sql = sqlClient(Astro.locals);
+if (sql) {
+  try { publicRobots = await listPublicRobots(sql, { limit: 12 }); } catch { publicRobots = []; }
+  if (signedIn) {
+    try {
+      const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+      if (profile) {
+        organizationOwners = await sql`
+          select organization.id, organization.handle, coalesce(organization.full_name, organization.name) as name
+          from app.organization_members member
+          join app.organizations organization on organization.id = member.organization_id
+          where member.profile_id = ${profile.profileId}::uuid
+            and member.role in ('owner','admin','maintainer')
+            and app.organization_robot_plan_rank(${profile.profileId}::uuid, organization.id) >= 2
+          order by organization.handle
+        ` as typeof organizationOwners;
+      }
+    } catch { organizationOwners = []; }
+  }
+}
+const reference = robotCatalog.referenceRobots[0];
+---
+
+<BaseLayout
+  title="Make Robot"
+  description="Plan a source-backed Raspberry Pi or Jetson Robot, keep unknowns visible, publish versions, and let any agent use the same public interface."
+  className="robot-site"
+>
+  <div data-robot-page data-signed-in={String(signedIn)} data-no-translate>
+    <section class="robot-hero">
+      <div class="shell robot-hero__grid">
+        <div class="robot-hero__copy">
+          <p class="eyebrow">Super ii Robot · Raspberry Pi first</p>
+          <h1>Make a Robot.<br /><span>Know what fits.</span></h1>
+          <p class="robot-hero__lead">Start with what you want it to do. Super ii turns source-backed components, interfaces and open questions into a Robot you can inspect, version and share.</p>
+          <div class="button-row">
+            <a class="button button--dark" href="#make">Make Robot <i class="ph ph-arrow-down" aria-hidden="true"></i></a>
+            <a class="button button--secondary" href="#components">Explore components</a>
+          </div>
+          <p class="robot-hero__rule"><span>Evidence stays attached.</span> Unknown is a real result. Compatibility ranking is never pay-to-win.</p>
+        </div>
+        <div class="robot-blueprint" aria-label="Diagram of Rover One connecting a camera, compute board, power, and mobile base">
+          <div class="robot-blueprint__label">REFERENCE / ROVER ONE</div>
+          <div class="robot-blueprint__camera"><i class="ph ph-camera" aria-hidden="true"></i><span>VISION</span></div>
+          <div class="robot-blueprint__brain"><strong data-no-translate>Sii</strong><span>Pi 5 / Jetson</span></div>
+          <div class="robot-blueprint__base"><span class="wheel wheel--left"></span><i class="ph ph-cpu" aria-hidden="true"></i><span class="wheel wheel--right"></span></div>
+          <div class="robot-blueprint__line robot-blueprint__line--one"></div>
+          <div class="robot-blueprint__line robot-blueprint__line--two"></div>
+          <p>Not a finished safety claim.<br />A truthful place to begin.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="robot-proofbar" aria-label="Robot evidence principles">
+      <div class="shell">
+        <span><b>01</b> Official sources</span>
+        <span><b>02</b> Explicit unknowns</span>
+        <span><b>03</b> Versioned plans</span>
+        <span><b>04</b> Human + agent access</span>
+      </div>
+    </section>
+
+    <section class="robot-maker" id="make">
+      <div class="shell robot-maker__grid">
+        <header class="robot-maker__intro">
+          <p class="eyebrow">Make Robot</p>
+          <h2>Tell us the job.<br />Get an honest first plan.</h2>
+          <p>This first path is deliberately focused: a mobile Rover built around Raspberry Pi 5, with Jetson Orin Nano Super as the advanced compute path.</p>
+          <ol>
+            <li><span>1</span>Choose a goal and constraints.</li>
+            <li><span>2</span>Read every fit claim and unknown.</li>
+            <li><span>3</span>Save a public or private version.</li>
+          </ol>
+        </header>
+
+        <div class="robot-maker__console">
+          <div class="robot-console__top"><span>MAKE ROBOT / 01</span><span>CATALOG {robotCatalog.catalogRevision}</span></div>
+          <form class="robot-form" data-robot-planner>
+            <label>What should it do?
+              <select name="goal" required>
+                <option value="see">See its surroundings</option>
+                <option value="explore">Explore a controlled indoor area</option>
+                <option value="learn">Help me learn robotics</option>
+                <option value="follow">Experiment with supervised person following</option>
+              </select>
+            </label>
+            <label>Your experience
+              <select name="experience" required>
+                <option value="new">I am new</option>
+                <option value="experienced">I have built hardware before</option>
+                <option value="professional">Professional / research</option>
+              </select>
+            </label>
+            <label>Compute path
+              <select name="compute" required>
+                <option value="recommend">Recommend one</option>
+                <option value="pi5">Raspberry Pi 5</option>
+                <option value="jetson">Jetson Orin Nano Super</option>
+              </select>
+            </label>
+            <label>Environment
+              <select name="environment" required>
+                <option value="indoor">Indoors</option>
+                <option value="controlled-outdoor">Controlled outdoor testing</option>
+              </select>
+            </label>
+            <label>Whole-build budget
+              <select name="budget" required>
+                <option value="not-sure">Not sure yet</option>
+                <option value="under-500">Under $500</option>
+                <option value="500-1000">$500–$1,000</option>
+                <option value="over-1000">Over $1,000</option>
+              </select>
+            </label>
+            <button class="button button--yellow" type="submit">Make my first plan <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+            <p class="robot-form__status" data-robot-plan-status role="status" aria-live="polite">Free. No account needed to plan.</p>
+          </form>
+        </div>
+      </div>
+      <div class="shell robot-result" data-robot-result hidden aria-live="polite">
+        <div class="robot-result__head">
+          <div><p class="eyebrow">Your first Robot plan</p><h2 data-plan-title></h2><p data-plan-summary></p></div>
+          <div class="robot-result__stamp"><span>CATALOG</span><strong data-plan-revision></strong><small>reproducible input</small></div>
+        </div>
+        <div class="robot-result__body">
+          <section><h3>Parts list (BOM)</h3><div class="robot-bom" data-plan-components></div></section>
+          <section><h3>Robot Check</h3><div class="robot-check" data-plan-check></div></section>
+          <section class="robot-result__wide"><h3>Open requirements</h3><ul data-plan-unknowns></ul><p class="robot-safety-note" data-plan-safety></p></section>
+        </div>
+        <details class="robot-save">
+          <summary>Save and share this Robot</summary>
+          <form data-robot-save>
+            {organizationOwners.length > 0 && <label>Owner <select name="organization_id"><option value="" data-handle="you">Personal</option>{organizationOwners.map((organization) => <option value={organization.id} data-handle={organization.handle}>{organization.name} · Team</option>)}</select></label>}
+            <label>Robot title <input name="title" minlength="2" maxlength="160" required /></label>
+            <label>Public URL name <span class="robot-field-prefix" data-robot-owner-prefix>superii.site/robot/you/</span><input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="96" required /></label>
+            <label>Short summary <textarea name="summary" minlength="10" maxlength="2000" rows="3" required></textarea></label>
+            <label>Who is it for? <input name="audience" maxlength="160" value="Makers learning mobile robotics" required /></label>
+            <fieldset><legend>Visibility</legend><label><input type="radio" name="visibility" value="public" checked /> Public · Free</label><label><input type="radio" name="visibility" value="private" /> Private · Pro</label></fieldset>
+            <button class="button button--dark" type="submit">Save version 1</button>
+            <p data-robot-save-status role="status" aria-live="polite">{signedIn ? 'Ready to save.' : 'You will be asked to join or log in before saving.'}</p>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <section class="robot-reference">
+      <div class="shell robot-reference__grid">
+        <div class="robot-reference__title"><p class="eyebrow">First reference system</p><h2>{reference.title}</h2><p>{reference.summary}</p><span>CONTROLLED INDOOR START</span></div>
+        <div class="robot-reference__paths">
+          {reference.variants.map((variant, index) => (
+            <article>
+              <span>0{index + 1} / {variant.id === 'pi5' ? 'FRONT DOOR' : 'ADVANCED PATH'}</span>
+              <h3>{variant.name}</h3>
+              <p>{variant.audience}</p>
+              <strong>{variant.why}</strong>
+              <ul>{variant.openRequirements.slice(0, 2).map((item) => <li>{item}</li>)}</ul>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="robot-components" id="components">
+      <div class="shell">
+        <div class="robot-section-heading"><div><p class="eyebrow">Source-backed components</p><h2>See the proof before the purchase.</h2></div><p>Super ii does not sell these parts. Profiles describe what official product pages say, when they were checked, and what remains unproven.</p></div>
+        <div class="robot-component-list">
+          {robotCatalog.components.map((component, index) => (
+            <a href={`/robot/components/${component.slug}`} class="robot-component-row">
+              <span class="robot-component-row__number">{String(index + 1).padStart(2, '0')}</span>
+              <span><small>{component.category} · {component.manufacturer}</small><strong>{component.name}</strong></span>
+              <span class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</span>
+              <p>{component.summary}</p>
+              <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="robot-public">
+      <div class="shell">
+        <div class="robot-section-heading"><div><p class="eyebrow">Public Robots</p><h2>Versions other people—and agents—can inspect.</h2></div><a class="button button--secondary" href="/mcp/robot">Connect an agent</a></div>
+        {publicRobots.length ? (
+          <div class="robot-public__list">
+            {publicRobots.map((robot) => <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span>{robot.owner_display_name} / v{robot.version_number}</span><strong>{robot.title}</strong><p>{robot.summary}</p><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
+          </div>
+        ) : (
+          <div class="robot-empty"><strong>No public community Robot has been published yet.</strong><p>Rover One above is a labelled reference—not invented community activity. Your first public Robot can begin here.</p><a href="#make">Make the first one <i class="ph ph-arrow-up" aria-hidden="true"></i></a></div>
+        )}
+      </div>
+    </section>
+
+    <section class="robot-agents" id="agents">
+      <div class="shell robot-agents__grid">
+        <div><p class="eyebrow">For any compatible agent</p><h2>One Robot truth layer.<br />Human or machine.</h2><p>Public component search, compatibility checks, Robot planning and public Robot retrieval are anonymous and read-only. Governed write tools use the same human-issued, scoped, expiring Super ii agent token as the rest of the website.</p></div>
+        <div class="robot-agent-endpoints">
+          <a href="/mcp/robot"><span>MCP</span><strong>https://superii.site/mcp/robot</strong></a>
+          <a href="/.well-known/robot-agent-card.json"><span>A2A</span><strong>Robot Agent Card</strong></a>
+          <a href="/openapi.json"><span>REST</span><strong>OpenAPI contract</strong></a>
+          <a href="/robot/agents.md"><span>GUIDE</span><strong>Robot machine guide</strong></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="robot-access">
+      <div class="shell">
+        <p class="eyebrow">Access that grows with the work</p>
+        <div class="robot-access__rows">
+          <article><span>FREE</span><h3>Public Component + Build retrieval</h3><p>Explore, plan, publish, retrieve and use the public agent interfaces.</p></article>
+          <article><span>PRO</span><h3>Private Builds + hardware inventory</h3><p>Keep personal versions and a private inventory for better planning.</p></article>
+          <article><span>TEAM</span><h3>Shared engineering controls</h3><p>Organization Robots, private catalogs, policy and auditable agent work.</p></article>
+          <article><span>COMMERCIAL</span><h3>Manufacturer maintenance</h3><p>Reviewed profile proposals and meaningful agent-discovery analytics. Payment never changes compatibility rank.</p></article>
+        </div>
+        <p class="robot-access__later"><b>Later:</b> procurement. <b>Always:</b> no pay-to-win compatibility ranking.</p>
+      </div>
+    </section>
+  </div>
+  <script>
+    import '@/scripts/robot-page';
+  </script>
+</BaseLayout>

@@ -4,6 +4,7 @@ import AgentBash from '@/components/AgentBash.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import '@/styles/robot.css';
 
 export const prerender = false;
 
@@ -163,6 +164,18 @@ const frontierCtaUrl = isSignedIn
           </article>
         ))}
       </div>
+    </div>
+  </section>
+
+  <section class="robot-home-hook" data-no-translate>
+    <div class="shell robot-home-hook__inner">
+      <div>
+        <p class="eyebrow">Super ii Robot · Raspberry Pi first</p>
+        <h2>Make a Robot. Know what fits.</h2>
+        <p>Turn source-backed components and honest unknowns into a Robot plan you—and any compatible agent—can inspect, version and share.</p>
+        <div class="button-row"><a class="button button--dark" href="/robot#make">Make Robot <i class="ph ph-arrow-right" aria-hidden="true"></i></a><a class="button button--secondary" href="/robot#components">Explore components</a></div>
+      </div>
+      <div class="robot-home-hook__drawing" aria-label="A blueprint-style Super ii Robot diagram"><span>PI 5 / JETSON</span><strong data-no-translate>Sii</strong><span>EVIDENCE → PLAN → VERSION</span></div>
     </div>
   </section>
 

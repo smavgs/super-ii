@@ -52,6 +52,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (
     !scopes.length || scopes.length !== requestedCount
     || (repositoryId && !UUID_PATTERN.test(repositoryId))
+    || (repositoryId && scopes.some((scope) => scope.startsWith('robot:')))
     || !Number.isInteger(expiresInDays) || expiresInDays < 1 || expiresInDays > 30
     || !Number.isInteger(maxActions) || maxActions < 1 || maxActions > 10_000
   ) {

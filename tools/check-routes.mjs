@@ -9,6 +9,7 @@ function candidates(route) {
   if (route === '/') return ['src/pages/index.astro'];
   if (route.startsWith('/a2a/v1/')) return ['src/pages/a2a/v1/[...operation].ts'];
   if (route.startsWith('/a2a/commerce/v1/')) return ['src/pages/a2a/commerce/v1/[...operation].ts'];
+  if (route.startsWith('/a2a/robot/v1/')) return ['src/pages/a2a/robot/v1/[...operation].ts'];
   const clean = route.replace(/^\//, '');
   if (clean.startsWith('api/')) return [`src/pages/${clean}.ts`, `src/pages/${clean}/index.ts`];
   return [`src/pages/${clean}.astro`, `src/pages/${clean}.ts`, `src/pages/${clean}/index.astro`, `src/pages/${clean}/index.ts`];
@@ -42,6 +43,7 @@ const localizedRoutes = (site.languages ?? [])
   .filter(Boolean)
   .flatMap((prefix) => site.routes
     .filter((route) => !route.startsWith('/api/') && !route.startsWith('/a2a/'))
+    .filter((route) => !(site.englishOnlyRoutes ?? []).some((root) => route === root || route.startsWith(`${root}/`)))
     .map((route) => route === '/' ? prefix : `${prefix}${route}`));
 const known = new Set([...site.routes, ...localizedRoutes, '/api/contact', '/api/publication-keys']);
 for (const file of sourceFiles) {

@@ -5,11 +5,14 @@ import AgentWorkspace from '@/components/AgentWorkspace.astro';
 import AIWorkerStarter from '@/components/AIWorkerStarter.astro';
 import CommerceWorkspace from '@/components/CommerceWorkspace.astro';
 import MemberProfileWorkspace from '@/components/MemberProfileWorkspace.astro';
+import RobotWorkspace from '@/components/RobotWorkspace.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
+import { activeRobotPlan, listHardware, listOwnedRobots, type RobotPlanTier } from '@/lib/robot-store';
+import '@/styles/robot.css';
 
 type MemberProfile = {
   id: string;
@@ -29,7 +32,10 @@ const authConfigured = authIsConfigured(Astro.locals);
 const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sql = sqlClient(Astro.locals);
 let repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }> = [];
-let organizations: Array<{ handle: string; full_name: string; role: string }> = [];
+let organizations: Array<{ id: string; handle: string; full_name: string; role: string }> = [];
+let robots: Awaited<ReturnType<typeof listOwnedRobots>> = [];
+let hardware: Awaited<ReturnType<typeof listHardware>> = [];
+let robotPlan: RobotPlanTier = 'free';
 let notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }> = [];
 let subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }> = [];
 let payments: Array<{ id: string; plan_id: string; billing_term: string; price_amount_cents: number; status: string; created_at: string }> = [];
@@ -72,12 +78,20 @@ if (sql) {
         order by r.updated_at desc limit 50
       ` as typeof repositories;
       organizations = await sql`
-        select o.handle, coalesce(o.full_name, o.name) as full_name, m.role
+        select o.id, o.handle, coalesce(o.full_name, o.name) as full_name, m.role
         from app.organization_members m
         join app.organizations o on o.id = m.organization_id
         where m.profile_id = ${profile.profileId}::uuid
         order by o.handle
       ` as typeof organizations;
+      try {
+        robotPlan = await activeRobotPlan(sql, profile);
+        robots = await listOwnedRobots(sql, profile.profileId);
+        if (robotPlan !== 'free') hardware = await listHardware(sql, profile.profileId);
+      } catch {
+        robots = [];
+        hardware = [];
+      }
       notifications = await sql`
         select id, title, body, href, read_at, created_at
         from app.notifications where profile_id = ${profile.profileId}::uuid
@@ -134,6 +148,8 @@ if (sql) {
       <a href="#ai-worker">AI Worker</a>
       <a href="#agents">Agents</a>
       <a href="#commerce">Agent commerce</a>
+      <a href="#robots">Robots</a>
+      <a href="#hardware">My Hardware</a>
       <a href="#profile" aria-current="page">Profile</a>
       <a href="/bring-my-work">Bring my work</a>
       <a href="/new">Repositories</a>
@@ -159,6 +175,7 @@ if (sql) {
               <AIWorkerStarter />
               <AgentWorkspace />
               <CommerceWorkspace />
+              <RobotWorkspace robots={robots} hardware={hardware} organizations={organizations} plan={robotPlan} />
               {memberProfile && <MemberProfileWorkspace profile={memberProfile} />}
               <section class="account-card" id="repositories">
                 <div class="repository-section__heading"><div><p class="eyebrow">Creator workspace 🚀</p><h2>Your repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
