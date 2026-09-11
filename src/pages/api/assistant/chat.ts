@@ -13,7 +13,7 @@ import {
   parseAssistantSkillContext,
   parseRuntimeSearchResults,
 } from '@/lib/openrouter';
-import { consumeIdentityRateLimit, consumeRateLimit } from '@/lib/rate-limit';
+import { consumeIdentityRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
 
 const MAX_REQUEST_CHARS = 24_000;
@@ -109,7 +109,10 @@ function providerFailure(result: Awaited<ReturnType<typeof callOpenRouter>>) {
     status: result.response.status,
   }));
   return json(
-    { error: result.response.status === 429 ? 'assistant is busy' : 'assistant connection unavailable' },
+    {
+      error: result.response.status === 429 ? 'assistant provider is rate limited' : 'assistant connection unavailable',
+      ...(result.response.status === 429 ? { code: 'provider_rate_limited' } : {}),
+    },
     result.response.status === 429 ? 429 : 503,
     result.response.status === 429 ? { 'retry-after': retryAfter(result.response) } : {},
   );
@@ -158,7 +161,14 @@ export const POST: APIRoute = async ({ locals, request }) => {
   }
   const webSearchEnabled = body.web_search === true;
 
-  const rate = await consumeRateLimit(locals, request, sql, 'assistant.chat', 30, 3600);
+  const rate = await consumeIdentityRateLimit(
+    locals,
+    sql,
+    profile.profileId,
+    'assistant.chat',
+    30,
+    3600,
+  );
   if (rate !== 'allowed') {
     return json(
       { error: rate === 'limited' ? 'assistant message limit reached' : 'assistant safety service unavailable' },

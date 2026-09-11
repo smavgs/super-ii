@@ -1,5 +1,5 @@
 export const OPENROUTER_CHAT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-export const OPENROUTER_MODEL = 'minimax/minimax-m3:free';
+export const OPENROUTER_MODEL = 'meta/muse-spark-1.3-contributor';
 export const OPENROUTER_MAX_MESSAGES = 12;
 export const OPENROUTER_MAX_CONVERSATION_CHARS = 12_000;
 

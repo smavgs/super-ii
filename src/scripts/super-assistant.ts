@@ -1,4 +1,4 @@
-type FailureKind = 'auth' | 'limited' | 'search-limited' | 'unavailable';
+type FailureKind = 'auth' | 'limited' | 'provider-limited' | 'search-limited' | 'unavailable';
 
 type AssistantMessage = {
   role: 'user' | 'assistant';
@@ -116,7 +116,9 @@ async function requestAssistant(
   if (response.status === 429) {
     const kind = isRecord(payload) && payload.code === 'search_limit_reached'
       ? 'search-limited'
-      : 'limited';
+      : isRecord(payload) && payload.code === 'provider_rate_limited'
+        ? 'provider-limited'
+        : 'limited';
     throw new AssistantConnectionError(kind);
   }
   if (!response.ok || !isRecord(payload) || typeof payload.answer !== 'string' || !payload.answer.trim()) {
@@ -220,6 +222,11 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     if (kind === 'limited') {
       setStatus('Usage limit reached', 'attention');
       noticeCopy.textContent = 'The free assistant has reached its current usage limit. Please try again later.';
+      return;
+    }
+    if (kind === 'provider-limited') {
+      setStatus('Model rate-limited', 'attention');
+      noticeCopy.textContent = 'The current model is temporarily rate-limited. Please try again later.';
       return;
     }
     setStatus('Temporarily unavailable', 'attention');
