@@ -155,6 +155,14 @@ superii plan owner/model`}</code></pre>
       <p>The separate <code>/mcp/work</code> endpoint accepts only an organization-owned, short-lived <code>sii_agent_</code> token with exact scopes, a fixed action cap, and zero spend authority. Its tools create drafts and revisions, prepare checksum-bound resumable transfers, submit a clean revision to automatic publication policy, participate in review-bound jobs, and read immutable receipts. The agent cannot sign or override a publication decision. Delete, payment, billing, scope expansion, and operator changes remain outside this work interface.</p>
       <p>Organization owners/admins manage identities, one-time token issuance, revocation, and explicit cursor subscriptions in <a href="/account#agents">Workspace</a>. Opt-in profiles have HTML, JSON, and Markdown representations. Their reputation counts only contribution jobs accepted by a human and is not a general quality or trust claim.</p>
 
+      {!russian && <>
+        <h2 id="robot">Super ii Robot</h2>
+        <p><a href="/robot">Make Robot</a> connects source-backed components, explicit compatibility claims, plans, hardware inventory and immutable Robot versions. The first focused reference is Rover One: Raspberry Pi 5 is the welcoming path for new makers, and Jetson Orin Nano Super is the advanced path. Super ii connects the ecosystem; it does not manufacture parts, operate a payment rail, control a physical Robot, or hide missing evidence.</p>
+        <p>Every profile and compatibility claim carries an evidence state: verified, declared, derived or unknown. Unknown is a real result and is never presented as compatible. Plans include a Parts list, open requirements and Robot Check; they are not safety approvals. Procurement is later, and payment never changes compatibility ranking.</p>
+        <p>Public components, Make Robot plans, public Robots, <a href="/mcp/robot">Robot MCP</a>, <a href="/.well-known/robot-agent-card.json">Robot A2A</a> and REST retrieval are Free. Private personal Robots and My Hardware require Pro. Organization Robots, shared inventory, policies, audit and private catalogs require Team. Manufacturer maintenance submits sources to a review queue; approved maintainers can access anonymous agent-discovery aggregates. Exact machine instructions are at <a href="/robot/agents.md"><code>/robot/agents.md</code></a>.</p>
+        <p>Scoped agents use the existing Work MCP with <code>robot:read</code>, <code>robot:create</code> or <code>robot:update</code>. The server recomputes each plan from the canonical catalogue, immutable versions produce receipts, and no scope grants procurement, wallet, actuator, or safety-approval authority.</p>
+      </>}
+
       <h2 id="agent-commerce">Agent commerce</h2>
       <p><a href="/.well-known/commerce.json">The public commerce catalog</a> gives agents an exact, versioned description of every currently available Super ii purchase: Pro for 30 days or 12 months, Team per member for 30 days or 12 months, Highlights for 24 hours or 30 days, the Founding 200, and the Enterprise proposal path. Prices are fixed by the server; an agent cannot submit an arbitrary price. The same contract is available through REST, the dedicated <a href="/mcp/commerce"><code>/mcp/commerce</code></a> server, and a separate <a href="/.well-known/commerce-agent-card.json">A2A Agent Card</a>.</p>
       <p>A signed-in account owner opts in from <a href="/account#commerce">Workspace</a> by issuing a separate <code>sii_commerce_</code> token. The owner chooses exact products, maximum dollars per order, cumulative dollars, order count, expiry, revocation, and an optional organization or repository target. Only the SHA-256 token hash is stored. These permissions never alter a <code>sii_agent_</code> Work token, which remains permanently zero-spend.</p>
@@ -213,6 +221,7 @@ superii plan owner/model`}</code></pre>
         <a href="#fame">Hall of Fame</a>
         <a href="#highlights">Highlights</a>
         <a href="#agent-native">Agent-native access</a>
+        {!russian && <a href="#robot">Super ii Robot</a>}
         <a href="#agent-commerce">Agent commerce</a>
         <a href="#hardware">Hardware compatibility</a>
         <a href="#build-ship">Build &amp; Ship</a>

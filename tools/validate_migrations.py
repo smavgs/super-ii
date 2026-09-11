@@ -100,6 +100,11 @@ REQUIRED_TABLES = {
     "commerce_quote_requests",
     "publication_keys",
     "publication_decisions",
+    "robots",
+    "robot_versions",
+    "robot_hardware",
+    "robot_component_claims",
+    "robot_discovery_daily",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -251,6 +256,19 @@ def main() -> int:
         errors.append("confirmed agent purchases require immutable hash-backed receipts")
     if "create_commerce_quote_request" not in lower or "'enterprise.quote'" not in lower:
         errors.append("Enterprise agent commerce requires an idempotent human-reviewed proposal path")
+    if "create_robot_with_version" not in lower or "create_robot_version" not in lower:
+        errors.append("Robot creation and immutable versions must be transactional")
+    if "robot_versions_immutable" not in lower or "robot_versions_are_immutable" not in lower:
+        errors.append("Robot versions must be append-only")
+    if "profile_robot_plan_rank" not in lower or "robot_private_requires_pro" not in lower or "robot_team_owner_requires_team" not in lower:
+        errors.append("private and organization Robot work must enforce exact plan boundaries")
+    if "agent_create_robot_with_receipt" not in lower or "agent_create_robot_version_with_receipt" not in lower:
+        errors.append("agent Robot mutations must be organization-bound and receipt-backed")
+    if "robot_component_claims" not in lower or "record_robot_discovery" not in lower:
+        errors.append("manufacturer maintenance and anonymous Robot discovery analytics are required")
+    for robot_scope in ("robot:read", "robot:create", "robot:update"):
+        if f"'{robot_scope}'" not in lower:
+            errors.append(f"Robot agent scope is missing: {robot_scope}")
     for commerce_scope in (
         "commerce:orders:create",
         "commerce:orders:read",

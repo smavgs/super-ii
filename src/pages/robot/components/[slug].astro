@@ -1,0 +1,39 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { componentCompatibilityClaims, robotCatalog, robotComponent } from '@/lib/robot';
+import '@/styles/robot.css';
+
+export const prerender = false;
+const component = robotComponent(Astro.params.slug ?? '');
+if (!component) return Astro.redirect('/robot', 302);
+const claims = componentCompatibilityClaims(component.slug);
+const evidence = robotCatalog.evidenceStates.find((item) => item.id === component.evidenceStatus);
+---
+
+<BaseLayout title={component.name} description={component.summary} className="robot-site">
+  <article class="robot-component-page" data-no-translate>
+    <div class="shell">
+      <a class="robot-component-page__back" href="/robot#components"><i class="ph ph-arrow-left" aria-hidden="true"></i> All Robot components</a>
+      <header class="robot-component-page__head">
+        <div>
+          <p class="eyebrow">{component.category} · {component.manufacturer}</p>
+          <h1>{component.name}</h1>
+          <p class="robot-component-page__summary">{component.summary}</p>
+        </div>
+        <aside class="robot-component-page__meta">
+          <span class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</span>
+          <p>{evidence?.meaning}</p>
+          <dl><dt>Profile revision</dt><dd>{component.profileRevision}</dd><dt>Platforms</dt><dd>{component.platforms.join(' + ')}</dd><dt>Sources</dt><dd>{component.sources.length}</dd></dl>
+        </aside>
+      </header>
+      <div class="robot-component-page__body">
+        <section><h2>Specifications</h2><dl>{component.specifications.map((specification) => <><dt>{specification.label}</dt><dd>{specification.value}</dd></>)}</dl></section>
+        <section><h2>Interfaces</h2>{component.interfaces.length ? <ul>{component.interfaces.map((item) => <li>{item}</li>)}</ul> : <p>No interface claim is recorded.</p>}<h2>Software</h2>{component.software.length ? <ul>{component.software.map((item) => <li>{item}</li>)}</ul> : <p>No software claim is recorded.</p>}</section>
+        <section><h2>Compatibility claims</h2>{claims.length ? claims.map((claim) => <article><span class={`robot-evidence robot-evidence--${claim.status}`}>{claim.status}</span><h3>{claim.dimension}</h3><p>{claim.claim}</p>{claim.conditions.length > 0 && <ul>{claim.conditions.map((item) => <li>{item}</li>)}</ul>}<a href={claim.sourceUrl} rel="external">Open supporting source <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>) : <p>No pairwise compatibility claim is recorded yet. That is not proof of incompatibility.</p>}</section>
+        <section class="robot-unknown-box"><h2>Unknowns</h2>{component.unknowns.length ? <ul>{component.unknowns.map((item) => <li>{item}</li>)}</ul> : <p>No profile-level unknown is recorded. Build-specific fit still requires a Robot Check.</p>}<p><strong>Unknown means Super ii does not yet have adequate source or test evidence. It is not a hidden pass.</strong></p></section>
+        <section class="robot-source-list"><h2>Sources</h2>{component.sources.map((source) => <p><strong>{source.publisher}</strong><br />{source.title}<br /><small>Checked {source.checkedAt} · {source.kind}</small><a href={source.url} rel="external">{source.url}</a></p>)}</section>
+        <section><h2>Use this profile</h2><p>Ask any compatible agent to read the public Robot MCP or retrieve this exact JSON profile. Public access is anonymous and read-only.</p><p><a class="button button--dark" href={`/api/robot/components/${component.slug}`}>Open JSON</a> <a class="button button--secondary" href="/mcp/robot">Robot MCP</a></p></section>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

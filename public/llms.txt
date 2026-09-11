@@ -12,6 +12,9 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [Commerce catalog](https://superii.site/.well-known/commerce.json): Exact agent-purchasable offers, eligibility, prices, settlement, and endpoint contract
 - [Commerce MCP](https://superii.site/mcp/commerce): Separately authenticated, human-bounded invoice creation and receipt lookup
 - [Commerce A2A Agent Card](https://superii.site/.well-known/commerce-agent-card.json): A2A v1.0 discovery for the same bounded commerce tools
+- [Robot MCP](https://superii.site/mcp/robot): Public source-backed component search, compatibility checks, planning, and Robot retrieval
+- [Robot A2A Agent Card](https://superii.site/.well-known/robot-agent-card.json): A2A v1.0 discovery for public Robot tools
+- [Robot machine guide](https://superii.site/robot/agents.md): Evidence states, access tiers, safety boundaries, and governed writes
 - [A2A Agent Card](https://superii.site/.well-known/agent-card.json): A2A v1.0 discovery for bounded public tasks
 - [Connector registry](https://superii.site/agent-connectors.json): Versioned, source-linked client configuration profiles
 - [Super ii Agent Skill](https://superii.site/skills/superii/SKILL.md): Portable public discovery and governed-work instructions
@@ -41,6 +44,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Models](https://superii.site/models): Public model catalog and local browser inference tools
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
+- [Make Robot](https://superii.site/robot): Source-backed Raspberry Pi and Jetson Robot planning, versions, and public retrieval
 - [Skills](https://superii.site/skills): Search, inspect, copy, or share ready-to-use AI-agent skills
 - [Agents](https://superii.site/agents): Connect agents through verified, least-privilege interfaces
 - [Builders](https://superii.site/builders): Public directory of people publishing repositories, posts, and ideas

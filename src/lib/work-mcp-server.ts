@@ -14,6 +14,7 @@ import { runtimeValue, sqlClient } from './db';
 import { runtimeFetch, runtimeIsConfigured } from './runtime';
 import { signTransferTicket, transferCapabilityHash, type TransferTicket } from './transfer-ticket';
 import { MAX_TRANSFER_BYTES, MAX_TRANSFER_CHUNK_BYTES, TUS_VERSION } from './transfers';
+import { makeRobotInputSchema, makeRobotPlan } from './robot';
 
 const writeAnnotations = {
   readOnlyHint: false,
@@ -98,7 +99,7 @@ export function createSuperiiWorkMcpServer(
   const server = new McpServer(
     { name: 'Super ii authenticated Work MCP', version: '1.0.0' },
     {
-      instructions: 'Authenticated and policy-gated. Never reveal the bearer token or transfer capability. Reuse an idempotency key only for an exact retry. Use prepare_resumable_upload for bytes, verify checksums, and submit to the independent automatic publication policy. The agent cannot approve its own release, delete, pay, expand scopes, or change operators.',
+      instructions: 'Authenticated and policy-gated. Never reveal the bearer token or transfer capability. Reuse an idempotency key only for an exact retry. Repository work uses independent automatic publication policy. Robot work creates organization-owned, immutable versions from the canonical source-backed planner. The agent cannot approve its own release, delete, pay, expand scopes, or change operators. It also cannot approve a physical safety claim or control physical actuators.',
     },
   );
 
@@ -535,6 +536,103 @@ export function createSuperiiWorkMcpServer(
       } catch {
         return toolError('job is not claimed by this agent or the idempotency key conflicts');
       }
+    },
+  );
+
+  server.registerTool(
+    'create_robot',
+    {
+      title: 'Create an organization Robot',
+      description: 'Create a public or private organization Robot with an immutable version 1. Requires Team or Enterprise, robot:create, and a stable idempotency key. The server recomputes the plan from canonical evidence.',
+      inputSchema: z.object({
+        idempotency_key: idempotency,
+        slug: z.string().trim().toLowerCase().regex(/^[a-z0-9](?:[a-z0-9-]{0,94}[a-z0-9])?$/),
+        title: z.string().trim().min(2).max(160),
+        summary: z.string().trim().min(10).max(2000),
+        audience: z.string().trim().min(1).max(160),
+        visibility: z.enum(['public', 'private']).default('private'),
+        change_summary: z.string().trim().min(1).max(1000).default('Agent-created first Robot plan'),
+        planner_input: makeRobotInputSchema,
+      }).strict(),
+      annotations: writeAnnotations,
+    },
+    async (input) => {
+      const sql = sqlClient(locals); if (!sql) return toolError('database unavailable');
+      const authorization = await authorizeAgentToken(request, sql, 'robot:create');
+      if (!authorization.ok) return toolError(authorization.error);
+      const plan = makeRobotPlan(input.planner_input);
+      const requestHash = await jsonSha256(input);
+      try {
+        const rows = await sql`
+          select app.agent_create_robot_with_receipt(
+            ${authorization.actor.agentIdentityId}::uuid, ${authorization.actor.tokenId}::uuid,
+            ${authorization.actor.profileId}::uuid, ${authorization.actor.organizationId}::uuid,
+            ${input.idempotency_key}, ${requestHash}, ${input.slug}, ${input.title}, ${input.summary},
+            ${input.audience}, ${input.visibility}, ${JSON.stringify(input.planner_input)}::jsonb,
+            ${JSON.stringify(plan)}::jsonb, ${plan.catalog_revision}, ${input.change_summary}
+          ) as outcome
+        `;
+        const outcome = rows[0]?.outcome as Record<string, unknown> | undefined;
+        const created = outcome?.result as Record<string, unknown> | undefined;
+        return toolResult({ ...outcome, robot_url: new URL(`/robot/${encodeURIComponent(String(created?.owner_handle ?? ''))}/${encodeURIComponent(input.slug)}`, origin).toString(), safety_approval: false });
+      } catch { return toolError('Robot could not be created: the plan entitlement, owner access, slug, or idempotency key is unavailable'); }
+    },
+  );
+
+  server.registerTool(
+    'create_robot_version',
+    {
+      title: 'Create an immutable Robot version',
+      description: 'Append a server-recomputed plan to an organization Robot. Requires robot:update and Team or Enterprise.',
+      inputSchema: z.object({ idempotency_key: idempotency, robot_id: uuid, change_summary: z.string().trim().min(1).max(1000), planner_input: makeRobotInputSchema }).strict(),
+      annotations: writeAnnotations,
+    },
+    async (input) => {
+      const sql = sqlClient(locals); if (!sql) return toolError('database unavailable');
+      const authorization = await authorizeAgentToken(request, sql, 'robot:update');
+      if (!authorization.ok) return toolError(authorization.error);
+      const plan = makeRobotPlan(input.planner_input); const requestHash = await jsonSha256(input);
+      try {
+        const rows = await sql`
+          select app.agent_create_robot_version_with_receipt(
+            ${authorization.actor.agentIdentityId}::uuid, ${authorization.actor.tokenId}::uuid,
+            ${authorization.actor.profileId}::uuid, ${authorization.actor.organizationId}::uuid,
+            ${input.idempotency_key}, ${requestHash}, ${input.robot_id}::uuid,
+            ${JSON.stringify(input.planner_input)}::jsonb, ${JSON.stringify(plan)}::jsonb,
+            ${plan.catalog_revision}, ${input.change_summary}
+          ) as outcome
+        `;
+        return toolResult({ ...(rows[0]?.outcome as Record<string, unknown>), safety_approval: false });
+      } catch { return toolError('Robot version could not be created: access, plan entitlement, Robot ownership, or idempotency changed'); }
+    },
+  );
+
+  server.registerTool(
+    'get_organization_robot',
+    {
+      title: 'Read an organization Robot',
+      description: 'Read the current plan and immutable version history for one Robot owned by this agent operator organization. Requires robot:read.',
+      inputSchema: z.object({ robot_id: uuid }).strict(),
+      annotations: readAnnotations,
+    },
+    async ({ robot_id }) => {
+      const sql = sqlClient(locals); if (!sql) return toolError('database unavailable');
+      const authorization = await authorizeAgentToken(request, sql, 'robot:read');
+      if (!authorization.ok) return toolError(authorization.error);
+      try {
+        const rows = await sql`
+          select robot.id, robot.slug, robot.title, robot.summary, robot.audience, robot.visibility, robot.status,
+                 organization.handle as owner_handle, version.id as version_id, version.version_number,
+                 version.change_summary, version.catalog_revision, version.plan_snapshot, version.created_at
+          from app.robots robot join app.organizations organization on organization.id = robot.owner_organization_id
+          join app.robot_versions version on version.id = robot.latest_version_id
+          where robot.id = ${robot_id}::uuid and robot.owner_organization_id = ${authorization.actor.organizationId}::uuid
+          limit 1
+        `;
+        if (!rows.length) return toolError('organization Robot not found');
+        const versions = await sql`select id, version_number, change_summary, catalog_revision, created_at, created_by_agent_id from app.robot_versions where robot_id = ${robot_id}::uuid order by version_number desc limit 200`;
+        return toolResult({ robot: rows[0], versions });
+      } catch { return toolError('organization Robot unavailable'); }
     },
   );
 

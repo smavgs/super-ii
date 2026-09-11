@@ -72,16 +72,16 @@ Copy `.env.example` to `.env` only when you need live local authentication or da
 - Python validates the product contract, honest empty catalogs, plan states, routes, forbidden legacy claims, and exact SHA-256 of the user-supplied logo.
 - Python also validates the Use Model registry, allowlisted command templates, expiring review evidence, local-only hardware contract, and empty hosted-provider list.
 - Shell reports installed runtime versions without installing, upgrading, downloading, or starting a service; absent software remains unverified.
-- Go independently verifies the route/plan/catalog contract and exact logo hash.
+- Go independently verifies the route/plan/catalog contract and exact logo hash; the checked-in runner can use a preloaded network-isolated Go container when the host has no Go executable.
 - JavaScript checks every declared route and internal link against the Astro source tree.
 
 `npm run db:check` verifies transactions, PL/pgSQL, row-level security, the repository core, Postgres search, community/social/collection/lineage tables, fail-closed publication gates, and no repository seed rows.
 
-`npm run db:test` applies every migration twice to a disposable PostgreSQL 17 container, runs the transactional interaction, publication, commerce, and member-profile smoke tests, and verifies that test rows roll back cleanly.
+`npm run db:test` applies every migration twice to a disposable PostgreSQL 17 container, runs the transactional interaction, publication, commerce, member-profile, and Robot smoke tests, and verifies that test rows roll back cleanly.
 
 ## Database
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 89-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, member-profile likes and links, publication verification keys and signed automatic decisions, social graph, collections, lineage, compatibility, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, or agent records.
+Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 94-table plus one view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, member-profile likes and links, publication verification keys and signed automatic decisions, social graph, collections, lineage, compatibility, Robot plans and immutable versions, private hardware inventory, manufacturer proposals, aggregate Robot discovery, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, agent, or community Robot records.
 
 With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
 

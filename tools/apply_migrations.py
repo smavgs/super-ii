@@ -83,7 +83,12 @@ def main() -> int:
                   to_regclass('app.commerce_orders') is not null,
                   to_regclass('app.commerce_receipts') is not null,
                   to_regclass('app.commerce_quote_requests') is not null,
-                  to_regclass('app.profile_likes') is not null
+                  to_regclass('app.profile_likes') is not null,
+                  to_regclass('app.robots') is not null,
+                  to_regclass('app.robot_versions') is not null,
+                  to_regclass('app.robot_hardware') is not null,
+                  to_regclass('app.robot_component_claims') is not null,
+                  to_regclass('app.robot_discovery_daily') is not null
                 """
             )
             (
@@ -95,8 +100,13 @@ def main() -> int:
                 has_commerce_receipts,
                 has_commerce_quotes,
                 has_profile_likes,
+                has_robots,
+                has_robot_versions,
+                has_robot_hardware,
+                has_robot_claims,
+                has_robot_analytics,
             ) = cursor.fetchone()
-            if relation_count < 90:
+            if relation_count < 95:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )
@@ -107,9 +117,14 @@ def main() -> int:
                     has_commerce_receipts,
                     has_commerce_quotes,
                     has_profile_likes,
+                    has_robots,
+                    has_robot_versions,
+                    has_robot_hardware,
+                    has_robot_claims,
+                    has_robot_analytics,
                 )
             ):
-                raise RuntimeError("required commerce and member-profile relations are incomplete")
+                raise RuntimeError("required commerce, member-profile, and Robot relations are incomplete")
             print(
                 f"Verified: app_relations={relation_count}, repositories={repository_count}, "
                 f"public_search_rows={public_count}"

@@ -232,6 +232,7 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   const requestUrl = new URL(request.url);
   const englishUrl = new URL(stripLocalePrefix(requestUrl.pathname), 'https://superii.site');
   const russianUrl = localizedUrl(englishUrl, 'ru');
+  const hasLocalizedPage = isLocalizablePath(englishUrl.pathname);
   let excludedDepth = 0;
   const voidElements = new Set([
     'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
@@ -270,7 +271,9 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
         const canonical = locale === 'ru' ? russianUrl : englishUrl;
         element.setAttribute('href', canonical.toString());
         element.after(
-          `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="ru" href="${russianUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`,
+          hasLocalizedPage
+            ? `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="ru" href="${russianUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`
+            : `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`,
           { html: true },
         );
       },
@@ -278,7 +281,7 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     .on('meta[property="og:locale"]', {
       element(element) {
         element.setAttribute('content', locale === 'ru' ? 'ru_RU' : 'en_US');
-        element.after(`<meta property="og:locale:alternate" content="${locale === 'ru' ? 'en_US' : 'ru_RU'}">`, { html: true });
+        if (hasLocalizedPage) element.after(`<meta property="og:locale:alternate" content="${locale === 'ru' ? 'en_US' : 'ru_RU'}">`, { html: true });
       },
     })
     .on('meta[property="og:url"]', {
@@ -319,6 +322,11 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const requestedLocale = localeFromPathname(context.url.pathname);
+  if (requestedLocale === 'ru' && !isLocalizablePath(context.url.pathname) && pageRequest(context.request)) {
+    const englishOnly = new URL(context.url);
+    englishOnly.pathname = stripLocalePrefix(englishOnly.pathname);
+    return secure(redirectResponse(englishOnly, true), context.request, 'en');
+  }
   const languageChoice = context.url.searchParams.get('language');
   if (languageChoice === 'en' && pageRequest(context.request)) {
     const clean = new URL(context.url);

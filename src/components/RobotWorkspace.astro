@@ -1,0 +1,119 @@
+---
+import { robotCatalog } from '@/lib/robot';
+
+interface Props {
+  robots: Array<{ id: string; owner_handle: string; slug: string; title: string; summary: string; visibility: string; version_number: number; updated_at: string }>;
+  hardware: Array<{ id: string; component_slug: string | null; custom_name: string | null; quantity: number; notes: string; status: string; owner_handle: string; owner_type: string }>;
+  organizations: Array<{ id: string; handle: string; full_name: string; role: string }>;
+  plan: 'free' | 'pro' | 'team' | 'enterprise';
+}
+const { robots, hardware, organizations, plan } = Astro.props;
+const canUsePrivate = plan !== 'free';
+const canUseTeam = plan === 'team' || plan === 'enterprise';
+---
+
+<section class="account-card robot-workspace" id="robots" data-robot-workspace data-plan={plan} data-no-translate>
+  <div class="repository-section__heading">
+    <div><p class="eyebrow">Super ii Robot 🤖</p><h2>My Robots</h2></div>
+    <a class="button button--dark button--small" href="/robot#make">Make Robot</a>
+  </div>
+  <p>Keep the plan, its source evidence and every immutable version together. Public Robots are Free; private work uses your eligible plan.</p>
+  {robots.length ? (
+    <div class="account-list robot-workspace__robots">
+      {robots.map((robot) => (
+        <div class="robot-workspace__robot">
+          <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><strong>{robot.title}</strong><small>@{robot.owner_handle}/{robot.slug} · {robot.visibility} · v{robot.version_number}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <details>
+            <summary>Make a new version</summary>
+            <form data-robot-version={robot.id}>
+              <label>Change summary <input name="change_summary" minlength="1" maxlength="1000" value="Updated Robot plan" required /></label>
+              <label>Goal <select name="goal"><option value="see">See</option><option value="explore">Explore</option><option value="learn">Learn</option><option value="follow">Supervised following</option></select></label>
+              <label>Experience <select name="experience"><option value="new">New</option><option value="experienced">Experienced</option><option value="professional">Professional</option></select></label>
+              <label>Compute <select name="compute"><option value="recommend">Recommend</option><option value="pi5">Raspberry Pi 5</option><option value="jetson">Jetson</option></select></label>
+              <label>Environment <select name="environment"><option value="indoor">Indoor</option><option value="controlled-outdoor">Controlled outdoor</option></select></label>
+              <label>Budget <select name="budget"><option value="not-sure">Not sure</option><option value="under-500">Under $500</option><option value="500-1000">$500–$1,000</option><option value="over-1000">Over $1,000</option></select></label>
+              <button class="button button--secondary button--small" type="submit">Save next version</button>
+              <p role="status" aria-live="polite"></p>
+            </form>
+          </details>
+        </div>
+      ))}
+    </div>
+  ) : <div class="robot-workspace__empty"><p>You have not saved a Robot yet.</p><a href="/robot#make">Make your first public Robot free.</a></div>}
+
+  <div class="robot-workspace__section" id="hardware">
+    <div><p class="eyebrow">Private inventory · {canUsePrivate ? 'available' : 'Pro'}</p><h3>My Hardware</h3></div>
+    {canUsePrivate ? (
+      <>
+        <form class="robot-hardware-form" data-robot-hardware>
+          <label>Hardware <select name="component_slug"><option value="">Custom item…</option>{robotCatalog.components.map((component) => <option value={component.slug}>{component.name}</option>)}</select></label>
+          <label>Custom name <input name="custom_name" maxlength="160" placeholder="Only when Custom item is selected" /></label>
+          <label>Quantity <input name="quantity" type="number" min="1" max="10000" value="1" /></label>
+          <label>Status <select name="status"><option value="available">Available</option><option value="in-use">In use</option><option value="repair">Repair</option><option value="retired">Retired</option></select></label>
+          {canUseTeam && organizations.length > 0 && <label>Owner <select name="organization_id"><option value="">Personal</option>{organizations.map((organization) => <option value={organization.id}>{organization.full_name} · Team</option>)}</select></label>}
+          <label class="robot-hardware-form__notes">Notes <input name="notes" maxlength="2000" /></label>
+          <button class="button button--dark button--small" type="submit">Add hardware</button><p data-hardware-status role="status" aria-live="polite"></p>
+        </form>
+        <div class="robot-hardware-list" data-hardware-list>
+          {hardware.map((item) => <div data-hardware-id={item.id}><span><strong>{item.component_slug ? robotCatalog.components.find((component) => component.slug === item.component_slug)?.name ?? item.component_slug : item.custom_name}</strong><small>{item.owner_type === 'organization' ? `@${item.owner_handle} · ` : ''}{item.quantity} · {item.status}{item.notes ? ` · ${item.notes}` : ''}</small></span><button type="button" class="text-button" data-archive-hardware>Archive</button></div>)}
+        </div>
+      </>
+    ) : <div class="robot-plan-boundary"><p>Private Robots and My Hardware are available with Pro. Public planning, components, Robots and agent retrieval remain Free.</p><a class="button button--secondary button--small" href="/pricing">See Pro</a></div>}
+  </div>
+
+  <div class="robot-workspace__section" id="robot-maintenance">
+    <div><p class="eyebrow">Commercial · review-bound</p><h3>Manufacturer maintenance</h3></div>
+    {canUseTeam && organizations.length ? (
+      <details>
+        <summary>Propose an official component profile change</summary>
+        <form class="robot-claim-form" data-robot-claim>
+          <label>Organization <select name="organization_id" required>{organizations.filter((organization) => ['owner','admin'].includes(organization.role)).map((organization) => <option value={organization.id}>{organization.full_name}</option>)}</select></label>
+          <label>Component <select name="component_slug" required>{robotCatalog.components.map((component) => <option value={component.slug}>{component.name}</option>)}</select></label>
+          <label>Official source URL <input type="url" name="source_url" pattern="https://.*" required /></label>
+          <label>Proposed facts <textarea name="proposed_facts" rows="4" minlength="10" maxlength="20000" required></textarea></label>
+          <button class="button button--secondary button--small" type="submit">Submit for review</button><p data-claim-status role="status" aria-live="polite"></p>
+        </form>
+      </details>
+    ) : <p>Team organizations can submit source-backed profile changes. Nothing is applied automatically. Approved maintainers can request anonymous agent-discovery aggregates; payment never affects rank.</p>}
+  </div>
+</section>
+
+<script>
+  const workspace = document.querySelector('[data-robot-workspace]');
+  workspace?.querySelectorAll('form[data-robot-version]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault(); if (!(form instanceof HTMLFormElement)) return;
+    const status = form.querySelector('[role=status]'); const data = new FormData(form);
+    if (status) status.textContent = 'Saving immutable version…';
+    const response = await fetch(`/api/robot/robots/${form.dataset.robotVersion}/versions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ change_summary: data.get('change_summary'), planner_input: { goal: data.get('goal'), experience: data.get('experience'), compute: data.get('compute'), environment: data.get('environment'), budget: data.get('budget'), owned_components: [] } }) });
+    const payload = await response.json() as { version_number?: number; error?: string };
+    if (status) status.textContent = response.ok ? `Version ${payload.version_number} saved. Reload to see it.` : payload.error ?? 'Version could not be saved.';
+  }));
+
+  const hardwareForm = workspace?.querySelector('[data-robot-hardware]');
+  hardwareForm?.addEventListener('submit', async (event) => {
+    event.preventDefault(); if (!(hardwareForm instanceof HTMLFormElement)) return;
+    const data = new FormData(hardwareForm); const status = workspace?.querySelector('[data-hardware-status]');
+    const component = String(data.get('component_slug') ?? ''); const custom = String(data.get('custom_name') ?? '').trim();
+    if (!component && !custom) { if (status) status.textContent = 'Choose a catalog component or enter a custom name.'; return; }
+    if (status) status.textContent = 'Saving hardware…';
+    const response = await fetch('/api/robot/hardware', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ component_slug: component || null, custom_name: component ? null : custom, quantity: Number(data.get('quantity')), status: data.get('status'), notes: data.get('notes'), organization_id: data.get('organization_id') || null }) });
+    const payload = await response.json() as { error?: string };
+    if (response.ok) location.reload(); else if (status) status.textContent = payload.error ?? 'Hardware could not be saved.';
+  });
+
+  workspace?.querySelectorAll('[data-archive-hardware]').forEach((button) => button.addEventListener('click', async () => {
+    if (!(button instanceof HTMLButtonElement)) return; const row = button.closest('[data-hardware-id]'); if (!(row instanceof HTMLElement)) return;
+    button.disabled = true; const response = await fetch(`/api/robot/hardware/${row.dataset.hardwareId}`, { method: 'DELETE' });
+    if (response.ok) row.remove(); else button.disabled = false;
+  }));
+
+  const claimForm = workspace?.querySelector('[data-robot-claim]');
+  claimForm?.addEventListener('submit', async (event) => {
+    event.preventDefault(); if (!(claimForm instanceof HTMLFormElement)) return;
+    const data = new FormData(claimForm); const status = workspace?.querySelector('[data-claim-status]'); const component = String(data.get('component_slug'));
+    if (status) status.textContent = 'Recording review-bound proposal…';
+    const response = await fetch(`/api/robot/components/${encodeURIComponent(component)}/claims`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ organization_id: data.get('organization_id'), source_urls: [data.get('source_url')], proposed_changes: { facts: data.get('proposed_facts') } }) });
+    const payload = await response.json() as { error?: string };
+    if (status) status.textContent = response.ok ? 'Proposal recorded as pending. It has not changed the public profile.' : payload.error ?? 'Proposal could not be recorded.';
+  });
+</script>

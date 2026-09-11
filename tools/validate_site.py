@@ -109,6 +109,9 @@ def main() -> int:
         for route in routes:
             if not isinstance(route, str) or not route.startswith("/") or (route != "/" and route.endswith("/")):
                 errors.append(f"invalid canonical route: {route!r}")
+    english_only_routes = data.get("englishOnlyRoutes", [])
+    if not isinstance(english_only_routes, list) or any(route not in routes for route in english_only_routes):
+        errors.append("englishOnlyRoutes must be a list containing canonical routes")
 
     join_team_page = ROOT / "src" / "pages" / "join-team.astro"
     footer_file = ROOT / "src" / "components" / "Footer.astro"
@@ -220,6 +223,18 @@ def main() -> int:
         ROOT / "src" / "pages" / "a2a" / "v1" / "[...operation].ts",
         ROOT / "src" / "pages" / "mcp" / "work.ts",
         ROOT / "src" / "components" / "AgentWorkspace.astro",
+        ROOT / "src" / "content" / "robot-catalog.json",
+        ROOT / "src" / "lib" / "robot.ts",
+        ROOT / "src" / "lib" / "robot-store.ts",
+        ROOT / "src" / "lib" / "robot-mcp-server.ts",
+        ROOT / "src" / "lib" / "robot-a2a.ts",
+        ROOT / "src" / "pages" / "robot" / "index.astro",
+        ROOT / "src" / "pages" / "robot" / "agents.md.ts",
+        ROOT / "src" / "scripts" / "robot-page.ts",
+        ROOT / "src" / "pages" / "mcp" / "robot.ts",
+        ROOT / "src" / "pages" / ".well-known" / "robot-agent-card.json.ts",
+        ROOT / "database" / "migrations" / "0019_robot_foundation.sql",
+        ROOT / "docs" / "architecture" / "robot.md",
         ROOT / "rust" / "src" / "connect.rs",
     ]
     missing_machine_files = [str(path.relative_to(ROOT)) for path in required_machine_files if not path.is_file()]

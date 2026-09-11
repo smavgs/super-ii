@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "catalogRevision": "2026-09-10.1",
+  "updatedAt": "2026-09-10",
+  "name": "Super ii Robot",
+  "description": "An evidence-backed, agent-readable catalogue for making Raspberry Pi and NVIDIA Jetson robots.",
+  "rankingPolicy": "Compatibility results are ordered by requirement fit and evidence completeness. Payment, sponsorship, and commercial relationships never improve compatibility rank.",
+  "evidenceStates": [
+    {
+      "id": "verified",
+      "label": "Verified",
+      "meaning": "Super ii holds direct test evidence for this exact claim and revision."
+    },
+    {
+      "id": "declared",
+      "label": "Declared",
+      "meaning": "The named manufacturer or official documentation makes this claim. Super ii has not independently tested it."
+    },
+    {
+      "id": "derived",
+      "label": "Derived",
+      "meaning": "The claim follows from matching documented constraints, but has not been directly tested."
+    },
+    {
+      "id": "unknown",
+      "label": "Unknown",
+      "meaning": "The available evidence is not sufficient to make this claim."
+    }
+  ],
+  "components": [
+    {
+      "slug": "raspberry-pi-5",
+      "name": "Raspberry Pi 5",
+      "manufacturer": "Raspberry Pi",
+      "category": "compute",
+      "platforms": ["raspberry-pi"],
+      "audience": ["new-maker", "experienced-maker", "prototype"],
+      "summary": "A documented Linux single-board computer with GPIO, USB, MIPI camera/display connections, PCIe and a large maker ecosystem.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Processor", "value": "2.4 GHz quad-core 64-bit Arm Cortex-A76" },
+        { "label": "Memory variants", "value": "1 GB, 2 GB, 4 GB, 8 GB and 16 GB LPDDR4X" },
+        { "label": "Expansion", "value": "40-pin GPIO header and PCIe 2.0 x1 through a separate adapter" },
+        { "label": "Camera/display", "value": "Two four-lane MIPI camera/display transceivers" },
+        { "label": "Power input", "value": "5 V / 5 A USB-C Power Delivery recommended for full peripheral budget" }
+      ],
+      "interfaces": ["USB 3", "USB 2", "Gigabit Ethernet", "Wi-Fi", "Bluetooth", "40-pin GPIO", "MIPI CSI/DSI", "PCIe 2.0 x1"],
+      "software": ["Raspberry Pi OS", "Linux", "Python", "GPIO libraries"],
+      "sources": [
+        {
+          "title": "Raspberry Pi 5 product page and specification",
+          "publisher": "Raspberry Pi",
+          "url": "https://www.raspberrypi.com/products/raspberry-pi-5/",
+          "kind": "official-product",
+          "checkedAt": "2026-09-10"
+        },
+        {
+          "title": "Raspberry Pi computer hardware documentation",
+          "publisher": "Raspberry Pi",
+          "url": "https://www.raspberrypi.com/documentation/computers/raspberry-pi.html",
+          "kind": "official-documentation",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": [
+        "A particular robot's sustained workload and enclosure determine whether additional cooling is sufficient.",
+        "GPIO voltage, current and protective circuitry must be checked for each attached controller."
+      ]
+    },
+    {
+      "slug": "raspberry-pi-camera-module-3",
+      "name": "Camera Module 3",
+      "manufacturer": "Raspberry Pi",
+      "category": "vision",
+      "platforms": ["raspberry-pi"],
+      "audience": ["new-maker", "experienced-maker", "prototype"],
+      "summary": "An official 12-megapixel autofocus camera offered in visible-light, NoIR, standard-field and wide-field variants.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Sensor resolution", "value": "12 megapixels" },
+        { "label": "Variants", "value": "Standard or wide field of view; visible-light or NoIR" },
+        { "label": "Board connector", "value": "15-pin camera connector; Raspberry Pi 5 needs the appropriate standard-to-mini cable" }
+      ],
+      "interfaces": ["MIPI CSI-2"],
+      "software": ["Raspberry Pi camera software stack", "libcamera / rpicam applications"],
+      "sources": [
+        {
+          "title": "Raspberry Pi camera documentation",
+          "publisher": "Raspberry Pi",
+          "url": "https://www.raspberrypi.com/documentation/accessories/camera.html",
+          "kind": "official-documentation",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": [
+        "Mechanical mounting and field of view depend on the selected rover enclosure and camera variant.",
+        "A compatible cable is not proof that a specific enclosure has sufficient clearance."
+      ]
+    },
+    {
+      "slug": "raspberry-pi-active-cooler",
+      "name": "Active Cooler for Raspberry Pi 5",
+      "manufacturer": "Raspberry Pi",
+      "category": "thermal",
+      "platforms": ["raspberry-pi"],
+      "audience": ["new-maker", "experienced-maker", "prototype"],
+      "summary": "An official cooling option for Raspberry Pi 5 under sustained load when the board is used without the official fan case.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Target", "value": "Raspberry Pi 5" },
+        { "label": "Use case", "value": "Sustained or demanding workloads without the official fan case" }
+      ],
+      "interfaces": ["Raspberry Pi 5 fan connector"],
+      "software": [],
+      "sources": [
+        {
+          "title": "Raspberry Pi 5 accessories",
+          "publisher": "Raspberry Pi",
+          "url": "https://www.raspberrypi.com/products/raspberry-pi-5/",
+          "kind": "official-product",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": ["Enclosure clearance and airflow must still be checked in the completed Robot."]
+    },
+    {
+      "slug": "raspberry-pi-27w-power-supply",
+      "name": "27 W USB-C Power Supply",
+      "manufacturer": "Raspberry Pi",
+      "category": "power",
+      "platforms": ["raspberry-pi"],
+      "audience": ["new-maker", "experienced-maker", "prototype"],
+      "summary": "The official 5 V / 5 A USB-C supply recommended to give Raspberry Pi 5 its full peripheral power budget while connected to mains power.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Nominal Raspberry Pi 5 output", "value": "5 V / 5 A" },
+        { "label": "Role", "value": "Bench setup and mains-powered development" }
+      ],
+      "interfaces": ["USB-C Power Delivery"],
+      "software": [],
+      "sources": [
+        {
+          "title": "Raspberry Pi 5 power guidance",
+          "publisher": "Raspberry Pi",
+          "url": "https://www.raspberrypi.com/documentation/computers/getting-started.html",
+          "kind": "official-documentation",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": ["This is not a mobile battery and does not power the rover away from mains electricity."]
+    },
+    {
+      "slug": "nvidia-jetson-orin-nano-super-developer-kit",
+      "name": "Jetson Orin Nano Super Developer Kit",
+      "manufacturer": "NVIDIA",
+      "category": "compute",
+      "platforms": ["jetson"],
+      "audience": ["experienced-maker", "professional-prototype"],
+      "summary": "A compact Jetson developer kit for prototyping edge AI and robotics applications with NVIDIA's JetPack software stack.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Purpose", "value": "Development and prototyping, not a production deployment module" },
+        { "label": "Software stack", "value": "NVIDIA JetPack and Jetson Linux" },
+        { "label": "Expansion", "value": "Reference carrier board with standard development interfaces" }
+      ],
+      "interfaces": ["USB", "Gigabit Ethernet", "MIPI CSI-2", "40-pin expansion header", "M.2 storage"],
+      "software": ["JetPack", "Jetson Linux", "CUDA", "TensorRT", "NVIDIA Isaac-compatible software"],
+      "sources": [
+        {
+          "title": "NVIDIA Jetson developer kits",
+          "publisher": "NVIDIA",
+          "url": "https://developer.nvidia.com/embedded/jetson-developer-kits",
+          "kind": "official-product",
+          "checkedAt": "2026-09-10"
+        },
+        {
+          "title": "Jetson developer kit and module distinction",
+          "publisher": "NVIDIA",
+          "url": "https://developer.nvidia.com/embedded/faq",
+          "kind": "official-documentation",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": [
+        "The required JetPack release depends on the exact application, carrier board and peripheral drivers.",
+        "A production Robot should be re-qualified against a production Jetson module and carrier board."
+      ]
+    },
+    {
+      "slug": "waveshare-wave-rover",
+      "name": "WAVE ROVER",
+      "manufacturer": "Waveshare",
+      "category": "mobile-base",
+      "platforms": ["raspberry-pi", "jetson"],
+      "audience": ["experienced-maker", "prototype"],
+      "summary": "A four-wheel mobile base whose manufacturer declares host support for Raspberry Pi and Jetson Orin Nano through its ESP32-based controller.",
+      "evidenceStatus": "declared",
+      "profileRevision": "2026-09-10",
+      "specifications": [
+        { "label": "Drive", "value": "Four-wheel drive with four geared motors" },
+        { "label": "Host communication", "value": "UART through the onboard ESP32-based controller" },
+        { "label": "Power architecture", "value": "Onboard 3S UPS module; cells are not included" },
+        { "label": "Declared hosts", "value": "Raspberry Pi, Jetson Nano and Jetson Orin Nano families" }
+      ],
+      "interfaces": ["UART", "USB-to-UART", "I2C", "serial bus servo"],
+      "software": ["Manufacturer open-source examples", "Web control examples"],
+      "sources": [
+        {
+          "title": "WAVE ROVER product page",
+          "publisher": "Waveshare",
+          "url": "https://www.waveshare.com/product/robotics/mobile-robots/wave-rover.htm",
+          "kind": "manufacturer-product",
+          "checkedAt": "2026-09-10"
+        }
+      ],
+      "unknowns": [
+        "Super ii has not independently tested the Raspberry Pi 5 or Jetson Orin Nano integration.",
+        "Battery cells, charger suitability and safe installation require separate review.",
+        "Payload, runtime, waterproofing and obstacle-navigation performance are not established by this profile."
+      ]
+    }
+  ],
+  "compatibility": [
+    {
+      "left": "raspberry-pi-5",
+      "right": "raspberry-pi-camera-module-3",
+      "dimension": "interface",
+      "status": "declared",
+      "claim": "Raspberry Pi documents Camera Module 3 support on Raspberry Pi computers with CSI connectors; Raspberry Pi 5 needs the appropriate 22-pin-to-15-pin camera cable.",
+      "conditions": ["Use the correct Raspberry Pi 5 camera cable", "Check mechanical clearance before installing cooling hardware"],
+      "sourceUrl": "https://www.raspberrypi.com/documentation/accessories/camera.html",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "left": "raspberry-pi-5",
+      "right": "raspberry-pi-active-cooler",
+      "dimension": "mechanical",
+      "status": "declared",
+      "claim": "The Active Cooler is an official Raspberry Pi 5 accessory for sustained workloads.",
+      "conditions": ["Confirm clearance with camera cables, HATs and the selected robot mount"],
+      "sourceUrl": "https://www.raspberrypi.com/products/raspberry-pi-5/",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "left": "raspberry-pi-5",
+      "right": "raspberry-pi-27w-power-supply",
+      "dimension": "electrical",
+      "status": "declared",
+      "claim": "Raspberry Pi recommends a 5 V / 5 A USB-C supply for Raspberry Pi 5's full peripheral power budget.",
+      "conditions": ["Bench or mains-powered operation only", "Do not treat this adapter as a mobile battery system"],
+      "sourceUrl": "https://www.raspberrypi.com/documentation/computers/getting-started.html",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "left": "raspberry-pi-5",
+      "right": "waveshare-wave-rover",
+      "dimension": "host-control",
+      "status": "declared",
+      "claim": "Waveshare declares Raspberry Pi host support for WAVE ROVER through the base controller's serial interface.",
+      "conditions": ["Confirm the exact host mount, cabling, software revision and power arrangement", "Super ii has not independently tested this pairing"],
+      "sourceUrl": "https://www.waveshare.com/product/robotics/mobile-robots/wave-rover.htm",
+      "checkedAt": "2026-09-10"
+    },
+    {
+      "left": "nvidia-jetson-orin-nano-super-developer-kit",
+      "right": "waveshare-wave-rover",
+      "dimension": "host-control",
+      "status": "declared",
+      "claim": "Waveshare declares Jetson Orin Nano host support for WAVE ROVER through the base controller's serial interface.",
+      "conditions": ["Confirm the exact carrier-board mount, cabling, software revision and power arrangement", "Super ii has not independently tested this pairing"],
+      "sourceUrl": "https://www.waveshare.com/product/robotics/mobile-robots/wave-rover.htm",
+      "checkedAt": "2026-09-10"
+    }
+  ],
+  "referenceRobots": [
+    {
+      "slug": "rover-one",
+      "title": "Rover One",
+      "summary": "A deliberately bounded indoor vision-rover starting point that shows what changes when its compute moves from Raspberry Pi 5 to Jetson Orin Nano.",
+      "environment": "Indoor development area with direct human supervision",
+      "capabilities": ["Manual low-speed movement", "Camera input", "Software experimentation", "Expandable perception"],
+      "notClaimed": ["Autonomous safety", "Outdoor operation", "A verified payload", "A verified runtime", "Production readiness"],
+      "variants": [
+        {
+          "id": "pi5",
+          "name": "Raspberry Pi path",
+          "audience": "New and experienced makers",
+          "componentSlugs": ["raspberry-pi-5", "raspberry-pi-camera-module-3", "raspberry-pi-active-cooler", "waveshare-wave-rover"],
+          "why": "The clearest learning path, broad documentation and a lower-complexity Linux environment.",
+          "openRequirements": [
+            "Choose and validate the exact camera mount and cable routing.",
+            "Use only manufacturer-supported cells and charging practices for the mobile base.",
+            "Define a physical emergency-stop or immediate power-removal method before powered movement.",
+            "Measure actual runtime and thermal behavior; do not infer them from nominal specifications."
+          ]
+        },
+        {
+          "id": "jetson",
+          "name": "Jetson path",
+          "audience": "Experienced makers and professional prototyping",
+          "componentSlugs": ["nvidia-jetson-orin-nano-super-developer-kit", "waveshare-wave-rover"],
+          "why": "More headroom for local perception and accelerated AI, with additional power, thermal and software-version responsibilities.",
+          "openRequirements": [
+            "Select a camera with explicit support for the exact Jetson carrier board and JetPack release.",
+            "Qualify host power separately from the rover motor power system.",
+            "Confirm physical mounting, airflow and cable strain relief.",
+            "Define a physical emergency-stop or immediate power-removal method before powered movement.",
+            "Move to a production module and carrier-board review before treating the design as a product."
+          ]
+        }
+      ],
+      "stages": [
+        { "id": "describe", "label": "Describe", "copy": "State the goal, environment, budget, experience and hardware already owned." },
+        { "id": "design", "label": "Design", "copy": "Choose a source-backed compute path and identify every remaining component role." },
+        { "id": "check", "label": "Robot Check", "copy": "Separate electrical, interface, software, mechanical and safety evidence." },
+        { "id": "make", "label": "Make", "copy": "Follow bounded assembly and software stages while preserving manufacturer instructions." },
+        { "id": "test", "label": "Test", "copy": "Record observed results; an untested claim remains declared, derived or unknown." },
+        { "id": "share", "label": "Share", "copy": "Publish only the Robot version and evidence intended for public use." }
+      ],
+      "safety": "Rover One is a planning and learning reference, not a safety certification or authorization to operate hardware. Keep powered movement supervised, use manufacturer instructions, and obtain qualified review for batteries, high current, hazardous tools, public spaces, payloads or production use."
+    }
+  ],
+  "commercial": {
+    "free": ["Public Component and Build retrieval", "Public Make Robot planning", "Public Robot publishing", "Public Robot MCP, A2A and API"],
+    "pro": ["Everything in Free", "Private Builds and hardware inventory", "Advanced profile and evidence detail"],
+    "team": ["Everything in Pro", "Organization-owned Robots", "Shared hardware inventory", "Existing organization roles and audit boundaries", "Private organization catalogue foundation"],
+    "manufacturer": ["Commercial organization workflow for proposing evidence-backed profile maintenance", "Agent-discovery analytics only when real activity exists"],
+    "later": ["Procurement and autonomous purchasing are not part of this release"],
+    "ranking": "Compatibility ranking is never sold and never influenced by plan, sponsorship or payment."
+  }
+}

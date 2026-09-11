@@ -1,0 +1,56 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { getAccessibleRobot, listRobotVersions } from '@/lib/robot-store';
+import type { RobotPlan } from '@/lib/robot';
+import '@/styles/robot.css';
+
+export const prerender = false;
+const owner = Astro.params.owner ?? '';
+const slug = Astro.params.slug ?? '';
+const sql = sqlClient(Astro.locals);
+let robot = null;
+let versions: Awaited<ReturnType<typeof listRobotVersions>> = [];
+if (sql && /^[a-z0-9-]{1,80}$/i.test(owner) && /^[a-z0-9-]{1,96}$/.test(slug)) {
+  let profileId: string | null = null;
+  try { profileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null; } catch { profileId = null; }
+  try {
+    robot = await getAccessibleRobot(sql, owner, slug, profileId);
+    if (robot) versions = await listRobotVersions(sql, robot.id);
+  } catch { robot = null; }
+}
+if (!robot) Astro.response.status = 404;
+if (robot?.visibility === 'private') Astro.response.headers.set('cache-control', 'private, no-store');
+const plan = robot?.plan_snapshot as RobotPlan | undefined;
+---
+
+<BaseLayout title={robot?.title ?? 'Robot not found'} description={robot?.summary ?? 'This public Robot is not available.'} noindex={!robot || robot.visibility !== 'public'} className="robot-site">
+  {robot && plan ? (
+    <article class="robot-document" data-no-translate>
+      <div class="shell">
+        <a class="robot-component-page__back" href="/robot"><i class="ph ph-arrow-left" aria-hidden="true"></i> Super ii Robot</a>
+        <header class="robot-document__head">
+          <p class="eyebrow">{robot.owner_display_name} · Robot v{robot.version_number}</p>
+          <h1>{robot.title}</h1>
+          <p>{robot.summary}</p>
+          <div class="robot-document__meta"><span>{robot.visibility}</span><span>{robot.audience}</span><span>catalog {plan.catalog_revision}</span><span>updated {new Date(robot.updated_at).toLocaleDateString('en')}</span></div>
+        </header>
+        <div class="robot-document__grid">
+          <nav class="robot-document__nav" aria-label="Robot contents"><strong>THIS ROBOT</strong><a href="#parts">Parts list</a><a href="#check">Robot Check</a><a href="#unknowns">Open requirements</a><a href="#versions">Versions</a>{robot.visibility === 'public' && <a href={`/api/robot/robots/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`}>JSON for agents</a>}</nav>
+          <div class="robot-document__content">
+            <section><h2>Recommendation</h2><h3>{plan.recommendation.name}</h3><p>{plan.recommendation.reason}</p><p><strong>Intended audience:</strong> {plan.recommendation.audience}</p></section>
+            <section id="parts"><h2>Parts list (BOM)</h2><div class="robot-bom">{plan.components.map((component, index) => <a class="robot-bom__row" href={`/robot/components/${component.slug}`}><span>{String(index + 1).padStart(2, '0')}</span><span><strong>{component.name}</strong><small>{component.manufacturer} · {component.ownership}</small></span><em class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</em></a>)}</div></section>
+            <section id="check"><h2>Robot Check</h2><div class="robot-check">{plan.robot_check.map((check) => <div class="robot-check__row"><div><strong>{check.dimension}</strong><span class={`robot-evidence robot-evidence--${check.status}`}>{check.status}</span></div><p>{check.explanation}</p></div>)}</div></section>
+            <section id="unknowns"><h2>Open requirements</h2><ul>{plan.open_requirements.map((requirement) => <li>{requirement}</li>)}</ul><p><strong>Safety boundary:</strong> {plan.safety}</p></section>
+            <section><h2>Make stages</h2>{plan.stages.map((stage) => <article><span class="eyebrow">{stage.id} · {stage.label}</span><p>{stage.copy}</p></article>)}</section>
+            <section id="versions"><h2>Immutable versions</h2>{versions.map((version) => <article><strong>v{version.version_number} · {version.change_summary}</strong><p>{new Date(String(version.created_at)).toLocaleString('en')} · {version.agent_handle ? `agent @${version.agent_handle}` : `@${version.creator_handle}`} · catalog {version.catalog_revision}</p></article>)}</section>
+            <section><h2>Agent access</h2><p>{robot.visibility === 'public' ? 'Any compatible agent can retrieve this exact current version through REST, Robot MCP or Robot A2A.' : 'This private Robot is visible only to its authorized owner. Scoped agents use Work MCP.'}</p>{robot.visibility === 'public' && <div class="button-row"><a class="button button--dark" href={`/api/robot/robots/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`}>Open JSON</a><a class="button button--secondary" href="/mcp/robot">Robot MCP</a></div>}</section>
+          </div>
+        </div>
+      </div>
+    </article>
+  ) : (
+    <section class="section"><div class="shell robot-empty"><strong>Robot not found.</strong><p>It may be private, archived, or the URL may be wrong.</p><a href="/robot">Explore Super ii Robot</a></div></section>
+  )}
+</BaseLayout>
