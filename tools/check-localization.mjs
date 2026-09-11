@@ -137,7 +137,7 @@ const canonicalCapabilityCount = capabilitySection
   .filter((line) => line.split('|').length >= 6)
   .length;
 const russianCapabilityCount = (systemStateLocalization.match(/^  ['"].+['"]: \{$/gm) ?? []).length;
-if (canonicalCapabilityCount !== 49) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 49`);
+if (canonicalCapabilityCount !== 50) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 50`);
 if (russianCapabilityCount !== canonicalCapabilityCount) {
   errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
 }
