@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const css = fs.readFileSync(path.join(root, 'src/styles/global.css'), 'utf8');
+const header = fs.readFileSync(path.join(root, 'src/components/Header.astro'), 'utf8');
 const assistant = fs.readFileSync(path.join(root, 'src/components/SuperAssistant.astro'), 'utf8');
 const aiWorker = fs.readFileSync(path.join(root, 'src/components/AIWorkerStarter.astro'), 'utf8');
 const agentBash = fs.readFileSync(path.join(root, 'src/components/AgentBash.astro'), 'utf8');
@@ -17,6 +18,14 @@ function assert(condition, message) {
 
 const bodyRule = css.match(/body\s*\{([^}]*)\}/)?.[1] ?? '';
 assert(!/min-width\s*:/.test(bodyRule), 'body must not force a minimum viewport width');
+assert(
+  !header.includes("href: '/robot'") && !header.includes("href: '/docs'"),
+  'Robot and Docs must stay out of the primary desktop and mobile navigation',
+);
+assert(
+  footer.includes('href="/robot"') && footer.includes('href="/docs"'),
+  'Robot and Documentation must remain discoverable in the footer',
+);
 
 for (const requiredCss of [
   'width: min(calc(100% - 2rem), 1440px)',

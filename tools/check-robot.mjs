@@ -44,7 +44,7 @@ const combined = Object.values(sources).join('\n');
 for (const marker of ['makeRobotPlan','safety_approval: false','Robot Check','/mcp/robot','robot:read','robot:create','robot:update','agent_create_robot_with_receipt','robot_versions_are_immutable','robot_private_requires_pro','robot_team_owner_requires_team','record_robot_discovery']) {
   if (!combined.includes(marker)) errors.push(`Robot contract marker missing: ${marker}`);
 }
-if (!sources['src/components/Header.astro'].includes("href: '/robot'")) errors.push('primary navigation does not expose Robot');
+if (sources['src/components/Header.astro'].includes("href: '/robot'")) errors.push('primary navigation must leave Robot discovery to the footer');
 if (!sources['src/components/Footer.astro'].includes('href="/robot"')) errors.push('footer does not expose Robot');
 if (!sources['src/pages/robot/index.astro'].includes('Raspberry Pi first') || !sources['src/pages/robot/index.astro'].includes('never pay-to-win')) errors.push('Robot thesis or ranking promise missing');
 if ((sources['src/scripts/robot-page.ts'].match(/saveForm\?\.addEventListener\('submit'/g) ?? []).length !== 1 || !sources['src/scripts/robot-page.ts'].includes('planner_input: currentPlan.input') || !sources['src/scripts/robot-page.ts'].includes("organization_id: data.get('organization_id') || null")) errors.push('Robot save flow must have one canonical personal or Team immutable-version submission');
