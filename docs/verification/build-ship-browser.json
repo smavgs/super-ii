@@ -1,0 +1,28 @@
+{
+  "verified_at": "2026-09-10T02:42:32.323701+00:00",
+  "origin": "https://superii.site/build",
+  "source_commit": "75dd10d95725e7e420cabf0f5081d183720b3cef",
+  "worker_version": "b07726cf-1880-4063-8336-2e881945cbc8",
+  "signed_in_private_input_generation": true,
+  "file_preview": true,
+  "zip_download": true,
+  "zip_crc_and_paths": true,
+  "python_syntax": true,
+  "files": 16,
+  "recipe_sha256": "35879c1d626bd8e342694160416d107d00b088e80008f1bf2059574dd92c9e16",
+  "archive_sha256": "f4b8d79464aeaca3d2057abd421b665735133c9262fe44d60b3a217f6c36f06b",
+  "sdk_version": "0.2.2",
+  "scope": "Export and archive verification; execution is recorded separately",
+  "viewport_checks": [
+    {
+      "width": 390,
+      "page_width": 390,
+      "rendered_form_and_preview_checked": true
+    },
+    {
+      "width": 832,
+      "page_width": 832
+    }
+  ],
+  "temporary_viewport_restored": true
+}

@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-09-12T08:13:50.963128+00:00",
+  "fixtures": [
+    {
+      "id": "f91a6ecc-3dd6-48a6-b1c4-0fdd9a99069d",
+      "repository": "smavgs/build-ship-adapter-verification",
+      "visibility": "private",
+      "status": "published",
+      "revision": "30f2f17fad6e58e7c12f70a79f4c2b0fb9714c75d2126b30a1bbcea44adaf06c",
+      "manifest_sha256": "9ac619eea3cd87684140e14e6d6477ac575e7d1a8f0896b0ea847895cf7b8213"
+    },
+    {
+      "id": "dab53f90-5918-42f8-a31f-384ad6462e45",
+      "repository": "smavgs/build-ship-dataset-verification",
+      "visibility": "private",
+      "status": "published",
+      "revision": "f24191b6968b610b0161ba5960ede419b3ae5e348edcfb1d809913dfe06c8908",
+      "manifest_sha256": "2f812549fa67879f35e6e449672f88e37778ce5c41640e0b35d80c3f16a7797e"
+    },
+    {
+      "id": "36ad8d32-f463-436d-81e9-dbd1151e5735",
+      "repository": "smavgs/build-ship-embedding-verification",
+      "visibility": "private",
+      "status": "published",
+      "revision": "c2ca77096ca845ab09d97ca8403fd9ce1bda96b449599ee2a613714b42344ebf",
+      "manifest_sha256": "89f08ea55697a194ce9fbf04c261d9eee49d8c52e4b36c7008d0b74668eb31d6"
+    },
+    {
+      "id": "4720d13a-1a5f-45c4-aeb4-c30c9ec8d64c",
+      "repository": "smavgs/build-ship-generator-verification",
+      "visibility": "private",
+      "status": "published",
+      "revision": "8f402ab74d255151c266554162d6c5f3fbbd199ca9e9508a68a69ff320628a77",
+      "manifest_sha256": "ce8fdf354e44aa66de32bdb10cae492812ff984abdffec6dc91cba1da6e22234"
+    },
+    {
+      "id": "c3728508-cf9e-4d82-b2b8-a465ccb4120d",
+      "repository": "smavgs/build-ship-verification",
+      "visibility": "private",
+      "status": "published",
+      "revision": "0b2633c66a8c3563fe835bf9f23a5696ddd600f0335b0ea27b9566eacb237ce3",
+      "manifest_sha256": "5d71202734bd693f257f1629d17922090898668145088a510164d696134c6326"
+    }
+  ],
+  "public_published_repositories": 0,
+  "adapter_lineage": [
+    {
+      "relationship_type": "fine-tuned-from",
+      "source_revision_id": "0aa6998e-40e7-48b0-8b5b-7dd054de5691",
+      "target_revision_id": "fe0ba378-eed9-450a-8342-e18eaf4cf282",
+      "metadata": {
+        "run_id": "7f22caab-222c-4c8b-8cca-ec0203838b98",
+        "evidence": "reported",
+        "adaptation": "lora",
+        "recipe_sha256": "601fce9690d0d88d5ed24482fd6acec3ed35a199d654836fd48c6cbfe27e98d4"
+      }
+    },
+    {
+      "relationship_type": "trained-on",
+      "source_revision_id": "0aa6998e-40e7-48b0-8b5b-7dd054de5691",
+      "target_revision_id": "9935db0c-bd93-4cb3-9219-b1ed9194be94",
+      "metadata": {
+        "run_id": "7f22caab-222c-4c8b-8cca-ec0203838b98",
+        "evidence": "reported",
+        "adaptation": "lora",
+        "recipe_sha256": "601fce9690d0d88d5ed24482fd6acec3ed35a199d654836fd48c6cbfe27e98d4"
+      }
+    }
+  ]
+}

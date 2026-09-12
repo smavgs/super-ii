@@ -25,6 +25,8 @@ const [catalogueSource, siteSource, middleware, layout, header, footer, styles, 
 ]);
 
 const errors = [];
+const sdkRelease = systemState.match(/\| Python SDK \|[^\n]*?superii-sdk (\d+\.\d+\.\d+)/)?.[1];
+if (!sdkRelease) errors.push('Canonical SDK release is missing from system state');
 let catalogue;
 let site;
 try { catalogue = JSON.parse(catalogueSource); } catch { errors.push('Russian catalogue is not valid JSON'); }
@@ -115,8 +117,8 @@ const contracts = [
   [i18n, 'const buildShipRussian', 'reviewed Build and Ship translations'],
   [systemStateLocalization, 'russianSystemStateCount', 'explicit Russian system-state coverage'],
   [systemStateLocalization, "'Build & Ship engineering projects': {", 'Russian Build and Ship system-state row'],
-  [systemStateLocalization, 'superii-sdk 0.2.0 в PyPI', 'current Russian SDK system-state evidence'],
-  [systemStateLocalization, 'настроены точные издатели приватных фикстур', 'current Russian GitHub publisher evidence'],
+  [systemStateLocalization, `superii-sdk ${sdkRelease} доступен в PyPI`, 'current Russian SDK system-state evidence'],
+  [systemStateLocalization, 'проверены приватный набор данных и обученный адаптер', 'current Russian GitHub publisher evidence'],
   [notebookDocument, 'localizeOfficialNotebookMarkdown', 'official notebook localization boundary'],
   [notebookDocument, 'data-no-translate', 'publisher notebook source-language boundary'],
   [officialNotebookLocalization, 'localizeOfficialNotebookMarkdown', 'reviewed official notebook prose'],
