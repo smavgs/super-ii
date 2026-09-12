@@ -8,7 +8,7 @@ import {
   openRouterAnswer,
   openRouterChatRequest,
   openRouterToolCall,
-  openRouterToolFollowupRequest,
+  openRouterSearchAnswerRequest,
   parseAssistantMessages,
   parseAssistantSkillContext,
   parseRuntimeSearchResults,
@@ -18,6 +18,8 @@ import { runtimeFetch } from '@/lib/runtime';
 
 const MAX_REQUEST_CHARS = 24_000;
 const SEARCH_WINDOW_SECONDS = 86_400;
+// v1 counted requests while the provider follow-up path could not return a visible answer.
+const SEARCH_RATE_ACTION = 'assistant.web_search.v2';
 const SEARCH_LIMITS = {
   free: 3,
   pro: 30,
@@ -209,7 +211,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     locals,
     sql,
     profile.profileId,
-    'assistant.web_search',
+    SEARCH_RATE_ACTION,
     allowance,
     SEARCH_WINDOW_SECONDS,
   );
@@ -254,7 +256,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sources = parseRuntimeSearchResults(await runtimeResponse.json().catch(() => null));
   if (!sources) return json({ error: 'web search is temporarily unavailable' }, 503, { 'retry-after': '30' });
 
-  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources, skillContext));
+  const final = await callOpenRouter(apiKey, openRouterSearchAnswerRequest(messages, toolCall, sources, skillContext));
   if (!final?.response.ok) return providerFailure(final);
   const answer = openRouterAnswer(final.payload);
   if (!answer) return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });
