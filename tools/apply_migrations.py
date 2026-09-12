@@ -88,7 +88,13 @@ def main() -> int:
                   to_regclass('app.robot_versions') is not null,
                   to_regclass('app.robot_hardware') is not null,
                   to_regclass('app.robot_component_claims') is not null,
-                  to_regclass('app.robot_discovery_daily') is not null
+                  to_regclass('app.robot_discovery_daily') is not null,
+                  to_regclass('app.transparency_reports') is not null,
+                  to_regclass('app.transparency_report_watches') is not null,
+                  to_regclass('app.transparency_repository_claims') is not null,
+                  to_regclass('app.transparency_creator_responses') is not null,
+                  to_regclass('app.transparency_evidence_submissions') is not null,
+                  to_regclass('app.transparency_discovery_daily') is not null
                 """
             )
             (
@@ -105,8 +111,14 @@ def main() -> int:
                 has_robot_hardware,
                 has_robot_claims,
                 has_robot_analytics,
+                has_transparency_reports,
+                has_transparency_watches,
+                has_transparency_claims,
+                has_transparency_responses,
+                has_transparency_evidence,
+                has_transparency_analytics,
             ) = cursor.fetchone()
-            if relation_count < 95:
+            if relation_count < 102:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )
@@ -122,9 +134,15 @@ def main() -> int:
                     has_robot_hardware,
                     has_robot_claims,
                     has_robot_analytics,
+                    has_transparency_reports,
+                    has_transparency_watches,
+                    has_transparency_claims,
+                    has_transparency_responses,
+                    has_transparency_evidence,
+                    has_transparency_analytics,
                 )
             ):
-                raise RuntimeError("required commerce, member-profile, and Robot relations are incomplete")
+                raise RuntimeError("required commerce, member-profile, Robot, and Transparent relations are incomplete")
             print(
                 f"Verified: app_relations={relation_count}, repositories={repository_count}, "
                 f"public_search_rows={public_count}"

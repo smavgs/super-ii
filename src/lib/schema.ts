@@ -1756,3 +1756,113 @@ export const agentContributionSubmissions = app.table(
     index('agent_contribution_submissions_agent_idx').on(table.agentIdentityId, table.status, table.submittedAt),
   ],
 );
+
+export const transparencyReports = app.table(
+  'transparency_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reportKey: text('report_key').notNull().unique(),
+    provider: text('provider').notNull().default('huggingface'),
+    repositoryKind: text('repository_kind').notNull(),
+    repositoryId: text('repository_id').notNull(),
+    repositoryOwner: text('repository_owner').notNull(),
+    sourceRevision: text('source_revision').notNull(),
+    requestedRevision: text('requested_revision').notNull(),
+    criteriaVersion: text('criteria_version').notNull(),
+    snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+    snapshotSha256: text('snapshot_sha256').notNull(),
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('transparency_reports_recent_idx').on(table.checkedAt),
+    index('transparency_reports_repository_idx').on(table.provider, table.repositoryKind, table.repositoryId, table.checkedAt),
+  ],
+);
+
+export const transparencyReportSaves = app.table(
+  'transparency_report_saves',
+  {
+    reportId: uuid('report_id').notNull().references(() => transparencyReports.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.reportId, table.profileId] })],
+);
+
+export const transparencyReportWatches = app.table(
+  'transparency_report_watches',
+  {
+    reportId: uuid('report_id').notNull().references(() => transparencyReports.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    enabled: boolean('enabled').notNull().default(true),
+    lastSeenRevision: text('last_seen_revision').notNull(),
+    latestReportId: uuid('latest_report_id').references(() => transparencyReports.id, { onDelete: 'restrict' }),
+    latestRevision: text('latest_revision'),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.reportId, table.profileId] })],
+);
+
+export const transparencyRepositoryClaims = app.table(
+  'transparency_repository_claims',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    provider: text('provider').notNull().default('huggingface'),
+    repositoryKind: text('repository_kind').notNull(),
+    repositoryId: text('repository_id').notNull(),
+    repositoryOwner: text('repository_owner').notNull(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    externalIdentityId: uuid('external_identity_id').notNull().references(() => externalIdentities.id, { onDelete: 'restrict' }),
+    verificationMethod: text('verification_method').notNull(),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('transparency_repository_claims_profile_idx').on(table.profileId, table.verifiedAt)],
+);
+
+export const transparencyCreatorResponses = app.table(
+  'transparency_creator_responses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reportId: uuid('report_id').notNull().references(() => transparencyReports.id, { onDelete: 'restrict' }),
+    repositoryClaimId: uuid('repository_claim_id').notNull().references(() => transparencyRepositoryClaims.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    responseType: text('response_type').notNull(),
+    body: text('body').notNull(),
+    evidenceUrls: jsonb('evidence_urls').$type<string[]>().notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('transparency_creator_responses_report_idx').on(table.reportId, table.createdAt)],
+);
+
+export const transparencyEvidenceSubmissions = app.table(
+  'transparency_evidence_submissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reportId: uuid('report_id').notNull().references(() => transparencyReports.id, { onDelete: 'restrict' }),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'restrict' }),
+    criterionId: text('criterion_id').notNull(),
+    note: text('note').notNull(),
+    sourceUrl: text('source_url').notNull(),
+    status: text('status').notNull().default('pending'),
+    reviewedByProfileId: uuid('reviewed_by_profile_id').references(() => profiles.id, { onDelete: 'restrict' }),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('transparency_evidence_submissions_review_idx').on(table.status, table.createdAt)],
+);
+
+export const transparencyDiscoveryDaily = app.table(
+  'transparency_discovery_daily',
+  {
+    day: date('day').notNull(),
+    channel: text('channel').notNull(),
+    action: text('action').notNull(),
+    resourceKey: text('resource_key').notNull(),
+    events: bigint('events', { mode: 'bigint' }).notNull().default(0n),
+  },
+  (table) => [primaryKey({ columns: [table.day, table.channel, table.action, table.resourceKey] })],
+);

@@ -1,0 +1,219 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { compareStoredTransparencyReports, getTransparencyReport, searchTransparencyReports } from '@/lib/transparent-store';
+import { sqlClient } from '@/lib/db';
+import type { TransparencyEvidenceState } from '@/lib/transparent';
+import '@/styles/transparent.css';
+
+export const prerender = false;
+
+const reportKey = Astro.params.reportKey ?? '';
+const sql = sqlClient(Astro.locals);
+let report = sql ? await getTransparencyReport(sql, reportKey).catch(() => null) : null;
+let serviceUnavailable = !sql;
+if (!report && !serviceUnavailable) Astro.response.status = 404;
+if (serviceUnavailable) Astro.response.status = 503;
+const compareKey = Astro.url.searchParams.get('compare') ?? '';
+let comparison: Awaited<ReturnType<typeof compareStoredTransparencyReports>> = null;
+let revisions: Awaited<ReturnType<typeof searchTransparencyReports>> = [];
+if (report && sql) {
+  try {
+    revisions = (await searchTransparencyReports(sql, { query: report.repository.id, kind: report.repository.kind, limit: 50 }))
+      .filter((item) => item.repository_id.toLowerCase() === report!.repository.id.toLowerCase());
+    if (/^[a-f0-9]{64}$/.test(compareKey) && compareKey !== reportKey) comparison = await compareStoredTransparencyReports(sql, compareKey, reportKey);
+    await sql`select app.record_transparency_discovery('web','read',${report.repository.id})`.catch(() => undefined);
+  } catch { revisions = []; }
+}
+const states: Array<{ id: TransparencyEvidenceState; label: string; description: string }> = [
+  { id: 'verified', label: 'Verified', description: 'Directly observed at this exact revision.' },
+  { id: 'declared', label: 'Declared', description: 'Stated by the creator or provider.' },
+  { id: 'derived', label: 'Derived', description: 'Calculated using the method shown.' },
+  { id: 'unknown', label: 'Unknown', description: 'Public evidence does not establish it.' },
+];
+const sourcesById = new Map(report?.sources.map((source) => [source.id, source]) ?? []);
+const currentUrl = `https://superii.site/transparent/${reportKey}`;
+const description = report
+  ? `${report.repository.id}: ${report.coverage.established} of ${report.coverage.total} transparency fields established at revision ${report.repository.resolved_revision.slice(0, 10)}.`
+  : 'A permanent exact-revision Super ii transparency report.';
+---
+
+<BaseLayout title={report ? `${report.repository.id} transparency report` : 'Transparency report'} description={description} image="/brand/super-ii-transparent-card.png" imageAlt="Super ii Transparent exact-revision evidence report.">
+  <div class="transparent-report-page" data-transparent-report={reportKey}>
+    {!report ? (
+      <section class="shell transparent-report-missing">
+        <p class="eyebrow">Super ii Transparent 🔎</p>
+        <h1>{serviceUnavailable ? 'The report service is temporarily unavailable.' : 'That report was not found.'}</h1>
+        <p>{serviceUnavailable ? 'No report data is being guessed or substituted. Please try again.' : 'Check the link, or create a new exact-revision report.'}</p>
+        <a class="button button--dark" href="/transparent">Open Transparency Check</a>
+      </section>
+    ) : (
+      <>
+        <header class="transparent-report-hero">
+          <div class="shell">
+            <div class="transparent-report-hero__top">
+              <div>
+                <p class="eyebrow">Super ii Transparent 🔎 · {report.repository.kind}</p>
+                <h1>{report.repository.id}</h1>
+                <p>Public evidence report pinned to one exact Hugging Face commit.</p>
+              </div>
+              <div class="transparent-report-hero__actions">
+                <button class="button button--dark button--small" type="button" data-report-action="save"><i class="ph ph-bookmark-simple" aria-hidden="true"></i> Save</button>
+                <button class="button button--secondary button--small" type="button" data-report-action="watch"><i class="ph ph-bell" aria-hidden="true"></i> Watch</button>
+                <button class="button button--secondary button--small" type="button" data-share-report><i class="ph ph-share-network" aria-hidden="true"></i> Share</button>
+              </div>
+            </div>
+            <div class="transparent-report-identity">
+              <div><span>Exact revision</span><code>{report.repository.resolved_revision}</code></div>
+              <div><span>Checked</span><strong>{new Date(report.checked_at).toLocaleString('en', { dateStyle: 'long', timeStyle: 'short' })}</strong></div>
+              <div><span>Criteria</span><strong>{report.criteria_version}</strong></div>
+              <div><span>Coverage</span><strong>{report.coverage.established} / {report.coverage.total}</strong></div>
+            </div>
+            <p class="form-status" data-report-status aria-live="polite"></p>
+          </div>
+        </header>
+
+        <div class="shell transparent-report-layout">
+          <div class="transparent-report-main">
+            <section class="transparent-summary" aria-label="Evidence summary">
+              {states.map((state) => <a href={`#state-${state.id}`} data-state={state.id}><strong>{report!.coverage.by_state[state.id]}</strong><span>{state.label}</span><small>{state.description}</small></a>)}
+            </section>
+
+            {states.map((state) => {
+              const items = report!.evidence.filter((item) => item.state === state.id);
+              return <section class="transparent-evidence-group" id={`state-${state.id}`} data-state={state.id}>
+                <div class="transparent-evidence-group__heading"><div><p class="eyebrow">{state.label}</p><h2>{state.description}</h2></div><span>{items.length}</span></div>
+                <div class="transparent-evidence-list">
+                  {items.map((item) => <article>
+                    <div class="transparent-evidence-list__title"><i aria-hidden="true"></i><h3>{item.label}</h3></div>
+                    <p>{item.summary}</p>
+                    {item.value !== null && <div class="transparent-evidence-list__value">{Array.isArray(item.value) ? item.value.map((value) => <code>{value}</code>) : <code>{String(item.value)}</code>}</div>}
+                    {item.method && <details><summary>Derivation method</summary><p>{item.method}</p></details>}
+                    {item.source_ids.length > 0 && <div class="transparent-evidence-list__sources">{item.source_ids.map((sourceId) => {
+                      const source = sourcesById.get(sourceId);
+                      return source ? <a href={source.url} target="_blank" rel="noreferrer">{source.label} <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a> : null;
+                    })}</div>}
+                    {item.state === 'unknown' && <button class="text-button" type="button" data-evidence-for={item.id}>Add public evidence</button>}
+                  </article>)}
+                </div>
+              </section>;
+            })}
+
+            {comparison && <section class="transparent-comparison" id="comparison">
+              <p class="eyebrow">Revision comparison</p><h2>{comparison.changed_count} evidence {comparison.changed_count === 1 ? 'field' : 'fields'} changed</h2>
+              <p><code>{comparison.from.revision.slice(0, 10)}</code> → <code>{comparison.to.revision.slice(0, 10)}</code></p>
+              {comparison.changes.length ? <div>{comparison.changes.map((change) => <article><strong>{change.label}</strong><span>{change.before ? `${change.before.state}: ${JSON.stringify(change.before.value)}` : 'not present'}</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>{change.after ? `${change.after.state}: ${JSON.stringify(change.after.value)}` : 'not present'}</span></article>)}</div> : <p>No evidence fields changed.</p>}
+            </section>}
+
+            <section class="transparent-sources" id="sources">
+              <p class="eyebrow">Direct evidence</p><h2>Sources read for this report</h2>
+              <div>{report.sources.map((source, index) => <a href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, '0')}</span><strong>{source.label}</strong><small>{new Date(source.observed_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</small><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div>
+            </section>
+
+            {report.community.creator_responses.length > 0 && <section class="transparent-creator-responses">
+              <p class="eyebrow">Verified creator response</p><h2>The project owner added context.</h2>
+              {report.community.creator_responses.map((response) => <article><div><strong>@{response.handle}</strong><span>{response.response_type}</span><time datetime={response.created_at}>{new Date(response.created_at).toLocaleDateString('en', { dateStyle: 'long' })}</time></div><p>{response.body}</p>{response.evidence_urls.map((url) => <a href={url} target="_blank" rel="noreferrer">Evidence source <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</article>)}
+            </section>}
+
+            <section class="transparent-limitations">
+              <p class="eyebrow">Read before relying on this report</p><h2>Boundaries and limitations</h2>
+              <ol>{report.limitations.map((limitation) => <li>{limitation}</li>)}</ol>
+            </section>
+          </div>
+
+          <aside class="transparent-report-sidebar">
+            <section>
+              <p class="eyebrow">Source project</p>
+              <a class="transparent-source-link" href={report.repository.revision_url} target="_blank" rel="noreferrer"><strong>{report.repository.id}</strong><span>Open exact revision</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+              <dl><div><dt>Provider</dt><dd>Hugging Face</dd></div><div><dt>Visibility</dt><dd>{report.repository.visibility}</dd></div><div><dt>Requested</dt><dd>{report.repository.requested_revision}</dd></div>{report.repository.last_modified && <div><dt>Provider modified</dt><dd>{new Date(report.repository.last_modified).toLocaleDateString('en', { dateStyle: 'medium' })}</dd></div>}</dl>
+              <small>Hugging Face identifies the source. No affiliation or endorsement is implied.</small>
+            </section>
+
+            <section>
+              <p class="eyebrow">Compare exact revisions</p>
+              {revisions.length > 1 ? <form method="get" action={`/transparent/${report.report_key}`}><label for="compare-report">Earlier report</label><select id="compare-report" name="compare" required><option value="">Choose a revision</option>{revisions.filter((item) => item.report_key !== report!.report_key).map((item) => <option value={item.report_key}>{item.source_revision.slice(0, 10)} · {new Date(item.checked_at).toLocaleDateString('en')}</option>)}</select><button class="button button--secondary button--small" type="submit">Compare</button></form> : <p>Recheck after the repository changes to unlock an exact field-by-field comparison.</p>}
+              <button class="text-button" type="button" data-recheck-report>Recheck current revision</button>
+            </section>
+
+            <section>
+              <p class="eyebrow">Creator path</p>
+              {report.community.claim ? <div class="transparent-claim"><span class="transparent-claim__avatar">{report.community.claim.avatar_url ? <img src={report.community.claim.avatar_url} alt="" width="42" height="42" /> : <i class="ph ph-user" aria-hidden="true"></i>}</span><div><strong>{report.community.claim.display_name}</strong><a href={`/people/${report.community.claim.handle}`}>@{report.community.claim.handle}</a></div><span>verified owner</span></div> : <><p>Own this Hugging Face namespace? Connect the matching identity, then claim the project.</p><button class="button button--secondary button--small" type="button" data-claim-report>Claim this project</button></>}
+              <a href={`/bring-my-work?source=${encodeURIComponent(report.repository.canonical_url)}`}>Bring this work to Super ii <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+            </section>
+
+            <details class="transparent-contribute" data-evidence-panel>
+              <summary>Add evidence for an unknown</summary>
+              <form data-evidence-form>
+                <label>Evidence field<select name="criterion_id" required>{report.evidence.filter((item) => item.state === 'unknown').map((item) => <option value={item.id}>{item.label}</option>)}</select></label>
+                <label>Public HTTPS source<input name="source_url" type="url" required placeholder="https://…" /></label>
+                <label>What this source establishes<textarea name="note" rows="3" minlength="10" maxlength="2000" required></textarea></label>
+                <button class="button button--dark button--small" type="submit">Submit for review</button>
+              </form>
+            </details>
+
+            <details class="transparent-contribute">
+              <summary>Publish a creator response</summary>
+              <form data-creator-response-form>
+                <label>Type<select name="response_type"><option value="response">Response</option><option value="correction">Correction</option></select></label>
+                <label>Response<textarea name="body" rows="4" minlength="10" maxlength="4000" required></textarea></label>
+                <label>Evidence URLs <span>(one per line)</span><textarea name="evidence_urls" rows="3" placeholder="https://…"></textarea></label>
+                <button class="button button--dark button--small" type="submit">Publish verified response</button>
+              </form>
+              <small>Only the verified Hugging Face owner can publish here.</small>
+            </details>
+          </aside>
+        </div>
+      </>
+    )}
+  </div>
+
+  {report && <script is:inline define:vars={{ reportKey, currentUrl }}>
+    const root = document.querySelector('[data-transparent-report]');
+    const status = root?.querySelector('[data-report-status]');
+    const signIn = () => window.location.assign(`/sign-in?redirect_url=${encodeURIComponent(location.pathname + location.search)}`);
+    const request = async (path, body = {}) => {
+      const response = await fetch(`/api/transparent/reports/${reportKey}/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const value = await response.json().catch(() => ({}));
+      if (response.status === 401) { signIn(); throw new Error('Log in to continue.'); }
+      if (!response.ok) throw new Error(typeof value.error === 'string' ? value.error : `Request failed (${response.status})`);
+      return value;
+    };
+    const show = (message, failed = false) => { if (status) { status.textContent = message; status.dataset.state = failed ? 'error' : 'success'; } };
+    root?.querySelectorAll('[data-report-action]').forEach((candidate) => candidate.addEventListener('click', async () => {
+      const button = candidate;
+      const action = button.dataset.reportAction;
+      button.disabled = true;
+      try { await request(action, { [action === 'save' ? 'saved' : 'watched']: true }); button.textContent = action === 'save' ? 'Saved ✓' : 'Watching ✓'; show(action === 'save' ? 'Report saved to your Workspace.' : 'You will be notified when Super ii records a newer checked revision.'); }
+      catch (error) { show(error instanceof Error ? error.message : 'Action failed.', true); button.disabled = false; }
+    }));
+    root?.querySelector('[data-share-report]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      try { if (navigator.share) await navigator.share({ title: document.title, text: document.querySelector('meta[name="description"]')?.content ?? '', url: currentUrl }); else { await navigator.clipboard.writeText(currentUrl); button.textContent = 'Link copied ✓'; } }
+      catch (error) { if (error?.name !== 'AbortError') show('The share link could not be copied.', true); }
+    });
+    root?.querySelector('[data-recheck-report]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget; button.disabled = true; show('Checking the repository’s current main revision…');
+      try { const value = await request('recheck'); window.location.assign(value.changed ? `${value.report_url}?compare=${reportKey}` : value.report_url); }
+      catch (error) { show(error instanceof Error ? error.message : 'Recheck failed.', true); button.disabled = false; }
+    });
+    root?.querySelector('[data-claim-report]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget; button.disabled = true;
+      try { await request('claim'); show('Hugging Face ownership verified. Reloading…'); location.reload(); }
+      catch (error) { show(error instanceof Error ? error.message : 'Claim failed.', true); button.disabled = false; }
+    });
+    root?.querySelectorAll('[data-evidence-for]').forEach((candidate) => candidate.addEventListener('click', () => {
+      const panel = root.querySelector('[data-evidence-panel]'); const select = panel?.querySelector('select[name="criterion_id"]');
+      if (panel) panel.open = true; if (select) select.value = candidate.dataset.evidenceFor ?? ''; panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    root?.querySelector('[data-evidence-form]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const submit = form.querySelector('button'); submit.disabled = true;
+      try { await request('evidence', { criterion_id: data.get('criterion_id'), source_url: data.get('source_url'), note: data.get('note') }); form.reset(); show('Evidence submitted for review. It does not change this immutable report.'); }
+      catch (error) { show(error instanceof Error ? error.message : 'Evidence submission failed.', true); } submit.disabled = false;
+    });
+    root?.querySelector('[data-creator-response-form]')?.addEventListener('submit', async (event) => {
+      event.preventDefault(); const form = event.currentTarget; const data = new FormData(form); const submit = form.querySelector('button'); submit.disabled = true;
+      const evidence_urls = String(data.get('evidence_urls') ?? '').split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+      try { await request('response', { response_type: data.get('response_type'), body: data.get('body'), evidence_urls }); show('Verified creator response published. Reloading…'); location.reload(); }
+      catch (error) { show(error instanceof Error ? error.message : 'Creator response failed.', true); submit.disabled = false; }
+    });
+  </script>}
+</BaseLayout>

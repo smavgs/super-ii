@@ -27,6 +27,9 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - Robot MCP: https://superii.site/mcp/robot
 - Robot A2A Agent Card: https://superii.site/.well-known/robot-agent-card.json
 - Robot machine guide: https://superii.site/robot/agents.md
+- Transparent checker: https://superii.site/transparent
+- Transparent MCP: https://superii.site/mcp/transparent
+- Transparent machine guide: https://superii.site/transparent/agents.md
 - Commerce A2A Agent Card: https://superii.site/.well-known/commerce-agent-card.json
 - Commerce A2A HTTP+JSON base: https://superii.site/a2a/commerce/v1
 - A2A Agent Card: https://superii.site/.well-known/agent-card.json
@@ -104,6 +107,14 @@ Public tools search reviewed catalogs; read repository cards, files, schemas, li
 The English-only human surface is https://superii.site/robot. Its initial reference system is Rover One with a Raspberry Pi 5 front door and a Jetson Orin Nano Super advanced path. Component profiles preserve official or manufacturer sources, checked dates, conditions, unknowns, and one of four evidence states: verified, declared, derived, or unknown. Unknown is not compatible. Plans are starting design records, not safety approval or procurement advice.
 
 Robot MCP at https://superii.site/mcp/robot and Robot A2A at https://superii.site/a2a/robot/v1 expose anonymous read-only component search, component retrieval, exact pairwise compatibility lookup, deterministic planning, and real public Robot retrieval. Public personal Robots are Free. Private personal Robots and My Hardware require Pro. Organization Robots, shared hardware, and governed agent work require Team or Enterprise. Manufacturer profile changes enter a review queue; approved maintainers may read anonymous agent-discovery aggregates. Payment never changes compatibility ranking. Procurement is not available.
+
+## Super ii Transparent
+
+https://superii.site/transparent checks public Hugging Face model, dataset, and Space repositories. A branch, tag, or commit is resolved through the approved provider API to one exact commit. Super ii reads bounded public metadata and small evidence files, never executes repository code or loads model weights, and stores one immutable report for the provider repository, exact revision, and criteria version. Reports are public, permanent, shareable, recheckable, and comparable. The first check is anonymous; empty report search results are real.
+
+Every field is verified, declared, derived, or unknown. Verified means the checker directly observed it at that exact revision, not that a claim is safe, true, lawful, certified, or endorsed. Declared means the creator or Hugging Face states it and Super ii has not independently reproduced it. Derived includes its method. Unknown remains unknown. Preserve the report key, resolved revision, check time, criteria version, source URLs, methods, and limitations when using the result.
+
+Transparent MCP at https://superii.site/mcp/transparent exposes check_huggingface_transparency, get_transparency_report, compare_huggingface_revisions, search_public_transparency_reports, and watch_transparency_report. The first four are public. Watching is the only mutation and requires a human-issued sii_agent_ token with transparent:watch, a stable idempotency key, and an immutable receipt. A matching Hugging Face OAuth identity or verified organization namespace is required before a creator can claim a project and append a response; neither action rewrites the original report. Hugging Face identifies the source and no partnership or endorsement is implied.
 
 ## Python SDK
 

@@ -75,6 +75,14 @@ const russian = Astro.locals.locale === 'ru';
       <p>Bridge pins the exact provider revision, uses the provider’s current snapshot transfer path, verifies advertised Git or LFS checksums, sends every file through quarantine and the existing scanners, runs the applicable offline analysis, creates an immutable manifest, records provenance, and submits to the automatic publication policy. It never deletes or changes the source, never copies provider secrets, and publishes only after every required automatic check passes.</p>
       <p>Matching personal namespaces require an explicit verified identity claim. Organization namespaces require the membership scope plus provider administrator role evidence and an available Super ii handle. Opt-in update checks support public sources only; a new source revision becomes a new reviewable Super ii revision instead of overwriting existing work.</p>
 
+      {!russian && <>
+        <h2 id="transparent">Super ii Transparent</h2>
+        <p><a href="/transparent">Super ii Transparent 🔎</a> accepts a public Hugging Face model, dataset, or Space URL and creates a permanent evidence report for one exact provider commit. The first check is anonymous. Each report preserves the repository type and ID, requested and resolved revision, check date, criteria version, coverage, direct source URLs, limitations, and every evidence field.</p>
+        <p>The report uses exactly four states. <strong>Verified</strong> means the bounded checker directly observed the fact at that commit; it does not mean safe, true, lawful, certified, or endorsed. <strong>Declared</strong> is stated by the creator or Hugging Face but not independently reproduced. <strong>Derived</strong> exposes the calculation method. <strong>Unknown</strong> means the checked public evidence does not establish the field. There is no trust score, hidden grade, or safety certification.</p>
+        <p>The checker constructs requests only for approved Hugging Face endpoints, follows only a bounded provider cache redirect, limits time, bytes and file count, reads only metadata and small evidence files, and never executes repository code or loads weights. A newer revision produces a separate immutable report that can be compared field by field. Saving, watching, submitting public evidence, and verified creator responses use Workspace; a claim requires the matching Hugging Face OAuth identity or verified organization namespace and cannot rewrite an existing report.</p>
+        <p>REST and <a href="/mcp/transparent">Transparent MCP</a> use the same evidence engine and report schema. Agents can check, retrieve, search, and compare anonymously. Watching requires a human-issued <code>sii_agent_</code> token with only <code>transparent:watch</code>, a stable idempotency key, and an immutable action receipt. Read the exact machine contract at <a href="/transparent/agents.md"><code>/transparent/agents.md</code></a>.</p>
+      </>}
+
       <h2 id="catalog">Explore the hub</h2>
       <p>The three public catalogs are separated by the kind of work they contain:</p>
       <ul>
@@ -211,6 +219,7 @@ superii plan owner/model`}</code></pre>
         <a href="#frontier-ai">Frontier AI</a>
         <a href="#skills">Skills</a>
         <a href="#bring-my-work">Bring my work</a>
+        {!russian && <a href="#transparent">Super ii Transparent</a>}
         <a href="#catalog">Explore the hub</a>
         <a href="#use-superii">Use Super ii</a>
         <a href="#architecture">Architecture</a>

@@ -1,0 +1,80 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import TransparencyChecker from '@/components/TransparencyChecker.astro';
+import { sqlClient } from '@/lib/db';
+import { searchTransparencyReports } from '@/lib/transparent-store';
+import '@/styles/transparent.css';
+
+export const prerender = false;
+
+const sql = sqlClient(Astro.locals);
+const query = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 120);
+let reports: Awaited<ReturnType<typeof searchTransparencyReports>> = [];
+if (sql) {
+  try { reports = await searchTransparencyReports(sql, { query, limit: 24 }); } catch { reports = []; }
+}
+---
+
+<BaseLayout
+  title="Transparent"
+  description="Paste any public Hugging Face model, dataset, or Space and see what is verified, declared, derived, or still unknown at an exact revision."
+  image="/brand/super-ii-transparent-card.png"
+  imageAlt="Super ii Transparent — public evidence, exact revision, four clear evidence states."
+>
+  <div class="transparent-page">
+    <div class="shell transparent-page__hero">
+      <TransparencyChecker variant="page" initialSource={Astro.url.searchParams.get('source') ?? ''} />
+    </div>
+
+    <section class="shell transparent-principles" aria-labelledby="transparent-principles-title">
+      <div>
+        <p class="eyebrow">Evidence without theatre</p>
+        <h2 id="transparent-principles-title">A report says only what its sources support.</h2>
+      </div>
+      <div class="transparent-principles__grid">
+        <article data-state="verified"><span>01</span><h3>Verified</h3><p>Directly observed by the bounded checker at the exact commit. Not a safety certification.</p></article>
+        <article data-state="declared"><span>02</span><h3>Declared</h3><p>Stated by the repository creator or Hugging Face. Not independently reproduced.</p></article>
+        <article data-state="derived"><span>03</span><h3>Derived</h3><p>Calculated from observed metadata. Every derived field exposes its method.</p></article>
+        <article data-state="unknown"><span>04</span><h3>Unknown</h3><p>The public evidence does not establish it. Super ii does not fill gaps with guesses.</p></article>
+      </div>
+    </section>
+
+    <section class="transparent-reports" aria-labelledby="public-reports-title">
+      <div class="shell">
+        <div class="transparent-reports__heading">
+          <div><p class="eyebrow">Permanent public evidence</p><h2 id="public-reports-title">Transparency reports</h2><p>Each link stays pinned to its exact Hugging Face commit and criteria version.</p></div>
+          <form method="get" action="/transparent" class="transparent-search">
+            <label class="sr-only" for="transparent-report-search">Search reports</label>
+            <input id="transparent-report-search" name="q" value={query} maxlength="120" placeholder="Search owner/project" />
+            <button type="submit" aria-label="Search"><i class="ph ph-magnifying-glass" aria-hidden="true"></i></button>
+          </form>
+        </div>
+        {reports.length ? (
+          <div class="transparent-report-grid">
+            {reports.map((report) => <a href={`/transparent/${report.report_key}`}>
+                <span>{report.repository_kind}</span>
+                <h3>{report.repository_id}</h3>
+                <p><strong>{String(report.coverage.established ?? 0)}</strong> / {String(report.coverage.total ?? 0)} fields established</p>
+                <small>revision {report.source_revision.slice(0, 10)} · {new Date(report.checked_at).toLocaleDateString('en', { dateStyle: 'medium' })}</small>
+                <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+              </a>)}
+          </div>
+        ) : <div class="transparent-reports__empty"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><h3>{query ? 'No matching report yet.' : 'The first report can start here.'}</h3><p>Run a real check above. Super ii does not seed fake reports.</p></div>}
+      </div>
+    </section>
+
+    <section class="shell transparent-agent" id="agents">
+      <div><p class="eyebrow">For any compatible agent</p><h2>Use the same evidence engine through MCP.</h2><p>Check, retrieve, search, compare, and—when a human grants the narrow scope—watch reports.</p></div>
+      <div class="transparent-agent__endpoint"><span>MCP endpoint</span><code>https://superii.site/mcp/transparent</code><button type="button" data-copy-transparent-mcp>Copy</button></div>
+      <a href="/transparent/agents.md">Read the machine guide <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+    </section>
+  </div>
+  <script>
+    document.querySelector('[data-copy-transparent-mcp]')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      await navigator.clipboard.writeText('https://superii.site/mcp/transparent');
+      button.textContent = 'Copied';
+      setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+    });
+  </script>
+</BaseLayout>

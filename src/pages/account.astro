@@ -6,12 +6,14 @@ import AIWorkerStarter from '@/components/AIWorkerStarter.astro';
 import CommerceWorkspace from '@/components/CommerceWorkspace.astro';
 import MemberProfileWorkspace from '@/components/MemberProfileWorkspace.astro';
 import RobotWorkspace from '@/components/RobotWorkspace.astro';
+import TransparencyWorkspace from '@/components/TransparencyWorkspace.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { activeRobotPlan, listHardware, listOwnedRobots, type RobotPlanTier } from '@/lib/robot-store';
+import { listProfileTransparency } from '@/lib/transparent-store';
 import '@/styles/robot.css';
 
 type MemberProfile = {
@@ -49,6 +51,7 @@ let bridgeSources: Array<{
   sync_enabled: boolean;
 }> = [];
 let memberProfile: MemberProfile | null = null;
+let transparencyItems: Awaited<ReturnType<typeof listProfileTransparency>> = [];
 if (sql) {
   try {
     const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
@@ -133,6 +136,7 @@ if (sql) {
           and repository.owner_profile_id = ${profile.profileId}::uuid
         order by source.repository_id, source.imported_at desc
       ` as typeof bridgeSources;
+      try { transparencyItems = await listProfileTransparency(sql, profile.profileId); } catch { transparencyItems = []; }
     }
   } catch {
     repositories = [];
@@ -148,6 +152,7 @@ if (sql) {
       <a href="#ai-worker">AI Worker</a>
       <a href="#agents">Agents</a>
       <a href="#commerce">Agent commerce</a>
+      <a href="#transparent">Transparent</a>
       <a href="#robots">Robots</a>
       <a href="#hardware">My Hardware</a>
       <a href="#profile" aria-current="page">Profile</a>
@@ -175,6 +180,7 @@ if (sql) {
               <AIWorkerStarter />
               <AgentWorkspace />
               <CommerceWorkspace />
+              <TransparencyWorkspace items={transparencyItems} />
               <RobotWorkspace robots={robots} hardware={hardware} organizations={organizations} plan={robotPlan} />
               {memberProfile && <MemberProfileWorkspace profile={memberProfile} />}
               <section class="account-card" id="repositories">

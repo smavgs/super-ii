@@ -105,6 +105,13 @@ REQUIRED_TABLES = {
     "robot_hardware",
     "robot_component_claims",
     "robot_discovery_daily",
+    "transparency_reports",
+    "transparency_report_saves",
+    "transparency_report_watches",
+    "transparency_repository_claims",
+    "transparency_creator_responses",
+    "transparency_evidence_submissions",
+    "transparency_discovery_daily",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -266,6 +273,13 @@ def main() -> int:
         errors.append("agent Robot mutations must be organization-bound and receipt-backed")
     if "robot_component_claims" not in lower or "record_robot_discovery" not in lower:
         errors.append("manufacturer maintenance and anonymous Robot discovery analytics are required")
+    if "transparency_evidence_is_immutable" not in lower or "advance_transparency_watches" not in lower:
+        errors.append("Transparent reports must be immutable and advance real revision watches")
+    if "record_transparency_discovery" not in lower or "huggingface-oauth-owner-match" not in lower:
+        errors.append("Transparent acquisition analytics and verified creator claims are required")
+    for transparent_scope in ("transparent:read", "transparent:watch"):
+        if f"'{transparent_scope}'" not in lower:
+            errors.append(f"Transparent agent scope is missing: {transparent_scope}")
     for robot_scope in ("robot:read", "robot:create", "robot:update"):
         if f"'{robot_scope}'" not in lower:
             errors.append(f"Robot agent scope is missing: {robot_scope}")

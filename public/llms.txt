@@ -15,6 +15,8 @@ The public catalog intentionally contains no seeded models, datasets, or apps. R
 - [Robot MCP](https://superii.site/mcp/robot): Public source-backed component search, compatibility checks, planning, and Robot retrieval
 - [Robot A2A Agent Card](https://superii.site/.well-known/robot-agent-card.json): A2A v1.0 discovery for public Robot tools
 - [Robot machine guide](https://superii.site/robot/agents.md): Evidence states, access tiers, safety boundaries, and governed writes
+- [Transparent MCP](https://superii.site/mcp/transparent): Public exact-revision Hugging Face checks, report retrieval, search, comparison, and scoped watches
+- [Transparent machine guide](https://superii.site/transparent/agents.md): Four-state evidence semantics, bounded provider reads, and no-execution boundary
 - [A2A Agent Card](https://superii.site/.well-known/agent-card.json): A2A v1.0 discovery for bounded public tasks
 - [Connector registry](https://superii.site/agent-connectors.json): Versioned, source-linked client configuration profiles
 - [Super ii Agent Skill](https://superii.site/skills/superii/SKILL.md): Portable public discovery and governed-work instructions
@@ -45,6 +47,7 @@ Every reviewed repository exposes README.md, agents.md, manifest.json, api, and 
 - [Datasets](https://superii.site/datasets): Public dataset catalog
 - [Apps](https://superii.site/spaces): Isolated Gradio application catalog
 - [Make Robot](https://superii.site/robot): Source-backed Raspberry Pi and Jetson Robot planning, versions, and public retrieval
+- [Transparent](https://superii.site/transparent): Check a public Hugging Face model, dataset, or Space at one exact revision
 - [Skills](https://superii.site/skills): Search, inspect, copy, or share ready-to-use AI-agent skills
 - [Agents](https://superii.site/agents): Connect agents through verified, least-privilege interfaces
 - [Builders](https://superii.site/builders): Public directory of people publishing repositories, posts, and ideas

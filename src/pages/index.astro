@@ -3,6 +3,7 @@ import InfoTip from '@/components/InfoTip.astro';
 import AgentBash from '@/components/AgentBash.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import SuperAssistant from '@/components/SuperAssistant.astro';
+import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import '@/styles/robot.css';
 
@@ -199,6 +200,12 @@ const frontierCtaUrl = isSignedIn
       </a>
     </div>
   </section>
+
+  {Astro.locals.locale !== 'ru' && (
+    <div class="shell transparency-home-strip">
+      <TransparencyChecker variant="home" />
+    </div>
+  )}
 
   <section class="section section--soft">
     <div class="shell zero-state-panel">

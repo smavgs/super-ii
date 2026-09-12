@@ -54,6 +54,7 @@ def main() -> None:
         "/llms-full.txt", "/robots.txt", "/sitemap.xml", "/openapi.json", "/docs.json",
         "/system-state.json", "/system-state.md", "/agent-connectors.json",
         "/agents.md", "/siiwebskill.md", "/runtime-registry.json",
+        "/transparent/agents.md",
         "/.well-known/agent-card.json", "/.well-known/commerce-agent-card.json",
         "/skills/superii/SKILL.md", "/skills/superii/manifest.json",
         "/skills/superii/signature.json", "/skills/superii/public-key.json",
@@ -72,7 +73,7 @@ def main() -> None:
         }},
     )
     assert a2a["task"]["status"]["state"] == "TASK_STATE_COMPLETED"
-    for path in ("/mcp", "/mcp/work"):
+    for path in ("/mcp", "/mcp/work", "/mcp/transparent"):
         assert request(path, {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})[
             "result"
         ]["tools"]
