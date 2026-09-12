@@ -1,0 +1,83 @@
+{
+  "status": "passed",
+  "hardware": "cpu",
+  "sources": "private synthetic fixtures",
+  "source_revisions": {
+    "generator": {
+      "repository": "smavgs/build-ship-generator-verification",
+      "revision": "8f402ab74d255151c266554162d6c5f3fbbd199ca9e9508a68a69ff320628a77"
+    },
+    "embedding": {
+      "repository": "smavgs/build-ship-embedding-verification",
+      "revision": "c2ca77096ca845ab09d97ca8403fd9ce1bda96b449599ee2a613714b42344ebf"
+    },
+    "dataset": {
+      "repository": "smavgs/build-ship-dataset-verification",
+      "revision": "f24191b6968b610b0161ba5960ede419b3ae5e348edcfb1d809913dfe06c8908"
+    }
+  },
+  "sdk_version": "0.2.2",
+  "scope": "execution; not model quality",
+  "cross_repository_token_rejected": true,
+  "projects": {
+    "api": {
+      "recipe": "6c6bfff66c9b18b7f82c359ce8f11da5c366c9ceed3696562053d8c6892e7ca9",
+      "generated_code_executed": true,
+      "api_auth_and_origin_checks": true,
+      "container": {
+        "private_model_loaded": true,
+        "authenticated_prediction": true,
+        "uid": 10001,
+        "host_binding": "127.0.0.1"
+      }
+    },
+    "rag": {
+      "recipe": "93ecb0f175bf0ad9c11ac26083c4045ff701880085461a1a02b5ebc5f62ac8c5",
+      "generated_code_executed": true,
+      "api_auth_and_origin_checks": true,
+      "container": {
+        "private_model_loaded": true,
+        "authenticated_prediction": true,
+        "uid": 10001,
+        "host_binding": "127.0.0.1"
+      },
+      "retrieval_evaluation": {
+        "cases": 1,
+        "concurrency": 1,
+        "measurement": "warm index; query embedding + retrieval; excludes generation/load time",
+        "mrr": 0,
+        "ndcg_at_k": 0,
+        "precision_at_k": 0,
+        "recall_at_k": 0,
+        "retrieval_p95_ms": 3.722330000016427,
+        "top_k_chunks": 4
+      }
+    },
+    "sft": {
+      "recipe": "601fce9690d0d88d5ed24482fd6acec3ed35a199d654836fd48c6cbfe27e98d4",
+      "run": "7f22caab-222c-4c8b-8cca-ec0203838b98",
+      "adapter_publication": "published",
+      "adapter_hashes_verified": true,
+      "downloaded_adapter_reloaded": true,
+      "adapter_revision": "30f2f17fad6e58e7c12f70a79f4c2b0fb9714c75d2126b30a1bbcea44adaf06c",
+      "adapter_manifest_sha256": "9ac619eea3cd87684140e14e6d6477ac575e7d1a8f0896b0ea847895cf7b8213",
+      "training_metrics": {
+        "accelerator": "cpu",
+        "adapter": "lora",
+        "batch_size": 1,
+        "estimate_policy": "superii-training-plan-v1",
+        "estimated_memory_bytes": 1073827072,
+        "final_eval_loss": 3.3873801231384277,
+        "gradient_accumulation_steps": 1,
+        "guarantee": "estimate, not a zero-OOM guarantee",
+        "held_out_rows": 2,
+        "initial_eval_loss": 3.387563467025757,
+        "max_steps": 1,
+        "memory_budget_bytes": 10403649536,
+        "method": "sft",
+        "sequence_length": 64,
+        "train_rows": 18
+      }
+    }
+  }
+}

@@ -66,3 +66,15 @@ Rollback: turn **Security → Settings → Bot fight mode** on. This may challen
 legitimate software clients again. Rerun the manual GitHub publication workflow
 as well as the local machine-access check after any change: success from one
 network alone does not establish access from hosted automation.
+
+## Completed hosted verification
+
+The complete [GitHub workflow 34350858257](https://github.com/smavgs/super-ii/actions/runs/34350858257)
+passed on 2026-09-09. It verified trusted exchange, private input acquisition,
+generated API/RAG execution in processes and Docker, CPU LoRA training and
+TUS adapter publication with a signed download and successful reload. Exact
+artifacts and source provenance are in `../verification/build-ship-live.json`.
+The pending GitHub field in the dated 2026-09-08 machine-access receipt is
+historical and is superseded by this result. Human HTML routes such as `/docs`
+retain the browser check; ordinary software clients use `/docs.json`, the API,
+MCP and the listed machine-readable resources.
