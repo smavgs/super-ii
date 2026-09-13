@@ -61,6 +61,10 @@ const displayUsd = (cents: number) => {
 };
 
 const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelpKey }> = [
+  { feature: 'Expert on Super ii', values: ['Always on', 'Always on', 'Always on', 'Always on'] },
+  { feature: 'Chat history', values: ['Current session', 'Persistent', 'Persistent', 'Policy defined'] },
+  { feature: 'Chat memory', values: ['—', 'User controlled', 'User controlled', 'Policy controlled'] },
+  { feature: 'Search old chats', values: ['—', 'Included', 'Included', 'Included / custom'] },
   { feature: 'Public repositories', values: ['Unlimited', 'Unlimited', 'Unlimited', 'Unlimited'], helpTerm: 'unlimitedPublicRepositories' },
   { feature: 'Private repositories', values: ['—', 'Included', 'Included', 'Included'] },
   { feature: 'Included hosted storage', values: ['5 GB public', '25 GB', '50 GB/member pooled', 'Custom'], helpTerm: 'storage' },

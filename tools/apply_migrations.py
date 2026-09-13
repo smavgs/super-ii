@@ -88,7 +88,12 @@ def main() -> int:
                   to_regclass('app.robot_versions') is not null,
                   to_regclass('app.robot_hardware') is not null,
                   to_regclass('app.robot_component_claims') is not null,
-                  to_regclass('app.robot_discovery_daily') is not null
+                  to_regclass('app.robot_discovery_daily') is not null,
+                  to_regclass('app.assistant_threads') is not null,
+                  to_regclass('app.assistant_messages') is not null,
+                  to_regclass('app.assistant_memory_preferences') is not null,
+                  to_regclass('app.assistant_memory_items') is not null,
+                  to_regclass('app.assistant_usage_ledger') is not null
                 """
             )
             (
@@ -105,8 +110,13 @@ def main() -> int:
                 has_robot_hardware,
                 has_robot_claims,
                 has_robot_analytics,
+                has_assistant_threads,
+                has_assistant_messages,
+                has_assistant_memory_preferences,
+                has_assistant_memory_items,
+                has_assistant_usage_ledger,
             ) = cursor.fetchone()
-            if relation_count < 95:
+            if relation_count < 100:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )
@@ -122,9 +132,14 @@ def main() -> int:
                     has_robot_hardware,
                     has_robot_claims,
                     has_robot_analytics,
+                    has_assistant_threads,
+                    has_assistant_messages,
+                    has_assistant_memory_preferences,
+                    has_assistant_memory_items,
+                    has_assistant_usage_ledger,
                 )
             ):
-                raise RuntimeError("required commerce, member-profile, and Robot relations are incomplete")
+                raise RuntimeError("required commerce, member-profile, Robot, and assistant relations are incomplete")
             print(
                 f"Verified: app_relations={relation_count}, repositories={repository_count}, "
                 f"public_search_rows={public_count}"

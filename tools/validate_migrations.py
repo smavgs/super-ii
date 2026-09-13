@@ -105,6 +105,11 @@ REQUIRED_TABLES = {
     "robot_hardware",
     "robot_component_claims",
     "robot_discovery_daily",
+    "assistant_threads",
+    "assistant_messages",
+    "assistant_memory_preferences",
+    "assistant_memory_items",
+    "assistant_usage_ledger",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -266,6 +271,12 @@ def main() -> int:
         errors.append("agent Robot mutations must be organization-bound and receipt-backed")
     if "robot_component_claims" not in lower or "record_robot_discovery" not in lower:
         errors.append("manufacturer maintenance and anonymous Robot discovery analytics are required")
+    if "persist_assistant_exchange" not in lower or "assistant_storage_limit_reached" not in lower:
+        errors.append("paid assistant continuity requires atomic, storage-bounded persistence")
+    if "set_assistant_memory_enabled" not in lower or "delete_assistant_memory" not in lower:
+        errors.append("assistant memory must remain user controlled and deletable")
+    if "assistant_messages_are_immutable" not in lower or "assistant_usage_ledger_is_immutable" not in lower:
+        errors.append("assistant messages and usage events require immutable database records")
     for robot_scope in ("robot:read", "robot:create", "robot:update"):
         if f"'{robot_scope}'" not in lower:
             errors.append(f"Robot agent scope is missing: {robot_scope}")

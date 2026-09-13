@@ -1,0 +1,285 @@
+---
+import { Show, SignInButton } from '@clerk/astro/components';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PageHero from '@/components/PageHero.astro';
+import { authIsConfigured } from '@/lib/site';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { activeAssistantPlan, assistantPlanEntitlements, type AssistantPlan } from '@/lib/assistant-plan';
+import { assistantMemoryState, listAssistantThreads, type AssistantMemoryItem, type AssistantThreadSummary } from '@/lib/assistant-store';
+
+export const prerender = false;
+
+const authConfigured = authIsConfigured(Astro.locals);
+const sql = sqlClient(Astro.locals);
+const requestedQuery = Astro.url.searchParams.get('q')?.trim().slice(0, 200) ?? '';
+const requestedStatus = Astro.url.searchParams.get('status') === 'archived' ? 'archived' : 'recent';
+const view = Astro.url.searchParams.get('view') === 'projects' ? 'projects' : requestedQuery ? 'search' : requestedStatus;
+let plan: AssistantPlan = 'free';
+let threads: AssistantThreadSummary[] = [];
+let memoryEnabled = false;
+let memoryItems: AssistantMemoryItem[] = [];
+let assistantStorageBytes = 0;
+let dataReady = false;
+
+if (sql) {
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) {
+      plan = await activeAssistantPlan(sql, profile);
+      const searchableQuery = assistantPlanEntitlements[plan].searchableHistory ? requestedQuery || null : null;
+      threads = await listAssistantThreads(sql, profile.profileId, view === 'projects' ? 'all' : requestedStatus, searchableQuery);
+      if (view === 'projects') threads = threads.filter((thread) => thread.projectLabel);
+      const memory = await assistantMemoryState(sql, profile.profileId);
+      memoryEnabled = memory.enabled;
+      memoryItems = memory.items;
+      const usage = await sql`select app.assistant_storage_used_bytes(${profile.profileId}::uuid) as bytes`;
+      assistantStorageBytes = Number(usage[0]?.bytes ?? 0);
+      dataReady = true;
+    }
+  } catch {
+    dataReady = false;
+  }
+}
+
+const persistent = assistantPlanEntitlements[plan].persistentHistory;
+const searchable = assistantPlanEntitlements[plan].searchableHistory;
+const formatBytes = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+};
+---
+
+<BaseLayout title="Chats" description="Return to saved Super ii conversations, search your archive, organize projects, and control chat memory." noindex>
+  <PageHero
+    eyebrow="Your Super ii conversations 💬"
+    title="Chats"
+    description="Return to earlier work, organize project conversations, and decide whether Super ii may retrieve relevant context later."
+    compact
+  />
+
+  <section class="shell chats-shell">
+    {authConfigured ? (
+      <>
+        <Show when="signed-out">
+          <div class="chats-auth">
+            <h2>Log in to view your chats</h2>
+            <p>Free chat remains in the current browser session. Persistent history is available with Pro, Team, and Enterprise.</p>
+            <SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in</button></SignInButton>
+          </div>
+        </Show>
+        <Show when="signed-in">
+          {dataReady ? (
+            <div class="chats-workspace" data-chats-workspace>
+              <div class="chats-main">
+                <div class="chats-plan-strip">
+                  <div>
+                    <p class="eyebrow">{plan} plan</p>
+                    <strong>{persistent ? 'Persistent chat history is active.' : 'Chat stays in your current session.'}</strong>
+                    <p>{persistent ? `${formatBytes(assistantStorageBytes)} of conversation data currently uses your included hosted storage.` : 'Upgrade only if you want an archive, search, and optional cross-chat memory.'}</p>
+                  </div>
+                  {!persistent && <a class="button button--dark button--small" href="/pricing">Compare plans</a>}
+                </div>
+
+                <nav class="chats-tabs" aria-label="Chat views">
+                  <a href="/chats" aria-current={view === 'recent' ? 'page' : undefined}>Recent</a>
+                  <a href="/chats#chat-search" aria-current={view === 'search' ? 'page' : undefined}>Search</a>
+                  <a href="/chats?view=projects" aria-current={view === 'projects' ? 'page' : undefined}>Projects</a>
+                  <a href="/chats?status=archived" aria-current={view === 'archived' ? 'page' : undefined}>Archived</a>
+                </nav>
+
+                <form class="chats-search" id="chat-search" method="get" action="/chats">
+                  <label for="chat-query">Search your conversations</label>
+                  <div>
+                    <input id="chat-query" name="q" type="search" maxlength="200" value={requestedQuery} placeholder="Search titles and messages…" disabled={!searchable} />
+                    <button class="button button--secondary button--small" type="submit" disabled={!searchable}>Search</button>
+                  </div>
+                  {!searchable && <small>Searchable chat history is included with Pro, Team, and Enterprise.</small>}
+                </form>
+
+                <div class="chat-thread-list" data-chat-thread-list>
+                  {threads.length ? threads.map((thread) => (
+                    <article class="chat-thread-row" data-chat-thread={thread.id}>
+                      <div class="chat-thread-row__copy">
+                        <div class="chat-thread-row__topline">
+                          <span>{thread.projectLabel ? `📁 ${thread.projectLabel}` : '💬 Conversation'}</span>
+                          <time datetime={thread.updatedAt}>{new Date(thread.updatedAt).toLocaleDateString(Astro.locals.locale === 'ru' ? 'ru-RU' : 'en', { dateStyle: 'medium' })}</time>
+                        </div>
+                        <h2>{thread.title}</h2>
+                        <p>{thread.preview || `${thread.messageCount} saved messages`}</p>
+                        <small>{thread.messageCount} messages{thread.pagePath ? ` · started on ${thread.pagePath}` : ''}</small>
+                      </div>
+                      <div class="chat-thread-row__actions">
+                        <a class="button button--dark button--small" href={`/?chat=${thread.id}`}>Continue</a>
+                        <form data-thread-update>
+                          <input type="hidden" name="thread_id" value={thread.id} />
+                          <input type="hidden" name="status" value={thread.status === 'archived' ? 'recent' : 'archived'} />
+                          <input name="project_label" maxlength="120" value={thread.projectLabel ?? ''} placeholder="Project name" aria-label={`Project for ${thread.title}`} />
+                          <button class="text-button" type="submit">{thread.status === 'archived' ? 'Restore' : 'Save project & archive'}</button>
+                        </form>
+                        <button class="text-button text-button--danger" type="button" data-thread-delete={thread.id}>Delete</button>
+                      </div>
+                    </article>
+                  )) : (
+                    <div class="chats-empty">
+                      <span aria-hidden="true">💬</span>
+                      <h2>{requestedQuery ? 'No matching chats' : view === 'archived' ? 'No archived chats' : view === 'projects' ? 'No project chats yet' : 'No saved chats yet'}</h2>
+                      <p>{persistent ? 'Start a conversation with Super ii. New successful exchanges will appear here automatically.' : 'Your existing assistant still works normally. Persistent history begins when a paid plan is active.'}</p>
+                      <a class="button button--secondary button--small" href="/">Talk with Super ii</a>
+                    </div>
+                  )}
+                </div>
+                <p class="form-status" data-chats-status aria-live="polite"></p>
+              </div>
+
+              <aside class="chat-memory-panel" aria-labelledby="chat-memory-heading">
+                <p class="eyebrow">Optional continuity 🧠</p>
+                <h2 id="chat-memory-heading">Chat memory</h2>
+                <p>History stores conversations. Memory is a separate set of details Super ii may retrieve when relevant.</p>
+                <label class="chat-memory-toggle">
+                  <input type="checkbox" data-memory-toggle checked={memoryEnabled} disabled={!persistent} />
+                  <span><strong>Use relevant prior context</strong><small>{memoryEnabled ? 'On — you can turn this off at any time.' : 'Off — prior chats are not retrieved.'}</small></span>
+                </label>
+                {!persistent && <p class="chat-memory-note">Memory requires Pro, Team, or Enterprise. It remains off on Free.</p>}
+
+                {persistent && <form class="chat-memory-form" data-memory-create>
+                  <h3>Add a memory</h3>
+                  <label>Label <input name="label" maxlength="120" required placeholder="Project preference" /></label>
+                  <label>What Super ii should remember <textarea name="content" maxlength="2000" rows="3" required></textarea></label>
+                  <button class="button button--secondary button--small" type="submit">Save memory</button>
+                </form>}
+
+                <div class="chat-memory-list">
+                  {memoryItems.map((item) => (
+                    <form data-memory-edit data-memory-id={item.id}>
+                      <input name="label" maxlength="120" value={item.label} aria-label="Memory label" required />
+                      <textarea name="content" maxlength="2000" rows="3" aria-label="Memory content" required>{item.content}</textarea>
+                      <div><button class="text-button" type="submit">Save</button><button class="text-button text-button--danger" type="button" data-memory-delete={item.id}>Delete</button></div>
+                    </form>
+                  ))}
+                </div>
+                {memoryItems.length > 0 && <button class="text-button text-button--danger" type="button" data-memory-delete-all>Delete all chat memory</button>}
+                <p class="chat-memory-note">Deleting memory does not delete your chat history. Deleting a chat removes that conversation from search and retrieval too.</p>
+              </aside>
+            </div>
+          ) : (
+            <div class="chats-auth"><h2>Chats are temporarily unavailable</h2><p>Your existing session-only assistant is unaffected. Please try this page again shortly.</p></div>
+          )}
+        </Show>
+      </>
+    ) : (
+      <div class="chats-auth"><h2>Account access is temporarily unavailable</h2><p>Your existing session-only assistant is unaffected.</p></div>
+    )}
+  </section>
+</BaseLayout>
+
+<script>
+  const workspace = document.querySelector<HTMLElement>('[data-chats-workspace]');
+  const status = workspace?.querySelector<HTMLElement>('[data-chats-status]');
+  const say = (message: string, error = false) => {
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = error ? 'error' : 'success';
+  };
+
+  workspace?.querySelectorAll<HTMLFormElement>('[data-thread-update]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const values = new FormData(form);
+      const threadId = String(values.get('thread_id') ?? '');
+      const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      const response = await fetch(`/api/assistant/history/${encodeURIComponent(threadId)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: values.get('status'), project_label: values.get('project_label') }),
+      }).catch(() => null);
+      if (response?.ok) location.reload();
+      else {
+        if (submit) submit.disabled = false;
+        say('This chat could not be updated.', true);
+      }
+    });
+  });
+
+  workspace?.querySelectorAll<HTMLButtonElement>('[data-thread-delete]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm('Delete this chat and remove it from search and memory retrieval? This cannot be undone.')) return;
+      button.disabled = true;
+      const response = await fetch(`/api/assistant/history/${encodeURIComponent(button.dataset.threadDelete ?? '')}`, { method: 'DELETE' }).catch(() => null);
+      if (response?.ok) {
+        button.closest('[data-chat-thread]')?.remove();
+        say('Chat deleted.');
+      } else {
+        button.disabled = false;
+        say('This chat could not be deleted.', true);
+      }
+    });
+  });
+
+  const memoryToggle = workspace?.querySelector<HTMLInputElement>('[data-memory-toggle]');
+  memoryToggle?.addEventListener('change', async () => {
+    memoryToggle.disabled = true;
+    const response = await fetch('/api/assistant/memory', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: memoryToggle.checked }),
+    }).catch(() => null);
+    if (response?.ok) location.reload();
+    else {
+      memoryToggle.checked = !memoryToggle.checked;
+      memoryToggle.disabled = false;
+      say('Chat memory preference could not be changed.', true);
+    }
+  });
+
+  workspace?.querySelector<HTMLFormElement>('[data-memory-create]')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!(form instanceof HTMLFormElement)) return;
+    const values = new FormData(form);
+    const response = await fetch('/api/assistant/memory', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ label: values.get('label'), content: values.get('content') }),
+    }).catch(() => null);
+    if (response?.ok) location.reload();
+    else say('This memory could not be saved.', true);
+  });
+
+  workspace?.querySelectorAll<HTMLFormElement>('[data-memory-edit]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const values = new FormData(form);
+      const response = await fetch('/api/assistant/memory', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: form.dataset.memoryId, label: values.get('label'), content: values.get('content') }),
+      }).catch(() => null);
+      if (response?.ok) say('Memory updated.');
+      else say('This memory could not be updated.', true);
+    });
+  });
+
+  workspace?.querySelectorAll<HTMLButtonElement>('[data-memory-delete]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm('Delete this memory?')) return;
+      const response = await fetch(`/api/assistant/memory?id=${encodeURIComponent(button.dataset.memoryDelete ?? '')}`, { method: 'DELETE' }).catch(() => null);
+      if (response?.ok) button.closest('[data-memory-edit]')?.remove();
+      else say('This memory could not be deleted.', true);
+    });
+  });
+
+  workspace?.querySelector<HTMLButtonElement>('[data-memory-delete-all]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    if (!(button instanceof HTMLButtonElement) || !confirm('Delete every saved chat memory? Your chat history will remain.')) return;
+    button.disabled = true;
+    const response = await fetch('/api/assistant/memory', { method: 'DELETE' }).catch(() => null);
+    if (response?.ok) location.reload();
+    else {
+      button.disabled = false;
+      say('Chat memory could not be deleted.', true);
+    }
+  });
+</script>

@@ -14,6 +14,20 @@
     "tags": ["API", "MCP", "agents"]
   },
   {
+    "slug": "python-project-quickstart",
+    "path": "notebooks/getting-started/python-project-quickstart.ipynb",
+    "sha256": "ef0e0508aaad17ab42bd829bf1ba7d1e1a6f047c5188c6683a4fc3311ad586a9",
+    "title": "Start a Python project with Super ii",
+    "summary": "Inspect local hardware, plan one real reviewed model, and keep acquisition behind an explicit verified-download decision.",
+    "category": "Getting started",
+    "level": "Beginner",
+    "runtime": "Python 3.12+",
+    "requirements": ["superii-sdk 0.2.2", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["Python SDK", "hardware", "verified downloads"]
+  },
+  {
     "slug": "create-and-verify-a-dataset",
     "path": "notebooks/repositories/create-and-verify-a-dataset.ipynb",
     "sha256": "6748b480dabea431cf0797d59fb3ad4a967d2ff5eb621c300f8a9875516a7261",
@@ -28,6 +42,20 @@
     "tags": ["datasets", "checksums", "provenance"]
   },
   {
+    "slug": "build-and-ship-a-reviewed-revision",
+    "path": "notebooks/repositories/build-and-ship-a-reviewed-revision.ipynb",
+    "sha256": "ded7f0ea6387edfac9900791496a6c04432aecd15c029ff9898ff94050989467",
+    "title": "Build and ship a reviewed revision",
+    "summary": "Create exact artifact hashes and a release checklist while keeping scans, analysis, and submission visibly fail closed.",
+    "category": "Repositories",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library"],
+    "durationMinutes": 20,
+    "updatedAt": "2026-09-12",
+    "tags": ["publishing", "manifests", "review gates"]
+  },
+  {
     "slug": "reproducible-model-evaluation",
     "path": "notebooks/evaluation/reproducible-model-evaluation.ipynb",
     "sha256": "0a301a812db91470669de487588609be9c6c84e9a3ab94bff4cee682eca5a876",
@@ -40,5 +68,89 @@
     "durationMinutes": 20,
     "updatedAt": "2026-08-30",
     "tags": ["evaluation", "metrics", "reproducibility"]
+  },
+  {
+    "slug": "use-model-runtime-planner",
+    "path": "notebooks/inference/use-model-runtime-planner.ipynb",
+    "sha256": "c55d957007ef6db6d1e8e48f0be0595f3b250835e5159f24edbc2124858d3527",
+    "title": "Plan a Use Model runtime safely",
+    "summary": "Read the runtime registry, inspect this machine, and review a real immutable model plan before downloads or inference.",
+    "category": "Inference",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["superii-sdk 0.2.2", "Internet access"],
+    "durationMinutes": 20,
+    "updatedAt": "2026-09-12",
+    "tags": ["Use Model", "runtime", "local inference"]
+  },
+  {
+    "slug": "discover-and-review-skills",
+    "path": "notebooks/agents/discover-and-review-skills.ipynb",
+    "sha256": "c5932348e0ac5f4a125ab9134182895e8bdde8a02ee1a2f67d546fe686d50c1c",
+    "title": "Discover and verify an agent Skill",
+    "summary": "Browse Skills and verify the official manifest, file hashes, key identifier, and Ed25519 signature before setup.",
+    "category": "Agents",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "cryptography", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["Skills", "Ed25519", "supply chain"]
+  },
+  {
+    "slug": "scoped-work-mcp",
+    "path": "notebooks/agents/scoped-work-mcp.ipynb",
+    "sha256": "56f72d1e6c40e8fff53a362fa260b39121cec971f18e6bf016ff0b0e5c74ef57",
+    "title": "Connect an agent to scoped Work MCP",
+    "summary": "Design a least-privilege, zero-spend Work token and prepare an MCP connection without exposing credentials or mutating a repository.",
+    "category": "Agents",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["MCP", "agents", "least privilege"]
+  },
+  {
+    "slug": "pair-a-social-agent-safely",
+    "path": "notebooks/social/pair-a-social-agent-safely.ipynb",
+    "sha256": "39f3fc51233d42ce1475160d2bffe0341b9995f6092b8724b560e10afc718706",
+    "title": "Pair a Social agent safely",
+    "summary": "Review the public Social boundary and keep the one-time credential exchange behind an explicit sponsor checklist.",
+    "category": "Social agents",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["Social web", "pairing", "credentials"]
+  },
+  {
+    "slug": "agent-commerce-dry-run",
+    "path": "notebooks/commerce/agent-commerce-dry-run.ipynb",
+    "sha256": "9dd3cdf9ce3b7ca814e23ebe075555a017f7d76aeb499a8a8ee17ad44cd23f08",
+    "title": "Dry-run an agent commerce decision",
+    "summary": "Verify the live product catalogue and preview a tightly bounded order without creating an invoice or transferring funds.",
+    "category": "Agent commerce",
+    "level": "Intermediate",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["commerce", "USDC", "dry run"]
+  },
+  {
+    "slug": "plan-a-safe-robot",
+    "path": "notebooks/robot/plan-a-safe-robot.ipynb",
+    "sha256": "2121a2ecc1a887358364af0adab952305986d296b3f07faa2e2404dbd54240bb",
+    "title": "Plan a Robot without claiming physical safety",
+    "summary": "Use the evidence-aware public planner, surface unknowns, and keep purchasing and physical approval outside the notebook.",
+    "category": "Robot",
+    "level": "Beginner",
+    "runtime": "Python 3.12+",
+    "requirements": ["Python standard library", "Internet access"],
+    "durationMinutes": 15,
+    "updatedAt": "2026-09-12",
+    "tags": ["Robot", "evidence", "physical safety"]
   }
 ]

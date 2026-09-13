@@ -97,7 +97,8 @@ for (const name of ['superii-recipe-v1.json', 'superii-run-v1.json']) assert.equ
 // Cross-language checksum, archive CRC/path safety and Python syntax validation.
 const python = process.env.SUPERII_TEST_PYTHON || 'sdk/python/.venv/bin/python';
 const checked = spawnSync(python, ['-c', `import json, sys, zipfile, ast\nfrom pathlib import Path\nfrom superii.recipes import Recipe\nfor directory in map(Path,sys.argv[1:]):\n Recipe.read(directory/'superii-recipe.json')\n for item in directory.rglob('*.py'): ast.parse(item.read_text())\n with zipfile.ZipFile(directory.with_suffix('.zip')) as archive:\n  assert archive.testzip() is None\n  assert set(archive.namelist()) == {p.relative_to(directory).as_posix() for p in directory.rglob('*') if p.is_file()}\nprint('Recipe contracts, archives and generated Python verified')`, ...projects], { encoding: 'utf8' });
-assert.equal(checked.status, 0, checked.stderr);
+const pythonFailure = checked.error?.message || checked.stderr?.trim() || checked.stdout?.trim() || `${python} exited without a status`;
+assert.equal(checked.status, 0, pythonFailure);
 console.log(checked.stdout.trim());
 console.log('Generated projects:', temporary);
 if (process.env.SUPERII_RECIPE_PREVIEW === '1') {

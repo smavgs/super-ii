@@ -3,8 +3,16 @@ import type { RepositoryBundle } from './repository';
 import { kindPath } from './repository-path';
 
 import apiMcpSource from '../../notebooks/getting-started/super-ii-api-and-mcp.ipynb?raw';
+import pythonProjectSource from '../../notebooks/getting-started/python-project-quickstart.ipynb?raw';
 import datasetSource from '../../notebooks/repositories/create-and-verify-a-dataset.ipynb?raw';
+import revisionSource from '../../notebooks/repositories/build-and-ship-a-reviewed-revision.ipynb?raw';
 import evaluationSource from '../../notebooks/evaluation/reproducible-model-evaluation.ipynb?raw';
+import useModelSource from '../../notebooks/inference/use-model-runtime-planner.ipynb?raw';
+import skillsSource from '../../notebooks/agents/discover-and-review-skills.ipynb?raw';
+import workMcpSource from '../../notebooks/agents/scoped-work-mcp.ipynb?raw';
+import socialPairingSource from '../../notebooks/social/pair-a-social-agent-safely.ipynb?raw';
+import commerceDryRunSource from '../../notebooks/commerce/agent-commerce-dry-run.ipynb?raw';
+import robotPlannerSource from '../../notebooks/robot/plan-a-safe-robot.ipynb?raw';
 
 export type NotebookTextOutput = {
   mime_type: 'text/plain';
@@ -71,8 +79,16 @@ export type OfficialNotebookMeta = (typeof officialRegistry)[number];
 
 const officialSources: Record<string, string> = {
   'notebooks/getting-started/super-ii-api-and-mcp.ipynb': apiMcpSource,
+  'notebooks/getting-started/python-project-quickstart.ipynb': pythonProjectSource,
   'notebooks/repositories/create-and-verify-a-dataset.ipynb': datasetSource,
+  'notebooks/repositories/build-and-ship-a-reviewed-revision.ipynb': revisionSource,
   'notebooks/evaluation/reproducible-model-evaluation.ipynb': evaluationSource,
+  'notebooks/inference/use-model-runtime-planner.ipynb': useModelSource,
+  'notebooks/agents/discover-and-review-skills.ipynb': skillsSource,
+  'notebooks/agents/scoped-work-mcp.ipynb': workMcpSource,
+  'notebooks/social/pair-a-social-agent-safely.ipynb': socialPairingSource,
+  'notebooks/commerce/agent-commerce-dry-run.ipynb': commerceDryRunSource,
+  'notebooks/robot/plan-a-safe-robot.ipynb': robotPlannerSource,
 };
 
 function object(value: unknown): Record<string, unknown> | null {

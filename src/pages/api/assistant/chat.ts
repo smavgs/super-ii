@@ -1,4 +1,3 @@
-import type { NeonQueryFunction } from '@neondatabase/serverless';
 import type { APIRoute } from 'astro';
 import { ensureAuthenticatedProfile, sameOrigin, type AuthenticatedProfile } from '@/lib/auth';
 import { runtimeValue, sqlClient } from '@/lib/db';
@@ -12,7 +11,20 @@ import {
   parseAssistantMessages,
   parseAssistantSkillContext,
   parseRuntimeSearchResults,
+  type AssistantGroundingContext,
+  type WebSearchSource,
 } from '@/lib/openrouter';
+import {
+  assistantAccountSnapshot,
+  parseAssistantPageContext,
+  priorConversationContext,
+  relevantAssistantHistory,
+  trustedAccountContext,
+  trustedSuperiiContext,
+  type AssistantAccountSnapshot,
+} from '@/lib/assistant-context';
+import { activeAssistantPlan, assistantPlanEntitlements, type AssistantPlan } from '@/lib/assistant-plan';
+import { assistantThreadOwned, parseAssistantId, persistAssistantExchange } from '@/lib/assistant-store';
 import { consumeIdentityRateLimit, consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
 
@@ -24,7 +36,6 @@ const SEARCH_LIMITS = {
   team: 60,
   enterprise: 60,
 } as const;
-type SearchPlan = keyof typeof SEARCH_LIMITS;
 
 function json(body: Record<string, unknown>, status: number, extraHeaders: HeadersInit = {}) {
   return Response.json(body, {
@@ -41,39 +52,6 @@ function json(body: Record<string, unknown>, status: number, extraHeaders: Heade
 function retryAfter(upstream: Response): string {
   const value = upstream.headers.get('retry-after');
   return value && /^\d{1,6}$/.test(value) ? value : '60';
-}
-
-async function activeSearchPlan(
-  sql: NeonQueryFunction<false, false>,
-  profile: AuthenticatedProfile,
-): Promise<SearchPlan> {
-  const rows = await sql`
-    select s.plan_id
-    from app.subscriptions s
-    where s.status = 'active'
-      and (s.current_period_end is null or s.current_period_end > now())
-      and s.plan_id in ('pro', 'team', 'enterprise')
-      and (
-        s.clerk_user_id = ${profile.clerkUserId}
-        or exists (
-          select 1
-          from app.organization_members member
-          join app.organizations organization on organization.id = member.organization_id
-          where member.profile_id = ${profile.profileId}::uuid
-            and (
-              s.organization_id = organization.id
-              or (
-                s.clerk_organization_id is not null
-                and s.clerk_organization_id = organization.clerk_organization_id
-              )
-            )
-        )
-      )
-    order by case s.plan_id when 'enterprise' then 3 when 'team' then 2 else 1 end desc
-    limit 1
-  `;
-  const plan = rows[0]?.plan_id;
-  return plan === 'enterprise' || plan === 'team' || plan === 'pro' ? plan : 'free';
 }
 
 async function callOpenRouter(apiKey: string, body: object): Promise<{
@@ -150,6 +128,18 @@ export const POST: APIRoute = async ({ locals, request }) => {
   }
   const messages = parseAssistantMessages(body.messages);
   if (!messages) return json({ error: 'invalid assistant conversation' }, 400);
+  const threadId = body.thread_id === undefined || body.thread_id === null
+    ? null
+    : parseAssistantId(body.thread_id);
+  if (body.thread_id !== undefined && body.thread_id !== null && !threadId) {
+    return json({ error: 'invalid assistant thread' }, 400);
+  }
+  const pageContext = body.page_context === undefined
+    ? null
+    : parseAssistantPageContext(body.page_context);
+  if (body.page_context !== undefined && !pageContext) {
+    return json({ error: 'invalid assistant page context' }, 400);
+  }
   let skillContext;
   if ('skill_context' in body) {
     const parsedSkillContext = parseAssistantSkillContext(body.skill_context);
@@ -170,7 +160,88 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const apiKey = runtimeValue(locals, 'OPENROUTER_API_KEY');
   if (!apiKey) return json({ error: 'assistant is not configured' }, 503);
 
-  const initial = await callOpenRouter(apiKey, openRouterChatRequest(messages, webSearchEnabled, skillContext));
+  let plan: AssistantPlan;
+  let account: AssistantAccountSnapshot;
+  let grounding: AssistantGroundingContext;
+  try {
+    plan = await activeAssistantPlan(sql, profile);
+    if (threadId && !(await assistantThreadOwned(sql, profile.profileId, threadId))) {
+      return json({ error: 'assistant thread not found' }, 404);
+    }
+    const latestUserMessage = messages.at(-1)?.content ?? '';
+    account = await assistantAccountSnapshot(sql, profile, plan, latestUserMessage);
+    const prior = await relevantAssistantHistory(
+      sql,
+      profile.profileId,
+      latestUserMessage,
+      threadId,
+      account.memoryEnabled && assistantPlanEntitlements[plan].selectableMemory,
+    );
+    const priorContext = priorConversationContext(prior);
+    grounding = {
+      product: trustedSuperiiContext(messages, pageContext),
+      account: trustedAccountContext(account),
+      ...(priorContext ? { prior: priorContext } : {}),
+    };
+  } catch (error) {
+    console.error(JSON.stringify({
+      message: 'assistant account context unavailable',
+      reason: error instanceof Error ? error.name : 'unknown',
+    }));
+    return json({ error: 'assistant safety service unavailable' }, 503);
+  }
+
+  const completeResponse = async (
+    answer: string,
+    sources: WebSearchSource[],
+    search: Record<string, unknown>,
+  ) => {
+    const entitlement = assistantPlanEntitlements[plan];
+    let persistedThreadId = threadId;
+    let persisted = false;
+    let continuityError: string | null = null;
+    if (entitlement.persistentHistory) {
+      try {
+        const saved = await persistAssistantExchange(
+          sql,
+          profile.profileId,
+          plan,
+          threadId,
+          messages.at(-1)?.content ?? '',
+          answer,
+          OPENROUTER_MODEL,
+          pageContext?.path ?? null,
+        );
+        persistedThreadId = saved?.threadId ?? persistedThreadId;
+        persisted = Boolean(saved);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : '';
+        continuityError = detail.includes('assistant_storage_limit_reached')
+          ? 'storage_limit_reached'
+          : 'save_unavailable';
+        console.error(JSON.stringify({
+          message: 'assistant exchange persistence failed',
+          reason: error instanceof Error ? error.name : 'unknown',
+        }));
+      }
+    }
+    return json({
+      answer,
+      model: OPENROUTER_MODEL,
+      sources,
+      search,
+      continuity: {
+        plan,
+        eligible: entitlement.persistentHistory,
+        persisted,
+        thread_id: persistedThreadId,
+        memory_enabled: account.memoryEnabled,
+        ...(continuityError ? { error: continuityError } : {}),
+      },
+    }, 200);
+  };
+
+  const initial = await callOpenRouter(apiKey, openRouterChatRequest(messages, webSearchEnabled, skillContext, grounding));
   if (!initial?.response.ok) return providerFailure(initial);
 
   const toolCall = webSearchEnabled ? openRouterToolCall(initial.payload) : null;
@@ -180,20 +251,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
       console.error(JSON.stringify({ message: 'assistant provider returned no answer' }));
       return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });
     }
-    return json({
-      answer,
-      model: OPENROUTER_MODEL,
-      sources: [],
-      search: { enabled: webSearchEnabled, performed: false },
-    }, 200);
+    return completeResponse(answer, [], { enabled: webSearchEnabled, performed: false });
   }
 
-  let plan: SearchPlan;
-  try {
-    plan = await activeSearchPlan(sql, profile);
-  } catch {
-    return json({ error: 'assistant safety service unavailable' }, 503);
-  }
   const allowance = SEARCH_LIMITS[plan];
   const searchRate = await consumeIdentityRateLimit(
     locals,
@@ -244,15 +304,10 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sources = parseRuntimeSearchResults(await runtimeResponse.json().catch(() => null));
   if (!sources) return json({ error: 'web search is temporarily unavailable' }, 503, { 'retry-after': '30' });
 
-  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources, skillContext));
+  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources, skillContext, grounding));
   if (!final?.response.ok) return providerFailure(final);
   const answer = openRouterAnswer(final.payload);
   if (!answer) return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });
 
-  return json({
-    answer,
-    model: OPENROUTER_MODEL,
-    sources,
-    search: { enabled: true, performed: true, plan, limit: allowance },
-  }, 200);
+  return completeResponse(answer, sources, { enabled: true, performed: true, plan, limit: allowance });
 };
