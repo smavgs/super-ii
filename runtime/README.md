@@ -14,7 +14,7 @@ upload -> quarantine -> path and format policy -> ClamAV -> Gitleaks
        -> finalization -> independent signed policy -> atomic PL/pgSQL publication
 ```
 
-Missing, timed-out, or errored scanners leave a file quarantined. A positive malware, secret, unsafe-serialization, or invalid-format finding rejects the file. Publication requires both ClamAV and Gitleaks pass evidence for every file and an approved review.
+Missing, timed-out, or errored scanners leave a file quarantined. A positive malware, secret, unsafe-serialization, or invalid-format finding rejects the file. Publication requires both ClamAV and Gitleaks pass evidence for every file and a passing signed policy decision.
 
 ## Implemented capabilities
 
@@ -48,6 +48,16 @@ publishes atomically. Agents cannot supply the policy outcome or signature.
 Failed/unknown checks return actionable reasons and leave an editable quarantined
 revision. Service outages keep the sealed revision closed and permit safe retry.
 Historical human reviews and contribution-job reviews keep their original meaning.
+
+Recognized license identifiers remain low-friction. A publisher may also use a
+clear custom identifier when the complete terms are included as `LICENSE`,
+`LICENSE.md`, or `LICENSE.txt` at the repository root. Registered conditional
+licenses can require additional evidence; `lfm1.0`, for example, requires both a
+root license and notice file. Placeholder declarations such as `unknown` and
+`unlicensed` remain blocked. Policy evidence labels custom terms as publisher
+declared and explicitly does not claim that Super ii reviewed their legal
+sufficiency. Rights, source-lineage, safety, format, analysis, and immutable
+manifest checks continue to apply equally to every license.
 
 The policy login is a member only of the restricted `superii_policy` database
 role. It cannot change the trust keys or policy hash. The DB administrative owner

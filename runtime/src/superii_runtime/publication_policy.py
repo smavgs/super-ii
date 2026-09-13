@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 VERSION = "superii-auto-publish-v1"
 POLICY_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
-LICENSES = frozenset(
+RECOGNIZED_LICENSES = frozenset(
     {
         "mit",
         "apache-2.0",
@@ -41,11 +41,95 @@ LICENSES = frozenset(
         "bigscience-openrail-m",
     }
 )
+UNUSABLE_LICENSE_LABELS = frozenset(
+    {
+        "",
+        "none",
+        "no-license",
+        "no license",
+        "tbd",
+        "unknown",
+        "unknown-license",
+        "unlicensed",
+    }
+)
+LICENSE_FILE_NAMES = frozenset({"license", "license.md", "license.txt"})
+NOTICE_FILE_NAMES = frozenset({"notice", "notice.md", "notice.txt"})
+REGISTERED_LICENSE_RULES = {
+    "lfm1.0": {
+        "classification": "registered-conditional",
+        "required_files": (LICENSE_FILE_NAMES, NOTICE_FILE_NAMES),
+    }
+}
 REQUIRED = frozenset({"clamav", "gitleaks", "format_policy"})
 
 
 def canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, default=str)
+
+
+def _root_file_name(path: str) -> str | None:
+    normalized = path.replace("\\", "/").strip("/").lower()
+    return normalized if normalized and "/" not in normalized else None
+
+
+def _license_evidence(
+    license_id: str,
+    files: list[dict[str, Any]],
+    block: Any,
+) -> dict[str, Any]:
+    """Classify declarations without pretending to interpret their legal terms."""
+
+    root_files = {
+        name for file in files if (name := _root_file_name(str(file.get("path") or ""))) is not None
+    }
+    matching_license_files = sorted(root_files & LICENSE_FILE_NAMES)
+    matching_notice_files = sorted(root_files & NOTICE_FILE_NAMES)
+
+    if license_id in UNUSABLE_LICENSE_LABELS:
+        block(
+            "license_policy_unknown",
+            "Name the license or custom terms that authorize publication.",
+        )
+        classification = "missing-or-placeholder"
+        required_groups: tuple[frozenset[str], ...] = ()
+    elif license_id in RECOGNIZED_LICENSES:
+        classification = "recognized-identifier"
+        required_groups = ()
+    elif license_id in REGISTERED_LICENSE_RULES:
+        rule = REGISTERED_LICENSE_RULES[license_id]
+        classification = str(rule["classification"])
+        required_groups = rule["required_files"]
+    else:
+        classification = "publisher-declared-custom"
+        required_groups = (LICENSE_FILE_NAMES,)
+
+    for required_group in required_groups:
+        if root_files.isdisjoint(required_group):
+            if required_group is LICENSE_FILE_NAMES:
+                block(
+                    "custom_license_file_required",
+                    "Add the complete custom license as LICENSE, LICENSE.md, "
+                    "or LICENSE.txt at the repository root.",
+                )
+            else:
+                block(
+                    "license_notice_file_required",
+                    "This registered license also requires NOTICE, NOTICE.md, "
+                    "or NOTICE.txt at the repository root.",
+                )
+
+    return {
+        "identifier": license_id,
+        "classification": classification,
+        "license_files": matching_license_files,
+        "notice_files": matching_notice_files,
+        "terms_reviewed_by_superii": False,
+        "claim": (
+            "publisher-declared terms; automated policy verifies required evidence, "
+            "not legal sufficiency"
+        ),
+    }
 
 
 def evaluate(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -96,12 +180,7 @@ def evaluate(candidate: dict[str, Any]) -> dict[str, Any]:
     if any(a["status"] != "passed" for a in analyses):
         block("analysis_failed", "Resolve every failed or unavailable revision inspection.")
     license_id = str(candidate.get("license") or "").lower().strip()
-    if license_id not in LICENSES:
-        block(
-            "license_policy_unknown",
-            "Supply a supported license identifier. Custom licenses stay "
-            "blocked until a versioned policy explicitly supports them.",
-        )
+    license_evidence = _license_evidence(license_id, files, block)
     provenance = candidate.get("provenance") or {}
     bridge = provenance.get("bridge") or {}
     declaration = provenance.get("rights_declaration") or {}
@@ -148,6 +227,7 @@ def evaluate(candidate: dict[str, Any]) -> dict[str, Any]:
             "scans": scan_evidence,
             "analyses": analyses,
             "license": license_id,
+            "license_policy": license_evidence,
             "provenance": provenance,
             "provenance_claim": "publisher-declared or verified import lineage; not a legal ruling",
             "human_review_required": False,

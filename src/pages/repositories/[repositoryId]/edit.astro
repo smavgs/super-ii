@@ -203,10 +203,11 @@ const published = repository?.revision_status === 'published';
 
         <section class="repository-section">
           <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Automatic publication</h2></div></div>
-          <p>Super ii checks files, license and provenance against an independent publication policy. Passing releases publish automatically. Failed or unknown checks keep the release closed and explain what to fix.</p>
+          <p>Super ii checks files, license and provenance against an independent publication policy. Passing releases publish automatically. Missing or failed evidence keeps the release closed and explains what to fix.</p>
           {editable && <form class="mini-form" data-publication-metadata>
             <h3>License and provenance</h3>
             <label>License identifier <input name="license" required maxlength="120" placeholder="apache-2.0" value={repository.license} /></label>
+            <p class="form-hint">Use a standard identifier or a clear identifier for your own terms. Custom terms are supported when the revision includes the complete license as a root LICENSE file; add a root NOTICE when those terms require it. Super ii records your declaration but does not certify legal sufficiency.</p>
             <label>Right to publish <select name="basis"><option value="original" selected={!repository.provenance?.rights_declaration?.basis || repository.provenance?.rights_declaration?.basis === 'original'}>My original work</option><option value="permission" selected={repository.provenance?.rights_declaration?.basis === 'permission'}>Permission from the rights holder</option><option value="licensed-redistribution" selected={repository.provenance?.rights_declaration?.basis === 'licensed-redistribution'}>Redistribution under the source license</option></select></label>
             <label>Source URL <input name="source_url" type="url" placeholder="https://..." value={repository.provenance?.rights_declaration?.source_url ?? ''} /></label>
             <label><input name="confirmed" type="checkbox" required /> I confirm this declaration and my right to publish these files under the stated license.</label>
