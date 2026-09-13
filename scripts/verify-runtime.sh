@@ -3,10 +3,32 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-cargo fmt --manifest-path "$project_dir/rust/Cargo.toml" --check
-cargo build --locked --bins --manifest-path "$project_dir/rust/Cargo.toml"
-cargo test --locked --manifest-path "$project_dir/rust/Cargo.toml"
-cargo clippy --locked --all-targets --manifest-path "$project_dir/rust/Cargo.toml" -- -D warnings
+if command -v cargo >/dev/null 2>&1; then
+  cargo fmt --manifest-path "$project_dir/rust/Cargo.toml" --check
+  cargo build --locked --bins --manifest-path "$project_dir/rust/Cargo.toml"
+  cargo test --locked --manifest-path "$project_dir/rust/Cargo.toml"
+  cargo clippy --locked --all-targets --manifest-path "$project_dir/rust/Cargo.toml" -- -D warnings
+elif command -v docker >/dev/null 2>&1; then
+  echo "cargo is not installed locally; verifying Rust 1.97.0 in an isolated Docker container"
+  docker run --rm \
+    --volume "$project_dir:/workspace:ro" \
+    --mount type=volume,source=superii-cargo-registry,target=/usr/local/cargo/registry \
+    --mount type=volume,source=superii-rust-target,target=/tmp/superii-rust-target \
+    --workdir /workspace \
+    --env CARGO_TARGET_DIR=/tmp/superii-rust-target \
+    rust:1.97.0-bookworm \
+    bash -c '
+      set -euo pipefail
+      rustup component add rustfmt clippy
+      cargo fmt --manifest-path /workspace/rust/Cargo.toml --check
+      cargo build --locked --bins --manifest-path /workspace/rust/Cargo.toml
+      cargo test --locked --manifest-path /workspace/rust/Cargo.toml
+      cargo clippy --locked --all-targets --manifest-path /workspace/rust/Cargo.toml -- -D warnings
+    '
+else
+  echo "ERROR: Rust verification requires either cargo or Docker" >&2
+  exit 1
+fi
 
 uv sync --directory "$project_dir/runtime" --extra test --frozen
 uv run --directory "$project_dir/runtime" ruff format --check .

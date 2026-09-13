@@ -10,6 +10,8 @@ export const agentScopes = [
   'robot:read',
   'robot:create',
   'robot:update',
+  'transparent:read',
+  'transparent:watch',
   'events:read',
   'receipts:read',
   'jobs:claim',

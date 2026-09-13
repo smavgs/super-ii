@@ -177,14 +177,6 @@
 .robot-access__rows span { font: 0.7rem 'IBM Plex Mono', monospace; }.robot-access__rows h3 { margin: 0; font-size: 1.35rem; }.robot-access__rows p { margin: 0; color: var(--muted); }
 .robot-access__later { margin: 2rem 0 0; font-family: 'IBM Plex Mono', monospace; }
 
-.robot-home-hook { background: var(--robot-yellow); color: var(--robot-ink); border-block: 1px solid var(--robot-ink); }
-.robot-home-hook__inner { min-height: 30rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.7fr); gap: 3rem; align-items: center; padding-block: clamp(3rem, 8vw, 6rem); }
-.robot-home-hook h2 { max-width: 12ch; margin: 0.5rem 0 1rem; font-size: clamp(3rem, 6vw, 6rem); line-height: 0.88; letter-spacing: -0.07em; }
-.robot-home-hook p:not(.eyebrow) { max-width: 39rem; font-size: 1.12rem; }
-.robot-home-hook__drawing { min-height: 19rem; position: relative; border: 1px solid var(--robot-ink); background-image: linear-gradient(var(--robot-line) 1px, transparent 1px), linear-gradient(90deg, var(--robot-line) 1px, transparent 1px); background-size: 1.5rem 1.5rem; }
-.robot-home-hook__drawing strong { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); font-size: 5rem; letter-spacing: -0.1em; }
-.robot-home-hook__drawing span { position: absolute; font: 0.65rem 'IBM Plex Mono', monospace; }.robot-home-hook__drawing span:first-of-type { left: 1rem; top: 1rem; }.robot-home-hook__drawing span:last-of-type { right: 1rem; bottom: 1rem; }
-
 .robot-component-page { padding: clamp(3rem, 8vw, 7rem) 0; }
 .robot-component-page__back { font-weight: 800; }.robot-component-page__head { margin-top: 3rem; display: grid; grid-template-columns: 1fr minmax(18rem, 0.45fr); gap: 3rem; align-items: end; }
 .robot-component-page h1 { margin: 0.5rem 0; font-size: clamp(3.3rem, 7vw, 7rem); line-height: 0.86; letter-spacing: -0.075em; }
@@ -220,7 +212,6 @@
   .robot-section-heading { grid-template-columns: 1fr; align-items: start; }
   .robot-component-row { grid-template-columns: 2.5rem 1fr auto; }.robot-component-row p { grid-column: 2 / -1; }.robot-component-row > i { display: none; }
   .robot-public__list { grid-template-columns: 1fr 1fr; }
-  .robot-home-hook__inner { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -234,7 +225,6 @@
   .robot-public__list { grid-template-columns: 1fr; }
   .robot-access__rows article { grid-template-columns: 1fr; gap: 0.6rem; }
   .robot-agent-endpoints a { grid-template-columns: 3.2rem 1fr; }
-  .robot-home-hook h2 { font-size: clamp(3rem, 15vw, 4.5rem); }
   .robot-workspace__robot form,.robot-hardware-form,.robot-claim-form { grid-template-columns: 1fr; }
   .robot-workspace form [role='status'],.robot-hardware-form__notes,.robot-claim-form label:nth-of-type(4) { grid-column: auto; }
 }

@@ -1,10 +1,15 @@
 import type { APIRoute } from 'astro';
-import { parseSkillsCatalog, SKILLS_SOURCE_URL, type SkillsCatalog } from '@/lib/skills';
+import {
+  mergeSkillsCatalog,
+  parsePublicSkillsCatalog,
+  parseSkillsCatalog,
+  SKILLS_SOURCE_URL,
+} from '@/lib/skills';
 
 const FRESH_SECONDS = 300;
 const STALE_SECONDS = 86_400;
 const MAX_UPSTREAM_BYTES = 2_000_000;
-const CACHE_KEY = new Request('https://superii.site/.internal-cache/make-great-agents-v1');
+const CACHE_KEY = new Request('https://superii.site/.internal-cache/unified-skills-v2');
 
 function publicResponse(body: string, state: 'fresh' | 'hit' | 'stale') {
   return new Response(body, {
@@ -47,9 +52,9 @@ async function readCached(cache: Cache | null): Promise<{ body: string; fetchedA
     const fetchedAt = Number(response?.headers.get('x-superii-skills-fetched-at'));
     if (!response || !response.ok || !Number.isFinite(fetchedAt)) return null;
     const body = await response.text();
-    const parsed = JSON.parse(body) as SkillsCatalog;
-    if (parsed.version !== 1 || !Array.isArray(parsed.skills) || !parsed.skills.length) return null;
-    return { body, fetchedAt };
+    const parsed = parsePublicSkillsCatalog(JSON.parse(body) as unknown);
+    if (!parsed) return null;
+    return { body: JSON.stringify(parsed), fetchedAt };
   } catch {
     return null;
   }
@@ -70,7 +75,7 @@ async function fetchCatalog(): Promise<{ body: string; fetchedAt: number } | nul
     if (raw.length > MAX_UPSTREAM_BYTES) return null;
     const catalog = parseSkillsCatalog(JSON.parse(raw) as unknown);
     if (!catalog) return null;
-    return { body: JSON.stringify(catalog), fetchedAt: Date.now() };
+    return { body: JSON.stringify(mergeSkillsCatalog(catalog)), fetchedAt: Date.now() };
   } catch (error) {
     console.error(JSON.stringify({
       message: 'skills catalog refresh failed',

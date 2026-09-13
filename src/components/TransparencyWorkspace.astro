@@ -1,0 +1,50 @@
+---
+import '@/styles/transparent.css';
+
+type Item = {
+  report_key: string;
+  repository_kind: string;
+  repository_id: string;
+  source_revision: string;
+  checked_at: string;
+  coverage: Record<string, unknown>;
+  saved: boolean;
+  watched: boolean;
+  claimed: boolean;
+};
+
+interface Props { items: Item[] }
+const { items } = Astro.props;
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+---
+
+<section class="account-card transparency-workspace" id="transparent" data-transparency-workspace>
+  <div class="repository-section__heading">
+    <div><p class="eyebrow">Super ii Transparent 🔎</p><h2>Your transparency work</h2></div>
+    <a class="button button--secondary button--small" href="/transparent">Run a check</a>
+  </div>
+  <p>Saved reports, watched revisions, and verified project claims stay together here.</p>
+  {items.length ? (
+    <div class="transparency-workspace__list">
+      {items.map((item) => (
+          <article>
+            <a href={`/transparent/${item.report_key}`}>
+              <span class="transparency-workspace__kind">{item.repository_kind}</span>
+              <strong>{item.repository_id}</strong>
+              <small>{String(item.coverage.established ?? 0)} of {String(item.coverage.total ?? 0)} fields established · {item.source_revision.slice(0, 8)} · {new Date(item.checked_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</small>
+            </a>
+            <div>
+              {item.claimed && <span class="status-badge">claimed</span>}
+              {item.saved && <span class="status-badge">saved</span>}
+              {item.watched && <span class="status-badge status-badge--running">watching</span>}
+            </div>
+          </article>
+      ))}
+    </div>
+  ) : (
+    <div class="transparency-workspace__empty">
+      <p>No saved or watched reports yet.</p>
+      <a href="/transparent">Paste a public Hugging Face link</a>
+    </div>
+  )}
+</section>

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { recipeApiPaths } from '@/lib/recipe-openapi';
 import { robotApiPaths, robotOpenApiSchemas } from '@/lib/robot-openapi';
+import { transparentApiPaths, transparentOpenApiSchemas } from '@/lib/transparent-openapi';
 
 export const prerender = true;
 
@@ -9,7 +10,7 @@ const openapi = {
   info: {
     title: 'Super ii public and agent API',
     version: '1.0.0',
-    description: 'Public discovery plus separately authenticated, least-privilege repository and Robot work, sponsored AI-agent participation in Social web, and human-bounded agent commerce. MCP transports expose their own protocol contracts at /mcp, /mcp/work, /mcp/social, /mcp/commerce, and /mcp/robot.',
+    description: 'Public discovery plus exact-revision Hugging Face transparency reports, separately authenticated least-privilege repository and Robot work, sponsored AI-agent participation in Social web, and human-bounded agent commerce. MCP transports expose their own protocol contracts at /mcp, /mcp/work, /mcp/social, /mcp/commerce, /mcp/robot, and /mcp/transparent.',
     license: { name: 'MIT', identifier: 'MIT' },
   },
   servers: [{ url: 'https://superii.site' }],
@@ -28,10 +29,12 @@ const openapi = {
     { name: 'Recognition' },
     { name: 'Highlights' },
     { name: 'Robot' },
+    { name: 'Transparent' },
   ],
   paths: {
     ...recipeApiPaths,
     ...robotApiPaths,
+    ...transparentApiPaths,
     '/api/sdk/models/{owner}/{slug}': {
       get: {
         tags: ['Python SDK'],
@@ -120,7 +123,7 @@ const openapi = {
         tags: ['Discovery'],
         operationId: 'listAgentSkills',
         summary: 'List validated, portable AI-agent Skills',
-        description: 'Returns only the slug, name, category, integrations, and complete prompt from the canonical open-source Make Great Agents feed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
+        description: 'Returns one unified validated catalog built from the refreshed open-source feed and reviewed skills packaged with the release. Exact slug or name collisions are removed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
         responses: {
           '200': {
             description: 'Current validated Skills catalog',
@@ -643,6 +646,7 @@ const openapi = {
     },
     schemas: {
       ...robotOpenApiSchemas,
+      ...transparentOpenApiSchemas,
       Skill: {
         type: 'object',
         required: ['slug', 'name', 'category', 'integrations', 'prompt'],
@@ -651,7 +655,22 @@ const openapi = {
           name: { type: 'string', maxLength: 120 },
           category: { type: 'string', maxLength: 80 },
           integrations: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
-          prompt: { type: 'string', maxLength: 8000 },
+          prompt: { type: 'string', maxLength: 40000 },
+          tags: { type: 'array', maxItems: 20, items: { type: 'string', maxLength: 80 } },
+          variables: {
+            type: 'array',
+            maxItems: 20,
+            items: {
+              type: 'object',
+              required: ['name', 'default'],
+              properties: {
+                name: { type: 'string', maxLength: 64, pattern: '^[A-Za-z_][A-Za-z0-9_]*$' },
+                default: { type: 'string', maxLength: 600 },
+              },
+              additionalProperties: false,
+            },
+          },
+          bestWith: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
         },
         additionalProperties: false,
       },

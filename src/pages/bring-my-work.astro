@@ -2,6 +2,7 @@
 import { Show, SignInButton } from '@clerk/astro/components';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import LogoMark from '@/components/LogoMark.astro';
+import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { bridgeIsConfigured } from '@/lib/bridge';
 import { sqlClient } from '@/lib/db';
@@ -73,6 +74,7 @@ const connected = Astro.url.searchParams.get('connected');
 const bridgeError = Astro.url.searchParams.get('bridge_error');
 const welcome = Astro.url.searchParams.get('welcome') === '1';
 const activeJob = jobs.find((job) => ['queued', 'running'].includes(job.status));
+const requestedTransparentSource = Astro.url.searchParams.get('source') ?? '';
 const organizationHandlePattern = /^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$/;
 const claimableOrganizations = connections.flatMap((connection) => {
   if (!connection.scopes.includes('read-memberships')) return [];
@@ -207,6 +209,12 @@ const claimableOrganizations = connections.flatMap((connection) => {
                   </div>
                 </div>
               </section>
+
+              {Astro.locals.locale !== 'ru' && (
+                <div class="bridge-transparent-lane">
+                  <TransparencyChecker variant="bridge" initialSource={requestedTransparentSource} />
+                </div>
+              )}
             </div>
 
             <aside class="bridge-sidebar" aria-label="Bridge account and safeguards">

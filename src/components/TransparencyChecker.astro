@@ -1,0 +1,104 @@
+---
+import '@/styles/transparent.css';
+
+interface Props {
+  variant?: 'page' | 'home' | 'bridge';
+  initialSource?: string;
+}
+
+const { variant = 'page', initialSource = '' } = Astro.props;
+---
+
+<section class:list={['transparency-checker', `transparency-checker--${variant}`]} data-transparency-checker>
+  <div class="transparency-checker__copy">
+    <p class="eyebrow">Super ii Transparent <span aria-hidden="true">🔎</span></p>
+    {variant === 'page' ? (
+      <>
+        <h1>What is known.<br />What is only claimed.<br />What is still missing.</h1>
+        <p>Paste any public Hugging Face model, dataset, or Space. Get a permanent report pinned to the exact commit.</p>
+      </>
+    ) : variant === 'home' ? (
+      <>
+        <h2>Check any public Hugging Face project.</h2>
+        <p>See what is verified, declared, derived, or still unknown.</p>
+      </>
+    ) : (
+      <>
+        <h2>Checking work that is not yours?</h2>
+        <p>Inspect its public evidence without importing, copying, or claiming it.</p>
+      </>
+    )}
+  </div>
+
+  <form class="transparency-checker__form" data-transparency-form>
+    <label for={`transparent-source-${variant}`}>Public Hugging Face link or repository ID</label>
+    <div class="transparency-checker__control">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input
+        id={`transparent-source-${variant}`}
+        name="source"
+        type="text"
+        inputmode="url"
+        autocomplete="url"
+        maxlength="2048"
+        placeholder="https://huggingface.co/owner/project"
+        value={initialSource}
+        required
+      />
+      <button class="button button--dark" type="submit">Check transparency <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+    </div>
+    {variant === 'page' && (
+      <details class="transparency-checker__revision">
+        <summary>Check a branch, tag, or commit instead of the URL revision</summary>
+        <label for="transparent-revision">Revision <span>(optional)</span></label>
+        <input id="transparent-revision" name="revision" maxlength="200" placeholder="main, v1.0, or a commit SHA" />
+      </details>
+    )}
+    <p class="form-status" data-transparency-status aria-live="polite"></p>
+  </form>
+
+  <div class="transparency-checker__states" aria-label="Evidence states">
+    <span data-state="verified"><i aria-hidden="true"></i>Verified</span>
+    <span data-state="declared"><i aria-hidden="true"></i>Declared</span>
+    <span data-state="derived"><i aria-hidden="true"></i>Derived</span>
+    <span data-state="unknown"><i aria-hidden="true"></i>Unknown</span>
+  </div>
+  <p class="transparency-checker__boundary"><i class="ph ph-shield-check" aria-hidden="true"></i> Public evidence only · exact revision · no code execution</p>
+</section>
+
+<script>
+  const setupTransparencyCheckers = () => {
+    document.querySelectorAll<HTMLElement>('[data-transparency-checker]').forEach((root) => {
+      if (root.dataset.ready === 'true') return;
+      root.dataset.ready = 'true';
+      const form = root.querySelector<HTMLFormElement>('[data-transparency-form]');
+      const status = root.querySelector<HTMLElement>('[data-transparency-status]');
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        const data = new FormData(form);
+        const source = String(data.get('source') ?? '').trim();
+        const revision = String(data.get('revision') ?? '').trim();
+        if (!source) return;
+        if (submit) submit.disabled = true;
+        if (status) { status.textContent = 'Resolving the exact revision and reading bounded public evidence…'; status.dataset.state = ''; }
+        try {
+          const response = await fetch('/api/transparent/check', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ source, ...(revision ? { revision } : {}) }),
+          });
+          const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+          if (!response.ok || typeof body.report_key !== 'string') throw new Error(typeof body.error === 'string' ? body.error : `Check failed (${response.status})`);
+          if (status) { status.textContent = 'Exact-revision report ready. Opening it…'; status.dataset.state = 'success'; }
+          window.location.assign(`/transparent/${body.report_key}`);
+        } catch (error) {
+          if (status) { status.textContent = error instanceof Error ? error.message : 'Transparency Check is unavailable.'; status.dataset.state = 'error'; }
+          if (submit) submit.disabled = false;
+        }
+      });
+    });
+  };
+  setupTransparencyCheckers();
+  document.addEventListener('astro:page-load', setupTransparencyCheckers);
+</script>
