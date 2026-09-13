@@ -123,7 +123,7 @@ const openapi = {
         tags: ['Discovery'],
         operationId: 'listAgentSkills',
         summary: 'List validated, portable AI-agent Skills',
-        description: 'Returns only the slug, name, category, integrations, and complete prompt from the canonical open-source Make Great Agents feed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
+        description: 'Returns one unified validated catalog built from the refreshed open-source feed and reviewed skills packaged with the release. Exact slug or name collisions are removed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
         responses: {
           '200': {
             description: 'Current validated Skills catalog',
@@ -655,7 +655,22 @@ const openapi = {
           name: { type: 'string', maxLength: 120 },
           category: { type: 'string', maxLength: 80 },
           integrations: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
-          prompt: { type: 'string', maxLength: 8000 },
+          prompt: { type: 'string', maxLength: 40000 },
+          tags: { type: 'array', maxItems: 20, items: { type: 'string', maxLength: 80 } },
+          variables: {
+            type: 'array',
+            maxItems: 20,
+            items: {
+              type: 'object',
+              required: ['name', 'default'],
+              properties: {
+                name: { type: 'string', maxLength: 64, pattern: '^[A-Za-z_][A-Za-z0-9_]*$' },
+                default: { type: 'string', maxLength: 600 },
+              },
+              additionalProperties: false,
+            },
+          },
+          bestWith: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
         },
         additionalProperties: false,
       },

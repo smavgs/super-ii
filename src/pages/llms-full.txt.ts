@@ -76,9 +76,9 @@ Every reviewed model page—not the overview page—derives its exact immutable 
 
 ## Skills library
 
-The public Skills page is a searchable interface for complete, portable AI-agent prompts. A person can open a skill in place, inspect its category and integrations, copy the complete prompt for any compatible agent, or share a direct link. Share uses the device share sheet when available and otherwise copies the link; opening that link returns to the library with the selected skill window open. The Share action does not send the prompt to the Super ii assistant.
+The public Skills page is one searchable interface for complete, portable AI-agent prompts. A person can open a skill in place, inspect its category and First get requirements, copy the complete prompt, share a direct link, or choose Play and select a Chat or Code tool. Play uses a direct prefill only for a supported target and a bounded prompt; otherwise it explicitly copies the prompt and opens the tool when a stable destination exists. Declared variables are filled locally before handoff, and the interface warns against entering secrets. The Share and Play actions do not send the prompt to the Super ii assistant.
 
-GET https://superii.site/api/skills returns the currently validated Skills fields: slug, name, category, integrations, and prompt. The canonical content stays in the open-source Make Great Agents catalog; Super ii refreshes a same-origin edge cache every few minutes and does not maintain a second content database.
+GET https://superii.site/api/skills returns the unified validated Skills catalog. Every Skill includes slug, name, category, integrations, and the complete prompt; tags, variables, and bestWith are optional. Super ii validates and de-duplicates the refreshed open-source feed together with reviewed skills packaged in the release, then keeps one same-origin edge response for the interface.
 
 ## Plans and bounded commerce
 

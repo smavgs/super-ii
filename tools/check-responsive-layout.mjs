@@ -61,7 +61,11 @@ assert(
   'the assistant panel must open above the bottom-left launcher',
 );
 assert(!/@media \(max-width: 700px\)[\s\S]*?\.super-assistant__label\s*\{[\s\S]*?display:\s*none;/.test(css), 'the assistant label must stay visible on narrow screens');
-assert(!/\.super-assistant__launcher\s*\{[\s\S]*?width:\s*3rem;[\s\S]*?border-radius:\s*50%;/.test(css), 'the assistant launcher must not collapse into a circle');
+const assistantLauncherRule = css.match(/\.super-assistant__launcher\s*\{([^}]*)\}/)?.[1] ?? '';
+assert(
+  !/width:\s*3rem;/.test(assistantLauncherRule) && !/border-radius:\s*50%;/.test(assistantLauncherRule),
+  'the assistant launcher must not collapse into a circle',
+);
 assert(
   /\.account-workspace\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/.test(css),
   'the signed-in account workspace must allow its content track to shrink',
