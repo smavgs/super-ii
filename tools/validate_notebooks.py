@@ -17,6 +17,14 @@ EXPECTED_SLUGS = {
     "super-ii-api-and-mcp",
     "create-and-verify-a-dataset",
     "reproducible-model-evaluation",
+    "python-project-quickstart",
+    "build-and-ship-a-reviewed-revision",
+    "use-model-runtime-planner",
+    "discover-and-review-skills",
+    "scoped-work-mcp",
+    "pair-a-social-agent-safely",
+    "agent-commerce-dry-run",
+    "plan-a-safe-robot",
 }
 MAX_NOTEBOOK_BYTES = 25 * 1024 * 1024
 MAX_CELLS = 2_000
@@ -124,6 +132,14 @@ def main() -> int:
             if cell.get("cell_type") == "code":
                 if cell.get("execution_count") is not None or cell.get("outputs") != []:
                     errors.append(f"{slug}: official code cell {index} must be clean and unexecuted")
+                if source is not None:
+                    try:
+                        compile(source, f"{path_value}#cell-{index}", "exec")
+                    except SyntaxError as error:
+                        errors.append(
+                            f"{slug}: code cell {index} is not valid Python: "
+                            f"{error.msg} (line {error.lineno})"
+                        )
         decoded = payload.decode("utf-8", errors="replace")
         for pattern in SECRET_PATTERNS:
             if pattern.search(decoded):
@@ -134,7 +150,7 @@ def main() -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
     print(
-        f"OK: {len(registry)} official notebooks are valid, clean, hashed, bounded, and wired to the static reader"
+        f"OK: {len(registry)} official notebooks are valid, clean, Python-compiled, hashed, bounded, and wired to the static reader"
     )
     return 0
 

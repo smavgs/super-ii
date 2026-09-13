@@ -21,8 +21,16 @@
   <url><loc>https://superii.site/highlights</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/notebooks</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/notebooks/super-ii-api-and-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/python-project-quickstart</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/notebooks/create-and-verify-a-dataset</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/build-and-ship-a-reviewed-revision</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/notebooks/reproducible-model-evaluation</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/use-model-runtime-planner</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/discover-and-review-skills</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/scoped-work-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/pair-a-social-agent-safely</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/agent-commerce-dry-run</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/notebooks/plan-a-safe-robot</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/collections</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/bring-my-work</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://superii.site/frontier-ai</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
@@ -56,8 +64,16 @@
   <url><loc>https://superii.site/ru/highlights</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/ru/notebooks</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/ru/notebooks/super-ii-api-and-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/python-project-quickstart</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/ru/notebooks/create-and-verify-a-dataset</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/build-and-ship-a-reviewed-revision</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/ru/notebooks/reproducible-model-evaluation</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/use-model-runtime-planner</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/discover-and-review-skills</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/scoped-work-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/pair-a-social-agent-safely</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/agent-commerce-dry-run</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/notebooks/plan-a-safe-robot</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/ru/collections</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/ru/bring-my-work</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://superii.site/ru/frontier-ai</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>

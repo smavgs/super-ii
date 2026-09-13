@@ -1756,3 +1756,71 @@ export const agentContributionSubmissions = app.table(
     index('agent_contribution_submissions_agent_idx').on(table.agentIdentityId, table.status, table.submittedAt),
   ],
 );
+
+export const assistantThreads = app.table(
+  'assistant_threads',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    status: text('status').notNull().default('recent'),
+    projectLabel: text('project_label'),
+    pagePath: text('page_path'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('assistant_threads_profile_status_idx').on(table.profileId, table.status, table.updatedAt),
+    index('assistant_threads_profile_project_idx').on(table.profileId, table.projectLabel, table.updatedAt),
+  ],
+);
+
+export const assistantMessages = app.table(
+  'assistant_messages',
+  {
+    sequence: bigint('sequence', { mode: 'bigint' }).notNull().unique(),
+    id: uuid('id').defaultRandom().primaryKey(),
+    threadId: uuid('thread_id').notNull().references(() => assistantThreads.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    content: text('content').notNull(),
+    contentBytes: integer('content_bytes').notNull(),
+    provider: text('provider'),
+    model: text('model'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('assistant_messages_thread_sequence_idx').on(table.threadId, table.sequence)],
+);
+
+export const assistantMemoryPreferences = app.table('assistant_memory_preferences', {
+  profileId: uuid('profile_id').primaryKey().references(() => profiles.id, { onDelete: 'cascade' }),
+  memoryEnabled: boolean('memory_enabled').notNull().default(false),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const assistantMemoryItems = app.table(
+  'assistant_memory_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    sourceThreadId: uuid('source_thread_id').references(() => assistantThreads.id, { onDelete: 'set null' }),
+    label: text('label').notNull(),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('assistant_memory_items_profile_idx').on(table.profileId, table.updatedAt)],
+);
+
+export const assistantUsageLedger = app.table(
+  'assistant_usage_ledger',
+  {
+    sequence: bigint('sequence', { mode: 'bigint' }).notNull().unique(),
+    id: uuid('id').defaultRandom().primaryKey(),
+    profileId: uuid('profile_id').notNull(),
+    threadId: uuid('thread_id'),
+    eventType: text('event_type').notNull(),
+    bytesDelta: bigint('bytes_delta', { mode: 'bigint' }).notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('assistant_usage_ledger_profile_idx').on(table.profileId, table.sequence)],
+);

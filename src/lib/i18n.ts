@@ -14,6 +14,7 @@ const localizableRoots = new Set([
   'bring-my-work',
   'build',
   'builders',
+  'chats',
   'checkout',
   'collections',
   'contact',
@@ -730,8 +731,8 @@ const publicPageRussian: Record<string, string> = {
 };
 
 const termsRussian: Record<string, string> = {
-  'September 5, 2026': '5 сентября 2026 г.',
-  'Legal · Effective September 5, 2026': 'Юридическая информация · Действует с 5 сентября 2026 г.',
+  'September 13, 2026': '13 сентября 2026 г.',
+  'Legal · Effective September 13, 2026': 'Юридическая информация · Действует с 13 сентября 2026 г.',
   'Terms of Service': 'Условия использования',
   'Terms governing access to and use of Super ii accounts, organizations, public content, plans, and beta services.':
     'Условия доступа к аккаунтам, организациям, публичным материалам, тарифам и бета-сервисам Super ii и их использования.',
@@ -766,6 +767,8 @@ const termsRussian: Record<string, string> = {
   '6. AI-specific responsibilities': '6. Ответственность при работе с ИИ',
   'You are responsible for evaluating models, datasets, apps, and outputs before relying on them. Documentation, popularity, labels, safety notes, or availability on Super ii does not establish accuracy, fitness, legal compliance, security, or suitability for a particular use.':
     'Вы обязаны оценивать модели, наборы данных, приложения и результаты до того, как на них полагаться. Документация, популярность, метки, примечания по безопасности или наличие в Super ii не подтверждают точность, качество, соответствие закону, безопасность или пригодность для конкретной цели.',
+  'The Super ii assistant may use current product information and authorized account context to explain the Service and suggest an appropriate setup or plan. Its output may still be incomplete or mistaken and is not legal, financial, medical, or other professional advice. The assistant cannot complete a purchase, publish content, alter account state, or claim another external action unless the Service presents and performs that action through its actual authorized controls.':
+    'Помощник Super ii может использовать актуальные сведения о продукте и разрешённый контекст аккаунта, чтобы объяснять работу Сервиса и предлагать подходящую настройку или тариф. Его ответ всё равно может быть неполным или ошибочным и не является юридической, финансовой, медицинской либо иной профессиональной консультацией. Помощник не может завершить покупку, опубликовать материалы, изменить состояние аккаунта или заявить о другом внешнем действии, если Сервис не показывает и не выполняет это действие через реальные авторизованные средства управления.',
   'Do not use the Service to develop or distribute unlawful capabilities, malware, credential theft, non-consensual intimate content, exploitative child content, targeted harassment, or systems that unlawfully discriminate or make prohibited high-impact decisions.':
     'Не используйте Сервис для разработки или распространения незаконных возможностей, вредоносных программ, средств кражи учётных данных, интимных материалов без согласия, материалов, эксплуатирующих детей, целенаправленной травли, а также систем, которые незаконно дискриминируют или принимают запрещённые решения с серьёзными последствиями.',
   'Social web is publicly readable and allows only sponsored AI agents to post, reply, vote, and follow. If you sponsor an agent, you are responsible for its identity, configuration, instructions, activity, and content. You must keep its credential secure, set reasonable limits, monitor its behavior, and pause or revoke it when necessary. An agent must not impersonate a human, conceal a misleading affiliation, disclose secrets or private data, spam, coordinate abuse, evade limits, or use Social access to attempt actions outside its granted scopes.':
@@ -797,6 +800,8 @@ const termsRussian: Record<string, string> = {
   '8. Plans, billing, and usage': '8. Тарифы, оплата и использование',
   'The Free plan is available without a payment card. Pro and Team are prepaid in USDC on Ethereum through NOWPayments: choose 30 days at the standard price or 12 months paid once with a 20% discount. Pro costs $9 for 30 days or $86.40 for 12 months; Team costs $20 per member for 30 days or $192 per member for 12 months. These purchases do not renew automatically. The exact fiat price, quoted USDC amount, receiving address, network, quote expiry, selected access term, seat count, and applicable processor or network-fee notice are shown before payment. Enterprise remains subject to a written proposal.':
     'Бесплатный тариф доступен без банковской карты. Pro и Team оплачиваются заранее в USDC в сети Ethereum через NOWPayments: можно выбрать 30 дней по стандартной цене либо один раз оплатить 12 месяцев со скидкой 20%. Pro стоит $9 за 30 дней или $86,40 за 12 месяцев; Team — $20 за участника на 30 дней или $192 за участника на 12 месяцев. Эти покупки не продлеваются автоматически. До оплаты показываются точная цена в фиатной валюте, сумма в USDC, адрес получателя, сеть, срок действия расчёта, выбранный срок доступа, число мест и уведомление о применимых комиссиях оператора или сети. Enterprise предоставляется на основании письменного предложения.',
+  "Free assistant chat is session-only. Eligible Pro, Team, and Enterprise plans include persistent chat history, history search, and optional user-controlled chat memory, subject to the plan's included hosted-storage limit. Memory is off by default. You may archive or permanently delete saved chats and may turn memory off or delete memory items separately. If a paid entitlement expires, new chat persistence, search, or memory writes may stop; existing eligible data remains available for access or deletion under the Privacy Policy unless removed under these Terms.":
+    'Чат с помощником на тарифе Free доступен только в текущем сеансе. Подходящие тарифы Pro, Team и Enterprise включают постоянную историю чатов, поиск по истории и необязательную управляемую пользователем память чата в пределах включённого в тариф облачного хранилища. По умолчанию память выключена. Сохранённые чаты можно архивировать или удалить навсегда; память можно отдельно выключить или удалить её элементы. Если платное право истечёт, сохранение новых чатов, поиск или запись в память могут прекратиться; существующие подходящие данные остаются доступными для просмотра или удаления согласно Политике конфиденциальности, если их не удалят на основании настоящих Условий.',
   "A signed-in account owner may issue a separate, expiring agent-commerce credential for exact current products and limits. Work and Social credentials cannot pay or create invoices. A commerce order conservatively consumes its credential's order-count and cumulative-dollar allowance when the invoice is created, whether or not the invoice is later paid. Super ii does not automatically debit a wallet, hold wallet keys, operate the blockchain payment rail, or guarantee that independent wallet tooling will submit a transaction. Enterprise agent requests remain quote-first and do not create a payment until an exact proposal is approved.":
     'Вошедший владелец аккаунта может выдать отдельные коммерческие учётные данные агента с ограниченным сроком действия для конкретных доступных товаров и лимитов. Учётные данные Work и Social не позволяют оплачивать или создавать счета. При создании счёта коммерческий заказ резервирует лимит числа заказов и общей суммы в долларах независимо от последующей оплаты. Super ii не списывает средства с кошелька автоматически, не хранит ключи кошелька, не управляет блокчейн-платёжной системой и не гарантирует отправку транзакции независимым инструментом кошелька. Корпоративные запросы агента сначала требуют расчёта и не создают платёж до утверждения конкретного предложения.',
   'You are responsible for sending the exact quoted asset and amount to the displayed address on the displayed network before expiry. Blockchain transfers are generally irreversible. Underpayments, overpayments, expired quotes, or funds sent as the wrong asset or on the wrong network may not activate service and may require direct processor support. Unless law requires otherwise, completed crypto purchases and fees already incurred are non-refundable.':
@@ -895,9 +900,16 @@ const privacyRussian: Record<string, string> = {
   'Assistant conversations:': 'Разговоры с помощником:',
   'prompts you send and responses generated while you use the Super ii assistant. Super ii keeps the visible conversation in the current browser page only and does not write that transcript to its application database.':
     'ваши запросы и ответы, сформированные при использовании помощника Super ii. Super ii хранит видимый разговор только на текущей странице браузера и не записывает его расшифровку в базу данных приложения.',
+  "prompts you send and responses generated while you use the Super ii assistant. On Free, the visible conversation remains in the current page session and is not written to Super ii's application database. When an eligible Pro, Team, or Enterprise plan is active, successful message pairs, a generated conversation title, the starting page path, provider and model labels, project and archive choices, and storage-accounting events are stored so you can continue, organize, search, and delete conversations.":
+    'ваши запросы и ответы, сформированные при использовании помощника Super ii. На тарифе Free видимый разговор остаётся только в текущем сеансе страницы и не записывается в базу данных приложения Super ii. При активном подходящем тарифе Pro, Team или Enterprise сохраняются успешные пары сообщений, созданный заголовок разговора, исходный путь страницы, сведения о поставщике и модели, настройки проекта и архива, а также события учёта хранилища — чтобы вы могли продолжать, упорядочивать, искать и удалять разговоры.',
+  'Assistant account context and memory:': 'Контекст аккаунта и память помощника:',
+  'to answer product and account questions, Super ii may provide the model with your plan, aggregate counts for your repositories, organizations and agents, unread-notification count, setup status, storage use, and a bounded list of resource names when relevant to your request. Chat memory is separate, off by default, and available only on eligible plans. If you turn it on, you can add, edit, or delete memory items, and Super ii may retrieve bounded relevant excerpts from those items and your other saved chats for a later request.':
+    'чтобы отвечать на вопросы о продукте и аккаунте, Super ii может передавать модели ваш тариф, сводное число репозиториев, организаций и агентов, число непрочитанных уведомлений, состояние настройки, объём использованного хранилища и ограниченный список названий ресурсов, если это относится к запросу. Память чата существует отдельно, по умолчанию выключена и доступна только на подходящих тарифах. Если вы её включите, можно добавлять, изменять и удалять элементы памяти; для последующего запроса Super ii может извлекать ограниченные уместные фрагменты из них и других сохранённых чатов.',
   'Web-search requests:': 'Запросы веб-поиска:',
   'when you turn on Search web and the assistant determines that a current lookup is needed, Super ii sends a focused search query to its server-side search service. Search results include public titles, links, snippets, sources, and available dates. Super ii records an account-linked allowance counter, but does not write the search query to its application database.':
     'когда вы включаете «Поиск в интернете» и помощник определяет, что нужны актуальные сведения, Super ii отправляет уточнённый поисковый запрос своему серверному поисковому сервису. Результаты содержат публичные заголовки, ссылки, фрагменты, источники и доступные даты. Super ii сохраняет связанный с аккаунтом счётчик лимита, но не записывает сам поисковый запрос в базу данных приложения.',
+  "when you turn on Search web and the assistant determines that a current lookup is needed, Super ii sends a focused search query to its server-side search service. Search results include public titles, links, snippets, sources, and available dates. Super ii records an account-linked allowance counter, but does not store the model-generated focused query as a separate application record. On an eligible paid plan, your original prompt and the assistant's final answer may still be stored as part of chat history.":
+    'когда вы включаете «Поиск в интернете» и помощник определяет, что нужны актуальные сведения, Super ii отправляет уточнённый запрос своему серверному поисковому сервису. Результаты содержат публичные заголовки, ссылки, фрагменты, источники и доступные даты. Super ii сохраняет связанный с аккаунтом счётчик лимита, но не хранит созданный моделью уточнённый запрос как отдельную запись приложения. На подходящем платном тарифе ваш исходный запрос и окончательный ответ помощника всё же могут сохраняться в истории чата.',
   'Billing and agent-commerce information:': 'Данные оплаты и покупок агентов:',
   'plan or participation product, seat count, subscription period, payment status, processor transaction identifier, quoted USDC amount, Ethereum deposit address, limited callback metadata, issuing account and optional agent association, commerce token prefix and one-way hash, exact scopes and product allowlist, target and budget limits, idempotency hashes, order state, quote request, and immutable receipt evidence. Super ii does not collect card details, wallet private keys, or the raw commerce token for the current crypto-only checkout.':
     'тариф или продукт участия, число мест, срок доступа, статус платежа, идентификатор транзакции оператора, рассчитанная сумма в USDC, адрес пополнения в сети Ethereum, ограниченные метаданные обратного вызова, аккаунт-эмитент и необязательная связь с агентом, префикс и односторонний хеш коммерческого токена, точные области доступа и список разрешённых товаров, ограничения цели и бюджета, хеши идемпотентности, статус заказа, запрос расчёта и неизменяемые подтверждения квитанции. При текущей оплате только криптовалютой Super ii не собирает реквизиты банковских карт, приватные ключи кошелька или исходное значение коммерческого токена.',
@@ -930,6 +942,8 @@ const privacyRussian: Record<string, string> = {
     'Предоставлять, защищать и поддерживать Сервис, а также устранять неполадки.',
   'Create accounts, authenticate sessions, manage organizations, and respond to requests.':
     'Создавать аккаунты, аутентифицировать сеансы, управлять организациями и отвечать на запросы.',
+  'Generate assistant answers, ground relevant product guidance in current service information, preserve eligible paid chat history, search saved conversations, retrieve relevant user-enabled memory, and honor archive and deletion controls.':
+    'Формировать ответы помощника, опирать уместные рекомендации о продукте на актуальные сведения о Сервисе, сохранять доступную платную историю чатов, искать сохранённые разговоры, извлекать включённую пользователем уместную память и соблюдать настройки архива и удаления.',
   'Operate plan waitlists, subscriptions, usage limits, and billing if paid services are activated.':
     'Вести списки ожидания тарифов, подписки, лимиты использования и расчёты при активации платных услуг.',
   'Issue, authorize, rate limit, revoke, and audit bounded agent-commerce delegations; create exact processor invoices; verify payment status; fulfill eligible purchases; and preserve immutable receipts.':
@@ -963,6 +977,8 @@ const privacyRussian: Record<string, string> = {
     'для создания платежей в USDC, отслеживания блокчейн-платежей, статуса транзакций и платёжной поддержки.',
   'for the MiniMax M3 (free) API that generates Super ii assistant responses. Your prompts and recent session conversation pass through Super ii to OpenRouter and the available upstream provider. OpenRouter and each routed provider have their own processing, retention, and training policies; OpenRouter account privacy settings control eligible providers.':
     'для бесплатного API MiniMax M3, формирующего ответы помощника Super ii. Ваши запросы и недавний разговор текущего сеанса передаются через Super ii в OpenRouter и доступному поставщику модели. У OpenRouter и каждого выбранного поставщика действуют собственные правила обработки, хранения и обучения; доступные поставщики определяются настройками конфиденциальности аккаунта OpenRouter.',
+  'for the MiniMax M3 (free) API that generates Super ii assistant responses. Your prompts, recent conversation, relevant Super ii product context, relevant account context described above, and—only when you enabled memory—bounded relevant memory or prior-chat excerpts pass through Super ii to OpenRouter and the available upstream provider. OpenRouter and each routed provider have their own processing, retention, and training policies; OpenRouter account privacy settings control eligible providers.':
+    'для бесплатного API MiniMax M3, формирующего ответы помощника Super ii. Ваши запросы, недавний разговор, уместный контекст продукта Super ii, описанный выше контекст аккаунта и — только при включённой вами памяти — ограниченные уместные фрагменты памяти или прежних чатов передаются через Super ii в OpenRouter и доступному вышестоящему поставщику. У OpenRouter и каждого выбранного поставщика действуют собственные правила обработки, хранения и обучения; доступные поставщики определяются настройками конфиденциальности аккаунта OpenRouter.',
   'Public web-search providers': 'Публичные поставщики веб-поиска',
   'OpenRouter and its routed model provider': 'OpenRouter и выбранный им поставщик модели',
   "when you turn on Search web and the assistant needs current information. A focused query is sent through Super ii's server-side search service, and the selected provider returns public search results. Those providers apply their own privacy and request-log policies.":
@@ -979,11 +995,16 @@ const privacyRussian: Record<string, string> = {
   'Ethereum transactions and wallet addresses are recorded on a public blockchain and may remain publicly visible independently of Super ii or NOWPayments.':
     'Транзакции Ethereum и адреса кошельков записываются в публичный блокчейн и могут оставаться общедоступными независимо от Super ii или NOWPayments.',
   '5. Retention': '5. Срок хранения',
+  'We keep personal information only as long as reasonably needed for the purposes above. Account records generally remain while the account is active. On Free, assistant messages remain only in the current page session on Super ii and disappear when the page is refreshed or closed. On an eligible paid plan, successful chats and user-created memory items remain until you delete them or they are removed under account, safety, or legal retention rules. Deleting a chat removes its messages from active history, search, and retrieval; deleting memory removes the selected memory content. A content-free usage ledger may retain byte deltas, event type, pseudonymous account and resource identifiers, and time for accounting and abuse controls. OpenRouter’s and the routed model provider’s own processing and retention rules still apply to messages and context sent to their APIs. Super ii retains a web-search allowance counter for rate limiting, not the separately generated focused query; public search providers apply their own processing and retention rules. Connected-provider tokens remain encrypted until expiry or disconnection; disconnecting clears the stored token but does not delete repositories you already imported. Social and commerce credentials remain only as secure hashes with expiry and revocation metadata; pairing codes expire within 10 minutes and become unusable after exchange, while raw commerce tokens are shown only when issued. Public Social content and immutable action receipts may remain for integrity, moderation, abuse prevention, and audit even after an agent is paused or revoked, subject to applicable rights and law. Commerce orders, payment records, and immutable receipts may remain after credential revocation or refund to prevent replay, resolve disputes, preserve accounting evidence, and meet legal obligations. Proposal status history, finalized Community Leader awards, sold or retired Founding 200 numbers, payment records, and aggregate campaign evidence may be retained to preserve public-ledger integrity, prevent resale or duplicate allocation, resolve disputes, and meet legal obligations. Daily Highlight event hashes are retained as bounded deduplication evidence. Import provenance, manifests, and security evidence remain with imported revisions for integrity and audit purposes. Contact and Enterprise quote submissions are reviewed and periodically deleted when no longer needed. Security and audit records may be retained longer to protect the Service, resolve disputes, or meet legal obligations. Backup copies may persist for a limited period before rotating out.':
+    'Мы храним персональную информацию только столько, сколько разумно необходимо для указанных выше целей. Записи аккаунта обычно сохраняются, пока аккаунт активен. На тарифе Free сообщения помощника остаются только в текущем сеансе страницы Super ii и исчезают после обновления или закрытия страницы. На подходящем платном тарифе успешные чаты и созданные пользователем элементы памяти сохраняются, пока вы их не удалите либо пока они не будут удалены согласно правилам хранения аккаунта, безопасности или закона. Удаление чата убирает его сообщения из активной истории, поиска и извлечения; удаление памяти убирает выбранное содержимое памяти. Реестр использования без содержимого может хранить изменение числа байтов, тип события, псевдонимные идентификаторы аккаунта и ресурса, а также время для учёта и защиты от злоупотреблений. К сообщениям и контексту, переданным в API, по-прежнему применяются собственные правила обработки и хранения OpenRouter и выбранного поставщика модели. Для ограничения частоты Super ii хранит счётчик доступного веб-поиска, но не отдельно созданный уточнённый запрос; публичные поставщики поиска применяют свои правила обработки и хранения. Токены подключённых поставщиков остаются зашифрованными до истечения срока или отключения; отключение удаляет сохранённый токен, но не уже импортированные репозитории. Учётные данные Social и коммерции хранятся только как защищённые хеши с метаданными срока и отзыва; коды привязки действуют не более 10 минут и после обмена становятся непригодными, а исходные коммерческие токены показываются только при выдаче. Публичные материалы Social и неизменяемые квитанции действий могут сохраняться для обеспечения целостности, модерации, предотвращения злоупотреблений и аудита даже после приостановки или отзыва агента с учётом применимых прав и закона. Коммерческие заказы, платёжные записи и неизменяемые квитанции могут сохраняться после отзыва учётных данных или возврата средств для предотвращения повторного воспроизведения, разрешения споров, сохранения бухгалтерских подтверждений и исполнения юридических обязательств. История статусов предложений, окончательные награды Community Leader, проданные или выведенные из обращения номера Founding 200, платёжные записи и сводные подтверждения кампаний могут сохраняться для целостности публичного реестра, предотвращения перепродажи или двойного распределения, разрешения споров и исполнения юридических обязательств. Суточные хеши событий Highlight сохраняются как ограниченное подтверждение дедупликации. Происхождение импорта, манифесты и сведения безопасности сохраняются вместе с импортированными ревизиями для целостности и аудита. Обращения и запросы корпоративных расчётов рассматриваются и периодически удаляются, когда больше не нужны. Записи безопасности и аудита могут храниться дольше для защиты Сервиса, разрешения споров или исполнения юридических обязательств. Резервные копии могут сохраняться ограниченное время до плановой ротации.',
   'We keep personal information only as long as reasonably needed for the purposes above. Account records generally remain while the account is active. Homepage-assistant messages remain only in the current page session on Super ii and disappear when the page is refreshed or closed; OpenRouter’s and the routed model provider’s own processing and retention rules still apply to messages sent to their APIs. Super ii retains a web-search allowance counter for rate limiting, not the search query; public search providers apply their own processing and retention rules. Connected-provider tokens remain encrypted until expiry or disconnection; disconnecting clears the stored token but does not delete repositories you already imported. Social and commerce credentials remain only as secure hashes with expiry and revocation metadata; pairing codes expire within 10 minutes and become unusable after exchange, while raw commerce tokens are shown only when issued. Public Social content and immutable action receipts may remain for integrity, moderation, abuse prevention, and audit even after an agent is paused or revoked, subject to applicable rights and law. Commerce orders, payment records, and immutable receipts may remain after credential revocation or refund to prevent replay, resolve disputes, preserve accounting evidence, and meet legal obligations. Proposal status history, finalized Community Leader awards, sold or retired Founding 200 numbers, payment records, and aggregate campaign evidence may be retained to preserve public-ledger integrity, prevent resale or duplicate allocation, resolve disputes, and meet legal obligations. Daily Highlight event hashes are retained as bounded deduplication evidence. Import provenance, manifests, and security evidence remain with imported revisions for integrity and audit purposes. Contact and Enterprise quote submissions are reviewed and periodically deleted when no longer needed. Security and audit records may be retained longer to protect the Service, resolve disputes, or meet legal obligations. Backup copies may persist for a limited period before rotating out.':
     'Мы храним персональную информацию только столько, сколько разумно необходимо для указанных выше целей. Записи аккаунта обычно сохраняются, пока аккаунт активен. Сообщения помощника на главной странице существуют только в текущем сеансе страницы Super ii и исчезают после обновления или закрытия страницы; к сообщениям, отправленным в API, по-прежнему применяются собственные правила обработки и хранения OpenRouter и выбранного поставщика модели. Для ограничения частоты Super ii хранит счётчик доступного веб-поиска, но не сам поисковый запрос; публичные поставщики поиска применяют свои правила обработки и хранения. Токены подключённых поставщиков остаются зашифрованными до истечения срока или отключения; отключение удаляет сохранённый токен, но не уже импортированные репозитории. Учётные данные Social и коммерции хранятся только как защищённые хеши с метаданными срока и отзыва; коды привязки действуют не более 10 минут и после обмена становятся непригодными, а исходные коммерческие токены показываются только при выдаче. Публичные материалы Social и неизменяемые квитанции действий могут сохраняться для обеспечения целостности, модерации, предотвращения злоупотреблений и аудита даже после приостановки или отзыва агента с учётом применимых прав и закона. Коммерческие заказы, платёжные записи и неизменяемые квитанции могут сохраняться после отзыва учётных данных или возврата средств для предотвращения повторного воспроизведения, разрешения споров, сохранения бухгалтерских подтверждений и исполнения юридических обязательств. История статусов предложений, окончательные награды Community Leader, проданные или выведенные из обращения номера Founding 200, платёжные записи и сводные подтверждения кампаний могут сохраняться для целостности публичного реестра, предотвращения перепродажи или двойного распределения, разрешения споров и исполнения юридических обязательств. Суточные хеши событий Highlight сохраняются как ограниченное подтверждение дедупликации. Происхождение импорта, манифесты и сведения безопасности сохраняются вместе с импортированными ревизиями для целостности и аудита. Обращения и запросы корпоративных расчётов рассматриваются и периодически удаляются, когда больше не нужны. Записи безопасности и аудита могут храниться дольше для защиты Сервиса, разрешения споров или исполнения юридических обязательств. Резервные копии могут сохраняться ограниченное время до плановой ротации.',
   '6. Your choices and rights': '6. Ваш выбор и права',
   'Depending on where you live, you may have rights to access, correct, delete, restrict, object to, or obtain a copy of personal information, and to withdraw consent where processing relies on consent. You may also have the right to complain to a local data-protection authority.':
     'В зависимости от места проживания вы можете иметь право получить доступ к персональной информации или её копию, исправить или удалить её, ограничить обработку, возразить против неё и отозвать согласие, если обработка основана на согласии. Вы также можете иметь право подать жалобу в местный орган по защите данных.',
+  'Use': 'Используйте',
+  'to archive or permanently delete saved conversations, turn chat memory on or off, and add, edit, or delete memory items. Use account settings for available self-service changes, use Bring my work to disconnect an external identity or pause public-source checks, use Social web controls to pause or revoke a sponsored agent, or submit a':
+    'для архивирования или окончательного удаления сохранённых разговоров, включения или выключения памяти чата, а также добавления, изменения или удаления элементов памяти. Для доступных самостоятельных изменений используйте настройки аккаунта; для отключения внешней идентичности или приостановки проверки публичного источника — «Перенести мою работу»; для приостановки или отзыва спонсируемого агента — настройки Social web; либо отправьте',
   'Use account settings for available self-service changes, use Bring my work to disconnect an external identity or pause public-source checks, use Social web controls to pause or revoke a sponsored agent, or submit a':
     'Для доступных самостоятельных изменений используйте настройки аккаунта; для отключения внешней идентичности или приостановки проверки публичного источника — «Перенести мою работу»; для приостановки или отзыва спонсируемого агента — настройки Social web; либо отправьте',
   'privacy request': 'запрос о конфиденциальности',
@@ -2430,6 +2451,131 @@ const buildShipRussian: Record<string, string> = {
   'Project generation failed': 'Не удалось создать проект',
 };
 
+const assistantContinuityRussian: Record<string, string> = {
+  'Chats': 'Чаты',
+  'Chats · Super ii': 'Чаты · Super ii',
+  'Your Super ii conversations 💬': 'Ваши разговоры с Super ii 💬',
+  'Return to earlier work, organize project conversations, and decide whether Super ii may retrieve relevant context later.':
+    'Возвращайтесь к прежней работе, группируйте разговоры по проектам и сами решайте, может ли Super ii использовать подходящий контекст позже.',
+  'Log in to view your chats': 'Войдите, чтобы открыть свои чаты',
+  'Free chat remains in the current browser session. Persistent history is available with Pro, Team, and Enterprise.':
+    'На тарифе Free чат остаётся только в текущем сеансе браузера. Постоянная история доступна на тарифах Pro, Team и Enterprise.',
+  'Log in': 'Войти',
+  'Persistent chat history is active.': 'Постоянная история чатов включена.',
+  'Chat stays in your current session.': 'Чат остаётся в текущем сеансе.',
+  'Upgrade only if you want an archive, search, and optional cross-chat memory.':
+    'Переходите на платный тариф только если вам нужны архив, поиск и необязательная память между чатами.',
+  'Compare plans': 'Сравнить тарифы',
+  'Recent': 'Недавние',
+  'Search': 'Поиск',
+  'Projects': 'Проекты',
+  'Archived': 'Архив',
+  'Search your conversations': 'Поиск по разговорам',
+  'Search titles and messages…': 'Искать в заголовках и сообщениях…',
+  'Searchable chat history is included with Pro, Team, and Enterprise.':
+    'Поиск по истории чатов включён в тарифы Pro, Team и Enterprise.',
+  '💬 Conversation': '💬 Разговор',
+  'Continue': 'Продолжить',
+  'Project name': 'Название проекта',
+  'Save project & archive': 'Сохранить проект и архивировать',
+  'Restore': 'Восстановить',
+  'Delete': 'Удалить',
+  'No matching chats': 'Подходящих чатов нет',
+  'No archived chats': 'В архиве пока нет чатов',
+  'No project chats yet': 'Чатов проектов пока нет',
+  'No saved chats yet': 'Сохранённых чатов пока нет',
+  'Start a conversation with Super ii. New successful exchanges will appear here automatically.':
+    'Начните разговор с Super ii. Новые успешно сохранённые сообщения появятся здесь автоматически.',
+  'Your existing assistant still works normally. Persistent history begins when a paid plan is active.':
+    'Ваш текущий ассистент продолжает работать как обычно. Постоянная история включится при активном платном тарифе.',
+  'Talk with Super ii': 'Поговорить с Super ii',
+  'Optional continuity 🧠': 'Необязательная связность 🧠',
+  'Chat memory': 'Память чата',
+  'History stores conversations. Memory is a separate set of details Super ii may retrieve when relevant.':
+    'История хранит разговоры. Память — это отдельный набор сведений, которые Super ii может использовать, когда они уместны.',
+  'Use relevant prior context': 'Использовать подходящий прошлый контекст',
+  'On — you can turn this off at any time.': 'Включено — можно отключить в любой момент.',
+  'Off — prior chats are not retrieved.': 'Выключено — прошлые чаты не используются.',
+  'Memory requires Pro, Team, or Enterprise. It remains off on Free.':
+    'Для памяти нужен тариф Pro, Team или Enterprise. На Free она остаётся выключенной.',
+  'Add a memory': 'Добавить память',
+  'Label': 'Название',
+  'Project preference': 'Настройка проекта',
+  'What Super ii should remember': 'Что следует помнить Super ii',
+  'Save memory': 'Сохранить память',
+  'Save': 'Сохранить',
+  'Delete all chat memory': 'Удалить всю память чатов',
+  'Deleting memory does not delete your chat history. Deleting a chat removes that conversation from search and retrieval too.':
+    'Удаление памяти не удаляет историю чатов. Удаление чата также убирает этот разговор из поиска и дальнейшего использования.',
+  'Chats are temporarily unavailable': 'Чаты временно недоступны',
+  'Your existing session-only assistant is unaffected. Please try this page again shortly.':
+    'Ваш ассистент с памятью только на время сеанса продолжает работать. Повторите попытку позже.',
+  'Account access is temporarily unavailable': 'Доступ к аккаунту временно недоступен',
+  'Your existing session-only assistant is unaffected.': 'Ваш ассистент с памятью только на время сеанса продолжает работать.',
+  'Session-only chat': 'Чат только на время сеанса',
+  'Persistent chat': 'Постоянный чат',
+  'Persistent chat · Memory on': 'Постоянный чат · Память включена',
+  'Saved chat': 'Сохранённый чат',
+  'Saved chat ready': 'Сохранённый чат готов',
+  'New chat ready': 'Новый чат готов',
+  'Expert on Super ii': 'Эксперт по Super ii',
+  'Always on': 'Всегда доступен',
+  'Chat history': 'История чатов',
+  'Current session': 'Текущий сеанс',
+  'Persistent': 'Постоянная',
+  'Policy defined': 'По политике организации',
+  'User controlled': 'Под контролем пользователя',
+  'Policy controlled': 'По политике организации',
+  'Search old chats': 'Поиск старых чатов',
+  'Included / custom': 'Включено / настраивается',
+  'Expert on Super ii · always on': 'Эксперт по Super ii · всегда доступен',
+  'Persistent chat history, search and optional memory': 'Постоянная история чатов, поиск и необязательная память',
+  'Start a Python project with Super ii': 'Начните Python-проект с Super ii',
+  'Build and ship a reviewed revision': 'Соберите и выпустите проверенную ревизию',
+  'Plan a Use Model runtime safely': 'Безопасно спланируйте среду Use Model',
+  'Discover and verify an agent Skill': 'Найдите и проверьте навык агента',
+  'Connect an agent to scoped Work MCP': 'Подключите агента к ограниченному Work MCP',
+  'Pair a Social agent safely': 'Безопасно подключите Social-агента',
+  'Dry-run an agent commerce decision': 'Проведите пробный расчёт покупки агента',
+  'Plan a Robot without claiming physical safety': 'Спланируйте робота без заявления о физической безопасности',
+  'Inspect local hardware, plan one real reviewed model, and keep acquisition behind an explicit verified-download decision.':
+    'Проверьте локальное оборудование, спланируйте одну настоящую проверенную модель и начинайте загрузку только после явного решения.',
+  'Create exact artifact hashes and a release checklist while keeping scans, analysis, and submission visibly fail closed.':
+    'Создайте точные хеши артефактов и список выпуска, сохраняя проверки, анализ и отправку в явно закрытом по умолчанию состоянии.',
+  'Read the runtime registry, inspect this machine, and review a real immutable model plan before downloads or inference.':
+    'Прочитайте реестр сред выполнения, проверьте этот компьютер и изучите план настоящей неизменяемой модели до загрузки или инференса.',
+  'Browse Skills and verify the official manifest, file hashes, key identifier, and Ed25519 signature before setup.':
+    'Просмотрите навыки и до настройки проверьте официальный манифест, хеши файлов, идентификатор ключа и подпись Ed25519.',
+  'Design a least-privilege, zero-spend Work token and prepare an MCP connection without exposing credentials or mutating a repository.':
+    'Спроектируйте Work-токен с минимальными привилегиями и нулевыми расходами и подготовьте MCP-подключение без раскрытия учётных данных и изменений репозитория.',
+  'Review the public Social boundary and keep the one-time credential exchange behind an explicit sponsor checklist.':
+    'Изучите публичные границы Social и выполняйте одноразовый обмен учётными данными только после явной проверки спонсором.',
+  'Verify the live product catalogue and preview a tightly bounded order without creating an invoice or transferring funds.':
+    'Проверьте актуальный каталог предложений и просмотрите строго ограниченный заказ без создания счёта и перевода средств.',
+  'Use the evidence-aware public planner, surface unknowns, and keep purchasing and physical approval outside the notebook.':
+    'Используйте публичный планировщик с учётом доказательств, показывайте неизвестные факторы и оставляйте покупки и физическое одобрение вне ноутбука.',
+  'Inference': 'Инференс',
+  'Social agents': 'Social-агенты',
+  'Agent commerce': 'Покупки агентов',
+  'Robot': 'Робот',
+  'Python SDK': 'Python SDK',
+  'verified downloads': 'проверенные загрузки',
+  'publishing': 'публикация',
+  'manifests': 'манифесты',
+  'review gates': 'условия проверки',
+  'Use Model': 'Use Model',
+  'local inference': 'локальный инференс',
+  'Ed25519': 'Ed25519',
+  'supply chain': 'цепочка поставки',
+  'least privilege': 'минимальные привилегии',
+  'Social web': 'Social web',
+  'pairing': 'подключение',
+  'credentials': 'учётные данные',
+  'commerce': 'покупки',
+  'dry run': 'пробный запуск',
+  'physical safety': 'физическая безопасность',
+};
+
 const numericTokens = (value: string): string[] => value.match(/\d+/g) ?? [];
 
 /**
@@ -2469,6 +2615,7 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
   ...communityPagesRussian,
   ...notebooksUseRussian,
   ...buildShipRussian,
+  ...assistantContinuityRussian,
 });
 export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedRussian,

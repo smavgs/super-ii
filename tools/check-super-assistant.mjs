@@ -9,6 +9,14 @@ const files = {
   component: await readFile(resolve(root, 'src/components/SuperAssistant.astro'), 'utf8'),
   client: await readFile(resolve(root, 'src/scripts/super-assistant.ts'), 'utf8'),
   endpoint: await readFile(resolve(root, 'src/pages/api/assistant/chat.ts'), 'utf8'),
+  history: await readFile(resolve(root, 'src/pages/api/assistant/history/index.ts'), 'utf8'),
+  historyThread: await readFile(resolve(root, 'src/pages/api/assistant/history/[threadId].ts'), 'utf8'),
+  memory: await readFile(resolve(root, 'src/pages/api/assistant/memory.ts'), 'utf8'),
+  chats: await readFile(resolve(root, 'src/pages/chats.astro'), 'utf8'),
+  context: await readFile(resolve(root, 'src/lib/assistant-context.ts'), 'utf8'),
+  plan: await readFile(resolve(root, 'src/lib/assistant-plan.ts'), 'utf8'),
+  store: await readFile(resolve(root, 'src/lib/assistant-store.ts'), 'utf8'),
+  migration: await readFile(resolve(root, 'database/migrations/0020_assistant_continuity.sql'), 'utf8'),
   config: await readFile(resolve(root, 'src/lib/openrouter.ts'), 'utf8'),
   rateLimit: await readFile(resolve(root, 'src/lib/rate-limit.ts'), 'utf8'),
   runtimeApi: await readFile(resolve(root, 'runtime/src/superii_runtime/api.py'), 'utf8'),
@@ -35,6 +43,9 @@ requireText('client', 'client', "credentials: 'same-origin'");
 requireText('client', 'client', 'web_search: webSearch');
 requireText('client', 'client', "payload.code === 'search_limit_reached'");
 requireText('client', 'client', 'boundedHistory');
+requireText('client', 'client', 'page_context:');
+requireText('client', 'client', 'continuity');
+requireText('client', 'client', 'restoreThread');
 requireText('endpoint', 'endpoint', 'sameOrigin(request)');
 requireText('endpoint', 'endpoint', 'ensureAuthenticatedProfile');
 requireText('endpoint', 'endpoint', "consumeRateLimit(locals, request, sql, 'assistant.chat'");
@@ -45,6 +56,9 @@ requireText('endpoint', 'endpoint', "safe_search: 'moderate'");
 requireText('endpoint', 'endpoint', "runtimeValue(locals, 'OPENROUTER_API_KEY')");
 requireText('endpoint', 'endpoint', "'HTTP-Referer': 'https://www.superii.site'");
 requireText('endpoint', 'endpoint', "'X-OpenRouter-Title': 'Super ii'");
+requireText('endpoint', 'endpoint', 'trustedSuperiiContext');
+requireText('endpoint', 'endpoint', 'trustedAccountContext');
+requireText('endpoint', 'endpoint', 'persistAssistantExchange');
 requireText('config', 'config', "OPENROUTER_CHAT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'");
 requireText('config', 'config', "OPENROUTER_MODEL = 'minimax/minimax-m3:free'");
 requireText('config', 'config', 'OPENROUTER_MAX_CONVERSATION_CHARS');
@@ -61,9 +75,27 @@ requireText('runtimeSearchWorker', 'runtime search worker', '_search_sync(payloa
 requireText('pricing', 'pricing', '3 web searches per day');
 requireText('pricing', 'pricing', '30 web searches per day');
 requireText('pricing', 'pricing', '60 web searches per member per day');
+requireText('pricing', 'pricing', 'Persistent chat history, search and optional memory');
 requireText('privacy', 'privacy', '<strong>OpenRouter and its routed model provider</strong>');
 requireText('privacy', 'privacy', '<strong>Public web-search providers</strong>');
 requireText('privacy', 'privacy', 'current page session');
+requireText('privacy', 'privacy', 'Chat memory is separate, off by default');
+requireText('history', 'history API', 'searchable chat history requires Pro, Team, or Enterprise');
+requireText('historyThread', 'thread API', 'sameOrigin(request)');
+requireText('historyThread', 'thread API', 'deleteAssistantThread');
+requireText('memory', 'memory API', 'setAssistantMemoryEnabled');
+requireText('memory', 'memory API', 'deleteAssistantMemory');
+requireText('chats', 'Chats workspace', 'Recent');
+requireText('chats', 'Chats workspace', 'Projects');
+requireText('chats', 'Chats workspace', 'Delete all chat memory');
+requireText('context', 'trusted context', 'User-controlled prior context follows');
+requireText('context', 'trusted context', 'Never invent listings');
+requireText('plan', 'plan entitlements', '25 * GIB');
+requireText('plan', 'plan entitlements', '50 * GIB');
+requireText('store', 'continuity store', 'websearch_to_tsquery');
+requireText('migration', 'continuity migration', 'persist_assistant_exchange');
+requireText('migration', 'continuity migration', 'assistant_storage_limit_reached');
+requireText('migration', 'continuity migration', 'assistant_messages_are_immutable');
 
 if (/localStorage|sessionStorage/.test(files.client)) {
   errors.push('client conversation state must not be persisted in browser storage');
@@ -85,4 +117,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('OK: opt-in web search, account allowances, authenticated DDGS runtime boundary, linked sources, bounded session memory, pricing, and privacy disclosure verified');
+console.log('OK: existing assistant UX and web search remain intact; product grounding, paid bounded continuity, search, user-controlled memory, deletion, pricing, and privacy contracts are wired');

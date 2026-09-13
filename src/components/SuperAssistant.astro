@@ -1,4 +1,9 @@
-<div class="super-assistant" data-super-assistant>
+---
+const requestedThread = Astro.url.searchParams.get('chat');
+const initialThreadId = requestedThread && /^[0-9a-f-]{36}$/i.test(requestedThread) ? requestedThread : undefined;
+---
+
+<div class="super-assistant" data-super-assistant data-assistant-thread={initialThreadId}>
   <button
     class="super-assistant__launcher"
     type="button"
@@ -81,7 +86,11 @@
       </button>
     </form>
 
-    <p class="super-assistant__privacy">Session-only chat · <a href="/legal/privacy#share">Privacy</a></p>
+    <p class="super-assistant__privacy">
+      <span data-super-assistant-continuity>Session-only chat</span>
+      <span data-super-assistant-chats-separator hidden> · </span><a href="/chats" data-super-assistant-chats hidden>Chats</a>
+      <span> · </span><a href="/legal/privacy#share">Privacy</a>
+    </p>
   </section>
 </div>
 

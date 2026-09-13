@@ -15,6 +15,16 @@ type AssistantReply = {
   answer: string;
   sources: AssistantSource[];
   searched: boolean;
+  continuity: AssistantContinuity | null;
+};
+
+type AssistantContinuity = {
+  plan: 'free' | 'pro' | 'team' | 'enterprise';
+  eligible: boolean;
+  persisted: boolean;
+  threadId: string | null;
+  memoryEnabled: boolean;
+  error: 'storage_limit_reached' | 'save_unavailable' | null;
 };
 
 export type AssistantSkillContext = {
@@ -84,10 +94,35 @@ function assistantSources(value: unknown): AssistantSource[] {
   }).filter((item) => item.title && item.source);
 }
 
+function assistantContinuity(value: unknown): AssistantContinuity | null {
+  if (!isRecord(value)
+    || !['free', 'pro', 'team', 'enterprise'].includes(String(value.plan))
+    || typeof value.eligible !== 'boolean'
+    || typeof value.persisted !== 'boolean'
+    || typeof value.memory_enabled !== 'boolean') return null;
+  const threadId = value.thread_id === null || value.thread_id === undefined
+    ? null
+    : typeof value.thread_id === 'string' && /^[0-9a-f-]{36}$/i.test(value.thread_id)
+      ? value.thread_id
+      : null;
+  const error = value.error === 'storage_limit_reached' || value.error === 'save_unavailable'
+    ? value.error
+    : null;
+  return {
+    plan: value.plan as AssistantContinuity['plan'],
+    eligible: value.eligible,
+    persisted: value.persisted,
+    threadId,
+    memoryEnabled: value.memory_enabled,
+    error,
+  };
+}
+
 async function requestAssistant(
   messages: AssistantMessage[],
   webSearch: boolean,
   skillContext: AssistantSkillContext | null,
+  threadId: string | null,
   signal: AbortSignal,
 ): Promise<AssistantReply> {
   let response: Response;
@@ -102,6 +137,8 @@ async function requestAssistant(
       body: JSON.stringify({
         messages,
         web_search: webSearch,
+        thread_id: threadId,
+        page_context: { path: location.pathname, title: document.title },
         ...(skillContext ? { skill_context: skillContext } : {}),
       }),
       signal,
@@ -127,6 +164,7 @@ async function requestAssistant(
     answer: payload.answer.trim(),
     sources: assistantSources(payload.sources),
     searched: isRecord(payload.search) && payload.search.performed === true,
+    continuity: assistantContinuity(payload.continuity),
   };
 }
 
@@ -157,6 +195,9 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   const input = requireElement<HTMLTextAreaElement>('textarea[data-super-assistant-input]', 'input');
   const searchButton = requireElement<HTMLButtonElement>('button[data-super-assistant-web-search]', 'web search button');
   const sendButton = requireElement<HTMLButtonElement>('button[data-super-assistant-send]', 'send button');
+  const continuityLabel = requireElement<HTMLElement>('[data-super-assistant-continuity]', 'continuity label');
+  const chatsLink = requireElement<HTMLAnchorElement>('a[data-super-assistant-chats]', 'chats link');
+  const chatsSeparator = requireElement<HTMLElement>('[data-super-assistant-chats-separator]', 'chats separator');
 
   let open = false;
   let destroyed = false;
@@ -166,6 +207,10 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
   let currentMessage: HTMLElement | null = null;
   let currentCopy: HTMLParagraphElement | null = null;
   let skillContext: AssistantSkillContext | null = null;
+  let threadId = typeof root.dataset.assistantThread === 'string' && /^[0-9a-f-]{36}$/i.test(root.dataset.assistantThread)
+    ? root.dataset.assistantThread
+    : null;
+  let restoreAttempted = false;
   const conversation: AssistantMessage[] = [];
 
   function setStatus(copy: string, state = '') {
@@ -189,6 +234,27 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     webSearchEnabled = enabled;
     renderSearchState();
     if (!awaitingResponse) setStatus(enabled ? 'Web search on' : 'Ready', enabled ? 'search' : 'ready');
+  }
+
+  function showChatsLink(show: boolean) {
+    chatsLink.hidden = !show;
+    chatsSeparator.hidden = !show;
+  }
+
+  function applyContinuity(continuity: AssistantContinuity | null) {
+    if (!continuity) return;
+    threadId = continuity.threadId ?? threadId;
+    if (threadId) root.dataset.assistantThread = threadId;
+    showChatsLink(continuity.eligible || Boolean(threadId));
+    if (continuity.persisted) {
+      continuityLabel.textContent = continuity.memoryEnabled ? 'Persistent chat · Memory on' : 'Persistent chat';
+    } else if (continuity.error === 'storage_limit_reached') {
+      continuityLabel.textContent = 'Storage full · Chat not saved';
+    } else if (continuity.error === 'save_unavailable') {
+      continuityLabel.textContent = 'Chat save unavailable';
+    } else {
+      continuityLabel.textContent = 'Session-only chat';
+    }
   }
 
   function hideNotice() {
@@ -297,6 +363,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     currentCopy = null;
     awaitingResponse = false;
     activeRequest = null;
+    applyContinuity(reply.continuity);
     setComposerReady(true);
     setStatus(reply.searched ? 'Web checked' : (webSearchEnabled ? 'Web search on' : 'Ready'), reply.searched || webSearchEnabled ? 'search' : 'ready');
     scrollMessages();
@@ -323,6 +390,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     root.dataset.open = 'true';
     launcher.setAttribute('aria-expanded', 'true');
     if (!awaitingResponse) resetFailure();
+    if (threadId && !restoreAttempted) void restoreThread();
     window.requestAnimationFrame(() => (input.disabled ? closeButton : input).focus());
   }
 
@@ -348,6 +416,11 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     currentMessage = null;
     currentCopy = null;
     conversation.splice(0, conversation.length);
+    threadId = null;
+    delete root.dataset.assistantThread;
+    restoreAttempted = false;
+    continuityLabel.textContent = 'Session-only chat';
+    showChatsLink(false);
     messages.replaceChildren();
     skillContext = nextContext;
     input.value = '';
@@ -380,7 +453,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     const controller = new AbortController();
     activeRequest = controller;
     try {
-      const reply = await requestAssistant(pendingHistory, webSearchEnabled, skillContext, controller.signal);
+      const reply = await requestAssistant(pendingHistory, webSearchEnabled, skillContext, threadId, controller.signal);
       if (destroyed) return;
       conversation.splice(0, conversation.length, ...boundedHistory([
         ...pendingHistory,
@@ -391,6 +464,46 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
       if (destroyed || (error instanceof DOMException && error.name === 'AbortError')) return;
       discardAssistantMessage();
       showFailure(error instanceof AssistantConnectionError ? error.kind : 'unavailable');
+    }
+  }
+
+  async function restoreThread() {
+    if (!threadId || restoreAttempted) return;
+    restoreAttempted = true;
+    setStatus('Loading saved chat…');
+    setComposerReady(false);
+    try {
+      const response = await fetch(`/api/assistant/history/${encodeURIComponent(threadId)}`, {
+        headers: { accept: 'application/json' },
+        credentials: 'same-origin',
+      });
+      const payload: unknown = await response.json().catch(() => null);
+      if (!response.ok || !isRecord(payload) || !isRecord(payload.thread) || !Array.isArray(payload.thread.messages)) {
+        throw new Error('saved chat unavailable');
+      }
+      const restored = payload.thread.messages.flatMap((message) => {
+        if (!isRecord(message)
+          || (message.role !== 'user' && message.role !== 'assistant')
+          || typeof message.content !== 'string'
+          || !message.content.trim()) return [];
+        return [{ role: message.role, content: message.content.trim() } satisfies AssistantMessage];
+      });
+      if (!restored.length) throw new Error('saved chat is empty');
+      messages.replaceChildren();
+      restored.slice(-80).forEach((message) => addMessage(message.role, message.content));
+      conversation.splice(0, conversation.length, ...boundedHistory(restored));
+      continuityLabel.textContent = 'Saved chat';
+      showChatsLink(true);
+      setStatus('Saved chat ready', 'ready');
+      setComposerReady(true);
+      if (open) input.focus();
+    } catch {
+      threadId = null;
+      delete root.dataset.assistantThread;
+      continuityLabel.textContent = 'Session-only chat';
+      showChatsLink(false);
+      setStatus('New chat ready', 'ready');
+      setComposerReady(true);
     }
   }
 
