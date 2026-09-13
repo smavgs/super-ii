@@ -77,8 +77,8 @@ def main() -> None:
             key.private_bytes_raw()
         ).decode()
         os.environ["SUPERII_POLICY_KEY_ID"] = "integration-test-only"
-        from superii_runtime.publication_policy import POLICY_SHA256
         from superii_runtime.policy_service import app
+        from superii_runtime.publication_policy import POLICY_SHA256
         from superii_runtime.settings import get_settings
 
         get_settings.cache_clear()
@@ -95,10 +95,11 @@ def main() -> None:
                 "select app.ensure_profile('policy-test','policy-test','Policy Test',null)"
             ).fetchone()[0]
             cases = []
-            for slug, license_id, failed in [
-                ("pass", "apache-2.0", False),
-                ("unknown-license", "unknown", False),
-                ("latest-failure", "apache-2.0", True),
+            for slug, license_id, failed, custom_license in [
+                ("pass", "apache-2.0", False, False),
+                ("custom-license", "LicenseRef-Community-1.0", False, True),
+                ("unknown-license", "unknown", False, False),
+                ("latest-failure", "apache-2.0", True, False),
             ]:
                 result = conn.execute(
                     "select * from app.create_repository_with_revision(%s,null,'dataset',%s,%s,%s,%s,null,null,null,'',%s)",
@@ -123,25 +124,49 @@ def main() -> None:
                     "update app.repositories set visibility='private' where id=%s",
                     (repo,),
                 )
-                digest = hashlib.sha256(b"x\n1\n").hexdigest()
-                file = conn.execute(
-                    """insert into app.repository_files(repository_id,revision_id,path,
-                    size_bytes,mime_type,sha256,storage_key,storage_state,scan_status,created_by)
-                    values (%s,%s,'data.csv',4,'text/csv',%s,%s,'available','clean','test') returning id""",
-                    (repo, revision, digest, f"objects/sha256/{digest[:2]}/{digest}"),
-                ).fetchone()[0]
-                for scanner in ["clamav", "gitleaks", "format_policy"]:
-                    conn.execute(
-                        """insert into app.repository_file_inspections(repository_file_id,
-                        inspector,status,tool_version,completed_at) values (%s,%s,'passed','fixture-1',now())""",
-                        (file, scanner),
+                file_specs = [("data.csv", b"x\n1\n", "text/csv")]
+                if custom_license:
+                    file_specs.append(
+                        ("LICENSE", b"Complete custom license terms", "text/plain")
                     )
+                manifest_files = []
+                first_file = None
+                for file_path, content, mime_type in file_specs:
+                    digest = hashlib.sha256(content).hexdigest()
+                    file = conn.execute(
+                        """insert into app.repository_files(repository_id,revision_id,path,
+                        size_bytes,mime_type,sha256,storage_key,storage_state,scan_status,created_by)
+                        values (%s,%s,%s,%s,%s,%s,%s,'available','clean','test') returning id""",
+                        (
+                            repo,
+                            revision,
+                            file_path,
+                            len(content),
+                            mime_type,
+                            digest,
+                            f"objects/sha256/{digest[:2]}/{digest}",
+                        ),
+                    ).fetchone()[0]
+                    first_file = first_file or file
+                    manifest_files.append(
+                        {
+                            "path": file_path,
+                            "sha256": digest,
+                            "size_bytes": len(content),
+                        }
+                    )
+                    for scanner in ["clamav", "gitleaks", "format_policy"]:
+                        conn.execute(
+                            """insert into app.repository_file_inspections(repository_file_id,
+                            inspector,status,tool_version,completed_at) values (%s,%s,'passed','fixture-1',now())""",
+                            (file, scanner),
+                        )
                 if failed:
                     conn.execute(
                         """insert into app.repository_file_inspections(repository_file_id,
                         inspector,status,tool_version,started_at,completed_at)
                         values (%s,'clamav','failed','fixture-2',now()+interval '1 second',now())""",
-                        (file,),
+                        (first_file,),
                     )
                 conn.execute(
                     """insert into app.repository_revision_analyses(repository_id,revision_id,
@@ -149,18 +174,22 @@ def main() -> None:
                     values (%s,%s,'dataset','passed','{}','{"fixture":"1"}',now())""",
                     (repo, revision),
                 )
-                manifest = hashlib.sha256(
-                    f"data.csv\0{digest}\0{4}\n".encode()
-                ).hexdigest()
+                manifest_digest = hashlib.sha256()
+                for item in sorted(manifest_files, key=lambda value: value["path"]):
+                    manifest_digest.update(
+                        f"{item['path']}\0{item['sha256']}\0{item['size_bytes']}\n".encode()
+                    )
+                manifest = manifest_digest.hexdigest()
+                total_size = sum(item["size_bytes"] for item in manifest_files)
                 conn.execute(
                     """update app.repository_revisions set status='review',manifest_sha256=%s,
-                    commit_sha=%s,file_count=1,total_size_bytes=4,manifest=%s where id=%s""",
+                    commit_sha=%s,file_count=%s,total_size_bytes=%s,manifest=%s where id=%s""",
                     (
                         manifest,
                         "c" * 64,
-                        Jsonb(
-                            [{"path": "data.csv", "sha256": digest, "size_bytes": 4}]
-                        ),
+                        len(manifest_files),
+                        total_size,
+                        Jsonb(manifest_files),
                         revision,
                     ),
                 )
@@ -174,9 +203,9 @@ def main() -> None:
             response = client.post(path, headers=headers, json={"outcome": "passed"})
             assert response.status_code == 200, response.text
             result = response.json()
-            assert result["status"] == ("published" if slug == "pass" else "blocked"), (
-                result
-            )
+            assert result["status"] == (
+                "published" if slug in {"pass", "custom-license"} else "blocked"
+            ), result
             proof = result["decision"]
             key.public_key().verify(
                 base64.b64decode(proof["signature"]), proof["payload"].encode()
@@ -188,7 +217,7 @@ def main() -> None:
                 conn.execute(
                     "select count(*) from app.publication_decisions"
                 ).fetchone()[0]
-                == 3
+                == 4
             )
             assert (
                 conn.execute(
@@ -200,7 +229,7 @@ def main() -> None:
                 conn.execute(
                     "select count(*) from app.repository_revisions where status='published'"
                 ).fetchone()[0]
-                == 1
+                == 2
             )
         with psycopg.connect(os.environ["SUPERII_DATABASE_URL"]) as conn:
             try:
@@ -219,6 +248,7 @@ def main() -> None:
                         "real Ed25519 signatures",
                         "private visibility preserved",
                         "atomic publication",
+                        "complete custom license accepted",
                         "unknown license blocked",
                         "latest scanner failure blocks",
                         "request cannot override policy",

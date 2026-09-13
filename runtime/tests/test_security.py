@@ -64,8 +64,32 @@ def test_tcp_clamd_receives_a_stream_instead_of_a_host_path(
     )
 
     assert result.status == "passed"
+    assert result.tool_version == "ClamAV 1.5.4"
+    assert calls[0] == [
+        "/usr/local/bin/clamdscan",
+        f"--config-file={config}",
+        "--version",
+    ]
     assert "--stream" in calls[-1]
     assert "--fdpass" not in calls[-1]
+
+
+def test_failed_version_command_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "superii_runtime.scanners.shutil.which",
+        lambda _: "/usr/local/bin/scanner",
+    )
+    monkeypatch.setattr(
+        "superii_runtime.scanners.subprocess.run",
+        lambda arguments, **_: subprocess.CompletedProcess(
+            arguments, 2, stdout="", stderr="configuration error"
+        ),
+    )
+    from superii_runtime.scanners import _version
+
+    assert _version("scanner") is None
 
 
 def test_scaling_runtimes_are_explicitly_deferred(tmp_path: Path) -> None:

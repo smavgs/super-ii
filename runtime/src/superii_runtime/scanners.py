@@ -49,13 +49,13 @@ def scanner_readiness(settings: Settings) -> dict[str, bool]:
     }
 
 
-def _version(command: str) -> str | None:
+def _version(command: str, arguments: tuple[str, ...] = ()) -> str | None:
     executable = shutil.which(command)
     if executable is None:
         return None
     try:
         process = subprocess.run(
-            [executable, "--version"],
+            [executable, *arguments, "--version"],
             check=False,
             capture_output=True,
             text=True,
@@ -63,13 +63,20 @@ def _version(command: str) -> str | None:
         )
     except (OSError, subprocess.SubprocessError):
         return None
+    if process.returncode != 0:
+        return None
     line = (process.stdout or process.stderr).strip().splitlines()
     return line[0][:200] if line else None
 
 
 def scan_clamav(path: Path, settings: Settings) -> ScanResult:
     executable = shutil.which(settings.clamav_command)
-    version = _version(settings.clamav_command)
+    version_arguments = (
+        (f"--config-file={settings.clamav_config_file}",)
+        if settings.clamav_config_file is not None
+        else ()
+    )
+    version = _version(settings.clamav_command, version_arguments)
     if executable is None:
         return ScanResult(
             scanner="clamav",
