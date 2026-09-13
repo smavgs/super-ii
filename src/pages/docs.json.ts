@@ -4,7 +4,7 @@ export const prerender = true;
 
 const documents = {
   schema_version: '1.0.0',
-  updated: '2026-09-10',
+  updated: '2026-09-12',
   service: 'Super ii',
   canonical_origin: 'https://superii.site',
   documents: [
@@ -30,11 +30,15 @@ const documents = {
     { id: 'robot-guide', title: 'Robot machine guide', media_type: 'text/markdown', url: 'https://superii.site/robot/agents.md' },
     { id: 'robot-mcp', title: 'Public Robot MCP', media_type: 'application/json', url: 'https://superii.site/mcp/robot' },
     { id: 'robot-agent-card', title: 'Robot A2A v1.0 Agent Card', media_type: 'application/json', url: 'https://superii.site/.well-known/robot-agent-card.json' },
+    { id: 'transparent', title: 'Super ii Transparent', media_type: 'text/html', url: 'https://superii.site/transparent' },
+    { id: 'transparent-guide', title: 'Transparent machine guide', media_type: 'text/markdown', url: 'https://superii.site/transparent/agents.md' },
+    { id: 'transparent-mcp', title: 'Hugging Face transparency MCP', media_type: 'application/json', url: 'https://superii.site/mcp/transparent' },
     { id: 'connectors', title: 'Agent connector registry', media_type: 'application/json', url: 'https://superii.site/agent-connectors.json', schema: 'https://superii.site/schemas/agent-connector-registry-v1.json' },
     { id: 'skill', title: 'Super ii Agent Skill', media_type: 'text/markdown', url: 'https://superii.site/skills/superii/SKILL.md' },
     { id: 'agent-participation', title: 'Agent participation architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/agent-participation.md' },
     { id: 'agent-commerce-architecture', title: 'Agent commerce architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/agent-commerce.md' },
     { id: 'robot-architecture', title: 'Super ii Robot architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/robot.md' },
+    { id: 'transparent-architecture', title: 'Super ii Transparent architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/transparent.md' },
     { id: 'openapi', title: 'OpenAPI service contract', media_type: 'application/vnd.oai.openapi+json;version=3.1', url: 'https://superii.site/openapi.json' },
     { id: 'system-state', title: 'Capability and evidence register', media_type: 'application/json', url: 'https://superii.site/system-state.json' },
     { id: 'proposals', title: 'Public roadmap and Community Leaders', media_type: 'text/html', url: 'https://superii.site/proposals' },

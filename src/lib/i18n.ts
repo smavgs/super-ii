@@ -872,6 +872,7 @@ const termsRussian: Record<string, string> = {
 };
 
 const privacyRussian: Record<string, string> = {
+  'Legal · Effective September 11, 2026': 'Юридическая информация · Действует с 11 сентября 2026 г.',
   'Privacy Policy': 'Политика конфиденциальности',
   'How Super ii collects, uses, shares, protects, and retains personal information.':
     'Как Super ii собирает, использует, раскрывает, защищает и хранит персональную информацию.',
@@ -975,10 +976,10 @@ const privacyRussian: Record<string, string> = {
   'for application database hosting.': 'для размещения базы данных приложения.',
   'for USDC payment creation, blockchain payment monitoring, transaction status, and payment support.':
     'для создания платежей в USDC, отслеживания блокчейн-платежей, статуса транзакций и платёжной поддержки.',
-  'for an available zero-cost upstream model that generates Super ii assistant responses. Your prompts, recent conversation, relevant Super ii product context, relevant account context described above, and—only when you enabled memory—bounded relevant memory or prior-chat excerpts pass through Super ii to OpenRouter and the selected upstream provider. The selected model may change between requests. OpenRouter and each selected provider have their own processing, retention, and training policies; OpenRouter account privacy settings control eligible providers.':
-    'для доступной бесплатной вышестоящей модели, формирующей ответы помощника Super ii. Ваши запросы, недавний разговор, уместный контекст продукта Super ii, описанный выше контекст аккаунта и — только при включённой вами памяти — ограниченные уместные фрагменты памяти или прежних чатов передаются через Super ii в OpenRouter и выбранному вышестоящему поставщику. Выбранная модель может меняться между запросами. У OpenRouter и каждого выбранного поставщика действуют собственные правила обработки, хранения и обучения; доступные поставщики определяются настройками конфиденциальности аккаунта OpenRouter.',
+  'for the Muse Spark 1.3 Contributor API that generates Super ii assistant responses. Your prompts, recent conversation, relevant Super ii product context, relevant account context described above, and—only when you enabled memory—bounded relevant memory or prior-chat excerpts pass through Super ii to OpenRouter and Meta. This Contributor route permits prompts and outputs to be used to improve Meta’s products. OpenRouter and Meta apply their own processing, retention, and training policies.':
+    'для API Muse Spark 1.3 Contributor, формирующего ответы помощника Super ii. Ваши запросы, недавний разговор, уместный контекст продукта Super ii, описанный выше контекст аккаунта и — только при включённой вами памяти — ограниченные уместные фрагменты памяти или прежних чатов передаются через Super ii в OpenRouter и Meta. Этот маршрут Contributor допускает использование запросов и ответов для улучшения продуктов Meta. OpenRouter и Meta применяют собственные правила обработки, хранения и обучения.',
   'Public web-search providers': 'Публичные поставщики веб-поиска',
-  'OpenRouter Free Models Router and its selected model provider': 'Бесплатный маршрутизатор моделей OpenRouter и выбранный им поставщик модели',
+  'OpenRouter and Meta': 'OpenRouter и Meta',
   "when you turn on Search web and the assistant needs current information. A focused query is sent through Super ii's server-side search service, and the selected provider returns public search results. Those providers apply their own privacy and request-log policies.":
     'когда вы включаете «Поиск в интернете» и помощнику нужны актуальные сведения. Уточнённый запрос передаётся через серверный поисковый сервис Super ii, а выбранный поставщик возвращает публичные результаты. У таких поставщиков действуют собственные правила конфиденциальности и журналирования запросов.',
   'User-connected source providers': 'Подключённые пользователем поставщики источников',

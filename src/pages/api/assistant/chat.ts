@@ -7,7 +7,7 @@ import {
   openRouterAnswer,
   openRouterChatRequest,
   openRouterToolCall,
-  openRouterToolFollowupRequest,
+  openRouterSearchAnswerRequest,
   parseAssistantMessages,
   parseAssistantSkillContext,
   parseRuntimeSearchResults,
@@ -25,11 +25,13 @@ import {
 } from '@/lib/assistant-context';
 import { activeAssistantPlan, assistantPlanEntitlements, type AssistantPlan } from '@/lib/assistant-plan';
 import { assistantThreadOwned, parseAssistantId, persistAssistantExchange } from '@/lib/assistant-store';
-import { consumeIdentityRateLimit, consumeRateLimit } from '@/lib/rate-limit';
+import { consumeIdentityRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
 
 const MAX_REQUEST_CHARS = 24_000;
 const SEARCH_WINDOW_SECONDS = 86_400;
+// v1 counted requests while the provider follow-up path could not return a visible answer.
+const SEARCH_RATE_ACTION = 'assistant.web_search.v2';
 const SEARCH_LIMITS = {
   free: 3,
   pro: 30,
@@ -87,7 +89,10 @@ function providerFailure(result: Awaited<ReturnType<typeof callOpenRouter>>) {
     status: result.response.status,
   }));
   return json(
-    { error: result.response.status === 429 ? 'assistant is busy' : 'assistant connection unavailable' },
+    {
+      error: result.response.status === 429 ? 'assistant provider is rate limited' : 'assistant connection unavailable',
+      ...(result.response.status === 429 ? { code: 'provider_rate_limited' } : {}),
+    },
     result.response.status === 429 ? 429 : 503,
     result.response.status === 429 ? { 'retry-after': retryAfter(result.response) } : {},
   );
@@ -148,7 +153,14 @@ export const POST: APIRoute = async ({ locals, request }) => {
   }
   const webSearchEnabled = body.web_search === true;
 
-  const rate = await consumeRateLimit(locals, request, sql, 'assistant.chat', 30, 3600);
+  const rate = await consumeIdentityRateLimit(
+    locals,
+    sql,
+    profile.profileId,
+    'assistant.chat',
+    30,
+    3600,
+  );
   if (rate !== 'allowed') {
     return json(
       { error: rate === 'limited' ? 'assistant message limit reached' : 'assistant safety service unavailable' },
@@ -259,7 +271,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     locals,
     sql,
     profile.profileId,
-    'assistant.web_search',
+    SEARCH_RATE_ACTION,
     allowance,
     SEARCH_WINDOW_SECONDS,
   );
@@ -304,7 +316,10 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sources = parseRuntimeSearchResults(await runtimeResponse.json().catch(() => null));
   if (!sources) return json({ error: 'web search is temporarily unavailable' }, 503, { 'retry-after': '30' });
 
-  const final = await callOpenRouter(apiKey, openRouterToolFollowupRequest(messages, toolCall, sources, skillContext, grounding));
+  const final = await callOpenRouter(
+    apiKey,
+    openRouterSearchAnswerRequest(messages, toolCall, sources, skillContext, grounding),
+  );
   if (!final?.response.ok) return providerFailure(final);
   const answer = openRouterAnswer(final.payload);
   if (!answer) return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });

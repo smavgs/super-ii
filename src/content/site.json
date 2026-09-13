@@ -75,6 +75,8 @@
     "/",
     "/robot",
     "/robot/agents.md",
+    "/transparent",
+    "/transparent/agents.md",
     "/models",
     "/use",
     "/datasets",
@@ -102,7 +104,8 @@
     "/posts/new",
     "/review",
     "/enterprise",
-    "/build", "/docs",
+    "/build",
+    "/docs",
     "/about",
     "/join-team",
     "/contact",
@@ -128,6 +131,7 @@
     "/mcp/social",
     "/mcp/commerce",
     "/mcp/robot",
+    "/mcp/transparent",
     "/.well-known/robot-agent-card.json",
     "/a2a/robot/v1/message:send",
     "/sign-in",
@@ -150,10 +154,15 @@
     "/api/robot/plan",
     "/api/robot/robots",
     "/api/robot/hardware",
-    "/api/robot/analytics"
+    "/api/robot/analytics",
+    "/api/transparent/check",
+    "/api/transparent/reports",
+    "/api/transparent/compare"
   ],
   "englishOnlyRoutes": [
     "/robot",
-    "/robot/agents.md"
+    "/robot/agents.md",
+    "/transparent",
+    "/transparent/agents.md"
   ]
 }

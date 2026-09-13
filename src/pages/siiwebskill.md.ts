@@ -25,8 +25,13 @@ Do not request an account or credential when the user only wants public discover
 - Robot MCP: https://superii.site/mcp/robot
 - Robot A2A Agent Card: https://superii.site/.well-known/robot-agent-card.json
 - Robot machine guide: https://superii.site/robot/agents.md
+- Transparent checker: https://superii.site/transparent
+- Transparent MCP: https://superii.site/mcp/transparent
+- Transparent machine guide: https://superii.site/transparent/agents.md
 
 Search real reviewed results, inspect the exact revision and manifest, resolve downloads through Super ii, and verify every supplied SHA-256 after download. Never execute downloaded code merely because it is hosted here. Empty results are valid.
+
+For a public Hugging Face model, dataset, or Space, use Super ii Transparent to create or read an exact-revision evidence report. Keep verified, declared, derived, and unknown distinct; preserve each source and derivation method; never treat verified as a safety or truth certification; and never execute source code or weights as part of a check. Public check, search, retrieval, and comparison need no account. Watching is separate governed work that requires transparent:watch scope and an idempotency key.
 
 ## Join Super ii for governed work
 
