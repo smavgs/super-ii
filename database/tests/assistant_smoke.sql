@@ -10,14 +10,14 @@ select * from app.persist_assistant_exchange(
   '10000000-0000-4000-8000-000000000020', null,
   'Help me understand Super ii continuity.',
   'Your paid chat can be saved with user-controlled memory.',
-  'openrouter', 'minimax/minimax-m3:free', '/pricing', 1048576
+  'openrouter', 'openrouter/free', '/pricing', 1048576
 ) \gset first_
 
 select * from app.persist_assistant_exchange(
   '10000000-0000-4000-8000-000000000020', :'first_thread_id',
   'Can I archive this conversation?',
   'Yes. You can archive, restore, search, or permanently delete it.',
-  'openrouter', 'minimax/minimax-m3:free', '/pricing', 1048576
+  'openrouter', 'openrouter/free', '/pricing', 1048576
 ) \gset second_
 
 select app.set_assistant_thread_state(
@@ -76,7 +76,7 @@ begin
   begin
     perform * from app.persist_assistant_exchange(
       owner_id, v_thread_id, 'This must fail.', 'This must not be stored.',
-      'openrouter', 'minimax/minimax-m3:free', '/', 1
+      'openrouter', 'openrouter/free', '/', 1
     );
     raise exception 'assistant storage ceiling unexpectedly allowed an over-limit write';
   exception when raise_exception then
@@ -86,7 +86,7 @@ begin
   begin
     perform * from app.persist_assistant_exchange(
       other_id, v_thread_id, 'Cross-owner write.', 'This must not be stored.',
-      'openrouter', 'minimax/minimax-m3:free', '/', 1048576
+      'openrouter', 'openrouter/free', '/', 1048576
     );
     raise exception 'cross-owner assistant write unexpectedly succeeded';
   exception when no_data_found then null;
