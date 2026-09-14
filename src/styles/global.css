@@ -3021,6 +3021,15 @@ pre {
   text-decoration: line-through;
 }
 
+.compatibility-notes {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
 .compatibility-evidence {
   display: grid;
   gap: 0.35rem;
@@ -3597,8 +3606,35 @@ pre {
 .repository-card-markdown,
 .longform-body {
   max-width: 850px;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.longform-body {
+  white-space: pre-wrap;
+}
+
+.repository-card-markdown {
+  padding-inline: 0;
+}
+
+.repository-card-markdown table {
+  display: block;
+  width: 100%;
+  margin-block: 1.25rem;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.repository-card-markdown th,
+.repository-card-markdown td {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.repository-card-markdown th {
+  background: var(--surface-raised);
 }
 
 .provenance-sources,

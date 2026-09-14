@@ -641,7 +641,7 @@ def inspect_revision(
         "tokenizers": _package_version("tokenizers"),
         "transformers": _package_version("transformers"),
         "nbformat": _package_version("nbformat"),
-        "superii_compatibility": "1",
+        "superii_compatibility": "2",
     }
     database.save_revision_analysis(
         repository_id,

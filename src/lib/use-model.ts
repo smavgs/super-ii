@@ -212,14 +212,21 @@ export function detectModelFormats(repository: RepositoryBundle): ModelFormat[] 
   if (repository.kind !== 'model') return [];
   const paths = repository.files.map((file) => file.path.toLowerCase());
   const formats = new Set<ModelFormat>();
+  const packageFormat = repository.compatibility?.evidence?.package_format;
+  const isNativeMlxPackage = packageFormat === 'mlx';
   if (paths.some((path) => path.endsWith('.gguf'))) formats.add('gguf');
-  if (paths.some((path) => path.endsWith('.safetensors'))) formats.add('safetensors');
+  // Safetensors is a container, not a promise that Transformers, vLLM, or
+  // SGLang can load the tensor namespace and packing scheme. Native MLX
+  // packages retain their Safetensors integrity metadata but route only to
+  // integrations that explicitly support MLX.
+  if (!isNativeMlxPackage && paths.some((path) => path.endsWith('.safetensors'))) formats.add('safetensors');
   if (paths.some((path) => /\.(bin|pt|pth)$/.test(path))) formats.add('pytorch');
   if (paths.some((path) => path.endsWith('.onnx'))) formats.add('onnx');
   if (paths.some((path) => path.endsWith('.dduf'))) formats.add('dduf');
   if (paths.includes('model_index.json')) formats.add('diffusers');
   if (
-    repository.compatibility?.mlx_compatible === true
+    isNativeMlxPackage
+    || repository.compatibility?.mlx_compatible === true
     || paths.some((path) => path.endsWith('.npz') || /(^|\/)mlx/.test(path))
   ) formats.add('mlx');
   return [...formats];

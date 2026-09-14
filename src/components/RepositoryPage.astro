@@ -4,6 +4,7 @@ import CreatorLink from '@/components/CreatorLink.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import UseModel from '@/components/UseModel.astro';
 import BuildShip from '@/components/BuildShip.astro';
+import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
@@ -40,6 +41,9 @@ const reactionEmoji: Record<string, string> = { helpful: '💡', celebrate: '�
 const compatibilityEvidence = repository?.compatibility && Array.isArray(repository.compatibility.evidence.evidence_urls)
   ? repository.compatibility.evidence.evidence_urls.filter((value): value is string => typeof value === 'string' && value.startsWith('https://'))
   : [];
+const compatibilityNotes = repository?.compatibility && Array.isArray(repository.compatibility.evidence.notes)
+  ? repository.compatibility.evidence.notes.filter((value): value is string => typeof value === 'string' && value.length > 0)
+  : [];
 const compatibilityTargets = repository?.compatibility ? [
   ['CPU', repository.compatibility.cpu_compatible],
   ['NVIDIA CUDA', repository.compatibility.cuda_compatible],
@@ -49,6 +53,18 @@ const compatibilityTargets = repository?.compatibility ? [
   ['llama.cpp', repository.compatibility.llama_cpp_compatible],
   ['Browser', repository.compatibility.browser_compatible],
 ] as const : [];
+const parameterCount = Number(repository?.compatibility?.parameter_count ?? Number.NaN);
+const parameterCountLabel = Number.isSafeInteger(parameterCount) && parameterCount >= 0
+  ? `${parameterCount >= 1_000_000_000
+      ? `${(parameterCount / 1_000_000_000).toFixed(3)}B`
+      : parameterCount >= 1_000_000
+        ? `${(parameterCount / 1_000_000).toFixed(3)}M`
+        : parameterCount.toLocaleString('en-US')} (${parameterCount.toLocaleString('en-US')})`
+  : 'Not identified';
+const minimumVramLabel = repository?.compatibility?.mlx_compatible === true
+  && Number(repository.compatibility.minimum_vram_bytes) === 0
+  ? 'Unified memory · no separate VRAM'
+  : `${(Number(repository?.compatibility?.minimum_vram_bytes ?? 0) / 1024 ** 3).toFixed(2)} GiB`;
 const notebooks = repository ? repositoryNotebooks(repository) : [];
 const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
 const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highlight') ?? '')
@@ -147,7 +163,11 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
       <section class="repository-section" id="card">
         <div class="repository-section__heading"><div><p class="eyebrow">Documentation</p><h2>{cardTitle}</h2></div></div>
         {repository.card_markdown ? (
-          <article class="repository-card-markdown">{repository.card_markdown}</article>
+          <article
+            class="repository-card-markdown notebook-markdown"
+            data-no-translate
+            set:html={renderNotebookMarkdown(repository.card_markdown)}
+          />
         ) : (
           <p>This repository does not yet include a written {cardTitle.toLowerCase()}.</p>
         )}
@@ -259,25 +279,33 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
               <button class="button button--dark button--small" type="submit">Tokenize</button>
               <pre data-tokenizer-output hidden></pre>
             </form>
-            <form class="tool-card" data-browser-ai-form>
-              <h3>Browser inference</h3>
-              <p>Runs on your device with local model files and local WASM. WebGPU falls back to WASM.</p>
-              <label>Task <select name="task" data-browser-task>
-                <option value="text-classification">Text classification</option>
-                <option value="feature-extraction">Embeddings</option>
-                <option value="token-classification">Token classification</option>
-                <option value="text-generation">Text generation</option>
-                <option value="image-classification">Image classification</option>
-                <option value="image-to-text">Image to text</option>
-                <option value="audio-classification">Audio classification</option>
-                <option value="automatic-speech-recognition">Speech recognition</option>
-              </select></label>
-              <label data-browser-text-field>Text input <textarea name="input" maxlength="100000" required placeholder="Input for this model"></textarea></label>
-              <label data-browser-media-field hidden>Local media <input name="media" type="file" /><span>Your selected file stays on this device.</span></label>
-              <button class="button button--dark button--small" type="submit">Run on this device</button>
-              <p class="tool-status" data-browser-ai-status></p>
-              <pre data-browser-ai-output hidden></pre>
-            </form>
+            {repository.compatibility?.browser_compatible === true ? (
+              <form class="tool-card" data-browser-ai-form>
+                <h3>Browser inference</h3>
+                <p>Runs on your device with local model files and local WASM. WebGPU falls back to WASM.</p>
+                <label>Task <select name="task" data-browser-task>
+                  <option value="text-classification">Text classification</option>
+                  <option value="feature-extraction">Embeddings</option>
+                  <option value="token-classification">Token classification</option>
+                  <option value="text-generation">Text generation</option>
+                  <option value="image-classification">Image classification</option>
+                  <option value="image-to-text">Image to text</option>
+                  <option value="audio-classification">Audio classification</option>
+                  <option value="automatic-speech-recognition">Speech recognition</option>
+                </select></label>
+                <label data-browser-text-field>Text input <textarea name="input" maxlength="100000" required placeholder="Input for this model"></textarea></label>
+                <label data-browser-media-field hidden>Local media <input name="media" type="file" /><span>Your selected file stays on this device.</span></label>
+                <button class="button button--dark button--small" type="submit">Run on this device</button>
+                <p class="tool-status" data-browser-ai-status></p>
+                <pre data-browser-ai-output hidden></pre>
+              </form>
+            ) : (
+              <article class="tool-card">
+                <h3>Browser inference</h3>
+                <p>This immutable revision is not marked browser-compatible. Super ii will not offer an unverified browser run path.</p>
+                <button class="button button--secondary button--small" type="button" data-use-model-open aria-expanded="false" aria-controls="use-model">Open reviewed local paths</button>
+              </article>
+            )}
             {hasGguf && (
               <form class="tool-card tool-card--wide" data-llama-form>
                 <h3>llama.cpp</h3>
@@ -356,11 +384,12 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             <>
               <div class="compatibility-facts">
                 <article><span>Architecture</span><strong>{repository.compatibility.architecture ?? 'Not identified'}</strong></article>
+                <article><span>Parameters</span><strong title={Number.isSafeInteger(parameterCount) ? `${parameterCount.toLocaleString('en-US')} logical tensor parameters` : undefined}>{parameterCountLabel}</strong></article>
                 <article><span>Tensor format</span><strong>{repository.compatibility.tensor_format ?? 'Not identified'}</strong></article>
                 <article><span>Quantization</span><strong>{repository.compatibility.quantization ?? 'Not identified'}</strong></article>
                 <article><span>Model size</span><strong>{(Number(repository.compatibility.model_size_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
                 <article><span>Estimated minimum RAM</span><strong>{(Number(repository.compatibility.minimum_ram_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
-                <article><span>Estimated minimum VRAM</span><strong>{(Number(repository.compatibility.minimum_vram_bytes) / 1024 ** 3).toFixed(2)} GiB</strong></article>
+                <article><span>Estimated minimum VRAM</span><strong>{minimumVramLabel}</strong></article>
               </div>
               <div class="compatibility-targets" aria-label="Compatible hardware and runtimes">
                 {compatibilityTargets.map(([label, compatible]) => (
@@ -377,6 +406,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                     ? 'These fields include publisher declarations checked for structure, not independent performance verification.'
                     : 'These fields are conservative offline estimates from reviewed formats and metadata, not benchmark guarantees.'}
               </p>
+              {compatibilityNotes.length > 0 && <ul class="compatibility-notes">{compatibilityNotes.map((note) => <li>{note}</li>)}</ul>}
               {compatibilityEvidence.length > 0 && <p class="compatibility-evidence"><strong>Evidence:</strong> {compatibilityEvidence.map((url) => <a href={url} rel="nofollow noreferrer">{url}</a>)}</p>}
             </>
           ) : <p>No compatibility record is available for this reviewed revision yet.</p>}
