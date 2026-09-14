@@ -5,6 +5,7 @@ import base64
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from uuid import UUID
 
@@ -16,6 +17,8 @@ from .access import input_headers
 from .contracts import Recipe, canonical, validate_document
 
 ORIGIN = "https://superii.site"
+TRANSFER_SCAN_TIMEOUT_SECONDS = 45 * 60
+TRANSFER_SCAN_POLL_SECONDS = 5
 
 
 def publish(
@@ -83,6 +86,32 @@ def publish(
                 )
             return response
 
+        def transfer_status(route, headers):
+            return request("GET", route + "/status", headers=headers).json()
+
+        def wait_for_scan(route, headers):
+            deadline = time.monotonic() + TRANSFER_SCAN_TIMEOUT_SECONDS
+            while time.monotonic() < deadline:
+                value = transfer_status(route, headers)
+                state = value.get("state")
+                error_code = value.get("error_code")
+                if state == "ready":
+                    return value.get("receipt") or value
+                if state in {"rejected", "aborted"}:
+                    raise RuntimeError(f"Security scanning ended with {state}")
+                if error_code:
+                    raise RuntimeError(f"Security scanning is safely paused ({error_code})")
+                if state == "uploaded":
+                    raise RuntimeError(
+                        "Security scanning did not start; retry to resume the preserved transfer"
+                    )
+                if state != "scanning":
+                    raise RuntimeError("Transfer returned an unexpected scan state")
+                time.sleep(TRANSFER_SCAN_POLL_SECONDS)
+            raise RuntimeError(
+                "Security scanning is still running; retry later to read its preserved status"
+            )
+
         route = f"/api/repositories/{repository_id}"
         destination = request("GET", route + "/recipe").json()
         if destination["status"] not in {"draft", "quarantined"}:
@@ -132,7 +161,25 @@ def publish(
                     offset += len(chunk)
                     if response.headers.get("upload-offset") != str(offset):
                         raise IntegrityError("The transfer offset differs")
-            request("POST", transfer_route + "/commit", headers=headers, json={})
+            before_commit = transfer_status(transfer_route, headers)
+            if before_commit.get("state") == "ready":
+                continue
+            if before_commit.get("state") == "scanning" and not before_commit.get("error_code"):
+                wait_for_scan(transfer_route, headers)
+                continue
+            try:
+                commit = http.post(transfer_route + "/commit", headers=headers, json={})
+            except httpx.RequestError:
+                wait_for_scan(transfer_route, headers)
+            else:
+                if commit.is_success and commit.status_code != 202:
+                    continue
+                if commit.status_code == 202 or commit.status_code >= 500:
+                    wait_for_scan(transfer_route, headers)
+                    continue
+                raise RuntimeError(
+                    f"Publication returned HTTP {commit.status_code}; inspect the workspace"
+                )
         verified = request("GET", route + "/recipe", params=branch).json()
         if verified["revision_id"] != destination["revision_id"] or not all(
             any(

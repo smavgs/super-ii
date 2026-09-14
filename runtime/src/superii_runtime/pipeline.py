@@ -7,7 +7,13 @@ from uuid import UUID
 
 from .database import RepositoryDatabase
 from .inspectors import inspect_safetensors
-from .scanners import ScanResult, enforce_format_policy, scan_clamav, scan_gitleaks
+from .scanners import (
+    ScanResult,
+    enforce_format_policy,
+    scan_clamav,
+    scan_gitleaks,
+    scan_gitleaks_document,
+)
 from .settings import Settings
 from .storage import ObjectStore, StagedObject, StoredObject, normalize_repository_path
 from .transfers import request_transfer_sync
@@ -25,8 +31,8 @@ class UploadHeld(RuntimeError):
         super().__init__("upload remains quarantined because a required scanner errored")
 
 
-def _safetensors_scan(path: Path) -> ScanResult:
-    if path.suffix.lower() != ".safetensors":
+def _safetensors_scan(path: Path, repository_path: str) -> ScanResult:
+    if Path(repository_path).suffix.lower() != ".safetensors":
         return ScanResult(
             scanner="safetensors",
             status="skipped",
@@ -34,7 +40,7 @@ def _safetensors_scan(path: Path) -> ScanResult:
             result={"reason": "not_safetensors"},
         )
     try:
-        result = inspect_safetensors(path)
+        result = inspect_safetensors(path, require_filename_suffix=False)
         return ScanResult("safetensors", "passed", "0.8.0", result)
     except (OSError, ValueError, TypeError) as error:
         return ScanResult(
@@ -46,11 +52,27 @@ def _safetensors_scan(path: Path) -> ScanResult:
 
 
 def _scan_staged(staged: StagedObject, settings: Settings) -> list[ScanResult]:
+    safetensors = _safetensors_scan(staged.absolute_path, staged.path)
+    if safetensors.passed:
+        gitleaks = scan_gitleaks_document(
+            safetensors.result,
+            settings,
+            mode="safetensors-structure-and-metadata",
+        )
+    elif Path(staged.path).suffix.lower() == ".safetensors":
+        gitleaks = ScanResult(
+            scanner="gitleaks",
+            status="skipped",
+            tool_version=None,
+            result={"reason": "invalid_safetensors_rejected_before_secret_scan"},
+        )
+    else:
+        gitleaks = scan_gitleaks(staged.absolute_path, settings)
     return [
         enforce_format_policy(staged.path),
         scan_clamav(staged.absolute_path, settings),
-        scan_gitleaks(staged.absolute_path, settings),
-        _safetensors_scan(staged.absolute_path),
+        gitleaks,
+        safetensors,
     ]
 
 
