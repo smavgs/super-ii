@@ -186,6 +186,34 @@ try {
     'text Safetensors must not be presented as ComfyUI compatible',
   );
 
+  const mlxRepository = {
+    ...textSafetensorsRepository,
+    slug: 'native-mlx-model',
+    library: 'mlx-lm',
+    compatibility: {
+      ...textSafetensorsRepository.compatibility,
+      parameter_count: '2697198592',
+      quantization: 'MLX 4-bit affine (group size 64)',
+      cuda_compatible: false,
+      rocm_compatible: false,
+      metal_compatible: true,
+      mlx_compatible: true,
+      minimum_vram_bytes: '0',
+      evidence: { package_format: 'mlx', method: 'superii-offline-compatibility-v2' },
+    },
+  };
+  const mlxManifest = useModel.buildUseManifest(mlxRepository, origin);
+  assert.deepEqual(mlxManifest.model.formats, ['mlx']);
+  assert.ok(mlxManifest.integrations.some((candidate) => candidate.integrationId === 'mlx-lm'));
+  for (const incompatible of ['transformers', 'vllm', 'sglang', 'docker-model-runner']) {
+    assert.equal(
+      mlxManifest.integrations.some((candidate) => candidate.integrationId === incompatible),
+      false,
+      `native MLX package must not be routed to ${incompatible}`,
+    );
+  }
+  assert.equal(mlxManifest.agents.endpoint.integrationId, 'mlx-lm');
+
   const profile = {
     os: 'macos',
     architecture: 'arm64',

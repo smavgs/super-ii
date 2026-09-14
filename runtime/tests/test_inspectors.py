@@ -129,6 +129,53 @@ def test_compatibility_accepts_bounded_publisher_declaration(tmp_path: Path) -> 
     assert result["confidence"] == "declared"
 
 
+def test_compatibility_recognizes_mlx_affine_packing_without_false_cuda_routes(
+    tmp_path: Path,
+) -> None:
+    model = tmp_path / "model.safetensors"
+    save_file(
+        {
+            "model.layers.0.mlp.weight": np.zeros((2, 4), dtype=np.uint32),
+            "model.layers.0.mlp.scales": np.zeros((2, 1), dtype=np.float16),
+            "model.layers.0.mlp.biases": np.zeros((2, 1), dtype=np.float16),
+            "model.norm.weight": np.zeros((2,), dtype=np.float16),
+        },
+        model,
+    )
+    file = RevisionFile(
+        id=UUID("11111111-1111-4111-8111-111111111111"),
+        repository_id=UUID("22222222-2222-4222-8222-222222222222"),
+        revision_id=UUID("33333333-3333-4333-8333-333333333333"),
+        path=model.name,
+        size_bytes=model.stat().st_size,
+        mime_type="application/octet-stream",
+        sha256="0" * 64,
+        storage_key="objects/sha256/00/" + "0" * 64,
+    )
+    result = derive_model_compatibility(
+        tmp_path,
+        {
+            "model": {
+                "architectures": ["FixtureForCausalLM"],
+                "config": {"quantization": {"bits": 4, "group_size": 64, "mode": "affine"}},
+            },
+            "safetensors": [{"path": model.name, "inspection": inspect_safetensors(model)}],
+            "gguf": [],
+        },
+        [file],
+    )
+    assert result["parameter_count"] == 66
+    assert result["quantization"] == "MLX 4-bit affine (group size 64)"
+    assert result["tensor_format"] == "safetensors"
+    assert result["package_format"] == "mlx"
+    assert result["mlx_compatible"] is True
+    assert result["metal_compatible"] is True
+    assert result["cuda_compatible"] is False
+    assert result["rocm_compatible"] is False
+    assert result["minimum_vram_bytes"] == 0
+    assert result["method"] == "superii-offline-compatibility-v2"
+
+
 def test_notebook_inspection_is_static_and_omits_active_outputs(tmp_path: Path) -> None:
     notebook = {
         "nbformat": 4,
