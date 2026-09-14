@@ -233,21 +233,7 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   const englishUrl = new URL(stripLocalePrefix(requestUrl.pathname), 'https://superii.site');
   const russianUrl = localizedUrl(englishUrl, 'ru');
   const hasLocalizedPage = isLocalizablePath(englishUrl.pathname);
-  let excludedDepth = 0;
-  const voidElements = new Set([
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
-    'param', 'source', 'track', 'wbr',
-  ]);
   let rewriter = new HTMLRewriter();
-  for (const selector of ['script', 'style', 'pre', 'code', 'samp', 'kbd', 'textarea', 'template', 'svg', '[data-no-translate]']) {
-    rewriter = rewriter.on(selector, {
-      element(element) {
-        if (voidElements.has(element.tagName.toLowerCase())) return;
-        excludedDepth += 1;
-        element.onEndTag(() => { excludedDepth = Math.max(0, excludedDepth - 1); });
-      },
-    });
-  }
   rewriter = rewriter
     .on('link[rel="preload"][as="script"]', {
       element(element) {
@@ -288,7 +274,30 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
       element(element) {
         element.setAttribute('content', (locale === 'ru' ? russianUrl : englishUrl).toString());
       },
-    })
+    });
+
+  // English is already the canonical server-rendered document. Keep its HTML
+  // rewrite deliberately small: CSP nonces and canonical metadata only. The
+  // translation handlers below walk every text node, link, form, and labelled
+  // element, so registering them for English wastes enough CPU to truncate
+  // larger responses at the Cloudflare edge even though translation is a no-op.
+  if (locale !== 'ru') return rewriter.transform(secured);
+
+  let excludedDepth = 0;
+  const voidElements = new Set([
+    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
+    'param', 'source', 'track', 'wbr',
+  ]);
+  for (const selector of ['script', 'style', 'pre', 'code', 'samp', 'kbd', 'textarea', 'template', 'svg', '[data-no-translate]']) {
+    rewriter = rewriter.on(selector, {
+      element(element) {
+        if (voidElements.has(element.tagName.toLowerCase())) return;
+        excludedDepth += 1;
+        element.onEndTag(() => { excludedDepth = Math.max(0, excludedDepth - 1); });
+      },
+    });
+  }
+  rewriter = rewriter
     .on('meta[name="description"], meta[property="og:title"], meta[property="og:description"], meta[property="og:image:alt"], meta[name="twitter:title"], meta[name="twitter:description"], meta[name="twitter:image:alt"]', {
       element(element) {
         const value = element.getAttribute('content');

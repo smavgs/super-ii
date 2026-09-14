@@ -1,9 +1,10 @@
 ---
 import LogoMark from './LogoMark.astro';
-import { isLocalizablePath } from '@/lib/i18n';
+import { isLocalizablePath, localizedPath, stripLocalePrefix } from '@/lib/i18n';
 
 const year = new Date().getFullYear();
 const hasTranslation = isLocalizablePath(Astro.url.pathname);
+const russianHref = localizedPath(stripLocalePrefix(Astro.url.pathname), 'ru');
 ---
 
 <footer class="site-footer">
@@ -71,7 +72,7 @@ const hasTranslation = isLocalizablePath(Astro.url.pathname);
     <span class="footer-principle">Open by design · Clear controls when needed</span>
     {hasTranslation && <span class="footer-language-group">
       <span class="footer-language-separator" aria-hidden="true">·</span>
-      <a class="footer-language-switch" href="/ru" data-language-switch="ru" lang="ru" hreflang="ru" aria-label="Русский">ru</a>
+      <a class="footer-language-switch" href={russianHref} data-language-switch="ru" lang="ru" hreflang="ru" aria-label="Русский">ru</a>
     </span>}
   </div>
 </footer>
