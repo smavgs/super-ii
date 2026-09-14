@@ -189,6 +189,36 @@ def scan_gitleaks(path: Path, settings: Settings) -> ScanResult:
         )
 
 
+def scan_gitleaks_document(
+    document: dict[str, Any],
+    settings: Settings,
+    *,
+    mode: str,
+) -> ScanResult:
+    """Scan bounded structured metadata instead of opaque numeric tensor bytes."""
+
+    encoded = json.dumps(
+        document,
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    with tempfile.TemporaryDirectory(prefix="superii-gitleaks-document-") as directory:
+        source = Path(directory) / "structured-metadata.json"
+        source.write_bytes(encoded)
+        result = scan_gitleaks(source, settings)
+    return ScanResult(
+        scanner=result.scanner,
+        status=result.status,
+        tool_version=result.tool_version,
+        result={
+            **result.result,
+            "mode": mode,
+            "scanned_bytes": len(encoded),
+        },
+    )
+
+
 UNSAFE_SERIALIZATION_SUFFIXES = {
     ".bin",
     ".ckpt",

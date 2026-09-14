@@ -242,6 +242,8 @@ const published = repository?.revision_status === 'published';
   import { bytesToHex } from '@noble/hashes/utils.js';
 
   const TRANSFER_CHUNK_BYTES = 8 * 1024 * 1024;
+  const TRANSFER_SCAN_TIMEOUT_MS = 45 * 60 * 1000;
+  const TRANSFER_SCAN_POLL_MS = 5 * 1000;
   const workspace = document.querySelector('[data-repository-workspace]');
   const repositoryId = workspace instanceof HTMLElement ? workspace.dataset.repositoryId : null;
   const branchId = workspace instanceof HTMLElement ? workspace.dataset.branchId : null;
@@ -380,6 +382,52 @@ const published = repository?.revision_status === 'published';
     return offset;
   }
 
+  async function scanStatus(transfer: BrowserTransfer) {
+    const response = await fetch(`${transfer.upload_url}/status`, {
+      headers: { 'x-superii-transfer-token': transfer.transfer_token },
+    });
+    const value = await response.json().catch(() => ({})) as Record<string, unknown>;
+    if (!response.ok) {
+      throw new Error(
+        typeof value.error === 'string'
+          ? value.error
+          : `Transfer status failed with ${response.status}.`,
+      );
+    }
+    return value;
+  }
+
+  async function waitForScan(
+    transfer: BrowserTransfer,
+    file: File,
+    status: Element | null,
+  ) {
+    const deadline = Date.now() + TRANSFER_SCAN_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const value = await scanStatus(transfer);
+      const state = typeof value.state === 'string' ? value.state : '';
+      const errorCode = typeof value.error_code === 'string' ? value.error_code : '';
+      if (state === 'ready') return value.receipt ?? value;
+      if (state === 'rejected' || state === 'aborted') {
+        throw new Error(`Security scanning ended with ${state}.`);
+      }
+      if (errorCode) {
+        throw new Error(`Security scanning is safely paused (${errorCode}). Retry after resolving the scanner.`);
+      }
+      if (state === 'uploaded') {
+        throw new Error('Security scanning did not start. Retry this upload to resume the preserved transfer.');
+      }
+      if (state !== 'scanning') {
+        throw new Error('Transfer returned an unexpected scan state.');
+      }
+      if (status instanceof HTMLElement) {
+        status.textContent = `Scanning ${file.name} in quarantine… You can keep this tab open.`;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, TRANSFER_SCAN_POLL_MS));
+    }
+    throw new Error('Security scanning is still running. Retry later to read its preserved status.');
+  }
+
   async function uploadResumableFile(
     file: File,
     path: string,
@@ -446,17 +494,40 @@ const published = repository?.revision_status === 'published';
     }
 
     if (status instanceof HTMLElement) status.textContent = `Scanning ${file.name} in quarantine…`;
-    const commit = await fetch(`${transfer.upload_url}/commit`, {
-      method: 'POST',
-      headers: {
-        'tus-resumable': '1.0.0',
-        'x-superii-transfer-token': transfer.transfer_token,
-      },
-    });
-    const result = await commit.json().catch(() => ({})) as Record<string, unknown>;
-    if (!commit.ok) {
-      if ([404, 410, 422].includes(commit.status)) sessionStorage.removeItem(stateKey);
-      throw new Error(typeof result.error === 'string' ? result.error : `Scan commit failed with ${commit.status}.`);
+    const prior = await scanStatus(transfer);
+    let result: unknown;
+    if (prior.state === 'ready') {
+      result = prior.receipt ?? prior;
+    } else if (prior.state === 'scanning' && !prior.error_code) {
+      result = await waitForScan(transfer, file, status);
+    } else {
+      let commit: Response | null = null;
+      try {
+        commit = await fetch(`${transfer.upload_url}/commit`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'tus-resumable': '1.0.0',
+            'x-superii-transfer-token': transfer.transfer_token,
+          },
+          body: '{}',
+        });
+      } catch {
+        // An edge disconnect after commit is uncertain. Read the durable state.
+      }
+      if (commit?.ok && commit.status !== 202) {
+        result = await commit.json().catch(() => ({}));
+      } else if (!commit || commit.status === 202 || commit.status >= 500) {
+        result = await waitForScan(transfer, file, status);
+      } else {
+        const value = await commit.json().catch(() => ({})) as Record<string, unknown>;
+        if ([404, 410, 422].includes(commit.status)) sessionStorage.removeItem(stateKey);
+        throw new Error(
+          typeof value.error === 'string'
+            ? value.error
+            : `Scan commit failed with ${commit.status}.`,
+        );
+      }
     }
     sessionStorage.removeItem(stateKey);
     if (progress instanceof HTMLProgressElement) progress.value = 100;

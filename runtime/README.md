@@ -16,6 +16,12 @@ upload -> quarantine -> path and format policy -> ClamAV -> Gitleaks
 
 Missing, timed-out, or errored scanners leave a file quarantined. A positive malware, secret, unsafe-serialization, or invalid-format finding rejects the file. Publication requires both ClamAV and Gitleaks pass evidence for every file and a passing signed policy decision.
 
+For `.safetensors`, ClamAV still scans the complete uploaded binary and the offline
+safetensors parser validates the complete container. Gitleaks scans the complete
+structured header representation (metadata plus every tensor name, dtype, shape,
+and offset) instead of interpreting opaque numeric tensor bytes as source text. The
+inspection receipt records this bounded mode and its exact scanned byte count.
+
 ## Implemented capabilities
 
 - Content-addressed local filesystem storage under `objects/sha256/`; Xet is used only by the isolated Bridge downloader for compatible inbound provider transfer and is not the internal storage format.

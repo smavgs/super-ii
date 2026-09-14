@@ -93,7 +93,7 @@ assert.equal(catalogSearchInputSchema.safeParse({ unexpected: true }).success, f
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'space' }).success, true);
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'invalid' }).success, false);
 
-const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule] = await Promise.all([
+const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule, repositoryWorkspace] = await Promise.all([
   read('src/middleware.ts'),
   read('astro.config.mjs'),
   read('public/_headers'),
@@ -104,6 +104,7 @@ const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServ
   read('src/lib/catalog.ts'),
   read('src/pages/openapi.json.ts'),
   read('src/lib/site.ts'),
+  read('src/pages/repositories/[repositoryId]/edit.astro'),
 ]);
 
 const policyLine = staticHeaders.split('\n').find((line) => line.trim().startsWith('Content-Security-Policy:'));
@@ -151,6 +152,9 @@ assert.match(healthRoute, /status: healthy \? 'ok' : 'degraded'/);
 assert.match(healthRoute, /status: healthy \? 200 : 503/);
 assert.match(siteModule, /runtimeEnv\?\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
 assert.match(siteModule, /import\.meta\.env\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
+assert.match(repositoryWorkspace, /SCAN_RESPONSE_UNCERTAIN|waitForScan|edge disconnect after commit/i);
+assert.match(repositoryWorkspace, /commit\.status >= 500/);
+assert.match(repositoryWorkspace, /state === 'scanning'/);
 
 assert.match(openapi, /name: 'kind', in: 'query', required: true/);
 assert.match(openapi, /name: 'limit'[\s\S]+minimum: 1, maximum: 50, default: 20/);

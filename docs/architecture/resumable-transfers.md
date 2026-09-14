@@ -19,7 +19,7 @@ Large repository files use a TUS 1.0-compatible, capability-scoped path instead 
 - SHA-1 or SHA-256 TUS chunk checksums are verified before durable offset advancement.
 - Transfer metadata and bytes live in quarantine with safe, fixed server-side paths and explicit expiry.
 - Commit verifies exact length and the complete SHA-256 digest before the Python scanner pipeline receives the object.
-- ClamAV, Gitleaks, format policy, applicable offline analysis, release manifest, and human review remain mandatory.
+- ClamAV, Gitleaks, format policy, applicable offline analysis, release manifest, and publication policy remain mandatory. For safetensors, full-file ClamAV and full-container validation are paired with Gitleaks over the complete structured header representation; the receipt records that mode and byte count so opaque numeric tensor bytes are not misrepresented as source-text scanning.
 - Clean bytes are atomically promoted into SHA-256 content-addressed storage with an integrity receipt; rejected or inconsistent bytes never become public.
 
 ## Recovery and CLI

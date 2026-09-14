@@ -27,11 +27,15 @@ def _read_header(path: Path) -> dict[str, Any]:
     return parsed
 
 
-def inspect_safetensors(path: Path) -> dict[str, Any]:
+def inspect_safetensors(
+    path: Path,
+    *,
+    require_filename_suffix: bool = True,
+) -> dict[str, Any]:
     """Validate with safetensors and return metadata without loading tensor values."""
 
     resolved = path.resolve(strict=True)
-    if resolved.suffix.lower() != ".safetensors":
+    if require_filename_suffix and resolved.suffix.lower() != ".safetensors":
         raise ValueError("expected a .safetensors file")
 
     header = _read_header(resolved)

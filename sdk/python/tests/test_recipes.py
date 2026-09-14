@@ -513,12 +513,15 @@ def test_publication_reuses_verified_destination_and_rejects_changed_output(tmp_
     assert len(requests) == 3
 
 
-def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_path):
+def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_path, monkeypatch):
     import base64
     import hashlib
     from uuid import uuid4
 
+    from superii.recipes import publication
     from superii.recipes.publication import publish
+
+    monkeypatch.setattr(publication, "TRANSFER_SCAN_POLL_SECONDS", 0)
 
     dataset = tmp_path / "data"
     dataset.mkdir()
@@ -532,6 +535,7 @@ def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_
         artifacts={"adapter_model.safetensors": weights}, metrics={"loss": 1.0}
     )
     transfers, uploaded = {}, {}
+    uncertain_commit_returned = False
 
     def handle(request):
         assert request.url.host == "superii.site"
@@ -543,6 +547,20 @@ def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_
                 ("text/plain", "multipart/form-data", "application/x-www-form-urlencoded")
             ):
                 return httpx.Response(403, text="Cross-site POST form submissions are forbidden")
+        if request.url.path.endswith("/status"):
+            transfer_id = request.url.path.split("/")[3]
+            transfer = transfers[transfer_id]
+            if transfer.get("state") == "scanning":
+                transfer["state"] = "ready"
+                uploaded[transfer["path"]] = {
+                    "path": transfer["path"],
+                    "sha256": transfer["sha256"],
+                    "size_bytes": len(transfer["content"]),
+                }
+            return httpx.Response(
+                200,
+                json={"state": transfer.get("state", "uploaded"), "error_code": None},
+            )
         if request.method == "GET":
             return httpx.Response(
                 200,
@@ -578,11 +596,17 @@ def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_
                 return httpx.Response(204, headers={"upload-offset": str(len(transfer["content"]))})
             assert request.url.path.endswith("/commit") and json.loads(request.content) == {}
             assert hashlib.sha256(transfer["content"]).hexdigest() == transfer["sha256"]
+            nonlocal uncertain_commit_returned
+            if not uncertain_commit_returned:
+                uncertain_commit_returned = True
+                transfer["state"] = "scanning"
+                return httpx.Response(524, text="edge timeout after upstream scan began")
             uploaded[transfer["path"]] = {
                 "path": transfer["path"],
                 "sha256": transfer["sha256"],
                 "size_bytes": len(transfer["content"]),
             }
+            transfer["state"] = "ready"
             return httpx.Response(200, json={"status": "ready"})
         if request.url.path.endswith("/recipe"):
             assert len(uploaded) == 3
@@ -601,6 +625,7 @@ def test_publication_transfer_commit_and_submit_obey_form_origin_protection(tmp_
         transport=httpx.MockTransport(handle),
     )
     assert result["status"] == "published" and len(transfers) == 3
+    assert uncertain_commit_returned is True
 
 
 def test_real_generated_api_and_framework_exports(tiny_models, tmp_path):
