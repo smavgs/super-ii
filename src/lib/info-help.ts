@@ -5,6 +5,16 @@ export type InfoHelpEntry = {
 };
 
 export const infoHelp = {
+  agentFriendly: {
+    label: 'Agent friendly',
+    text: 'People can use Super ii on the website. AI agents can read public resources through documented files, APIs and MCP. Private or write actions need clear permission.',
+    learnMore: '/docs#agent-native',
+  },
+  automatedReview: {
+    label: 'How release checks work',
+    text: 'Super ii runs automatic policy, security, file-integrity and supported-format checks before publishing. People handle reports and decisions that need judgment. An upload alone never becomes public.',
+    learnMore: '/docs#publish',
+  },
   publicBeta: {
     label: 'Public beta',
     text: 'Super ii is live, but still early. Features can improve quickly and some capabilities are intentionally limited while they are being verified.',

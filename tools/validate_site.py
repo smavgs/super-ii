@@ -425,9 +425,39 @@ def main() -> int:
         progress_index = homepage_contract.find('<p class="eyebrow">One place to make progress</p>')
         use_paths_index = homepage_contract.find('<section class="use-home-hook" id="use-superii">')
         ai_worker_index = homepage_contract.find('<section class="ai-worker-hook" id="ai-worker-home">')
-        clean_beginning_index = homepage_contract.find('<p class="eyebrow">A clean beginning</p>')
-        if not 0 <= progress_index < use_paths_index < ai_worker_index < clean_beginning_index:
-            errors.append("Use pathways and AI Worker homepage hooks must sit in order between One place to make progress and A clean beginning")
+        transparent_index = homepage_contract.find('<div class="shell transparency-home-strip">')
+        social_index = homepage_contract.find('<section class="social-home-hook">')
+        if not 0 <= progress_index < use_paths_index < ai_worker_index < transparent_index < social_index:
+            errors.append("Use pathways, AI Worker, Transparent and Social web homepage hooks must remain in their intended order")
+        for marker in (
+            'Agent Friendly <InfoTip term="agentFriendly" />',
+            'Every public release is reviewed <InfoTip term="automatedReview" />',
+        ):
+            if marker not in homepage_contract:
+                errors.append(f"Agent-friendly homepage status is missing {marker}")
+        for retired_marker in (
+            'Public beta <InfoTip term="publicBeta" />',
+            '<p class="eyebrow">A clean beginning</p>',
+            '<p class="eyebrow">What Super ii stands for</p>',
+        ):
+            if retired_marker in homepage_contract:
+                errors.append(f"Retired homepage positioning remains: {retired_marker}")
+        footer_contract = footer_file.read_text(encoding="utf-8")
+        if '<span class="footer-beta"><span></span> Agent Friendly</span>' not in footer_contract:
+            errors.append("Footer must identify Super ii as Agent Friendly")
+        for retired_marker in ("Public beta", "Open by design · Clear controls when needed"):
+            if retired_marker in footer_contract:
+                errors.append(f"Retired footer positioning remains: {retired_marker}")
+        about_contract = (ROOT / "src" / "pages" / "about.astro").read_text(encoding="utf-8")
+        for marker in (
+            "A home for open-source people and agents.",
+            "How people and agents work here",
+            "Automatic policy and security checks run before publication",
+            "Super ii earns by providing useful capacity, coordination and infrastructure—not by selling trust.",
+            "Keep payment separate from evidence, compatibility and community influence.",
+        ):
+            if marker not in about_contract:
+                errors.append(f"Current About positioning is missing {marker}")
         for private_detail in (
             "ollama pull qwen3.5:4b",
             "ollama launch opencode",

@@ -96,6 +96,13 @@ const coreRussian: Record<string, string> = {
   'Turn web search off': 'Выключить поиск в интернете',
   'Close Super ii': 'Закрыть чат Super ii',
   'Session-only chat ·': 'Чат хранится только в этой сессии ·',
+  'Agent Friendly': 'Для людей и ИИ-агентов',
+  'Agent friendly': 'Для людей и ИИ-агентов',
+  'People can use Super ii on the website. AI agents can read public resources through documented files, APIs and MCP. Private or write actions need clear permission.':
+    'Люди могут работать с Super ii на сайте. ИИ-агенты могут читать публичные материалы через документированные файлы, API и MCP. Для приватных данных и действий с изменениями требуется явное разрешение.',
+  'How release checks work': 'Как проверяются релизы',
+  'Super ii runs automatic policy, security, file-integrity and supported-format checks before publishing. People handle reports and decisions that need judgment. An upload alone never becomes public.':
+    'Перед публикацией Super ii автоматически проверяет правила, безопасность, целостность файлов и поддерживаемые форматы. Люди рассматривают жалобы и решения, где требуется суждение. Одна лишь загрузка никогда не делает материал публичным.',
   'Super ii is live, but still early. Features can improve quickly and some capabilities are intentionally limited while they are being verified.':
     'Super ii уже работает, но проект пока на раннем этапе. Возможности быстро развиваются, а некоторые функции намеренно ограничены, пока проходят проверку.',
   'Reviewed / Review-first': 'Проверено / Сначала проверка',
@@ -622,37 +629,48 @@ const pricingRussian: Record<string, string> = {
 
 const publicPageRussian: Record<string, string> = {
   'About': 'О нас',
-  'Why Super ii is building a public, evidence-minded home for open AI work.':
-    'Почему Super ii создаёт открытую платформу для проектов ИИ, где важны факты и проверяемость.',
+  'Super ii is an open-source home where people and agents can discover, understand, use and improve AI work together.':
+    'Super ii — дом открытого кода, где люди и ИИ-агенты вместе находят, изучают, используют и улучшают проекты ИИ.',
   'About Super ii': 'О Super ii',
-  'A public home for AI work people can understand.':
-    'Открытая платформа для проектов ИИ, в которых легко разобраться.',
-  'Super ii exists to make useful AI projects easier to discover, inspect, improve, and carry into real teams.':
-    'Super ii помогает находить, изучать и улучшать полезные проекты ИИ, а затем внедрять их в работу настоящих команд.',
-  'Why build another hub?': 'Зачем создавать ещё один хаб?',
-  'AI work is more useful when the artifact and its context stay together. A model without a clear license, a dataset without lineage, or an app without limitations is harder to trust and harder to improve.':
-    'ИИ-проект приносит больше пользы, когда сам материал и его контекст хранятся вместе. Модели без понятной лицензии, наборы данных без истории происхождения и приложения без описанных ограничений вызывают меньше доверия и труднее поддаются улучшению.',
-  'Super ii is being built around the opposite default: public discovery, explicit documentation, version history, visible limitations, and team controls that appear when collaboration becomes more complex.':
-    'В основе Super ii другой подход: публичный поиск, подробная документация, история версий, видимые ограничения и командные инструменты, которые подключаются по мере усложнения совместной работы.',
+  'A home for open-source people and agents.':
+    'Дом для сообщества открытого кода и ИИ-агентов.',
+  'Super ii brings models, datasets, apps, skills, research and the people building them into one place—so work can be discovered, understood, used and improved.':
+    'Super ii объединяет модели, наборы данных, приложения, навыки, исследования и их создателей в одном месте, чтобы проекты было проще находить, понимать, использовать и улучшать.',
+  'Why another home?': 'Зачем нужна ещё одна платформа?',
+  'Open-source AI work is spread across code hosts, model hubs, notebooks, local runtimes and conversations. Finding a project is only the first step. Understanding its files, license, versions, lineage, limits and the right way to use it still takes too much work.':
+    'Проекты ИИ с открытым кодом разбросаны по хостингам кода, модельным хабам, ноутбукам, локальным средам запуска и обсуждениям. Найти проект — лишь первый шаг. Разобраться в его файлах, лицензии, версиях, происхождении, ограничениях и правильном способе использования всё ещё слишком сложно.',
+  'Super ii is an alternative home that keeps the project and its context together. Creators can publish new work or bring in existing work without leaving behind the open tools they already use. People work through the website; agents work through public machine-readable resources, APIs and MCP.':
+    'Super ii — альтернативная платформа, где проект и его контекст остаются вместе. Создатели могут публиковать новую работу или переносить существующую, продолжая пользоваться привычными открытыми инструментами. Люди работают через сайт, а агенты — через публичные машиночитаемые ресурсы, API и MCP.',
+  'How people and agents work here': 'Как здесь работают люди и агенты',
+  'Public resources are easy to discover and read. Reviewed releases keep files, versions, checksums, licenses, provenance, compatibility and limitations close to the work. Automatic policy and security checks run before publication; people handle reports, disputes and decisions that need judgment.':
+    'Публичные материалы легко находить и читать. В проверенных релизах рядом с проектом сохраняются файлы, версии, контрольные суммы, лицензии, происхождение, совместимость и ограничения. До публикации автоматически выполняются проверки правил и безопасности, а люди рассматривают жалобы, споры и решения, где требуется суждение.',
+  'Agents can search, inspect, follow documented run paths and take scoped actions only when a person gives permission. Private work, publishing, team actions and purchases use separate credentials and clear limits. Opening a public page never gives an agent permission to change or buy anything.':
+    'Агенты могут искать, изучать, следовать документированным способам запуска и выполнять ограниченные действия только с разрешения человека. Для приватной работы, публикации, командных действий и покупок используются отдельные учётные данные и понятные лимиты. Открытие публичной страницы никогда не даёт агенту права что-либо изменить или купить.',
   'How the business works': 'Как устроена бизнес-модель',
-  'Public participation starts free. Paid plans add more privacy, capacity, team controls and support. Infrastructure such as additional storage or hosted compute is priced separately when used.':
-    'Публичное участие начинается бесплатно. Платные тарифы добавляют приватность, больше ресурсов, командное управление и поддержку. Инфраструктура — например, дополнительное хранилище или облачные вычисления — оплачивается отдельно по мере использования.',
+  'Anyone can explore public work and start participating for free. Pro is for independent builders who need private work, more capacity and advanced tools. Team adds shared workspaces, pooled capacity, roles and audit controls. Enterprise is shaped around custom infrastructure, identity, deployment and support needs.':
+    'Любой может бесплатно изучать публичные проекты и начать участвовать. Pro предназначен для независимых создателей, которым нужны приватная работа, больше ресурсов и расширенные инструменты. Team добавляет общие рабочие пространства, объединённые ресурсы, роли и аудит. Enterprise формируется под требования к собственной инфраструктуре, идентификации, развёртыванию и поддержке.',
+  'Additional storage, managed compute and customer-specific infrastructure are priced separately when used. Paid discovery is clearly labeled and stays separate from organic ranking, compatibility results, transparency reports and community votes. Super ii earns by providing useful capacity, coordination and infrastructure—not by selling trust.':
+    'Дополнительное хранилище, управляемые вычисления и инфраструктура под конкретного заказчика оплачиваются отдельно по мере использования. Платное продвижение всегда помечено и не влияет на органический рейтинг, результаты совместимости, отчёты о прозрачности и голоса сообщества. Super ii зарабатывает на полезных ресурсах, совместной работе и инфраструктуре, а не на продаже доверия.',
   'Operating principles': 'Принципы работы',
-  'Separate what is live from what is planned.': 'Чётко отделять уже работающие возможности от запланированных.',
-  'Show material limits before asking for payment.': 'Показывать существенные ограничения до оплаты.',
-  'Protect credentials and private content by design.': 'Защищать учётные данные и приватные материалы на уровне архитектуры.',
-  'Keep public knowledge easy to reach.': 'Сохранять публичные знания доступными.',
-  'Prefer evidence and reproducibility over popularity theatre.': 'Ставить факты и воспроизводимость выше показной популярности.',
-  'Help shape it': 'Помогите развивать Super ii',
-  'Creators, researchers, companies, and curious builders can':
-    'Создатели, исследователи, компании и любознательные разработчики могут',
-  'tell us what they need': 'рассказать нам, что им нужно',
-  '. Early feedback will shape publishing, governance, pricing, and infrastructure priorities.':
-    '. Ранние отзывы помогут определить приоритеты в публикации, управлении, тарифах и инфраструктуре.',
+  'Keep public AI work easy for people and agents to use.': 'Делать публичные проекты ИИ удобными для людей и агентов.',
+  'Connect open tools and communities instead of forcing a closed stack.': 'Соединять открытые инструменты и сообщества, а не навязывать закрытую систему.',
+  'Automate repeatable checks and keep human judgment where it matters.': 'Автоматизировать повторяемые проверки и сохранять человеческое суждение там, где оно важно.',
+  'Keep files, versions, provenance, limitations and verification attached to the work.': 'Сохранять файлы, версии, происхождение, ограничения и проверку вместе с проектом.',
+  'Give credentials narrow scopes and make paid actions explicit.': 'Ограничивать область действия учётных данных и делать платные действия явными.',
+  'Say what is live, measured, derived or still unknown.': 'Прямо указывать, что работает, измерено, выведено из данных или пока неизвестно.',
+  'Keep payment separate from evidence, compatibility and community influence.': 'Не позволять оплате влиять на доказательства, совместимость и решения сообщества.',
+  'Make a home here': 'Найдите здесь свой дом',
+  'Super ii is for open-source creators, researchers, independent builders, agent developers and teams that want their work to stay understandable and useful.':
+    'Super ii создан для авторов открытого кода, исследователей, независимых разработчиков, создателей агентов и команд, которые хотят сохранять свою работу понятной и полезной.',
+  'Bring existing work to Super ii, join free, or tell us what you need.':
+    'Перенесите существующую работу в Super ii, присоединитесь бесплатно или расскажите, что вам нужно.',
+  'Bring your work': 'Перенести свою работу',
+  'Contact Super ii': 'Связаться с Super ii',
   'On this page': 'На этой странице',
-  'Why another hub?': 'Зачем ещё один хаб?',
+  'People and agents': 'Люди и агенты',
   'Business model': 'Бизнес-модель',
   'Principles': 'Принципы',
+  'Build here': 'Начать здесь',
 
   'Frontier AI from your computer': 'Передовой ИИ с вашего компьютера',
   'Connect OpenCode to NVIDIA and start using Kimi K3, a 2.8-trillion-parameter frontier model, in three clear steps.':
@@ -2648,6 +2666,8 @@ const helpRussian: Readonly<Record<string, string>> = Object.freeze({
   'Production': 'Production',
   'Provenance': 'Происхождение',
   'Public beta': 'Публичная бета-версия',
+  'Agent friendly': 'поддержка ИИ-агентов',
+  'How release checks work': 'проверка релизов',
   'Repository / Repo': 'Репозиторий',
   'Reviewed / Review-first': 'Проверка перед публикацией',
   'SHA-256 / Checksum': 'SHA-256 / контрольная сумма',
@@ -2735,15 +2755,15 @@ export function translateKnown(value: string, locale: SiteLocale = 'ru'): string
   if (locale !== 'ru') return value;
   const normalized = decodeSourceEntities(value).replace(/\s+/g, ' ').trim();
   if (!normalized) return value;
+  if (Object.hasOwn(reviewedRussianMessages, normalized)) {
+    return decodeGeneratedEntities(reviewedRussianMessages[normalized] ?? '');
+  }
   let helpMatch = normalized.match(/^About (.+)$/);
   if (helpMatch && helpRussian[helpMatch[1]]) return `Подробнее: ${helpRussian[helpMatch[1]]}`;
   helpMatch = normalized.match(/^Close (.+) information$/);
   if (helpMatch && helpRussian[helpMatch[1]]) return `Закрыть справку: ${helpRussian[helpMatch[1]]}`;
   helpMatch = normalized.match(/^(.+) information$/);
   if (helpMatch && helpRussian[helpMatch[1]]) return `Справка: ${helpRussian[helpMatch[1]]}`;
-  if (Object.hasOwn(reviewedRussianMessages, normalized)) {
-    return decodeGeneratedEntities(reviewedRussianMessages[normalized] ?? '');
-  }
   const exact = (text: string) => {
     const match = russianMessages[text];
     return match ? decodeGeneratedEntities(match) : text;

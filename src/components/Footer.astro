@@ -15,7 +15,7 @@ const russianHref = localizedPath(stripLocalePrefix(Astro.url.pathname), 'ru');
         <span>Super <strong>ii</strong></span>
       </a>
       <p>Open intelligence, built together.</p>
-      <span class="footer-beta"><span></span> Public beta</span>
+      <span class="footer-beta"><span></span> Agent Friendly</span>
     </div>
 
     <div class="footer-column">
@@ -69,7 +69,6 @@ const russianHref = localizedPath(stripLocalePrefix(Astro.url.pathname), 'ru');
 
   <div class="shell footer-bottom">
     <span>© {year} Super ii</span>
-    <span class="footer-principle">Open by design · Clear controls when needed</span>
     {hasTranslation && <span class="footer-language-group">
       <span class="footer-language-separator" aria-hidden="true">·</span>
       <a class="footer-language-switch" href={russianHref} data-language-switch="ru" lang="ru" hreflang="ru" aria-label="Русский">ru</a>

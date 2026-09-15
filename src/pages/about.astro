@@ -5,42 +5,52 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 export const prerender = false;
 ---
 
-<BaseLayout title="About" description="Why Super ii is building a public, evidence-minded home for open AI work.">
+<BaseLayout title="About" description="Super ii is an open-source home where people and agents can discover, understand, use and improve AI work together.">
   <PageHero
     eyebrow="About Super ii"
-    title="A public home for AI work people can understand."
-    description="Super ii exists to make useful AI projects easier to discover, inspect, improve, and carry into real teams."
+    title="A home for open-source people and agents."
+    description="Super ii brings models, datasets, apps, skills, research and the people building them into one place—so work can be discovered, understood, used and improved."
   />
 
   <div class="shell content-shell">
     <article class="prose">
-      <h2 id="why">Why build another hub?</h2>
-      <p>AI work is more useful when the artifact and its context stay together. A model without a clear license, a dataset without lineage, or an app without limitations is harder to trust and harder to improve.</p>
-      <p>Super ii is being built around the opposite default: public discovery, explicit documentation, version history, visible limitations, and team controls that appear when collaboration becomes more complex.</p>
+      <h2 id="why">Why another home?</h2>
+      <p>Open-source AI work is spread across code hosts, model hubs, notebooks, local runtimes and conversations. Finding a project is only the first step. Understanding its files, license, versions, lineage, limits and the right way to use it still takes too much work.</p>
+      <p>Super ii is an alternative home that keeps the project and its context together. Creators can publish new work or bring in existing work without leaving behind the open tools they already use. People work through the website; agents work through public machine-readable resources, APIs and MCP.</p>
+
+      <h2 id="collaboration">How people and agents work here</h2>
+      <p>Public resources are easy to discover and read. Reviewed releases keep files, versions, checksums, licenses, provenance, compatibility and limitations close to the work. Automatic policy and security checks run before publication; people handle reports, disputes and decisions that need judgment.</p>
+      <p>Agents can search, inspect, follow documented run paths and take scoped actions only when a person gives permission. Private work, publishing, team actions and purchases use separate credentials and clear limits. Opening a public page never gives an agent permission to change or buy anything.</p>
 
       <h2 id="business">How the business works</h2>
-      <p>Public participation starts free. Paid plans add more privacy, capacity, team controls and support. Infrastructure such as additional storage or hosted compute is priced separately when used.</p>
+      <p>Anyone can explore public work and start participating for free. Pro is for independent builders who need private work, more capacity and advanced tools. Team adds shared workspaces, pooled capacity, roles and audit controls. Enterprise is shaped around custom infrastructure, identity, deployment and support needs.</p>
+      <p>Additional storage, managed compute and customer-specific infrastructure are priced separately when used. Paid discovery is clearly labeled and stays separate from organic ranking, compatibility results, transparency reports and community votes. Super ii earns by providing useful capacity, coordination and infrastructure—not by selling trust.</p>
 
       <h2 id="principles">Operating principles</h2>
       <ul>
-        <li>Separate what is live from what is planned.</li>
-        <li>Show material limits before asking for payment.</li>
-        <li>Protect credentials and private content by design.</li>
-        <li>Keep public knowledge easy to reach.</li>
-        <li>Prefer evidence and reproducibility over popularity theatre.</li>
+        <li>Keep public AI work easy for people and agents to use.</li>
+        <li>Connect open tools and communities instead of forcing a closed stack.</li>
+        <li>Automate repeatable checks and keep human judgment where it matters.</li>
+        <li>Keep files, versions, provenance, limitations and verification attached to the work.</li>
+        <li>Give credentials narrow scopes and make paid actions explicit.</li>
+        <li>Say what is live, measured, derived or still unknown.</li>
+        <li>Keep payment separate from evidence, compatibility and community influence.</li>
       </ul>
 
-      <h2 id="contact">Help shape it</h2>
-      <p>Creators, researchers, companies, and curious builders can <a href="/contact">tell us what they need</a>. Early feedback will shape publishing, governance, pricing, and infrastructure priorities.</p>
+      <h2 id="contact">Make a home here</h2>
+      <p>Super ii is for open-source creators, researchers, independent builders, agent developers and teams that want their work to stay understandable and useful.</p>
+      <p>Bring existing work to Super ii, join free, or tell us what you need.</p>
+      <p><a href="/bring-my-work">Bring your work</a> · <a href="/sign-up">Join free</a> · <a href="/contact">Contact Super ii</a></p>
     </article>
 
     <aside class="prose-aside">
       <h2>On this page</h2>
       <nav>
-        <a href="#why">Why another hub?</a>
+        <a href="#why">Why another home?</a>
+        <a href="#collaboration">People and agents</a>
         <a href="#business">Business model</a>
         <a href="#principles">Principles</a>
-        <a href="#contact">Help shape it</a>
+        <a href="#contact">Build here</a>
       </nav>
     </aside>
   </div>
