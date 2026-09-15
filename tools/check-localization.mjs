@@ -54,6 +54,11 @@ if (!i18n.includes('preservesNumericTokens(source, translation)')
   || !i18n.includes('.filter(([source, translation]) => preservesNumericTokens(source, translation))')) {
   errors.push('Generated Russian translations are not guarded against changed numeric facts');
 }
+const reviewedTranslationIndex = i18n.indexOf('Object.hasOwn(reviewedRussianMessages, normalized)');
+const genericInfoLabelIndex = i18n.indexOf('normalized.match(/^About (.+)$/)');
+if (reviewedTranslationIndex < 0 || genericInfoLabelIndex < 0 || reviewedTranslationIndex > genericInfoLabelIndex) {
+  errors.push('Reviewed page translations must take precedence over generic info-label localization');
+}
 
 const exact = {
   Models: 'Модели',
