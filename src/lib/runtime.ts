@@ -1,5 +1,7 @@
 import { runtimeValue } from './db';
 
+const RUNTIME_READINESS_TIMEOUT_MS = 10_000;
+
 export function runtimeIsConfigured(locals: App.Locals): boolean {
   return Boolean(runtimeValue(locals, 'RUNTIME_URL') && runtimeValue(locals, 'RUNTIME_TOKEN'));
 }
@@ -18,7 +20,12 @@ export async function pingRuntime(locals: App.Locals): Promise<RuntimeReadiness>
     return { state: 'unconfigured', database: false, storage: false, transfer_service: false, scanners: {}, publishing_enabled: false };
   }
   try {
-    const response = await runtimeFetch(locals, '/ready', { signal: AbortSignal.timeout(2500) });
+    // Readiness includes two independent Postgres trust checks on the self-hosted
+    // runtime. Allow enough time for Neon's scale-to-zero wake-up without making
+    // the status request wait indefinitely.
+    const response = await runtimeFetch(locals, '/ready', {
+      signal: AbortSignal.timeout(RUNTIME_READINESS_TIMEOUT_MS),
+    });
     if (!response?.ok) {
       console.warn('Super ii runtime readiness returned a non-success status', {
         status: response?.status ?? null,
