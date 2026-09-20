@@ -7,6 +7,7 @@ from uuid import UUID
 
 from .database import RepositoryDatabase
 from .inspectors import inspect_safetensors
+from .inspectors.gguf import inspect_gguf
 from .scanners import (
     ScanResult,
     enforce_format_policy,
@@ -51,20 +52,47 @@ def _safetensors_scan(path: Path, repository_path: str) -> ScanResult:
         )
 
 
+def _gguf_scan(path: Path, repository_path: str) -> ScanResult:
+    if Path(repository_path).suffix.lower() != ".gguf":
+        return ScanResult(
+            scanner="gguf",
+            status="skipped",
+            tool_version="superii-1",
+            result={"reason": "not_gguf"},
+        )
+    try:
+        result = inspect_gguf(path, require_filename_suffix=False)
+        return ScanResult("gguf", "passed", "superii-1", result)
+    except (OSError, ValueError, TypeError) as error:
+        return ScanResult(
+            "gguf",
+            "failed",
+            "superii-1",
+            {"reason": "invalid_gguf", "error": str(error)[:500]},
+        )
+
+
 def _scan_staged(staged: StagedObject, settings: Settings) -> list[ScanResult]:
     safetensors = _safetensors_scan(staged.absolute_path, staged.path)
+    gguf = _gguf_scan(staged.absolute_path, staged.path)
     if safetensors.passed:
         gitleaks = scan_gitleaks_document(
             safetensors.result,
             settings,
             mode="safetensors-structure-and-metadata",
         )
-    elif Path(staged.path).suffix.lower() == ".safetensors":
+    elif gguf.passed:
+        gitleaks = scan_gitleaks_document(
+            gguf.result,
+            settings,
+            mode="gguf-structure-and-metadata",
+        )
+    elif Path(staged.path).suffix.lower() in {".safetensors", ".gguf"}:
         gitleaks = ScanResult(
             scanner="gitleaks",
             status="skipped",
             tool_version=None,
-            result={"reason": "invalid_safetensors_rejected_before_secret_scan"},
+            result={"reason": "invalid_model_container_rejected_before_secret_scan"},
         )
     else:
         gitleaks = scan_gitleaks(staged.absolute_path, settings)
@@ -73,6 +101,7 @@ def _scan_staged(staged: StagedObject, settings: Settings) -> list[ScanResult]:
         scan_clamav(staged.absolute_path, settings),
         gitleaks,
         safetensors,
+        gguf,
     ]
 
 

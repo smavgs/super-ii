@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import struct
 import subprocess
 from pathlib import Path
 from uuid import uuid4
@@ -181,6 +182,89 @@ def test_resumable_safetensors_payload_keeps_declared_format(
     assert results["safetensors"].result["tensor_count"] == 1
     assert results["gitleaks"].status == "passed"
     assert captured[0]["metadata"] == {"format": "mlx"}
+
+
+def test_resumable_gguf_secret_scan_uses_bounded_structure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = tmp_path / "payload"
+    payload.write_bytes(b"GGUF" + struct.pack("<IQQ", 3, 0, 0))
+    staged = StagedObject(
+        upload_id=uuid4(),
+        path="weights/model.gguf",
+        size_bytes=payload.stat().st_size,
+        mime_type="application/octet-stream",
+        sha256="b" * 64,
+        storage_key="quarantine/fixture/payload",
+        absolute_path=payload,
+    )
+    captured: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "superii_runtime.pipeline.scan_clamav",
+        lambda *_: ScanResult("clamav", "passed", "ClamAV fixture", {"clean": True}),
+    )
+    monkeypatch.setattr(
+        "superii_runtime.pipeline.scan_gitleaks",
+        lambda *_: (_ for _ in ()).throw(AssertionError("opaque tensor bytes were scanned")),
+    )
+
+    def structured(document: dict[str, object], *_: object, **kwargs: object) -> ScanResult:
+        captured.append(document)
+        return ScanResult(
+            "gitleaks",
+            "passed",
+            "gitleaks fixture",
+            {"findings": 0, "mode": kwargs["mode"]},
+        )
+
+    monkeypatch.setattr("superii_runtime.pipeline.scan_gitleaks_document", structured)
+    results = {
+        result.scanner: result
+        for result in _scan_staged(staged, Settings(storage_root=tmp_path / "data"))
+    }
+
+    assert results["gguf"].status == "passed"
+    assert results["gitleaks"].status == "passed"
+    assert results["gitleaks"].result["mode"] == "gguf-structure-and-metadata"
+    assert captured[0]["format"] == "gguf"
+    assert captured[0]["tensor_count"] == 0
+
+
+def test_invalid_gguf_fails_before_secret_scan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = tmp_path / "payload"
+    payload.write_bytes(b"not-a-gguf")
+    staged = StagedObject(
+        upload_id=uuid4(),
+        path="weights/model.gguf",
+        size_bytes=payload.stat().st_size,
+        mime_type="application/octet-stream",
+        sha256="c" * 64,
+        storage_key="quarantine/fixture/payload",
+        absolute_path=payload,
+    )
+    monkeypatch.setattr(
+        "superii_runtime.pipeline.scan_clamav",
+        lambda *_: ScanResult("clamav", "passed", "ClamAV fixture", {"clean": True}),
+    )
+    monkeypatch.setattr(
+        "superii_runtime.pipeline.scan_gitleaks",
+        lambda *_: (_ for _ in ()).throw(AssertionError("invalid GGUF bytes were scanned")),
+    )
+
+    results = {
+        result.scanner: result
+        for result in _scan_staged(staged, Settings(storage_root=tmp_path / "data"))
+    }
+
+    assert results["gguf"].status == "failed"
+    assert results["gitleaks"].status == "skipped"
+    assert results["gitleaks"].result["reason"] == (
+        "invalid_model_container_rejected_before_secret_scan"
+    )
 
 
 def test_scaling_runtimes_are_explicitly_deferred(tmp_path: Path) -> None:

@@ -78,9 +78,13 @@ def _value(stream: BinaryIO, value_type: int, *, collect: bool = True, depth: in
     raise ValueError("GGUF metadata value could not be decoded")
 
 
-def inspect_gguf(path: Path) -> dict[str, Any]:
+def inspect_gguf(
+    path: Path,
+    *,
+    require_filename_suffix: bool = True,
+) -> dict[str, Any]:
     resolved = path.resolve(strict=True)
-    if resolved.suffix.lower() != ".gguf":
+    if require_filename_suffix and resolved.suffix.lower() != ".gguf":
         raise ValueError("expected a .gguf file")
     file_size = resolved.stat().st_size
     with resolved.open("rb") as source:
