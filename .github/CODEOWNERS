@@ -1,0 +1,14 @@
+# Default review owner for every change.
+* @smavgs
+
+# High-impact security and release surfaces.
+/.github/ @smavgs
+/database/ @smavgs
+/runtime/ @smavgs
+/rust/ @smavgs
+/scripts/ @smavgs
+/src/pages/api/ @smavgs
+/src/lib/ @smavgs
+/wrangler.jsonc @smavgs
+/LICENSE @smavgs
+/SECURITY.md @smavgs

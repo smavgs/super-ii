@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://superii.site/contact?interest=security
+    about: Report vulnerabilities without exposing details publicly.
+  - name: Super ii help
+    url: https://superii.site/contact
+    about: Account, billing, publication, and general support.

@@ -4,7 +4,15 @@
   "version": "1.0.0",
   "private": false,
   "description": "The fast, public AI collaboration hub for Super ii.",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://www.superii.site",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smavgs/super-ii.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smavgs/super-ii/issues"
+  },
   "engines": {
     "node": ">=22.12.0"
   },

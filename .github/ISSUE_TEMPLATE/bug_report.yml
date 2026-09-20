@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible Super ii problem. Use private reporting for vulnerabilities.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, private data, or an undisclosed vulnerability. See SECURITY.md."
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What happened?
+      description: Include the smallest reproducible example and the expected outcome.
+    validations: { required: true }
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, operating system, version, route or SDK version, with secrets removed.
+    validations: { required: true }
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Reproduction and evidence
+      description: Exact steps, safe logs, screenshots, or checksums. Remove personal and secret values.
+    validations: { required: true }
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials, private data, and unrelated user content.
+          required: true
+        - label: This is not an undisclosed security vulnerability.
+          required: true

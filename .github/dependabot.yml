@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      npm-security-and-maintenance:
+        patterns: ['*']
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      github-actions:
+        patterns: ['*']
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: pip
+    directory: /runtime
+    schedule: { interval: weekly, day: monday }
+    groups:
+      runtime-python:
+        patterns: ['*']
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: pip
+    directory: /sdk/python
+    schedule: { interval: weekly, day: monday }
+    groups:
+      sdk-python:
+        patterns: ['*']
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: cargo
+    directory: /rust
+    schedule: { interval: weekly, day: monday }
+    groups:
+      rust:
+        patterns: ['*']
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      go:
+        patterns: ['*']
+    open-pull-requests-limit: 3

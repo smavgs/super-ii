@@ -143,6 +143,20 @@ def main() -> int:
         errors.append("contact function must state its security mode")
     if "set search_path" not in lower:
         errors.append("PL/pgSQL functions must pin search_path")
+    if "create role superii_web_backend nologin" not in lower:
+        errors.append("the inert least-privilege web backend role is missing")
+    for role_attribute in (
+        "nosuperuser",
+        "nocreatedb",
+        "nocreaterole",
+        "noinherit",
+        "noreplication",
+        "nobypassrls",
+    ):
+        if role_attribute not in lower:
+            errors.append(f"the web backend role must be {role_attribute}")
+    if "revoke execute on all functions in schema app from public" not in lower:
+        errors.append("app functions must not inherit PostgreSQL's default PUBLIC execute grant")
 
     created = set(re.findall(r"create\s+table\s+if\s+not\s+exists\s+app\.([a-z_]+)", lower))
     views = set(re.findall(r"create\s+(?:or\s+replace\s+)?view\s+app\.([a-z_]+)", lower))

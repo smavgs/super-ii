@@ -22,6 +22,13 @@ structured header representation (metadata plus every tensor name, dtype, shape,
 and offset) instead of interpreting opaque numeric tensor bytes as source text. The
 inspection receipt records this bounded mode and its exact scanned byte count.
 
+GGUF follows the same bounded secret-scanning principle: the parser first
+validates the container, metadata, tensor descriptors, offsets, and ranges;
+Gitleaks then scans the complete structured metadata and tensor-name
+representation rather than opaque numeric tensor bytes. Malformed GGUF fails
+before promotion. ClamAV and the GGUF format parser still cover the complete
+uploaded binary, and the receipt records the bounded scan mode and byte count.
+
 ## Implemented capabilities
 
 - Content-addressed local filesystem storage under `objects/sha256/`; Xet is used only by the isolated Bridge downloader for compatible inbound provider transfer and is not the internal storage format.

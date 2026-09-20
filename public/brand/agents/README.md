@@ -2,6 +2,10 @@
 
 These marks identify compatible or web-capable agent clients in the Super ii public handoff. They do not imply endorsement or partnership.
 
+Repository-wide attribution and trademark boundaries are recorded in
+[`THIRD_PARTY_NOTICES.md`](../../../THIRD_PARTY_NOTICES.md) and
+[`TRADEMARKS.md`](../../../TRADEMARKS.md).
+
 - Codex: OpenAI Developers favicon, https://developers.openai.com/favicon.svg
 - Claude Code, Grok/X, OpenCode, Cline, Mistral AI, GitHub Copilot, and Kimi: Simple Icons 16.29.0, https://simpleicons.org/ (CC0 data; marks remain subject to their owners' trademark rights)
 - Google Antigravity: official product image, https://www.agy.dev/assets/image/antigravity-logo.png
