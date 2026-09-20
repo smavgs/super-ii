@@ -8,6 +8,7 @@ begin;
 do $role$
 declare
   inherited_role text;
+  role_state record;
 begin
   if not exists (select 1 from pg_roles where rolname = 'superii_web_backend') then
     create role superii_web_backend nologin nosuperuser nocreatedb nocreaterole
@@ -23,11 +24,24 @@ begin
   loop
     execute format('revoke %I from superii_web_backend', inherited_role);
   end loop;
+
+  -- Managed Postgres providers such as Neon intentionally do not grant the
+  -- project owner PostgreSQL SUPERUSER. Re-stating NOSUPERUSER in ALTER ROLE
+  -- therefore fails even when the role is already non-superuser. Verify the
+  -- complete fail-closed state instead of requesting unavailable authority.
+  select rolinherit, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole,
+         rolreplication, rolbypassrls
+    into role_state
+    from pg_roles
+    where rolname = 'superii_web_backend';
+
+  if role_state.rolinherit or role_state.rolcanlogin or role_state.rolsuper
+    or role_state.rolcreatedb or role_state.rolcreaterole
+    or role_state.rolreplication or role_state.rolbypassrls then
+    raise exception 'superii_web_backend has a forbidden cluster capability';
+  end if;
 end
 $role$;
-
-alter role superii_web_backend with nologin nosuperuser nocreatedb nocreaterole
-  noinherit noreplication nobypassrls;
 
 -- Custom schemas do not normally expose these privileges to PUBLIC, but state
 -- the boundary explicitly and remove PostgreSQL's default function execution
