@@ -13,8 +13,10 @@ Interaction thesis: a short panel reveal, dependent field transitions and clear
 generation/download feedback; honor reduced motion and restore keyboard focus.
 
 Build & Ship extends model and dataset pages. It does not create a second
-repository, user database, training service or hosted GPU offering. Existing
-Use Model clients and the intentionally empty public catalogue are preserved.
+repository, user database, training service or hosted GPU offering. At this
+release's verification point, existing Use Model clients and the then-empty
+public catalogue were preserved; later creator publications do not change that
+historical test boundary.
 
 ## Delivery and acceptance
 

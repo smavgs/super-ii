@@ -19,8 +19,10 @@ with superii.load("owner/model") as model:
     print(model.generate("Hello", max_tokens=128))
 ```
 
-The catalogue remains intentionally empty before creator submissions. The
-example repository is a placeholder, not a seeded or downloadable model.
+The public catalogue contains only creator submissions that passed quarantine,
+inspection, immutable-manifest, provenance, and signed publication policy. Use
+`smavgs/minicpm-v4.6-q4-k-m-verified-ollama` for a current public GGUF example;
+`owner/model` elsewhere in this guide remains a placeholder.
 
 `load` resolves one published commit, plans against available memory, downloads
 only its selected files, verifies every SHA-256, checks memory again and invokes

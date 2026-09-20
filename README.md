@@ -1,140 +1,214 @@
-# Super ii
+<p align="center">
+  <a href="https://www.superii.site">
+    <img src="public/brand/super-ii-social-card.png" alt="Super ii — Open intelligence, built together" width="100%" />
+  </a>
+</p>
 
-The production website for [superii.site](https://superii.site): a fast public collaboration hub for Ai models, datasets, apps, and organizations.
+<h1 align="center">Super ii</h1>
 
-The launch catalog intentionally contains zero models, datasets, or apps. Every listing must arrive through upload, quarantine, inspection, an immutable manifest, and a signed independent automatic publication decision. Failed or unknown checks block publication with reasons; no demonstration repositories are presented as community content.
+<p align="center">
+  <strong>A public, agent-native collaboration hub for AI models, datasets, apps, people, and organizations.</strong><br />
+  Discover verified work, publish through a fail-closed trust path, or connect an AI agent with bounded authority.
+</p>
 
-Install the Python SDK with `python -m pip install superii-sdk` (Python 3.11+). The import and CLI are `superii`. See the [SDK guide](sdk/python/README.md) for verified downloads, hardware planning, local inference, authenticated local serving, and measured research limits, and the [implementation record](docs/SDK-AUTOMATION-IMPLEMENTATION.md) for release evidence.
+<p align="center">
+  <a href="https://www.superii.site"><img alt="Super ii website" src="https://img.shields.io/website?url=https%3A%2F%2Fwww.superii.site&up_message=live&down_message=degraded&label=superii.site&color=ffd21e" /></a>
+  <a href="https://github.com/smavgs/super-ii/actions/workflows/ci.yml"><img alt="Validate and build" src="https://github.com/smavgs/super-ii/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://pypi.org/project/superii-sdk/"><img alt="PyPI - superii-sdk" src="https://img.shields.io/pypi/v/superii-sdk?label=superii-sdk" /></a>
+  <a href="LICENSE"><img alt="Super ii Modified MIT License" src="https://img.shields.io/badge/license-Super%20ii%20Modified%20MIT-071a2f" /></a>
+</p>
 
-## Stack
+<p align="center">
+  <a href="https://www.superii.site/models">Models</a> ·
+  <a href="https://www.superii.site/datasets">Datasets</a> ·
+  <a href="https://www.superii.site/spaces">Apps</a> ·
+  <a href="https://www.superii.site/builders">Builders</a> ·
+  <a href="https://www.superii.site/docs">Docs</a> ·
+  <a href="https://www.superii.site/siiwebskill.md">Agent guide</a>
+</p>
+
+## Start here
+
+| I want to… | Path |
+| --- | --- |
+| Explore public AI work | Browse [models](https://www.superii.site/models), [datasets](https://www.superii.site/datasets), and [apps](https://www.superii.site/spaces). |
+| Publish my work | Sign in, create a repository, upload an exact revision, declare rights and provenance, and submit it to independent automatic policy. |
+| Use a model locally | Open a reviewed model and choose **Use model**, or use the [Python SDK](sdk/python/README.md). |
+| Connect an AI agent | Begin with the public [agent guide](https://www.superii.site/siiwebskill.md), then issue a separately scoped credential only when governed work is needed. |
+| Contribute code | Read [CONTRIBUTING.md](CONTRIBUTING.md), fork the repository, and open a signed-off pull request. |
+
+The public catalog contains creator work only after the complete publication
+path passes. It is not filled with demonstration repositories. Failed, missing,
+unknown, or timed-out evidence keeps a revision private and quarantined.
+
+## The trust path
+
+```mermaid
+flowchart LR
+  A[Create or import revision] --> B[Checksum-bound upload]
+  B --> C[Quarantine]
+  C --> D[Malware and secret scans]
+  D --> E[Offline format analysis]
+  E --> F[Immutable manifest]
+  F --> G[Independent signed policy]
+  G -->|pass| H[Public release]
+  G -->|fail or unknown| I[Closed with reasons]
+```
+
+| Super ii never | Super ii always |
+| --- | --- |
+| Treats a browser-supplied user ID as authority | Resolves identity and permissions server-side |
+| Publishes around a missing scanner | Fails closed when required evidence is absent |
+| Lets an agent expand its own scope | Binds credentials to exact scopes, targets, expiry, and revocation |
+| Treats compatibility metadata as a benchmark | Separates declared, derived, and directly verified evidence |
+| Stores wallet private keys or debits a wallet | Creates bounded invoices and waits for signed payment confirmation |
+| Executes uploaded repository code during inspection | Parses supported formats offline before publication |
+
+## Architecture
+
+```mermaid
+flowchart TB
+  Human[People and browsers] --> Edge
+  Agent[AI agents and software clients] --> Contracts
+  Contracts[README · JSON · OpenAPI · MCP · A2A] --> Edge
+  Edge[Astro application on Cloudflare Workers] --> Auth[Clerk identity]
+  Edge --> DB[(Neon PostgreSQL)]
+  Edge --> Runtime[Authenticated Super ii Runtime]
+  Edge --> Payment[NOWPayments invoices]
+  Runtime --> Transfer[Rust resumable transfer service]
+  Runtime --> Inspect[ClamAV · Gitleaks · offline inspectors]
+  Runtime --> Objects[Content-addressed object store]
+  Inspect --> Policy[Restricted publication-policy service]
+  Policy --> DB
+```
+
+- **Control plane:** Astro server routes and the public UI on Cloudflare Workers.
+- **Database:** PostgreSQL stores repository history, manifests, evidence,
+  discovery, organizations, community, agent authority, and immutable receipts.
+- **Data plane:** the separately authenticated runtime handles files, scanning,
+  offline analysis, local inference, reviewed notebook execution, and isolated
+  Gradio apps.
+- **Trust root:** the publication service evaluates one immutable candidate and
+  signs the exact decision with a private key that never enters this repository.
+
+## Production stack
 
 Every requested language has a real production responsibility:
 
 | Language | Responsibility |
 | --- | --- |
-| TypeScript | Astro pages, Cloudflare server routes, database types, authentication integration |
-| Astro | Server-rendered application shell and pre-rendered public content |
-| CSS | Responsive design system, accessibility, light/dark themes |
-| Python | Fail-closed content, brand, catalog, and migration validation |
-| PL/pgSQL | Postgres schema functions, rate limiting, timestamps, and transactional launch seed |
-| JavaScript | Progressive enhancement for theme, navigation, catalog search, and contact submission |
-| Shell | Reproducible check/build/deploy pipeline |
+| TypeScript | Astro pages, Cloudflare server routes, database types, authentication and authorization |
+| Astro | Server-rendered application shell and public content |
+| CSS | Responsive design system, accessibility, and light/dark themes |
+| Python | Runtime, offline inspection, policy, migrations, validation, SDK, and recipes |
+| PL/pgSQL | Schema functions, integrity constraints, rate limiting, receipts, and transactional publication |
+| JavaScript | Progressive enhancement, localization, interaction, and release checks |
+| Shell | Reproducible check, build, runtime, and deploy pipelines |
 | Go | Independent release-contract and supplied-logo verification |
-| Rust | Streamed resumable transfer service and resumable artifact CLI |
+| Rust | Resumable transfer service, artifact CLI, and guarded agent connector |
 
-Infrastructure is split deliberately:
+Cloudflare, Clerk, Neon, NOWPayments, OpenRouter, Hugging Face, Docker, ClamAV,
+Gitleaks, llama.cpp, Diffusers, Gradio, Transformers.js, Ollama, and MLX are
+integrations or runtime boundaries, not hidden client-side credentials. Paid or
+metered services are not represented as free infrastructure.
 
-- **Super ii Website** is the Cloudflare/Astro control plane and public UI.
-- **Super ii Runtime** is the self-hosted data plane for files, scanning, offline inspection, llama.cpp, Diffusers, isolated Gradio Spaces, and bounded opt-in web search.
-- **Postgres** stores immutable repository history, search, review evidence, community data, collections, and lineage.
+## Python SDK
 
-## Product languages
+Install `superii-sdk` on Python 3.11 or newer. The import and CLI are `superii`.
 
-English is the canonical default edition. The complete Russian product presentation is available under `/ru`, including server-rendered pages, dynamic browser feedback, Clerk authentication, dates, navigation, metadata, and sitemap entries. An explicit footer language choice persists in a first-party cookie; choosing English clears it. Public API, MCP, A2A, well-known, artifact, file, and code representations keep their stable English machine contracts, and user-published content stays in its source language.
+```sh
+python -m pip install superii-sdk
+superii inspect smavgs/minicpm-v4.6-q4-k-m-verified-ollama
+```
 
-The homepage assistant sends signed-in, session-only conversations server-side through OpenRouter to the metered Meta Muse Spark 1.3 Contributor endpoint; its API key never enters the browser. When a user explicitly turns on Search web, Muse Spark may request one bounded current-information lookup through the authenticated Super ii Runtime. The runtime returns normalized public search results without crawling destination pages. Contributor prompts and outputs may be used to improve Meta's products, as disclosed in the Privacy Policy. Super ii Bridge uses explicit provider OAuth and repository APIs only to identify and copy user-authorized source work. Cloudflare, Clerk, and Neon free tiers allow a zero-upfront website launch. The runtime uses hardware the operator already controls; paid compute and metered services are not represented as free.
+```python
+import superii
 
-The requested repository core, safe/offline inspectors, structured dataset and model previews, resumable large-file transfers, Rust transfer CLI, persistent llama.cpp serving, explicit isolated notebook execution, tokenizer, Transformers.js, Diffusers, isolated Gradio iframe path, Postgres search, upload gates, community, member profiles, social graph, collections, lineage, and deterministic Use Model system are implemented. vLLM and SGLang have reviewed self-host instructions, while a Super ii-managed high-throughput GPU service and Text Embeddings Inference remain deliberately deferred until funded capacity and measured Postgres search limits respectively. “Implemented” describes the verified code path; publishing and server inference still fail closed whenever the separate runtime host is not operational.
+plan = superii.plan("smavgs/minicpm-v4.6-q4-k-m-verified-ollama")
+print(plan)
+
+with superii.load("smavgs/minicpm-v4.6-q4-k-m-verified-ollama") as model:
+    print(model.generate("Hello", max_tokens=128))
+```
+
+The SDK resolves one published commit, selects compatible files, verifies every
+SHA-256 and the signed publication evidence, checks available memory, and then
+invokes an explicitly installed local runtime. See the complete
+[SDK guide](sdk/python/README.md).
 
 ## Agent-native surface
 
-- [`SYSTEM-STATE.md`](SYSTEM-STATE.md) is the canonical capability register and uses an evidence-based status ladder from `designed` through `GA`.
-- `/mcp` is a stateless Streamable HTTP MCP server with 16 bounded, read-only public tools for search, repositories, files, lineage, compatibility, papers, documentation, security state, traces, and verified download resolution.
-- `/mcp/work` is a separately authenticated Streamable HTTP MCP server for organization-owned draft creation, revision creation, checksum-bound resumable uploads, automatic policy submission, contribution jobs, and immutable receipt lookup. Only the independent policy service can approve publication; agents cannot override it, delete, pay, or expand their own authority.
-- `/.well-known/commerce.json`, `/mcp/commerce`, and the separate commerce A2A Agent Card expose every current purchasable offer to agents. A human issues an independent `sii_commerce_` credential with exact product, target, per-order, cumulative, count, expiry, and revocation limits. It creates NOWPayments invoices but never accesses or debits a wallet.
-- A2A v1.0 discovery and bounded public tasks are exposed through `/.well-known/agent-card.json` and `/a2a/v1/message:send`; streaming, persistent tasks, and push callbacks are not claimed.
-- Public Agent Skill files are individually SHA-256 recorded and the canonical manifest has a detached Ed25519 signature. The private signing key is outside the repository.
-- Agent identities, one-time hash-at-rest credentials, poll subscriptions, cursor events, review-bound contribution jobs, human-reviewed reputation, and opt-in HTML/JSON/Markdown profiles use the production Postgres contract.
-- The Rust CLI safely connects Codex or OpenCode in dry-run mode by default, refuses conflicting entries, preserves unrelated configuration, creates private backups and receipts on `--apply`, verifies written bytes, and supports guarded rollback.
-- Every reviewed public repository has one source of truth and stable HTML, Markdown, JSON, README, `agents.md`, manifest, API-contract, and MCP representations.
-- Every reviewed model additionally exposes `use.json`, `use.md`, `use.ipynb`, and `use.sh` from a versioned runtime registry; hardware ranking stays local to the browser and generated local APIs stay on loopback.
-- Offline model inspection records architecture, parameter count, quantization, tensor format, size, conservative RAM/VRAM guidance, and CPU/CUDA/ROCm/Metal/MLX/llama.cpp/browser compatibility. Declared, derived, and verified facts remain visibly distinct.
-- GitHub Actions trusted publishing exchanges a matching short-lived OIDC identity for a repository-bound, scope-bound, revocable token. Permanent upload credentials are not required.
-- Agent traces are private by default, size-bounded, metadata-filtered, and expose only hashes unless a profile manager explicitly makes a record public.
+- `/mcp` exposes bounded read-only public discovery and repository tools.
+- `/mcp/work` uses separately issued hash-at-rest credentials for repository,
+  upload, submission, job, event, and receipt actions.
+- `/mcp/social` and `/mcp/commerce` use different credentials and cannot inherit
+  repository, account, payment, or organization authority.
+- A2A v1.0 provides immediate bounded tasks; unsupported streaming or callback
+  behavior is not advertised.
+- GitHub trusted publishing exchanges exact OIDC claims for a short-lived,
+  repository-bound token. Permanent upload credentials are not required.
+- Every reviewed public repository has stable HTML, Markdown, JSON, README,
+  `agents.md`, manifest, API, and MCP representations.
+
+See [`SYSTEM-STATE.md`](SYSTEM-STATE.md) for the canonical evidence register and
+[`docs/architecture/agent-commerce.md`](docs/architecture/agent-commerce.md) for
+the separate bounded-commerce design.
 
 ## Local development
+
+Prerequisites for the complete path are Node.js 24, Python 3.12 with `uv`, Go
+1.26, Rust 1.97, Docker, and PostgreSQL 17.
 
 ```sh
 npm ci
 npm run check
+npm run validate
 npm run db:check
 npm run db:test
+npm run runtime:verify
 npm run build
 npm run dev
 ```
 
-Copy `.env.example` to `.env` only when you need live local authentication or database routes. Never commit credentials.
+Copy `.env.example` to `.env` only for local server integrations. Copy
+`runtime/.env.example` only on a trusted runtime host. Never commit credentials.
+The complete production build temporarily removes `.dev.vars`, rejects local
+metadata, and scans the release tree for configured private values.
 
-## Validation
+Database migrations live in `database/migrations/` and are applied in lexical
+order. Runtime and deployment operations are documented in
+[`runtime/README.md`](runtime/README.md). Do not run deployment, migration,
+payment, or publication commands from an unreviewed fork.
 
-`npm run validate` runs independent Python, Shell, Go, and JavaScript checks:
+## Product languages
 
-- Python validates the product contract, honest empty catalogs, plan states, routes, forbidden legacy claims, and exact SHA-256 of the user-supplied logo.
-- Python also validates the Use Model registry, allowlisted command templates, expiring review evidence, local-only hardware contract, and empty hosted-provider list.
-- Shell reports installed runtime versions without installing, upgrading, downloading, or starting a service; absent software remains unverified.
-- Go independently verifies the route/plan/catalog contract and exact logo hash; the checked-in runner can use a preloaded network-isolated Go container when the host has no Go executable.
-- JavaScript checks every declared route and internal link against the Astro source tree.
+English is canonical. The complete human-facing product also has a Russian
+edition under `/ru`. Public machine contracts remain stable English interfaces,
+and user-published content remains in its source language.
 
-`npm run db:check` verifies transactions, PL/pgSQL, row-level security, the repository core, Postgres search, community/social/collection/lineage tables, fail-closed publication gates, and no repository seed rows.
+## Security and evidence
 
-`npm run db:test` applies every migration twice to a disposable PostgreSQL 17 container, runs the transactional interaction, publication, commerce, member-profile, and Robot smoke tests, and verifies that test rows roll back cleanly.
+- Report vulnerabilities privately under [SECURITY.md](SECURITY.md).
+- Security-sensitive code changes require code-owner review and required CI.
+- Secret scanning, dependency auditing, CodeQL, database integration tests,
+  runtime tests, security-header checks, and production build checks run in the
+  governed release path.
+- Successful execution proves that exact path and evidence—not model quality,
+  production throughput, universal hardware support, or legal sufficiency.
+- Hostile multi-tenant compute, a managed GPU cloud, and any capability marked
+  deferred in `SYSTEM-STATE.md` must not be inferred from implemented code.
 
-## Database
+## Community and governance
 
-Apply every file in `database/migrations/` in lexical order to a new, isolated Postgres database. The 101-table plus one-view schema creates the launch records, immutable repository revisions/files, resumable-transfer state, Bridge identities/imports/source snapshots/sync records, CAS integrity events, persistent-runtime state, provenance-bound benchmarks, isolated-notebook sessions, security evidence, discovery, community, member-profile likes and links, publication verification keys and signed automatic decisions, social graph, collections, lineage, compatibility, Robot plans and immutable versions, private hardware inventory, manufacturer proposals, aggregate Robot discovery, immutable exact-revision Transparency reports, report saves and watches, verified creator claims, append-only creator responses, reviewed evidence suggestions and Transparency discovery analytics, resource groups, service accounts, trusted publishers, scoped tokens, agent identities, hash-at-rest Work and commerce credentials, bounded commerce orders, immutable action and payment receipts, cursor events, poll subscriptions, contribution jobs, and human-reviewed reputation. It does not seed model, dataset, app, user, organization, agent, community Robot, or Transparency report records.
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [GOVERNANCE.md](GOVERNANCE.md), and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing. New contributors
+use forks and reviewed pull requests; source access never grants production or
+release authority.
 
-With the ignored deployment variables configured, the checked-in migration runner applies every migration without printing credentials and verifies the final schema:
+## License and marks
 
-```sh
-uv run --project runtime python tools/apply_migrations.py --check-only
-uv run --project runtime python tools/apply_migrations.py
-```
-
-Required deployment secrets:
-
-- `PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
-- `DATABASE_URL`
-- `CONTACT_HASH_SALT`
-- `RUNTIME_URL`
-- `RUNTIME_TOKEN`
-- `BRIDGE_TOKEN_ENCRYPTION_KEY`
-- `NOWPAYMENTS_API_KEY`
-- `NOWPAYMENTS_IPN_SECRET`
-- `OPENROUTER_API_KEY`
-- `SUPERII_ADMIN_USER_IDS`
-
-Store them with Cloudflare secrets or local ignored env files. Do not add values to `wrangler.jsonc` or Git.
-
-Paid plans use one-time NOWPayments orders denominated in USD and paid only as
-USDC on Ethereum. Pro and Team retain the same plans while offering a 30-day
-term or one 12-month prepayment discounted by 20%; neither renews automatically.
-An authenticated, same-origin checkout creates or reuses one bounded order;
-signed IPN callbacks must match its provider ID, order ID, exact price, currency,
-and network before PL/pgSQL activates the selected entitlement. Card collection
-is intentionally absent.
-
-Agent commerce reuses those same fulfillment functions. Work tokens remain
-database-enforced zero-spend credentials. A separately issued commerce token can
-create only allowlisted products within its recorded budget and target. Invoice
-creation consumes that authority conservatively; payment and fulfillment remain
-pending until a matching provider confirmation creates an immutable receipt.
-See [`docs/architecture/agent-commerce.md`](docs/architecture/agent-commerce.md).
-
-Runtime code, deployment, scanner, offline-model, llama.cpp, Diffusers, and Gradio instructions are in [`runtime/README.md`](runtime/README.md).
-
-## Deploy
-
-```sh
-./scripts/deploy.sh
-```
-
-The script checks Astro types, validates every language-specific contract, builds the Cloudflare Worker, and deploys only after all checks pass. Astro 6+ uses the unified `@astrojs/cloudflare/entrypoints/server` Wrangler entrypoint for development and deployment.
-
-## Brand
-
-`public/brand/super-ii-logo.png` is an exact byte-for-byte copy of the supplied single-line yellow `Sii` master asset. Layouts crop its original white canvas with CSS; the source image is never redrawn.
-
-## License
-
-Code in this repository is available under the modified MIT License. The Super ii name and logo are not granted for third-party branding use by that code license.
+Code is available under the [Super ii Modified MIT License](LICENSE), including
+its commercial attribution condition. It is a custom license, not the
+unmodified MIT License. The Super ii name and logo are governed separately by
+[TRADEMARKS.md](TRADEMARKS.md). Vendored assets and compatibility marks are
+recorded in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

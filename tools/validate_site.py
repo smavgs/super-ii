@@ -34,6 +34,36 @@ def main() -> int:
         fail(f"cannot read {SITE_FILE}: {exc}")
         return 1
 
+    root_license = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    for license_copy in (
+        ROOT / "runtime" / "LICENSE",
+        ROOT / "rust" / "LICENSE",
+        ROOT / "sdk" / "python" / "LICENSE",
+    ):
+        if not license_copy.is_file() or license_copy.read_text(encoding="utf-8") != root_license:
+            errors.append(f"custom license copy is missing or stale: {license_copy.relative_to(ROOT)}")
+    package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    package_lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
+    if (
+        package.get("license") != "SEE LICENSE IN LICENSE"
+        or package_lock.get("packages", {}).get("", {}).get("license")
+        != "SEE LICENSE IN LICENSE"
+    ):
+        errors.append("Node package metadata must point to the custom LICENSE")
+    for metadata_file in (
+        ROOT / "runtime" / "pyproject.toml",
+        ROOT / "sdk" / "python" / "pyproject.toml",
+    ):
+        if 'license = "LicenseRef-Super-ii-Modified-MIT"' not in metadata_file.read_text(
+            encoding="utf-8"
+        ):
+            errors.append(
+                "Python package metadata misstates the custom license: "
+                f"{metadata_file.relative_to(ROOT)}"
+            )
+    if 'license-file = "LICENSE"' not in (ROOT / "rust" / "Cargo.toml").read_text(encoding="utf-8"):
+        errors.append("Rust package metadata must point to its custom license file")
+
     brand = data.get("brand", {})
     if brand.get("name") != "Super ii" or brand.get("shortName") != "Sii":
         errors.append("brand names must remain 'Super ii' and single-line 'Sii'")

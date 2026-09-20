@@ -1,6 +1,6 @@
-Modified MIT License
+Super ii Modified MIT License
 
-Copyright (c) 2026 Super ii 
+Copyright (c) 2026 Super ii
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -10,4 +10,27 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Our only modification part is that, if the Software (or any derivative works thereof) is used for any of your commercial products or services that have more than 1000 monthly active users, or more than 10000 US dollars (or equivalent in other currencies) in monthly revenue, you shall at all times prominently display "www.superii.site" on the user interface of such product or service.
+Additional Commercial Attribution Condition
+
+If the Software, or a derivative work of the Software, is used in a commercial
+product or service that exceeds either of the following thresholds during a
+calendar month:
+
+1. 1,000 monthly active users; or
+2. USD 10,000 in gross monthly revenue, or the equivalent in another currency,
+
+the operator of that product or service must prominently display
+"www.superii.site" in its user interface while either threshold continues to
+be exceeded. For a web product, the displayed text must be a working link to
+https://www.superii.site. For a product without links, clearly readable text is
+sufficient.
+
+"Monthly active user" means a distinct person or organization that actively
+uses the product or service during the calendar month. "Gross monthly revenue"
+means revenue attributable to that product or service before deductions,
+refunds, fees, or expenses.
+
+This is a custom software license and not the unmodified MIT License. This
+license permits use of the code but does not grant any right to use the Super ii
+name, logos, or other brand assets as the name or branding of another product.
+See https://github.com/smavgs/super-ii/blob/main/TRADEMARKS.md.
