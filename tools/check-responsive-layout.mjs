@@ -114,6 +114,11 @@ assert(
 assert(joinTeam.includes('Build Super ii with us.') && joinTeam.includes('Join the Founding Circle'), 'the Join Team page must preserve the supplied invitation');
 assert(joinTeam.includes('/contact?interest=founding-circle') && joinTeam.includes('/contact?interest=founding-team'), 'both Join Team paths must lead to working contact choices');
 assert(
+  joinTeam.includes('href="https://github.com/smavgs/super-ii"')
+    && joinTeam.includes('src="/brand/github-invertocat-white.svg"'),
+  'the Join Team page must end with the official-mark GitHub repository invitation',
+);
+assert(
   /\.footer-column \.footer-join-team\s*\{[\s\S]*?background:\s*var\(--fluoro-pink\);[\s\S]*?color:\s*#071a2f;/.test(css),
   'the footer Join Team action must retain its high-contrast fluorescent-pink treatment',
 );
@@ -124,6 +129,10 @@ assert(
 assert(
   /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.join-team-hero__copy,[\s\S]*?animation:\s*none;/.test(css),
   'Join Team entrance motion must respect reduced-motion preferences',
+);
+assert(
+  /@media \(max-width: 640px\)[\s\S]*?\.join-team-github__inner\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);/.test(css),
+  'the GitHub invitation must stack without overflowing narrow screens',
 );
 
 for (const requiredMarkup of [
