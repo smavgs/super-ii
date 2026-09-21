@@ -390,7 +390,14 @@ def ready(
     policy_ready = False
     if settings.policy_token is not None:
         try:
-            with httpx.Client(timeout=2, trust_env=False, follow_redirects=False) as client:
+            # The policy service verifies its own restricted Neon login and signing key.
+            # Allow a bounded connection wake-up without turning normal latency into a
+            # false publication outage.
+            with httpx.Client(
+                timeout=settings.policy_readiness_timeout_seconds,
+                trust_env=False,
+                follow_redirects=False,
+            ) as client:
                 policy_ready = (
                     client.get(
                         f"{settings.policy_url}/ready",
