@@ -24,6 +24,19 @@ The current project lead and required code owner is `@smavgs`.
   runtime, workflow, and deployment changes require explicit maintainer review.
 - PyPI and production-verification workflows use protected environments and
   remain separate from ordinary contributor permissions.
+- Every required automated check, including full-history Gitleaks scanning,
+  must pass before merge. Known historical findings are limited to exact,
+  reviewed fingerprints; paths, rules, and future matches are never broadly
+  exempted.
+
+While `@smavgs` is the only trusted maintainer, the project lead may use the
+repository administrator merge path only after every required automated check
+is green and the pull-request evidence is retained. This narrow exception is
+needed because a pull-request author cannot independently approve their own
+change; it does not authorize direct pushes or bypass failed checks. After a
+second trusted maintainer is appointed, Super ii will require independent
+approval from that maintainer, enforce the rule for administrators, and require
+signed commits.
 
 Small reversible decisions are made in pull requests. Material architecture,
 protocol, governance, license, privacy, or trust-boundary changes should begin

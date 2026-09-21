@@ -54,7 +54,7 @@ docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_tes
   values
     ('web','test-web-v1','test-web-context-secret-0123456789abcdef'),
     ('payment','test-payment-v1','test-payment-context-secret-0123456789abcdef'),
-    ('publishing','test-publishing-v1','test-publishing-context-secret-0123456789abcdef')
+    ('publishing','test-pub-v1','test-publishing-context-secret-0123456789abcdef')
   on conflict(service,key_id) do update set secret=excluded.secret, revoked_at=null, expires_at=null;
 " >/dev/null
 
@@ -135,7 +135,7 @@ docker exec -e PGPASSWORD=payment-test-password -i "$container_name" \
 docker exec -e PGPASSWORD=publishing-test-password -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U superii_publishing_test -d superii_test \
   -v IS_WEB=0 -v IS_PAYMENT=0 -v IS_PUBLISHING=1 -v IS_RUNTIME=0 \
-  -v CONTEXT_KEY=test-publishing-v1 \
+  -v CONTEXT_KEY=test-pub-v1 \
   -v CONTEXT_SECRET=test-publishing-context-secret-0123456789abcdef \
   < "$project_root/database/tests/runtime_role_isolation.sql" >/dev/null
 

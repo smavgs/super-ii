@@ -37,7 +37,7 @@ export const commerceAgentCard = {
       name: 'Create a USDC on Ethereum invoice',
       description: 'Requires a commerce bearer token and stable idempotency key. Creates an invoice only and never debits a wallet.',
       tags: ['commerce', 'nowpayments', 'usdc', 'ethereum'],
-      examples: ['{"skillId":"commerce-create-order","arguments":{"idempotency_key":"purchase-20260905-0001","product_id":"plan.pro.30d","unit_count":1}}'],
+      examples: ['{"skillId":"commerce-create-order","arguments":{"idempotency_key":"example-order-0001","product_id":"plan.pro.30d","unit_count":1}}'],
       inputModes: ['application/json', 'text/plain'], outputModes: ['application/json'],
     },
     {
@@ -61,7 +61,7 @@ export const commerceAgentCard = {
       name: 'Request an Enterprise proposal',
       description: 'Requires a delegation that explicitly allows enterprise.quote. Human review and exact pricing precede payment.',
       tags: ['commerce', 'enterprise', 'proposal'],
-      examples: ['{"skillId":"commerce-request-enterprise-quote","arguments":{"idempotency_key":"enterprise-20260905-01","contact_name":"Operator","contact_email":"operator@example.com","organization_name":"Example","requirements":"Governed deployment for our organization."}}'],
+      examples: ['{"skillId":"commerce-request-enterprise-quote","arguments":{"idempotency_key":"example-quote-0001","contact_name":"Operator","contact_email":"operator@example.com","organization_name":"Example","requirements":"Governed deployment for our organization."}}'],
       inputModes: ['application/json', 'text/plain'], outputModes: ['application/json'],
     },
   ],

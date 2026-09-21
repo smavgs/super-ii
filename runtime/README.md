@@ -95,6 +95,20 @@ acquisition fail closed. Keep previous keys available for historical verificatio
 register a new policy-key record when reviewed policy code changes. New records
 do not silently bless older releases.
 
+The checked-in launch-agent files are portable templates rather than
+machine-specific definitions. After the four `run-*-macos.sh` launchers and the
+runtime environment are installed, render mode-0600 plists for the current macOS
+account without starting services:
+
+```sh
+SUPERII_RUNTIME_ROOT="$HOME/Library/Application Support/Super ii Runtime/app" \
+  ./runtime/install-launch-agents-macos.sh
+```
+
+Inspect the generated files in `~/Library/LaunchAgents`, then add `--load` to
+replace and bootstrap the four user agents. Existing loaded agents are not
+changed unless `--load` is explicitly supplied.
+
 `tools/check_publication_service.py` exercises real Ed25519 signatures, restricted
 DB access, atomic publication, blocked outcomes and replay in disposable
 PostgreSQL. Scanner evidence in that integration test is a fixture; production

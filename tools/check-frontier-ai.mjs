@@ -20,6 +20,28 @@ function assert(condition, message) {
   if (!condition) throw new Error(`Frontier AI check failed: ${message}`);
 }
 
+function hasExactUrlLiteral(source, expected) {
+  const canonical = new URL(expected).href;
+  return [...source.matchAll(/'([^']+)'|"([^"]+)"/g)].some((match) => {
+    try {
+      return new URL(match[1] ?? match[2]).href === canonical;
+    } catch {
+      return false;
+    }
+  });
+}
+
+function hasExactSitemapUrl(source, expected) {
+  const canonical = new URL(expected).href;
+  return [...source.matchAll(/<loc>([^<]+)<\/loc>/g)].some((match) => {
+    try {
+      return new URL(match[1]).href === canonical;
+    } catch {
+      return false;
+    }
+  });
+}
+
 for (const text of [
   'Maximum-power AI.',
   '$0 to start.',
@@ -62,8 +84,8 @@ for (const source of [
   assert(files.page.includes(source), `guide is missing copyable value ${source}`);
 }
 
-assert(files.page.includes('https://build.nvidia.com/moonshotai/kimi-k3'), 'guide must link to the exact official NVIDIA model page');
-assert(files.page.includes('https://opencode.ai/docs/providers/#nvidia'), 'guide must link to official OpenCode NVIDIA instructions');
+assert(hasExactUrlLiteral(files.page, 'https://build.nvidia.com/moonshotai/kimi-k3'), 'guide must declare the exact official NVIDIA model page');
+assert(hasExactUrlLiteral(files.page, 'https://opencode.ai/docs/providers/#nvidia'), 'guide must declare the official OpenCode NVIDIA instructions');
 assert(files.page.includes('Your key goes directly into OpenCode—not Super ii.'), 'guide must explain the credential boundary');
 assert(files.page.includes('Super ii does not collect, proxy, or store it'), 'guide must state that Super ii does not handle the provider key');
 assert(!/<input\b[^>]*(?:api|key|secret)/i.test(files.page), 'guide must never render an API-key input');
@@ -94,7 +116,7 @@ for (const page of ['signUp', 'signIn']) {
 }
 
 assert(files.routes.includes('"/frontier-ai"'), 'canonical route registry is missing /frontier-ai');
-assert(files.sitemap.includes('https://superii.site/frontier-ai'), 'sitemap is missing /frontier-ai');
+assert(hasExactSitemapUrl(files.sitemap, 'https://superii.site/frontier-ai'), 'sitemap is missing /frontier-ai');
 assert(files.docs.includes('id="frontier-ai"'), 'documentation is missing the Frontier AI contract');
 
 for (const selector of [

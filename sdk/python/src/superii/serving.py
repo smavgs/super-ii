@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import logging
 import time
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -8,6 +9,9 @@ from uuid import uuid4
 if TYPE_CHECKING:
     from .client import Client
     from .model import Model
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(model: Model, *, token: str):
@@ -56,38 +60,80 @@ def create_app(model: Model, *, token: str):
 
         try:
             data = await request.json()
-            allowed = {
-                "model",
-                "max_tokens",
-                "temperature",
-                "stream",
-                "messages" if chat else "prompt",
-            }
-            if not isinstance(data, dict) or set(data) - allowed or data.get("stream", False):
-                raise ValueError("This endpoint supports non-streaming text requests only")
-            if data.get("model") != model.plan.repository:
-                raise ValueError("Requested model is not loaded")
-            if chat:
-                messages = data.get("messages")
-                if not isinstance(messages, list) or not 1 <= len(messages) <= 100:
-                    raise ValueError("messages must contain 1–100 text messages")
-                for message in messages:
-                    if (
-                        not isinstance(message, dict)
-                        or set(message) != {"role", "content"}
-                        or message["role"] not in {"system", "user", "assistant"}
-                        or not isinstance(message["content"], str)
-                    ):
-                        raise ValueError(
-                            "Only system, user and assistant text messages are supported"
+        except (TypeError, ValueError):
+            return JSONResponse({"error": "request must contain valid JSON"}, status_code=422)
+
+        allowed = {
+            "model",
+            "max_tokens",
+            "temperature",
+            "stream",
+            "messages" if chat else "prompt",
+        }
+        if not isinstance(data, dict) or set(data) - allowed or data.get("stream", False):
+            return JSONResponse(
+                {"error": "this endpoint supports non-streaming text requests only"},
+                status_code=422,
+            )
+        if data.get("model") != model.plan.repository:
+            return JSONResponse({"error": "requested model is not loaded"}, status_code=422)
+        max_tokens = data.get("max_tokens", 256)
+        if (
+            isinstance(max_tokens, bool)
+            or not isinstance(max_tokens, int)
+            or not 1 <= max_tokens <= 4096
+        ):
+            return JSONResponse(
+                {"error": "max_tokens must be an integer from 1 to 4096"}, status_code=422
+            )
+        temperature = data.get("temperature", 0)
+        if (
+            isinstance(temperature, bool)
+            or not isinstance(temperature, (int, float))
+            or not 0 <= temperature <= 2
+        ):
+            return JSONResponse(
+                {"error": "temperature must be a number from 0 to 2"}, status_code=422
+            )
+
+        if chat:
+            messages = data.get("messages")
+            if not isinstance(messages, list) or not 1 <= len(messages) <= 100:
+                return JSONResponse(
+                    {"error": "messages must contain 1-100 text messages"}, status_code=422
+                )
+            if any(
+                not isinstance(message, dict)
+                or set(message) != {"role", "content"}
+                or message["role"] not in {"system", "user", "assistant"}
+                or not isinstance(message["content"], str)
+                or not 1 <= len(message["content"]) <= 100_000
+                for message in messages
+            ):
+                return JSONResponse(
+                    {
+                        "error": (
+                            "only bounded system, user and assistant text messages are supported"
                         )
+                    },
+                    status_code=422,
+                )
+        else:
+            prompt = data.get("prompt")
+            if not isinstance(prompt, str) or not 1 <= len(prompt) <= 100_000:
+                return JSONResponse(
+                    {"error": "prompt must contain 1-100000 characters"}, status_code=422
+                )
+
+        try:
+            if chat:
                 if model._tokenizer is None:
                     # llama.cpp handles the model's embedded chat template.
                     response = await asyncio.to_thread(
                         model.chat,
                         messages,
-                        max_tokens=data.get("max_tokens", 256),
-                        temperature=data.get("temperature", 0),
+                        max_tokens=max_tokens,
+                        temperature=temperature,
                     )
                 else:
                     prompt = model._tokenizer.apply_chat_template(
@@ -96,15 +142,15 @@ def create_app(model: Model, *, token: str):
                     response = await asyncio.to_thread(
                         model.generate,
                         prompt,
-                        max_tokens=data.get("max_tokens", 256),
-                        temperature=data.get("temperature", 0),
+                        max_tokens=max_tokens,
+                        temperature=temperature,
                     )
             else:
                 response = await asyncio.to_thread(
                     model.generate,
-                    data.get("prompt"),
-                    max_tokens=data.get("max_tokens", 256),
-                    temperature=data.get("temperature", 0),
+                    prompt,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
                 )
             choice = (
                 {"message": {"role": "assistant", "content": response}}
@@ -118,8 +164,9 @@ def create_app(model: Model, *, token: str):
                 "model": model.plan.repository,
                 "choices": [{"index": 0, **choice, "finish_reason": "stop"}],
             }
-        except (ValueError, TypeError, RuntimeError) as error:
-            return JSONResponse({"error": str(error)[:500]}, status_code=422)
+        except Exception:
+            logger.exception("Local model request failed")
+            return JSONResponse({"error": "model request failed"}, status_code=422)
 
     # Avoid forward-reference resolution of locally imported Request by FastAPI.
     async def completion(request):

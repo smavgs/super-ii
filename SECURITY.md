@@ -22,6 +22,13 @@ Security fixes target the current `main` branch and the current production
 deployment. Historical commits, local forks, and third-party deployments are
 not maintained by Super ii.
 
+## Tracked upstream advisories
+
+When an upstream package has no fixed release, Super ii documents and tests the
+compensating control rather than representing the dependency as patched. The
+current Accelerate shard-index control is recorded in
+[`docs/security/ACCELERATE-CVE-2026-69112.md`](docs/security/ACCELERATE-CVE-2026-69112.md).
+
 ## Security boundaries
 
 - Secrets belong in Cloudflare secrets, macOS Keychain, provider secret stores,

@@ -7,7 +7,7 @@ Deployment verified: Cloudflare Worker version `326122eb-0ef7-40c8-bb4b-c75a6ae5
 
 ## Source and implementation
 
-- User-supplied brand source retained at `/Users/apple/Documents/Super ii Website/public/brand/super-ii-logo.png`.
+- User-supplied brand source retained at `public/brand/super-ii-logo.png`.
 - Source logo SHA-256: `b28353284ddd75513d5344684711a2a2f50065197b9510c12b909adbd346f60f`.
 - Brand validation fails closed if the supplied logo changes.
 - Primary implementation paths: `src/pages`, `src/components`, `src/layouts`, `src/styles/global.css`, `src/content/site.json`, and `public`.

@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>site.superii.transfer</string>
+  <string>site.superii.bridge</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/apple/Library/Application Support/Super ii Runtime/app/run-transfer-macos.sh</string>
+    <string>__SUPERII_RUNTIME_ROOT__/run-bridge-macos.sh</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/apple/Library/Application Support/Super ii Runtime/app</string>
+  <string>__SUPERII_RUNTIME_ROOT__</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -21,8 +21,8 @@
   <key>Umask</key>
   <integer>63</integer>
   <key>StandardOutPath</key>
-  <string>/Users/apple/Library/Logs/superii-transfer.log</string>
+  <string>__SUPERII_LOG_ROOT__/superii-bridge.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/apple/Library/Logs/superii-transfer-error.log</string>
+  <string>__SUPERII_LOG_ROOT__/superii-bridge-error.log</string>
 </dict>
 </plist>

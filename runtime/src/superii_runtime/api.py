@@ -607,8 +607,13 @@ def inspect_revision(
                     )
                 try:
                     result["tokenizer"] = inspect_tokenizer(workspace)
-                except (OSError, ValueError, KeyError) as error:
-                    result["tokenizer"] = {"available": False, "reason": str(error)[:500]}
+                except (OSError, ValueError, KeyError):
+                    # Inspection failures can contain local paths or parser details.
+                    # Keep the public analysis actionable without reflecting internals.
+                    result["tokenizer"] = {
+                        "available": False,
+                        "reason": "tokenizer inspection unavailable",
+                    }
                 if (workspace / "model_index.json").is_file():
                     result["diffusers"] = inspect_diffusers(workspace)
                 if result["model"] is None and not result["gguf"] and not result["safetensors"]:
