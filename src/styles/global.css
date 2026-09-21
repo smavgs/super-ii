@@ -11782,6 +11782,76 @@ pre {
   font-weight: 700;
 }
 
+.join-team-github {
+  border-block: 1px solid #30363d;
+  background: #0d1117;
+  color: #f0f6fc;
+}
+
+.join-team-github__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  padding-block: clamp(1.4rem, 2.8vw, 2.2rem);
+  animation: join-team-rise 520ms 160ms ease both;
+}
+
+.join-team-github__message {
+  display: flex;
+  min-width: 0;
+  gap: clamp(1rem, 2vw, 1.4rem);
+  align-items: center;
+}
+
+.join-team-github__logo {
+  width: clamp(2.8rem, 4.2vw, 3.7rem);
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.join-team-github .eyebrow {
+  margin: 0 0 0.25rem;
+  color: #8c959f;
+}
+
+.join-team-github h2 {
+  margin: 0;
+  color: #f0f6fc;
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.join-team-github__link {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.15rem;
+  border: 1px solid #f0f6fc;
+  border-radius: 999px;
+  background: #f0f6fc;
+  color: #0d1117;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.join-team-github__link:hover {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #0d1117;
+  transform: translateY(-2px);
+}
+
+.join-team-github__link:focus-visible {
+  outline: 3px solid var(--fluoro-pink);
+  outline-offset: 4px;
+}
+
 @keyframes join-team-rise {
   from {
     opacity: 0;
@@ -11855,17 +11925,27 @@ pre {
   .join-team-path__steps li:first-child {
     border-top: 0;
   }
+
+  .join-team-github__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .join-team-github__link {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .join-team-hero__copy,
-  .join-team-hero__aside {
+  .join-team-hero__aside,
+  .join-team-github__inner {
     animation: none;
   }
 
   .button--fluoro-pink,
   .footer-column .footer-join-team,
-  .join-team-path__steps li {
+  .join-team-path__steps li,
+  .join-team-github__link {
     transition: none;
   }
 }

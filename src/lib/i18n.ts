@@ -2097,6 +2097,10 @@ const highlightsTeamRussian: Record<string, string> = {
     'Вы можете помочь их изобрести. Если вам интересно создавать компанию, технологию, культуру и будущее с необычно раннего этапа, мы хотим с вами познакомиться.',
   'No recruiters. No perfect CV required. Show us what you care about, what you have built, what you want to build, and why Super ii interests you.':
     'Без рекрутеров. Идеальное резюме не требуется. Покажите, что для вас важно, что вы уже создали, что хотите создать и почему вам интересен Super ii.',
+  'Built in public': 'Создаём открыто',
+  'See the code. Follow the work.': 'Посмотрите код. Следите за работой.',
+  'View Super ii on GitHub': 'Посмотреть Super ii на GitHub',
+  'View Super ii on GitHub (opens in a new tab)': 'Посмотреть Super ii на GitHub (откроется в новой вкладке)',
 };
 
 const communityPagesRussian: Record<string, string> = {
