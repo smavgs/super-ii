@@ -284,3 +284,11 @@ def test_wildcard_bind_requires_explicit_opt_in(tmp_path: Path) -> None:
         storage_root=tmp_path / "data",
     )
     assert configured.host == "0.0.0.0"
+
+
+def test_policy_readiness_timeout_is_bounded() -> None:
+    assert Settings().policy_readiness_timeout_seconds == 5.0
+    with pytest.raises(ValueError):
+        Settings(policy_readiness_timeout_seconds=1.99)
+    with pytest.raises(ValueError):
+        Settings(policy_readiness_timeout_seconds=15.01)

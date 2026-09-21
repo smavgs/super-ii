@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     bridge_max_files: int = Field(default=5_000, ge=1, le=20_000)
     policy_url: str = "http://127.0.0.1:8791"
     policy_token: SecretStr | None = None
+    policy_readiness_timeout_seconds: float = Field(default=5.0, ge=2.0, le=15.0)
     bridge_runtime_url: str = "http://127.0.0.1:8788"
     transfer_url: str = "http://127.0.0.1:8790"
     transfer_token: SecretStr | None = None
