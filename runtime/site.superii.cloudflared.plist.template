@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>site.superii.bridge</string>
+  <string>site.superii.cloudflared</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/apple/Library/Application Support/Super ii Runtime/app/run-bridge-macos.sh</string>
+    <string>__SUPERII_RUNTIME_ROOT__/run-cloudflared-macos.sh</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/apple/Library/Application Support/Super ii Runtime/app</string>
+  <string>__SUPERII_RUNTIME_ROOT__</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -21,8 +21,8 @@
   <key>Umask</key>
   <integer>63</integer>
   <key>StandardOutPath</key>
-  <string>/Users/apple/Library/Logs/superii-bridge.log</string>
+  <string>__SUPERII_LOG_ROOT__/superii-cloudflared-runtime.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/apple/Library/Logs/superii-bridge-error.log</string>
+  <string>__SUPERII_LOG_ROOT__/superii-cloudflared-runtime-error.log</string>
 </dict>
 </plist>

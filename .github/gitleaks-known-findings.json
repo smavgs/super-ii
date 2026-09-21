@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "findings": [
+    {
+      "fingerprint": "fb90d08d680f6e4e5f2ad2f9a4b2480ad6731f92:scripts/test-postgres.sh:generic-api-key:138",
+      "reason": "Historical synthetic PostgreSQL isolation fixture; no production credential."
+    },
+    {
+      "fingerprint": "065e1940e776fc02818784275e6213c8d9000b36:src/pages/.well-known/commerce-agent-card.json.ts:generic-api-key:40",
+      "reason": "Historical public commerce-card example; no production credential."
+    },
+    {
+      "fingerprint": "065e1940e776fc02818784275e6213c8d9000b36:src/pages/.well-known/commerce-agent-card.json.ts:generic-api-key:64",
+      "reason": "Historical public commerce-card example; no production credential."
+    }
+  ]
+}

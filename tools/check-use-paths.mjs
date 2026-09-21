@@ -25,6 +25,10 @@ const requireAll = (source, markers, label) => {
   for (const marker of markers) assert.ok(source.includes(marker), `${label} is missing ${marker}`);
 };
 
+const sitemapUrls = new Set(
+  [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => new URL(match[1]).href),
+);
+
 const progressIndex = home.indexOf('<p class="eyebrow">One place to make progress</p>');
 const hookIndex = home.indexOf('<section class="use-home-hook" id="use-superii">');
 const workerIndex = home.indexOf('<section class="ai-worker-hook" id="ai-worker-home">');
@@ -62,7 +66,7 @@ requireAll(styles, ['.use-home-hook', '.use-way-hero', '.use-way-section--share'
 
 const site = JSON.parse(siteSource);
 assert.ok(site.routes.includes('/use'), '/use must be a canonical route');
-assert.ok(sitemap.includes('https://superii.site/use'), '/use must be in the sitemap');
+assert.ok(sitemapUrls.has('https://superii.site/use'), '/use must be in the sitemap');
 assert.ok(llms.includes('[Use Super ii](https://superii.site/use)'), '/use must be in llms.txt');
 assert.ok(docs.includes('id="use-superii"'), '/use contract must be documented');
 assert.ok(systemState.includes('| Run, Code, Share pathways | production |'), 'system state must expose the Use pathways release');

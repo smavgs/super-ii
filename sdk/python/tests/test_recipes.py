@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import httpx
@@ -672,11 +673,12 @@ def test_available_apple_rag_execution(tiny_models, tmp_path):
     from superii.recipes.contracts import canonical
     from superii.recipes.project import Project
 
-    weights = Path(
-        "/Users/apple/.ollama/models/blobs/sha256-5631d74195051ec851d4df9ef7bd201e3d9cb039171ba962ebce931ffa8ed3a2"
-    )
-    if sys.platform != "darwin" or not weights.exists() or not shutil.which("llama-server"):
-        pytest.skip("Apple host and local GGUF fixture required")
+    fixture = os.environ.get("SUPERII_TEST_GGUF_PATH")
+    if not fixture:
+        pytest.skip("Set SUPERII_TEST_GGUF_PATH to a local GGUF fixture")
+    weights = Path(fixture).expanduser()
+    if sys.platform != "darwin" or not weights.is_file() or not shutil.which("llama-server"):
+        pytest.skip("Apple host, regular GGUF fixture and llama-server are required")
     _, encoder = tiny_models
     source = tmp_path / "gguf"
     source.mkdir()

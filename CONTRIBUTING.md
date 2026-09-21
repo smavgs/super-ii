@@ -30,6 +30,10 @@ npm run runtime:verify
 npm run build
 ```
 
+CI also runs checksum-verified Gitleaks 8.30.1 across complete Git history.
+Three immutable historical synthetic fixtures are identified by exact
+fingerprints; new or changed findings fail closed.
+
 Focused changes may run the relevant subset while developing, but the complete
 required GitHub checks must pass before merge. Tests must not depend on private
 production credentials or mutate production services.

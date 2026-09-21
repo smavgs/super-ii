@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>site.superii.policy</string>
+  <key>ProgramArguments</key><array><string>__SUPERII_RUNTIME_ROOT__/run-policy-macos.sh</string></array>
+  <key>WorkingDirectory</key><string>__SUPERII_RUNTIME_ROOT__</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>__SUPERII_LOG_ROOT__/superii-policy.log</string>
+  <key>StandardErrorPath</key><string>__SUPERII_LOG_ROOT__/superii-policy.error.log</string>
+</dict></plist>

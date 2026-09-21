@@ -17,6 +17,7 @@ import httpx
 from .client import Snapshot
 from .errors import IntegrityError, PlanError, SuperiiError
 from .hardware import hardware
+from .loader_security import validate_safetensor_indexes
 from .planner import ARCHITECTURES, Plan
 
 
@@ -34,12 +35,7 @@ def check_config(snapshot: Snapshot) -> None:
             raise IntegrityError("Custom repository code is not supported by secure loading")
         if name == "config.json" and config.get("model_type") not in ARCHITECTURES:
             raise IntegrityError("Architecture is not in the built-in loader allowlist")
-    for index in snapshot.path.glob("*.safetensors.index.json"):
-        if index.stat().st_size > 4 * 1024**2:
-            raise IntegrityError("Weight index exceeds 4 MiB")
-        for value in json.loads(index.read_text()).get("weight_map", {}).values():
-            if value not in snapshot.files or not value.endswith(".safetensors"):
-                raise IntegrityError("Weight index points outside the verified snapshot")
+    validate_safetensor_indexes(snapshot)
 
 
 class Model:

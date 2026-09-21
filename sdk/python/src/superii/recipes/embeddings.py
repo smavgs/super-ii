@@ -5,6 +5,7 @@ import json
 from ..client import Snapshot
 from ..errors import PlanError
 from ..hardware import hardware
+from ..loader_security import validate_safetensor_indexes
 
 ENCODERS = frozenset({"bert", "roberta", "distilbert", "xlm-roberta"})
 
@@ -13,10 +14,8 @@ class Encoder:
     """Explicit mean pooling over a verified, built-in text encoder on CPU."""
 
     def __init__(self, snapshot: Snapshot, *, max_tokens: int = 512):
-        import torch
-        from transformers import AutoModel, AutoTokenizer
-
         snapshot.verify()
+        validate_safetensor_indexes(snapshot)
         if "config.json" not in snapshot.files:
             raise PlanError("The embedding recipe must include config.json")
         for name in ("config.json", "tokenizer_config.json", "modules.json"):
@@ -63,6 +62,9 @@ class Encoder:
         )
         if not weights or weights * 5 + 512 * 1024**2 > hardware().available_ram_bytes * 0.7:
             raise PlanError("The embedding encoder does not fit the conservative CPU memory budget")
+        import torch
+        from transformers import AutoModel, AutoTokenizer
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             snapshot.path, local_files_only=True, trust_remote_code=False
         )

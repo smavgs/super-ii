@@ -3,7 +3,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 from dataclasses import replace
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -12,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from superii import Client, Hardware, IntegrityError, Peer, PlanError
 from superii.attestation import verify_attestation
+from superii.loader_security import validate_safetensor_indexes
 from superii.manifest import Manifest, safe_path
 from superii.planner import plan
 from superii.serving import create_app, create_cache_app
@@ -316,6 +319,11 @@ class FakeModel:
         return prompt.upper()
 
 
+class ExplodingModel(FakeModel):
+    def generate(self, prompt, **kwargs):
+        raise RuntimeError("postgresql://owner:do-not-return@example.invalid/private")
+
+
 def test_serving_auth_origin_host_and_body_limits():
     app = create_app(FakeModel(), token="t" * 32)
     with TestClient(app, base_url="http://127.0.0.1") as client:
@@ -337,6 +345,76 @@ def test_serving_auth_origin_host_and_body_limits():
             ).status_code
             == 413
         )
+
+
+def test_serving_never_returns_model_exception_details():
+    app = create_app(ExplodingModel(), token="t" * 32)
+    with TestClient(app, base_url="http://127.0.0.1") as client:
+        response = client.post(
+            "/v1/completions",
+            headers={"authorization": "Bearer " + "t" * 32},
+            json={"model": "owner/model", "prompt": "hello"},
+        )
+    assert response.status_code == 422
+    assert response.json() == {"error": "model request failed"}
+    assert "do-not-return" not in response.text
+
+
+def _loader_snapshot(path, files):
+    return SimpleNamespace(path=path, files=tuple(files))
+
+
+def _write_weight_index(path, value):
+    path.write_text(json.dumps({"weight_map": {"encoder.weight": value}}))
+
+
+def test_safetensor_index_accepts_verified_nested_shard(tmp_path):
+    shard = tmp_path / "shards" / "model-00001-of-00001.safetensors"
+    shard.parent.mkdir()
+    shard.write_bytes(b"verified")
+    index = tmp_path / "model.safetensors.index.json"
+    _write_weight_index(index, "shards/model-00001-of-00001.safetensors")
+    snapshot = _loader_snapshot(
+        tmp_path,
+        ("model.safetensors.index.json", "shards/model-00001-of-00001.safetensors"),
+    )
+
+    validate_safetensor_indexes(snapshot)
+
+
+@pytest.mark.parametrize("target", ["../outside.safetensors", "/tmp/outside.safetensors"])
+def test_safetensor_index_rejects_escape_paths(tmp_path, target):
+    index = tmp_path / "model.safetensors.index.json"
+    _write_weight_index(index, target)
+    snapshot = _loader_snapshot(tmp_path, ("model.safetensors.index.json", target))
+
+    with pytest.raises(IntegrityError):
+        validate_safetensor_indexes(snapshot)
+
+
+def test_safetensor_index_rejects_symlinked_shard(tmp_path):
+    outside = tmp_path.parent / "outside.safetensors"
+    outside.write_bytes(b"outside")
+    shard = tmp_path / "model-00001-of-00001.safetensors"
+    shard.symlink_to(outside)
+    index = tmp_path / "model.safetensors.index.json"
+    _write_weight_index(index, shard.name)
+    snapshot = _loader_snapshot(tmp_path, (index.name, shard.name))
+
+    with pytest.raises(IntegrityError, match="regular file"):
+        validate_safetensor_indexes(snapshot)
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="FIFO creation is unavailable")
+def test_safetensor_index_rejects_fifo_without_opening_it(tmp_path):
+    shard = tmp_path / "model-00001-of-00001.safetensors"
+    os.mkfifo(shard)
+    index = tmp_path / "model.safetensors.index.json"
+    _write_weight_index(index, shard.name)
+    snapshot = _loader_snapshot(tmp_path, (index.name, shard.name))
+
+    with pytest.raises(IntegrityError, match="regular file"):
+        validate_safetensor_indexes(snapshot)
 
 
 def test_peer_server_rechecks_visibility(tmp_path):
