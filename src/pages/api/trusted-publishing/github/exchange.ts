@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { githubRepositoryMatchesSubject, githubWorkflowRef } from '@/lib/github-oidc';
 import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
-import { sqlClient } from '@/lib/db';
+import { publishingServiceSqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { repositoryScopes, sha256Hex, type RepositoryScope } from '@/lib/scoped-auth';
 
@@ -16,7 +16,7 @@ function opaqueToken(): string {
 }
 
 export const POST: APIRoute = async ({ locals, request }) => {
-  const sql = sqlClient(locals);
+  const sql = publishingServiceSqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const rate = await consumeRateLimit(locals, request, sql, 'trusted-publisher.exchange', 60, 3600);
   if (rate !== 'allowed') {

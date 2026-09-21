@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { jsonSha256 } from './agent-auth';
+import { setSqlActorContext } from './db';
 import { sha256Hex } from './scoped-auth';
 
 export const socialScopes = [
@@ -157,6 +158,16 @@ export async function authorizeSocialAgent(
     const grantedScopes = Array.isArray(row.granted_scopes)
       ? row.granted_scopes.filter((value): value is SocialScope => socialScopes.includes(value as SocialScope))
       : [];
+    setSqlActorContext(sql, {
+      actorKind: 'social',
+      clerkUserId: null,
+      clerkOrganizationId: null,
+      profileId: String(row.owner_profile_id),
+      organizationId: row.sponsor_organization_id ? String(row.sponsor_organization_id) : null,
+      agentIdentityId: null,
+      socialAgentId: String(row.social_agent_id),
+      isAdmin: false,
+    });
     return {
       ok: true,
       token,

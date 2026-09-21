@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { commerceErrorResponse, commerceQuoteInputSchema, createCommerceQuoteRequest } from '@/lib/commerce';
 import { commerceCorsHeaders, commerceJson, commerceOptionsResponse, requestIdempotencyKey } from '@/lib/commerce-http';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient } from '@/lib/db';
 import { consumeRateLimit, requestNetworkHash } from '@/lib/rate-limit';
 
 export const OPTIONS: APIRoute = async () => commerceOptionsResponse();
@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   if (!idempotencyKey) {
     return commerceJson({ error: 'idempotency_key_required', message: 'Send a stable 16-200 character Idempotency-Key header.' }, 400);
   }
-  const sql = sqlClient(locals);
+  const sql = paymentSqlClient(locals);
   if (!sql) return commerceJson({ error: 'database_unavailable', message: 'Commerce database is unavailable.' }, 503);
   const rate = await consumeRateLimit(locals, request, sql, 'commerce.quote.create', 10, 86400);
   if (rate !== 'allowed') {

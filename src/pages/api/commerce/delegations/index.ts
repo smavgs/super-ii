@@ -8,7 +8,7 @@ import {
 import { UUID_PATTERN } from '@/lib/agent-management';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient, sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { sha256Hex } from '@/lib/scoped-auth';
 
@@ -37,9 +37,10 @@ const delegationSchema = z.object({
 const privateHeaders = { 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' };
 
 export const GET: APIRoute = async ({ locals }) => {
-  const sql = sqlClient(locals);
-  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
+  const sql = paymentSqlClient(locals);
+  const identitySql = sqlClient(locals);
+  if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   try {
     const rows = await sql`
@@ -69,9 +70,10 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ locals, request }) => {
   if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
-  const sql = sqlClient(locals);
-  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
+  const sql = paymentSqlClient(locals);
+  const identitySql = sqlClient(locals);
+  if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   const rate = await consumeRateLimit(locals, request, sql, 'commerce.delegation.create', 20, 86400);
   if (rate !== 'allowed') {

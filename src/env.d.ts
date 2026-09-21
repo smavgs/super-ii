@@ -5,6 +5,14 @@ interface ImportMetaEnv {
   readonly PUBLIC_CLERK_PUBLISHABLE_KEY?: string;
   readonly CLERK_SECRET_KEY?: string;
   readonly DATABASE_URL?: string;
+  readonly DATABASE_CONTEXT_KEY_ID?: string;
+  readonly DATABASE_CONTEXT_SECRET?: string;
+  readonly DATABASE_PAYMENT_URL?: string;
+  readonly DATABASE_PAYMENT_CONTEXT_KEY_ID?: string;
+  readonly DATABASE_PAYMENT_CONTEXT_SECRET?: string;
+  readonly DATABASE_PUBLISHING_URL?: string;
+  readonly DATABASE_PUBLISHING_CONTEXT_KEY_ID?: string;
+  readonly DATABASE_PUBLISHING_CONTEXT_SECRET?: string;
   readonly CONTACT_HASH_SALT?: string;
   readonly RUNTIME_URL?: string;
   readonly RUNTIME_TOKEN?: string;

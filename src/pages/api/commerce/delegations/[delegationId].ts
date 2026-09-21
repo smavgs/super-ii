@@ -1,15 +1,16 @@
 import type { APIRoute } from 'astro';
 import { UUID_PATTERN } from '@/lib/agent-management';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient, sqlClient } from '@/lib/db';
 
 const privateHeaders = { 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' };
 
 export const DELETE: APIRoute = async ({ locals, params, request }) => {
   if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
-  const sql = sqlClient(locals);
-  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
+  const sql = paymentSqlClient(locals);
+  const identitySql = sqlClient(locals);
+  if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   const delegationId = params.delegationId ?? '';
   if (!UUID_PATTERN.test(delegationId)) {

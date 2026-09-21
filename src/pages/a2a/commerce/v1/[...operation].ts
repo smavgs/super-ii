@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { a2aMessageRequestSchema, a2aTaskResponse } from '@/lib/a2a';
 import { executeCommerceA2ASkill } from '@/lib/commerce-a2a';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 
 const headers = {
@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (contentType !== 'application/a2a+json' && contentType !== 'application/json') {
     return problem(415, 'Unsupported Media Type', 'Use application/a2a+json.');
   }
-  const sql = sqlClient(locals);
+  const sql = paymentSqlClient(locals);
   if (!sql) return problem(503, 'Service Unavailable', 'Commerce controls are unavailable.');
   const rate = await consumeRateLimit(locals, request, sql, 'a2a.commerce', 240, 3600);
   if (rate !== 'allowed') {

@@ -157,6 +157,24 @@ def main() -> int:
             errors.append(f"the web backend role must be {role_attribute}")
     if "revoke execute on all functions in schema app from public" not in lower:
         errors.append("app functions must not inherit PostgreSQL's default PUBLIC execute grant")
+    for isolated_role in (
+        "superii_web_backend",
+        "superii_payment_backend",
+        "superii_publishing_backend",
+        "superii_runtime_backend",
+    ):
+        if f"'{isolated_role}'" not in lower:
+            errors.append(f"isolated database role is missing: {isolated_role}")
+    if "create schema if not exists app_private" not in lower:
+        errors.append("request-context secrets require an owner-only private schema")
+    if "create or replace function app.begin_request_context" not in lower:
+        errors.append("runtime database access requires a signed request context")
+    if "public.hmac(signed_payload, secret_value, 'sha256')" not in lower:
+        errors.append("request context must use a database-verified HMAC")
+    if "tenant_can_read" not in lower or "tenant_can_mutate" not in lower:
+        errors.append("tenant-aware database policy helpers are missing")
+    if "install_least_privilege_policies" not in lower:
+        errors.append("least-privilege policy installation is missing")
 
     created = set(re.findall(r"create\s+table\s+if\s+not\s+exists\s+app\.([a-z_]+)", lower))
     views = set(re.findall(r"create\s+(?:or\s+replace\s+)?view\s+app\.([a-z_]+)", lower))

@@ -2,13 +2,13 @@ import type { APIRoute } from 'astro';
 import { checkCommerceEligibility, commerceErrorResponse, commerceOrderInputSchema } from '@/lib/commerce';
 import { commerceCorsHeaders, commerceJson, commerceOptionsResponse } from '@/lib/commerce-http';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 
 export const OPTIONS: APIRoute = async () => commerceOptionsResponse();
 
 export const POST: APIRoute = async ({ locals, request }) => {
-  const sql = sqlClient(locals);
+  const sql = paymentSqlClient(locals);
   if (!sql) return commerceJson({ error: 'database_unavailable', message: 'Commerce database is unavailable.' }, 503);
   const rate = await consumeRateLimit(locals, request, sql, 'commerce.eligibility', 120, 3600);
   if (rate !== 'allowed') {

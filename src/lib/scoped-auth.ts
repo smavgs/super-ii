@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { ensureAuthenticatedProfile, sameOrigin } from './auth';
+import { setSqlActorContext } from './db';
 
 export const repositoryScopes = [
   'repository:read',
@@ -73,6 +74,16 @@ export async function authorizeRepositoryRequest(
       if (!row?.token_id) {
         return { ok: false, status: 403, error: 'agent token is expired, revoked, exhausted, out of scope, or bound elsewhere' };
       }
+      setSqlActorContext(sql, {
+        actorKind: 'agent',
+        clerkUserId: null,
+        clerkOrganizationId: null,
+        profileId: String(row.operator_profile_id),
+        organizationId: String(row.operator_organization_id),
+        agentIdentityId: String(row.agent_identity_id),
+        socialAgentId: null,
+        isAdmin: false,
+      });
       return {
         ok: true,
         actor: {
@@ -95,45 +106,22 @@ export async function authorizeRepositoryRequest(
     const tokenHash = await sha256Hex(token);
     try {
       const rows = await sql`
-        with eligible as (
-          select
-            access_token.id,
-            access_token.created_by_profile_id,
-            access_token.trusted_publisher_id,
-            access_token.service_account_id
-          from app.scoped_access_tokens access_token
-          left join app.trusted_publishers publisher
-            on publisher.id = access_token.trusted_publisher_id
-          left join app.service_accounts service_account
-            on service_account.id = access_token.service_account_id
-          where access_token.token_hash = ${tokenHash}
-            and access_token.repository_id = ${repositoryId}::uuid
-            and access_token.revoked_at is null
-            and access_token.expires_at > now()
-            and access_token.scopes ? ${scope}
-            and (
-              (publisher.id is not null and publisher.enabled)
-              or (service_account.id is not null and service_account.disabled_at is null)
-            )
-          for update of access_token
-        ), touched as (
-          update app.scoped_access_tokens access_token
-          set last_used_at = now()
-          from eligible
-          where access_token.id = eligible.id
-          returning eligible.*
+        select * from app.consume_scoped_access_token(
+          ${tokenHash}, ${scope}, ${repositoryId}::uuid
         )
-        select * from touched
       `;
       const row = rows[0];
       if (!row?.id) return { ok: false, status: 403, error: 'token is expired, revoked, out of scope, or repository-bound elsewhere' };
-      if (row.trusted_publisher_id) {
-        await sql`
-          update app.trusted_publishers
-          set last_used_at = now()
-          where id = ${String(row.trusted_publisher_id)}::uuid
-        `;
-      }
+      setSqlActorContext(sql, {
+        actorKind: 'scoped',
+        clerkUserId: null,
+        clerkOrganizationId: null,
+        profileId: String(row.created_by_profile_id),
+        organizationId: null,
+        agentIdentityId: null,
+        socialAgentId: null,
+        isAdmin: false,
+      });
       return {
         ok: true,
         actor: {

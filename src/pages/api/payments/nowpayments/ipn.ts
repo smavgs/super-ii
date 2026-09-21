@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { UUID_PATTERN } from '@/lib/agent-management';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
-import { sqlClient } from '@/lib/db';
+import { paymentWebhookSqlClient } from '@/lib/db';
 import {
   isUsdcEthereumRoute,
   safeProviderPayload,
@@ -39,7 +39,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     || !isUsdcEthereumRoute(payload)) {
     return Response.json({ error: 'invalid payment payload' }, { status: 400 });
   }
-  const sql = sqlClient(locals);
+  const sql = paymentWebhookSqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   try {
     const orders = participationOrder

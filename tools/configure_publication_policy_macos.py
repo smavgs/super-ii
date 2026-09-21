@@ -58,9 +58,9 @@ def save_secret(service: str, value: str) -> None:
 
 
 def main() -> None:
-    owner = read_secret("superii-runtime-database-url")
+    owner = read_secret("superii-migration-database-url")
     if not owner:
-        raise RuntimeError("Existing runtime database credential is required")
+        raise RuntimeError("The migration-only database credential is required")
     policy_url = read_secret("superii-policy-database-url")
     if not policy_url:
         password = secrets.token_urlsafe(48)

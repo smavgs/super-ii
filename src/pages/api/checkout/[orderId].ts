@@ -1,14 +1,15 @@
 import type { APIRoute } from 'astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient, sqlClient } from '@/lib/db';
 import { getNowPayment, isUsdcEthereumRoute, safeProviderPayload, validPaymentStatus } from '@/lib/nowpayments';
 
 const openStatuses = new Set(['waiting', 'confirming', 'confirmed', 'sending', 'partially_paid']);
 
 export const GET: APIRoute = async ({ locals, params }) => {
-  const sql = sqlClient(locals);
-  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
+  const sql = paymentSqlClient(locals);
+  const identitySql = sqlClient(locals);
+  if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   const orderId = params.orderId ?? '';
   let rows = await sql`

@@ -13,7 +13,7 @@ import {
 } from './commerce';
 import { UUID_PATTERN } from './agent-management';
 import { validIdempotencyKey } from './agent-auth';
-import { sqlClient } from './db';
+import { paymentSqlClient } from './db';
 import { nowPaymentsConfigured } from './nowpayments';
 import { requestNetworkHash } from './rate-limit';
 
@@ -105,7 +105,7 @@ export function createSuperiiCommerceMcpServer(
       annotations: readAnnotations,
     },
     async (input) => {
-      const sql = sqlClient(locals);
+      const sql = paymentSqlClient(locals);
       if (!sql) return toolError(new Error('Commerce database unavailable.'));
       const parsed = commerceOrderInputSchema.safeParse(input);
       if (!parsed.success) return toolError(new Error(parsed.error.issues[0]?.message ?? 'Invalid order.'));
@@ -126,7 +126,7 @@ export function createSuperiiCommerceMcpServer(
       annotations: writeAnnotations,
     },
     async (input) => {
-      const sql = sqlClient(locals);
+      const sql = paymentSqlClient(locals);
       if (!sql) return toolError(new Error('Commerce database unavailable.'));
       if (!nowPaymentsConfigured(locals)) return toolError(new Error('USDC checkout is not configured.'));
       const { idempotency_key: _idempotencyKey, ...orderInput } = input;
@@ -151,7 +151,7 @@ export function createSuperiiCommerceMcpServer(
       annotations: readAnnotations,
     },
     async ({ order_id }) => {
-      const sql = sqlClient(locals);
+      const sql = paymentSqlClient(locals);
       if (!sql) return toolError(new Error('Commerce database unavailable.'));
       try {
         return toolResult(await getCommerceOrder(locals, request, sql, order_id));
@@ -170,7 +170,7 @@ export function createSuperiiCommerceMcpServer(
       annotations: readAnnotations,
     },
     async ({ receipt_id }) => {
-      const sql = sqlClient(locals);
+      const sql = paymentSqlClient(locals);
       if (!sql) return toolError(new Error('Commerce database unavailable.'));
       try {
         return toolResult(await getCommerceReceipt(request, sql, receipt_id));
@@ -189,7 +189,7 @@ export function createSuperiiCommerceMcpServer(
       annotations: writeAnnotations,
     },
     async (input) => {
-      const sql = sqlClient(locals);
+      const sql = paymentSqlClient(locals);
       if (!sql) return toolError(new Error('Commerce database unavailable.'));
       const { idempotency_key: _idempotencyKey, ...quoteInput } = input;
       const parsed = commerceQuoteInputSchema.safeParse(quoteInput);
