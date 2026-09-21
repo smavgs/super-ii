@@ -12,7 +12,7 @@ import {
 } from './commerce';
 import { UUID_PATTERN } from './agent-management';
 import { validIdempotencyKey } from './agent-auth';
-import { sqlClient } from './db';
+import { paymentSqlClient } from './db';
 import { nowPaymentsConfigured } from './nowpayments';
 import { requestNetworkHash } from './rate-limit';
 
@@ -88,7 +88,7 @@ export async function executeCommerceA2ASkill(
   if (task.skillId === 'commerce-list-products') {
     return { ok: true, skillId: task.skillId, output: commerceCatalog(origin) };
   }
-  const sql = sqlClient(locals);
+  const sql = paymentSqlClient(locals);
   if (!sql) return { ok: false, status: 'failed', message: 'Commerce database unavailable.' };
 
   try {

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+import subprocess
 
 import psycopg
 
@@ -30,16 +31,50 @@ def read_env_file(path: Path) -> dict[str, str]:
     return values
 
 
+def read_keychain_secret(service: str) -> str | None:
+    result = subprocess.run(
+        [
+            "security",
+            "find-generic-password",
+            "-w",
+            "-s",
+            service,
+            "-a",
+            "superii.site",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode == 44:
+        return None
+    if result.returncode:
+        raise RuntimeError(f"Keychain could not read {service}; nothing was changed")
+    return result.stdout.strip()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-file", type=Path, default=ROOT / ".dev.vars")
+    parser.add_argument(
+        "--keychain-service",
+        help="read the migration credential from this macOS Keychain service",
+    )
     parser.add_argument("--check-only", action="store_true")
     args = parser.parse_args()
 
     local_values = read_env_file(args.env_file)
-    database_url = os.environ.get("DATABASE_URL") or local_values.get("DATABASE_URL")
+    database_url = (
+        read_keychain_secret(args.keychain_service)
+        if args.keychain_service
+        else os.environ.get("MIGRATION_DATABASE_URL")
+        or local_values.get("MIGRATION_DATABASE_URL")
+    )
     if not database_url:
-        raise SystemExit("ERROR: DATABASE_URL is not configured")
+        raise SystemExit(
+            "ERROR: MIGRATION_DATABASE_URL is not configured; the application "
+            "credential is never accepted for schema changes"
+        )
 
     migrations = sorted(MIGRATIONS.glob("*.sql"))
     with psycopg.connect(

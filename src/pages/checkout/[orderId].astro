@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient, sqlClient } from '@/lib/db';
 
 type CheckoutOrder = {
   id: string;
@@ -21,12 +21,13 @@ type CheckoutOrder = {
 
 const orderId = Astro.params.orderId ?? '';
 const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
-const sql = sqlClient(Astro.locals);
+const sql = paymentSqlClient(Astro.locals);
+const identitySql = sqlClient(Astro.locals);
 let order: CheckoutOrder | null = null;
 let authenticated = false;
-if (sql) {
+if (sql && identitySql) {
   try {
-    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    const profile = await ensureAuthenticatedProfile(Astro.locals, identitySql, sql);
     authenticated = Boolean(profile);
     if (profile) {
       const rows = await sql`

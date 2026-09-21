@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createSuperiiCommerceMcpHandler } from '@/lib/commerce-mcp-server';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 
 export const ALL: APIRoute = async ({ locals, request }) => {
@@ -8,7 +8,7 @@ export const ALL: APIRoute = async ({ locals, request }) => {
     return Response.redirect(new URL('/agents#commerce-lane', request.url), 303);
   }
   if (request.method !== 'OPTIONS') {
-    const sql = sqlClient(locals);
+    const sql = paymentSqlClient(locals);
     if (!sql) return Response.json({ error: 'Commerce MCP database unavailable' }, { status: 503 });
     const rate = await consumeRateLimit(locals, request, sql, 'mcp.commerce', 600, 3600);
     if (rate !== 'allowed') {

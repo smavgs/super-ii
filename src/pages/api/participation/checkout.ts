@@ -3,7 +3,7 @@ import { UUID_PATTERN } from '@/lib/agent-management';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
 import { readBoundedJsonObject } from '@/lib/bounded-json';
 import { textValue } from '@/lib/creator';
-import { sqlClient } from '@/lib/db';
+import { paymentSqlClient, sqlClient } from '@/lib/db';
 import {
   createNowPayment,
   nowPaymentsConfigured,
@@ -15,9 +15,10 @@ import { absoluteUrl } from '@/lib/site';
 
 export const POST: APIRoute = async ({ locals, request }) => {
   if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
-  const sql = sqlClient(locals);
-  if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
-  const profile = await ensureAuthenticatedProfile(locals, sql);
+  const sql = paymentSqlClient(locals);
+  const identitySql = sqlClient(locals);
+  if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
+  const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
   if (!nowPaymentsConfigured(locals)) {
     return Response.json({ error: 'USDC checkout is not configured yet' }, { status: 503 });

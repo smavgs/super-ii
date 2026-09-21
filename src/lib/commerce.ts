@@ -1,4 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { setSqlActorContext } from './db';
 import { z } from 'zod';
 import { jsonSha256 } from './agent-auth';
 import { UUID_PATTERN } from './agent-management';
@@ -333,18 +334,20 @@ export async function authorizeCommerceToken(
   const tokenHash = await commerceTokenHash(request);
   try {
     const rows = await sql`
-      select id, profile_id, agent_identity_id, scopes, allowed_products,
-             organization_id, repository_id, max_order_amount_cents,
-             total_limit_cents, authorized_amount_cents, max_orders,
-             orders_created, expires_at
-      from app.commerce_delegations
-      where token_hash = ${tokenHash}
-        and revoked_at is null and expires_at > now()
-        and ${scope} = any(scopes)
-      limit 1
+      select * from app.consume_commerce_delegation(${tokenHash}, ${scope})
     `;
     const row = rows[0];
     if (!row?.id) throw new CommerceError(403, 'commerce_token_forbidden', 'Commerce token is expired, revoked, or missing the required scope.');
+    setSqlActorContext(sql, {
+      actorKind: 'commerce',
+      clerkUserId: null,
+      clerkOrganizationId: null,
+      profileId: String(row.profile_id),
+      organizationId: row.organization_id ? String(row.organization_id) : null,
+      agentIdentityId: row.agent_identity_id ? String(row.agent_identity_id) : null,
+      socialAgentId: null,
+      isAdmin: false,
+    });
     return {
       delegationId: String(row.id),
       profileId: String(row.profile_id),

@@ -1,4 +1,5 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { setSqlActorContext } from './db';
 
 export type AuthenticatedProfile = {
   clerkUserId: string;
@@ -13,6 +14,7 @@ export function sameOrigin(request: Request): boolean {
 export async function ensureAuthenticatedProfile(
   locals: App.Locals,
   sql: NeonQueryFunction<false, false>,
+  contextSql: NeonQueryFunction<false, false> = sql,
 ): Promise<AuthenticatedProfile | null> {
   if (typeof locals.auth !== 'function' || typeof locals.currentUser !== 'function') return null;
   const authentication = locals.auth();
@@ -39,5 +41,14 @@ export async function ensureAuthenticatedProfile(
     ) as profile_id
   `;
   const profileId = rows[0]?.profile_id;
-  return profileId ? { clerkUserId: userId, profileId: String(profileId) } : null;
+  if (!profileId) return null;
+  setSqlActorContext(contextSql, {
+    actorKind: 'clerk',
+    clerkUserId: userId,
+    clerkOrganizationId: 'orgId' in authentication && typeof authentication.orgId === 'string'
+      ? authentication.orgId
+      : null,
+    profileId: String(profileId),
+  });
+  return { clerkUserId: userId, profileId: String(profileId) };
 }
