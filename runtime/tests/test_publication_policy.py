@@ -189,3 +189,84 @@ def test_unversioned_scan_does_not_count():
     data = candidate()
     data["files"][0]["inspections"][0]["tool_version"] = None
     assert evaluate(data)["outcome"] == "blocked"
+
+
+def test_model_requires_completed_verified_tokenizer_analysis():
+    data = candidate()
+    data["kind"] = "model"
+    data["analyses"][0]["analysis_type"] = "model"
+
+    blocked = evaluate(data)
+    assert blocked["outcome"] == "blocked"
+    assert "verified_tokenizer_required" in {reason["code"] for reason in blocked["reasons"]}
+
+    data["analyses"].append(
+        {
+            "analysis_type": "tokenizer",
+            "status": "passed",
+            "tool_versions": {"superii_tokenizer_pack": "superii-tokenizer-pack-v1"},
+            "completed_at": "2026-09-21",
+            "result": {
+                "applicable": True,
+                "verified": True,
+                "manifest": {
+                    "version": "superii-tokenizer-pack-v1",
+                    "source_revision_id": str(data["revision_id"]),
+                    "pack_sha256": "b" * 64,
+                    "engine": "huggingface-tokenizers",
+                    "integrity": "sha256-content-addressed",
+                    "verification": {
+                        "encode": "passed",
+                        "decode": "passed",
+                        "unicode": "passed",
+                    },
+                },
+            },
+        }
+    )
+    assert evaluate(data)["outcome"] == "passed"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda result: result.update(verified=False),
+        lambda result: result.update(applicable="yes"),
+        lambda result: result["manifest"].update(pack_sha256="not-a-hash"),
+        lambda result: result["manifest"].update(source_revision_id=str(uuid4())),
+        lambda result: result["manifest"]["verification"].update(decode="failed"),
+    ],
+)
+def test_model_rejects_tokenizer_analysis_that_is_passed_but_not_verified(mutation):
+    data = candidate()
+    data["kind"] = "model"
+    data["analyses"][0]["analysis_type"] = "model"
+    tokenizer = {
+        "analysis_type": "tokenizer",
+        "status": "passed",
+        "tool_versions": {"superii_tokenizer_pack": "superii-tokenizer-pack-v1"},
+        "completed_at": "2026-09-21",
+        "result": {
+            "applicable": True,
+            "verified": True,
+            "manifest": {
+                "version": "superii-tokenizer-pack-v1",
+                "source_revision_id": str(data["revision_id"]),
+                "pack_sha256": "b" * 64,
+                "engine": "huggingface-tokenizers",
+                "integrity": "sha256-content-addressed",
+                "verification": {
+                    "encode": "passed",
+                    "decode": "passed",
+                    "unicode": "passed",
+                },
+            },
+        },
+    }
+    mutation(tokenizer["result"])
+    data["analyses"].append(tokenizer)
+
+    decision = evaluate(data)
+
+    assert decision["outcome"] == "blocked"
+    assert "verified_tokenizer_required" in {reason["code"] for reason in decision["reasons"]}

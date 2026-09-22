@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-from superii_runtime.publication_policy import POLICY_SHA256
+from superii_runtime.publication_policy import POLICY_SHA256, VERSION
 
 ACCOUNT = "superii.site"
 LOGIN = "superii_policy_service"
@@ -82,7 +82,7 @@ def main() -> None:
         base64.b64decode(key_text, validate=True)
     )
     public_key = base64.b64encode(key.public_key().public_bytes_raw()).decode()
-    key_id = "superii-publication-v1-" + POLICY_SHA256[:12]
+    key_id = VERSION.replace("auto-publish", "publication") + "-" + POLICY_SHA256[:12]
     token = read_secret("superii-policy-token")
     if not token:
         token = secrets.token_urlsafe(48)

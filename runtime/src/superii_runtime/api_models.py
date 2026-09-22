@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -20,6 +20,14 @@ class InspectRevisionRequest(BaseModel):
 class TokenizeRequest(BaseModel):
     text: str = Field(max_length=100_000)
     add_special_tokens: bool = True
+
+
+class DetokenizeRequest(BaseModel):
+    token_ids: list[Annotated[int, Field(strict=True, ge=0, le=2**31 - 1)]] = Field(
+        min_length=1,
+        max_length=100_000,
+    )
+    skip_special_tokens: bool = False
 
 
 class LlamaGenerateRequest(BaseModel):

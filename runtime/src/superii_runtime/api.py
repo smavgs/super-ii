@@ -27,6 +27,7 @@ from starlette.background import BackgroundTask
 from .api_models import (
     CreateRevisionRequest,
     CreateTransferRequest,
+    DetokenizeRequest,
     DiffusionGenerateRequest,
     ExecuteNotebookRequest,
     InspectRevisionRequest,
@@ -43,8 +44,6 @@ from .inspectors import (
     inspect_diffusers,
     inspect_model,
     inspect_notebooks,
-    inspect_tokenizer,
-    tokenize_text,
 )
 from .inspectors.compatibility import derive_model_compatibility
 from .inspectors.gguf import inspect_gguf
@@ -55,6 +54,7 @@ from .security import RuntimeAuth
 from .settings import Settings, get_settings
 from .spaces import SpaceRunner
 from .storage import ObjectStore, StorageError, normalize_repository_path
+from .tokenizer_packs import PACK_VERSION, TokenizerPackStore
 from .transfers import (
     TUS_RESPONSE_HEADERS,
     TUS_VERSION,
@@ -137,6 +137,18 @@ def get_llama_pool():
     from .runtimes.llama_server import LlamaServerPool
 
     return LlamaServerPool()
+
+
+@lru_cache
+def get_llama_tokenizer_pool():
+    from .runtimes.llama_tokenizer import LlamaTokenizerPool
+
+    return LlamaTokenizerPool()
+
+
+@lru_cache
+def get_tokenizer_pack_store() -> TokenizerPackStore:
+    return TokenizerPackStore(get_settings(), get_llama_tokenizer_pool())
 
 
 @lru_cache
@@ -605,15 +617,90 @@ def inspect_revision(
                             "inspection": inspect_safetensors(tensor_file),
                         }
                     )
-                try:
-                    result["tokenizer"] = inspect_tokenizer(workspace)
-                except (OSError, ValueError, KeyError):
-                    # Inspection failures can contain local paths or parser details.
-                    # Keep the public analysis actionable without reflecting internals.
+                model_details = result["model"] if isinstance(result["model"], dict) else {}
+                tasks = model_details.get("tasks") if isinstance(model_details, dict) else []
+                config = model_details.get("config") if isinstance(model_details, dict) else {}
+                tokenizer_applicable = bool(
+                    result["gguf"]
+                    or (workspace / "tokenizer.json").is_file()
+                    or (workspace / "tokenizer.model").is_file()
+                    or (workspace / "spiece.model").is_file()
+                    or (
+                        isinstance(tasks, list)
+                        and any(
+                            value
+                            in {
+                                "fill-mask",
+                                "multimodal-generation",
+                                "question-answering",
+                                "text-classification",
+                                "text-generation",
+                                "token-classification",
+                            }
+                            for value in tasks
+                        )
+                    )
+                    or (isinstance(config, dict) and type(config.get("vocab_size")) is int)
+                )
+                if tokenizer_applicable:
+                    try:
+                        pack = get_tokenizer_pack_store().build(
+                            repository_id=repository_id,
+                            revision_id=revision_id,
+                            workspace=workspace,
+                            files=files,
+                        )
+                    except Exception as error:
+                        database.save_revision_analysis(
+                            repository_id,
+                            revision_id,
+                            "tokenizer",
+                            "failed",
+                            {
+                                "applicable": True,
+                                "verified": False,
+                                "reason": "verified tokenizer pack could not be created",
+                            },
+                            {"superii_tokenizer_pack": PACK_VERSION},
+                        )
+                        raise ValueError("verified tokenizer pack could not be created") from error
                     result["tokenizer"] = {
-                        "available": False,
-                        "reason": "tokenizer inspection unavailable",
+                        "available": True,
+                        "verified": True,
+                        "engine": pack["engine"],
+                        "format": pack["format"],
+                        "pack_sha256": pack["pack_sha256"],
+                        "vocabulary_size": pack["vocabulary_size"],
+                        "model_max_length": pack["context_length"],
+                        "special_tokens": pack["special_tokens"],
+                        "offline": True,
+                        "trust_remote_code": False,
                     }
+                    database.save_revision_analysis(
+                        repository_id,
+                        revision_id,
+                        "tokenizer",
+                        "passed",
+                        {"applicable": True, "verified": True, "manifest": pack},
+                        {
+                            "superii_tokenizer_pack": PACK_VERSION,
+                            "tokenizers": _package_version("tokenizers"),
+                            "transformers": _package_version("transformers"),
+                            "sentencepiece": _package_version("sentencepiece"),
+                            "tiktoken": _package_version("tiktoken"),
+                            "llama.cpp": get_settings().llama_cpp_version,
+                        },
+                    )
+                else:
+                    result["tokenizer"] = {"applicable": False}
+                    database.save_revision_analysis(
+                        repository_id,
+                        revision_id,
+                        "tokenizer",
+                        "passed",
+                        {"applicable": False, "verified": True},
+                        {"superii_tokenizer_pack": PACK_VERSION},
+                    )
                 if (workspace / "model_index.json").is_file():
                     result["diffusers"] = inspect_diffusers(workspace)
                 if result["model"] is None and not result["gguf"] and not result["safetensors"]:
@@ -1075,6 +1162,131 @@ async def proxy_space(
     )
 
 
+def _tokenizer_pack_manifest(
+    database: RepositoryDatabase,
+    repository_id: UUID,
+    revision_id: UUID,
+) -> dict[str, Any]:
+    recorded_manifest: dict[str, Any] | None = None
+    analysis = database.get_revision_analysis(repository_id, revision_id, "tokenizer")
+    if analysis and analysis.get("status") == "passed":
+        result = analysis.get("result")
+        if isinstance(result, dict) and result.get("applicable") is False:
+            raise ValueError("this model does not use a text tokenizer")
+        manifest = result.get("manifest") if isinstance(result, dict) else None
+        if isinstance(manifest, dict):
+            recorded_manifest = manifest
+            try:
+                # This also proves that DB evidence still resolves to immutable local bytes.
+                artifacts = manifest.get("artifacts")
+                if not isinstance(artifacts, list) or not artifacts:
+                    raise ValueError("tokenizer pack has no artifacts")
+                first_artifact = artifacts[0]
+                if not isinstance(first_artifact, dict) or not isinstance(
+                    first_artifact.get("path"), str
+                ):
+                    raise ValueError("tokenizer pack artifact path is invalid")
+                get_tokenizer_pack_store().artifact(
+                    manifest,
+                    first_artifact["path"],
+                )
+                return manifest
+            except (FileNotFoundError, OSError, RuntimeError, ValueError):
+                # Packs are derived from immutable repository bytes. Rebuild after a
+                # runtime-disk replacement instead of leaving a published model broken.
+                pass
+
+    # Existing public releases predate the publication gate. Backfill once through
+    # the same verifier, then persist the immutable pack evidence for every caller.
+    workspace = get_workspace_cache().materialize(database, revision_id)
+    files = database.list_revision_files(revision_id)
+    manifest = get_tokenizer_pack_store().build(
+        repository_id=repository_id,
+        revision_id=revision_id,
+        workspace=workspace,
+        files=files,
+    )
+    if recorded_manifest is not None:
+        recorded_hash = recorded_manifest.get("pack_sha256")
+        rebuilt_hash = manifest.get("pack_sha256")
+        if (
+            not isinstance(recorded_hash, str)
+            or len(recorded_hash) != 64
+            or rebuilt_hash != recorded_hash
+        ):
+            raise RuntimeError(
+                "rebuilt tokenizer pack does not match the immutable published record"
+            )
+        # A runtime-disk replacement may remove derived bytes, but it may never
+        # change the tokenizer bound to an already-published model revision.
+        return manifest
+
+    database.save_revision_analysis(
+        repository_id,
+        revision_id,
+        "tokenizer",
+        "passed",
+        {"applicable": True, "verified": True, "manifest": manifest},
+        {
+            "superii_tokenizer_pack": PACK_VERSION,
+            "tokenizers": _package_version("tokenizers"),
+            "transformers": _package_version("transformers"),
+            "sentencepiece": _package_version("sentencepiece"),
+            "tiktoken": _package_version("tiktoken"),
+            "llama.cpp": get_settings().llama_cpp_version,
+        },
+    )
+    return manifest
+
+
+@app.get("/v1/repositories/{repository_id}/revisions/{revision_id}/tokenizer-pack")
+def tokenizer_manifest(
+    repository_id: UUID,
+    revision_id: UUID,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        return _tokenizer_pack_manifest(database, repository_id, revision_id)
+    except Exception as error:
+        raise HTTPException(status_code=422, detail="verified tokenizer is unavailable") from error
+
+
+@app.get(
+    "/v1/repositories/{repository_id}/revisions/{revision_id}/tokenizer-pack/{artifact_path:path}"
+)
+def tokenizer_pack_artifact(
+    repository_id: UUID,
+    revision_id: UUID,
+    artifact_path: str,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> FileResponse:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        safe_path = normalize_repository_path(artifact_path)
+        manifest = _tokenizer_pack_manifest(database, repository_id, revision_id)
+        path, artifact = get_tokenizer_pack_store().artifact(manifest, safe_path)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="tokenizer pack artifact not found") from error
+    except Exception as error:
+        raise HTTPException(status_code=422, detail="verified tokenizer is unavailable") from error
+    media_type = (
+        "application/json" if path.suffix.lower() == ".json" else "application/octet-stream"
+    )
+    return FileResponse(
+        path,
+        media_type=media_type,
+        filename=path.name,
+        headers={
+            "ETag": f'"sha256:{artifact["sha256"]}"',
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 @app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/tokenize")
 def tokenizer_tool(
     repository_id: UUID,
@@ -1085,10 +1297,36 @@ def tokenizer_tool(
 ) -> dict[str, Any]:
     _require_public_revision(database, repository_id, revision_id)
     try:
-        workspace = get_workspace_cache().materialize(database, revision_id)
-        return tokenize_text(workspace, payload.text, payload.add_special_tokens)
-    except (OSError, ValueError, RuntimeError) as error:
-        raise HTTPException(status_code=422, detail="tokenizer is not compatible") from error
+        manifest = _tokenizer_pack_manifest(database, repository_id, revision_id)
+        return get_tokenizer_pack_store().encode(
+            manifest,
+            payload.text,
+            add_special_tokens=payload.add_special_tokens,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=422, detail="verified tokenizer request failed") from error
+
+
+@app.post("/v1/repositories/{repository_id}/revisions/{revision_id}/detokenize")
+def detokenizer_tool(
+    repository_id: UUID,
+    revision_id: UUID,
+    payload: DetokenizeRequest,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> dict[str, Any]:
+    _require_public_revision(database, repository_id, revision_id)
+    try:
+        manifest = _tokenizer_pack_manifest(database, repository_id, revision_id)
+        return get_tokenizer_pack_store().decode(
+            manifest,
+            payload.token_ids,
+            skip_special_tokens=payload.skip_special_tokens,
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=422, detail="verified detokenizer request failed"
+        ) from error
 
 
 @app.get("/v1/files/{repository_file_id}")

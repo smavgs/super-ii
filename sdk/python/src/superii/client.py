@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import shutil
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -19,6 +20,11 @@ from .errors import IntegrityError, SuperiiError
 from .manifest import File, Manifest, origin
 
 CHUNK = 16 * 1024**2
+PACK_SHA256 = re.compile(r"^[a-f0-9]{64}$")
+REVISION_ID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 
 def sha256(path: Path) -> str:
@@ -107,7 +113,7 @@ class Client:
     def _headers(self, url: str) -> dict[str, str]:
         if origin(url) != self.base_url:
             raise IntegrityError("Refusing to send repository credentials to another origin")
-        result = {"User-Agent": "superii-python/0.2.0", "Accept-Encoding": "identity"}
+        result = {"User-Agent": "superii-python/0.3.0", "Accept-Encoding": "identity"}
         if self.token:
             result["Authorization"] = f"Bearer {self.token}"
         return result
@@ -174,6 +180,107 @@ class Client:
                 }
             verify_attestation(manifest, keys)
         return manifest
+
+    @staticmethod
+    def _repository_parts(repository: str) -> tuple[str, str]:
+        parts = repository.split("/")
+        if len(parts) != 2 or any(not part or part in {".", ".."} for part in parts):
+            raise ValueError("Use owner/model")
+        return parts[0], parts[1]
+
+    def _tokenizer_request(
+        self,
+        repository: str,
+        operation: str,
+        payload: dict[str, object] | None = None,
+        *,
+        revision: str | None = None,
+    ) -> dict[str, object]:
+        if revision is not None and not REVISION_ID.fullmatch(revision):
+            raise ValueError("Tokenizer revision must be a UUID from a published model version")
+        owner, slug = self._repository_parts(repository)
+        url = (
+            f"{self.base_url}/api/tokenizers/{quote(owner, safe='')}/"
+            f"{quote(slug, safe='')}/{operation}"
+        )
+        response = self.http.request(
+            "POST" if payload is not None else "GET",
+            url,
+            headers={
+                **self._headers(url),
+                **({"Content-Type": "application/json"} if payload else {}),
+            },
+            json=payload,
+            params={"revision": revision} if revision else None,
+        )
+        self._check(response)
+        if len(response.content) > 64 * 1024**2:
+            raise IntegrityError("Tokenizer response exceeds 64 MiB")
+        if "application/json" not in response.headers.get("content-type", ""):
+            raise IntegrityError("Tokenizer endpoint did not return JSON")
+        value = response.json()
+        if not isinstance(value, dict) or not PACK_SHA256.fullmatch(
+            str(value.get("pack_sha256", ""))
+        ):
+            raise IntegrityError("Tokenizer response is missing its immutable pack hash")
+        returned_revision = value.get("source_revision_id", value.get("revision_id"))
+        if not isinstance(returned_revision, str):
+            raise IntegrityError("Tokenizer response is missing its immutable revision")
+        if revision is not None and returned_revision != revision:
+            raise IntegrityError("Tokenizer response is bound to a different revision")
+        return value
+
+    def tokenizer_manifest(
+        self,
+        repository: str,
+        *,
+        revision: str | None = None,
+    ) -> dict[str, object]:
+        """Return the verified immutable tokenizer pack for a public model."""
+
+        return self._tokenizer_request(repository, "manifest", revision=revision)
+
+    def tokenize(
+        self,
+        repository: str,
+        text: str,
+        *,
+        add_special_tokens: bool = True,
+        revision: str | None = None,
+    ) -> dict[str, object]:
+        """Encode text with the exact tokenizer pack for a public model."""
+
+        if len(text) > 100_000:
+            raise ValueError("Tokenizer input exceeds 100000 characters")
+        return self._tokenizer_request(
+            repository,
+            "encode",
+            {"text": text, "add_special_tokens": add_special_tokens},
+            revision=revision,
+        )
+
+    def decode_tokens(
+        self,
+        repository: str,
+        token_ids: list[int],
+        *,
+        skip_special_tokens: bool = False,
+        revision: str | None = None,
+    ) -> dict[str, object]:
+        """Decode IDs with the exact tokenizer pack for a public model."""
+
+        if (
+            not token_ids
+            or len(token_ids) > 100_000
+            or any(type(value) is not int or value < 0 or value > 2**31 - 1 for value in token_ids)
+        ):
+            raise ValueError("token_ids must contain 1 to 100000 non-negative 32-bit integers")
+        return self._tokenizer_request(
+            repository,
+            "decode",
+            {"token_ids": token_ids, "skip_special_tokens": skip_special_tokens},
+            revision=revision,
+        )
 
     def _range(
         self,

@@ -10,7 +10,7 @@ from .model import Model
 from .planner import Plan
 from .planner import plan as _plan
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 __all__ = [
     "Client",
     "Peer",
@@ -29,6 +29,9 @@ __all__ = [
     "apull",
     "verify",
     "load",
+    "tokenizer_manifest",
+    "tokenize",
+    "decode_tokens",
 ]
 
 
@@ -82,6 +85,50 @@ async def apull(
 
 def verify(snapshot: Snapshot) -> bool:
     return snapshot.verify()
+
+
+def tokenizer_manifest(
+    repository: str,
+    *,
+    revision: str | None = None,
+    **client_options,
+) -> dict[str, object]:
+    with Client(**client_options) as client:
+        return client.tokenizer_manifest(repository, revision=revision)
+
+
+def tokenize(
+    repository: str,
+    text: str,
+    *,
+    add_special_tokens: bool = True,
+    revision: str | None = None,
+    **client_options,
+) -> dict[str, object]:
+    with Client(**client_options) as client:
+        return client.tokenize(
+            repository,
+            text,
+            add_special_tokens=add_special_tokens,
+            revision=revision,
+        )
+
+
+def decode_tokens(
+    repository: str,
+    token_ids: list[int],
+    *,
+    skip_special_tokens: bool = False,
+    revision: str | None = None,
+    **client_options,
+) -> dict[str, object]:
+    with Client(**client_options) as client:
+        return client.decode_tokens(
+            repository,
+            token_ids,
+            skip_special_tokens=skip_special_tokens,
+            revision=revision,
+        )
 
 
 def load(

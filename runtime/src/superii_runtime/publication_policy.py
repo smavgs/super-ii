@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-VERSION = "superii-auto-publish-v1"
+VERSION = "superii-auto-publish-v2"
 POLICY_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 RECOGNIZED_LICENSES = frozenset(
     {
@@ -62,6 +63,7 @@ REGISTERED_LICENSE_RULES = {
     }
 }
 REQUIRED = frozenset({"clamav", "gitleaks", "format_policy"})
+SHA256 = re.compile(r"^[a-f0-9]{64}$")
 
 
 def canonical(value: Any) -> str:
@@ -71,6 +73,39 @@ def canonical(value: Any) -> str:
 def _root_file_name(path: str) -> str | None:
     normalized = path.replace("\\", "/").strip("/").lower()
     return normalized if normalized and "/" not in normalized else None
+
+
+def _valid_tokenizer_analysis(analysis: dict[str, Any], revision_id: Any) -> bool:
+    if (
+        analysis.get("analysis_type") != "tokenizer"
+        or analysis.get("status") != "passed"
+        or not analysis.get("tool_versions")
+        or not analysis.get("completed_at")
+    ):
+        return False
+    result = analysis.get("result")
+    if not isinstance(result, dict) or result.get("verified") is not True:
+        return False
+    applicable = result.get("applicable")
+    if applicable is False:
+        return True
+    if applicable is not True:
+        return False
+    manifest = result.get("manifest")
+    verification = manifest.get("verification") if isinstance(manifest, dict) else None
+    return bool(
+        isinstance(manifest, dict)
+        and manifest.get("version") == "superii-tokenizer-pack-v1"
+        and manifest.get("source_revision_id") == str(revision_id)
+        and isinstance(manifest.get("pack_sha256"), str)
+        and SHA256.fullmatch(str(manifest["pack_sha256"]))
+        and manifest.get("engine") in {"huggingface-tokenizers", "llama.cpp"}
+        and manifest.get("integrity") == "sha256-content-addressed"
+        and isinstance(verification, dict)
+        and verification.get("encode") == "passed"
+        and verification.get("decode") == "passed"
+        and verification.get("unicode") == "passed"
+    )
 
 
 def _license_evidence(
@@ -179,6 +214,13 @@ def evaluate(candidate: dict[str, Any]) -> dict[str, Any]:
         block("analysis_required", "The applicable offline repository inspection must pass.")
     if any(a["status"] != "passed" for a in analyses):
         block("analysis_failed", "Resolve every failed or unavailable revision inspection.")
+    if candidate["kind"] == "model" and not any(
+        _valid_tokenizer_analysis(a, candidate["revision_id"]) for a in analyses
+    ):
+        block(
+            "verified_tokenizer_required",
+            "Verify and package the model tokenizer before publication.",
+        )
     license_id = str(candidate.get("license") or "").lower().strip()
     license_evidence = _license_evidence(license_id, files, block)
     provenance = candidate.get("provenance") or {}

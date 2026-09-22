@@ -1,0 +1,60 @@
+---
+import PageHero from '@/components/PageHero.astro';
+import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { searchCatalog } from '@/lib/catalog';
+
+const catalog = await searchCatalog(Astro.locals, 'model', { sort: 'updated' }, 50, 0);
+const models = catalog.items.filter((model) => model.tokenizer_available);
+const selected = models[0] ?? null;
+---
+
+<BaseLayout title="Tokenizer" description="See exactly how a published Super ii model reads text with its verified immutable tokenizer pack.">
+  <PageHero
+    eyebrow="Exact model text"
+    title="Tokenizer"
+    description="Paste text. See its token boundaries, IDs and context use. Every result is tied to the model revision and verified tokenizer-pack hash."
+    compact
+  />
+  <section class="shell tokenizer-page">
+    {selected ? (
+      <>
+        <label class="tokenizer-model-picker">
+          <span>Published model</span>
+          <select data-tokenizer-model-picker>
+            {models.map((model) => (
+              <option value={`${model.owner_handle}/${model.slug}`}>{model.title} · {model.owner_handle}/{model.slug}</option>
+            ))}
+          </select>
+        </label>
+        <TokenizerWorkbench owner={selected.owner_handle} slug={selected.slug} title={`${selected.owner_handle}/${selected.slug}`} />
+      </>
+    ) : (
+      <div class="empty-state">
+        <p class="eyebrow">Catalog is honest</p>
+        <h2>No verified text model is published yet.</h2>
+        <p>The workbench appears with the first model that passes the tokenizer publication gate. No demo result is substituted.</p>
+        <a class="button button--secondary" href="/models">View models</a>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+{selected && <script>
+  const picker = document.querySelector('[data-tokenizer-model-picker]');
+  const workbench = document.querySelector('[data-tokenizer-workbench]');
+  if (picker instanceof HTMLSelectElement && workbench instanceof HTMLElement) picker.addEventListener('change', () => {
+    const [owner, slug] = picker.value.split('/');
+    if (!owner || !slug) return;
+    workbench.dataset.owner = owner;
+    workbench.dataset.slug = slug;
+    const label = workbench.querySelector<HTMLElement>('[data-tokenizer-model]');
+    if (label) label.textContent = `${owner}/${slug}`;
+    const manifest = workbench.querySelector<HTMLAnchorElement>('[data-tokenizer-manifest]');
+    if (manifest) manifest.href = `/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest`;
+    const result = workbench.querySelector<HTMLElement>('[data-tokenizer-result]');
+    if (result) result.hidden = true;
+    const status = workbench.querySelector<HTMLElement>('[data-tokenizer-status]');
+    if (status) status.textContent = 'Model changed. Ready to load its verified tokenizer pack.';
+  });
+</script>}

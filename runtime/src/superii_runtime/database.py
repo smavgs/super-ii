@@ -816,6 +816,23 @@ class RepositoryDatabase:
                 raise RuntimeError("database did not return the analysis")
             return row["id"]
 
+    def get_revision_analysis(
+        self,
+        repository_id: UUID,
+        revision_id: UUID,
+        analysis_type: str,
+    ) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                select status, result, tool_versions, completed_at
+                from app.repository_revision_analyses
+                where repository_id = %s and revision_id = %s and analysis_type = %s
+                """,
+                (repository_id, revision_id, analysis_type),
+            ).fetchone()
+        return dict(row) if row else None
+
     def update_revision_manifest(
         self,
         revision_id: UUID,

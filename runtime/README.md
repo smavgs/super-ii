@@ -34,6 +34,7 @@ uploaded binary, and the receipt records the bounded scan mode and byte count.
 - Content-addressed local filesystem storage under `objects/sha256/`; Xet is used only by the isolated Bridge downloader for compatible inbound provider transfer and is not the internal storage format.
 - Repository revisions, manifests, files, releases, tags, downloads, reviews, and inspection evidence in Postgres.
 - Offline `safetensors`, Datasets, Transformers, Tokenizers, GGUF, and optional Diffusers inspection.
+- A publication-time verified tokenizer gate for every applicable text model. Safe native loaders compare plain, multilingual, and emoji vectors against a normalized content-addressed pack; GGUF packs contain only tokenizer metadata and are rechecked through pinned llama.cpp with `--vocab-only`. Published packs support exact revision-addressed encode, decode, artifact retrieval, REST, MCP, SDK, CLI, and a browser fallback without executing repository Python or loading model weights.
 - Conservative model compatibility inspection for architecture, parameters, quantization, tensor format, size, RAM, VRAM, CPU, CUDA, ROCm, Metal/MLX, llama.cpp, and browser use. Publisher declarations remain labeled and are never promoted to benchmark evidence.
 - A TUS 1.0 resumable transfer path with 10 GiB policy ceiling, bounded chunks, checksums, expiry, termination, offset reconciliation, and atomic SHA-256 promotion through a loopback-only Rust sidecar.
 - A Rust `superii` CLI for resumable push, ranged pull, complete-digest verification, and transfer inspection.
@@ -143,9 +144,21 @@ docker compose up -d
 
 The Compose port is bound to `127.0.0.1:8788`. Put TLS or a private Cloudflare Tunnel in front of it. Do not expose port 8788 directly.
 
-On an Apple-silicon development host that also supervises Docker Spaces, run
-ClamAV from Compose and the authenticated runtime through
-`scripts/run-runtime-macos.sh`. The host client streams file bytes to ClamAV on
+On a macOS host, install the same pinned llama.cpp release used by the container
+before starting or updating the service:
+
+```sh
+SUPERII_RUNTIME_ROOT="$HOME/Library/Application Support/Super ii Runtime/app" \
+  ./runtime/install-llama-macos.sh
+```
+
+The installer accepts only the official b10516 arm64 or x64 archive, checks its
+published SHA-256, installs it under the runtime-owned version directory, and
+refuses to replace a mismatched existing directory. `run-macos-service.sh` uses
+that exact path instead of an independently changing Homebrew binary.
+
+On an Apple-silicon host that also supervises Docker Spaces, run ClamAV from
+Compose and the authenticated runtime through `run-macos-service.sh`. The host client streams file bytes to ClamAV on
 localhost, so the antivirus container never receives a host filesystem path.
 Runtime credentials are read from macOS Keychain and never stored in the
 repository or a launch-agent property list.

@@ -34,6 +34,7 @@
 | Explore public AI work | Browse [models](https://www.superii.site/models), [datasets](https://www.superii.site/datasets), and [apps](https://www.superii.site/spaces). |
 | Publish my work | Sign in, create a repository, upload an exact revision, declare rights and provenance, and submit it to independent automatic policy. |
 | Use a model locally | Open a reviewed model and choose **Use model**, or use the [Python SDK](sdk/python/README.md). |
+| Inspect exact model tokens | Open the public [Tokenizer](https://www.superii.site/tokenizer), or call its revision-addressed REST, MCP, SDK, or CLI surface. |
 | Connect an AI agent | Begin with the public [agent guide](https://www.superii.site/siiwebskill.md), then issue a separately scoped credential only when governed work is needed. |
 | Contribute code | Read [CONTRIBUTING.md](CONTRIBUTING.md), fork the repository, and open a signed-off pull request. |
 

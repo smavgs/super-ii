@@ -7,6 +7,7 @@ import { catalogFiltersFromInput, catalogSearchInputSchema } from './catalog-sea
 import { getPublicPaper, paperDocument, searchPublicPapers } from './papers';
 import { getPublicRepository, type RepositoryBundle } from './repository';
 import { systemState, systemStateMarkdown } from './system-state';
+import { tokenizerJson, type TokenizerModel } from './tokenizers';
 
 const annotations = {
   readOnlyHint: true,
@@ -51,6 +52,23 @@ async function repositoryOrError(
 
 function isToolError(value: RepositoryBundle | ReturnType<typeof error>): value is ReturnType<typeof error> {
   return 'isError' in value;
+}
+
+function tokenizerModelOrError(
+  repository: RepositoryBundle,
+  requestedRevision?: string,
+): TokenizerModel | ReturnType<typeof error> {
+  const version = requestedRevision
+    ? repository.versions.find((candidate) => candidate.id === requestedRevision)
+    : null;
+  if (requestedRevision && !version) return error('published model revision not found');
+  return {
+    repositoryId: repository.id,
+    revisionId: version?.id ?? repository.revision_id,
+    commitSha: version?.commit_sha ?? repository.commit_sha,
+    owner: repository.owner_handle,
+    slug: repository.slug,
+  };
 }
 
 function registerSearchTool(server: McpServer, locals: App.Locals, name: string, kind: RepositoryKind) {
@@ -244,6 +262,76 @@ export function createSuperiiMcpServer(locals: App.Locals, origin: string): McpS
         compatibility: repository.compatibility,
         warning: 'Derived and declared compatibility is guidance, not a benchmark or guarantee.',
       });
+    },
+  );
+
+  server.registerTool(
+    'get_tokenizer_manifest',
+    {
+      title: 'Get a verified model tokenizer manifest',
+      description: 'Return the immutable tokenizer-pack hash, engine, artifacts, context limit and verification vectors for one published text model.',
+      inputSchema: z.object({
+        owner: z.string().trim().min(1).max(120),
+        slug: z.string().trim().min(1).max(96),
+        revision_id: z.uuid().optional(),
+      }),
+      annotations,
+    },
+    async ({ owner, slug, revision_id }) => {
+      const repository = await repositoryOrError(locals, 'model', owner, slug);
+      if (isToolError(repository)) return repository;
+      const model = tokenizerModelOrError(repository, revision_id);
+      if ('isError' in model) return model;
+      const response = await tokenizerJson(locals, model, 'manifest');
+      return response.status === 200 ? result(response.value) : error(String(response.value.error ?? 'verified tokenizer unavailable'));
+    },
+  );
+
+  server.registerTool(
+    'tokenize_model_text',
+    {
+      title: 'Tokenize text with a verified model tokenizer',
+      description: 'Encode bounded text with the exact immutable tokenizer pack for a published model. Returns IDs, pieces, offsets, count, context and pack hash.',
+      inputSchema: z.object({
+        owner: z.string().trim().min(1).max(120),
+        slug: z.string().trim().min(1).max(96),
+        revision_id: z.uuid().optional(),
+        text: z.string().max(20_000),
+        add_special_tokens: z.boolean().default(true),
+      }),
+      annotations,
+    },
+    async ({ owner, slug, revision_id, text, add_special_tokens }) => {
+      const repository = await repositoryOrError(locals, 'model', owner, slug);
+      if (isToolError(repository)) return repository;
+      const model = tokenizerModelOrError(repository, revision_id);
+      if ('isError' in model) return model;
+      const response = await tokenizerJson(locals, model, 'encode', { text, add_special_tokens });
+      return response.status === 200 ? result(response.value) : error(String(response.value.error ?? 'verified tokenizer request failed'));
+    },
+  );
+
+  server.registerTool(
+    'decode_model_tokens',
+    {
+      title: 'Decode IDs with a verified model tokenizer',
+      description: 'Decode bounded token IDs with the exact immutable tokenizer pack for a published model.',
+      inputSchema: z.object({
+        owner: z.string().trim().min(1).max(120),
+        slug: z.string().trim().min(1).max(96),
+        revision_id: z.uuid().optional(),
+        token_ids: z.array(z.number().int().min(0).max(2_147_483_647)).min(1).max(20_000),
+        skip_special_tokens: z.boolean().default(false),
+      }),
+      annotations,
+    },
+    async ({ owner, slug, revision_id, token_ids, skip_special_tokens }) => {
+      const repository = await repositoryOrError(locals, 'model', owner, slug);
+      if (isToolError(repository)) return repository;
+      const model = tokenizerModelOrError(repository, revision_id);
+      if ('isError' in model) return model;
+      const response = await tokenizerJson(locals, model, 'decode', { token_ids, skip_special_tokens });
+      return response.status === 200 ? result(response.value) : error(String(response.value.error ?? 'verified detokenizer request failed'));
     },
   );
 

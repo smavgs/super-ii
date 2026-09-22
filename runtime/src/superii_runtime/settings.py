@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     gitleaks_command: str = "gitleaks"
     llama_cli_command: str = "llama-cli"
     llama_server_command: str = "llama-server"
+    llama_cpp_version: str = "b10516"
     llama_server_context_size: int = Field(default=4096, ge=512, le=131_072)
     llama_server_parallel: int = Field(default=2, ge=1, le=8)
     llama_server_idle_seconds: int = Field(default=900, ge=60, le=86_400)
