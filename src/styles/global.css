@@ -2906,9 +2906,14 @@ pre {
 
 .tokenizer-workbench {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   min-width: 0;
   background: var(--surface-raised);
+}
+
+.tokenizer-workbench > * {
+  min-width: 0;
 }
 
 .tokenizer-workbench__header {
@@ -3131,6 +3136,8 @@ pre {
 }
 
 .tokenizer-table-wrap {
+  width: 100%;
+  max-width: 100%;
   max-height: 430px;
   overflow: auto;
   border-bottom: 1px solid var(--line);

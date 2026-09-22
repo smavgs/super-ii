@@ -62,6 +62,12 @@ requireText('src/components/TokenizerWorkbench.astro', [
   'data-tokenizer-pack',
   'const renderLimit = 500',
 ]);
+requireText('src/styles/global.css', [
+  'grid-template-columns: minmax(0, 1fr);',
+  '.tokenizer-workbench > *',
+  '.tokenizer-table-wrap',
+  'max-width: 100%;',
+]);
 requireText('src/lib/browser-tokenizer.ts', [
   'Browser tokenizer did not match its verified reference vectors.',
   "execution: 'browser'",
