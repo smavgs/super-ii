@@ -99,12 +99,13 @@ def _valid_tokenizer_analysis(analysis: dict[str, Any], revision_id: Any) -> boo
         and manifest.get("source_revision_id") == str(revision_id)
         and isinstance(manifest.get("pack_sha256"), str)
         and SHA256.fullmatch(str(manifest["pack_sha256"]))
-        and manifest.get("engine") in {"huggingface-tokenizers", "llama.cpp"}
+        and manifest.get("engine") == "huggingface-tokenizers"
         and manifest.get("integrity") == "sha256-content-addressed"
         and isinstance(verification, dict)
         and verification.get("encode") == "passed"
         and verification.get("decode") == "passed"
         and verification.get("unicode") == "passed"
+        and verification.get("special_tokens") == "passed"
     )
 
 

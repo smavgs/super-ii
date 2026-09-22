@@ -26,7 +26,9 @@ verify_installation() {
   candidate=$1
   test -x "$candidate/llama-cli"
   test -x "$candidate/llama-server"
+  test -x "$candidate/llama-tokenize"
   "$candidate/llama-server" --version 2>&1 | grep -Eq "build[[:space:]]+$build_number([,)]|$)"
+  "$candidate/llama-tokenize" --version 2>&1 | grep -Eq "build[[:space:]]+$build_number([,)]|$)"
 }
 
 mkdir -p "$install_parent"

@@ -219,6 +219,7 @@ def test_model_requires_completed_verified_tokenizer_analysis():
                         "encode": "passed",
                         "decode": "passed",
                         "unicode": "passed",
+                        "special_tokens": "passed",
                     },
                 },
             },

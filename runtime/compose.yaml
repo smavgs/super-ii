@@ -56,6 +56,7 @@ services:
       SUPERII_GITLEAKS_COMMAND: gitleaks
       SUPERII_LLAMA_CLI_COMMAND: llama-cli
       SUPERII_LLAMA_SERVER_COMMAND: llama-server
+      SUPERII_LLAMA_TOKENIZE_COMMAND: llama-tokenize
       SUPERII_NOTEBOOK_IMAGE: superii/notebook-executor:0.1.0
       HF_HUB_OFFLINE: "1"
       HF_DATASETS_OFFLINE: "1"

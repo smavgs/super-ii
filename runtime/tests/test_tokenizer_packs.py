@@ -18,7 +18,7 @@ from superii_runtime.inspectors.tokenizers import (
     tokenize_text,
     tokenizer_verification_vectors,
 )
-from superii_runtime.runtimes.llama_tokenizer import LlamaTokenizerPool
+from superii_runtime.runtimes.llama_tokenizer import LlamaTokenizerVerifier
 from superii_runtime.settings import Settings
 from superii_runtime.tokenizer_packs import TokenizerPackStore
 
@@ -156,7 +156,12 @@ def test_huggingface_tokenizer_returns_ids_offsets_decode_and_vectors(tmp_path: 
     assert encoded["pieces"][0]["character_start"] == 0
     assert encoded["pieces"][1]["character_end"] == 11
     assert decoded["text"] == "hello world"
-    assert [vector["name"] for vector in vectors] == ["plain", "multilingual", "emoji"]
+    assert [vector["name"] for vector in vectors] == [
+        "plain",
+        "multilingual",
+        "emoji",
+        "special-tokens",
+    ]
 
 
 def test_huggingface_pack_is_content_addressed_and_executable(tmp_path: Path) -> None:
@@ -165,7 +170,7 @@ def test_huggingface_pack_is_content_addressed_and_executable(tmp_path: Path) ->
     _wordlevel_tokenizer(workspace)
     repository_id, revision_id, files = _revision_files(workspace)
     settings = Settings(storage_root=tmp_path / "storage")
-    store = TokenizerPackStore(settings, LlamaTokenizerPool())
+    store = TokenizerPackStore(settings, LlamaTokenizerVerifier())
 
     manifest = store.build(
         repository_id=repository_id,
@@ -224,7 +229,7 @@ def test_legacy_wordpiece_source_is_converted_to_portable_verified_pack(tmp_path
     repository_id, revision_id, files = _revision_files(workspace)
     store = TokenizerPackStore(
         Settings(storage_root=tmp_path / "storage"),
-        LlamaTokenizerPool(),
+        LlamaTokenizerVerifier(),
     )
 
     manifest = store.build(
@@ -256,7 +261,9 @@ def test_vocab_only_gguf_copies_metadata_and_omits_tensor_descriptors(tmp_path: 
     assert inspection["metadata"]["tokenizer.ggml.model"] == "gpt2"
 
 
-def test_gguf_pack_is_verified_against_source_vocabulary(tmp_path: Path) -> None:
+def test_gguf_pack_is_verified_and_exported_as_portable_tokenizer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     source = workspace / "model.gguf"
@@ -264,14 +271,31 @@ def test_gguf_pack_is_verified_against_source_vocabulary(tmp_path: Path) -> None
     source.write_bytes(b"GGUF" + struct.pack("<IQQ", 3, 0, 1) + metadata)
     repository_id, revision_id, files = _revision_files(workspace)
 
-    class MatchingPool:
-        def encode(self, _artifact, _pack_sha256, text, **_kwargs):
-            digest = hashlib.sha256(text.encode()).hexdigest()
-            return {"token_ids": [len(text)], "decoded_sha256": digest}
+    reference = tmp_path / "reference"
+    reference.mkdir()
+    _wordlevel_tokenizer(reference)
+
+    class MatchingVerifier:
+        def encode_ids(self, _artifact, _source_sha256, text, *, add_special_tokens, **_kwargs):
+            return tokenize_text(reference, text, add_special_tokens)["token_ids"]
+
+    def fake_export(_source, destination, _vectors, *, context_length):  # noqa: ANN001, ANN202
+        _wordlevel_tokenizer(destination)
+        return {
+            "source_architecture": "test",
+            "source_tokenizer_type": "gpt2",
+            "converter_architecture": "gpt2",
+            "written": ["tokenizer.json"],
+        }
+
+    monkeypatch.setattr(
+        "superii_runtime.tokenizer_packs.export_portable_gguf_tokenizer",
+        fake_export,
+    )
 
     store = TokenizerPackStore(
         Settings(storage_root=tmp_path / "storage"),
-        MatchingPool(),  # type: ignore[arg-type]
+        MatchingVerifier(),  # type: ignore[arg-type]
     )
 
     manifest = store.build(
@@ -281,11 +305,17 @@ def test_gguf_pack_is_verified_against_source_vocabulary(tmp_path: Path) -> None
         files=files,
     )
 
-    assert manifest["engine"] == "llama.cpp"
-    assert manifest["verification"]["reference"].startswith("immutable source")
+    assert manifest["engine"] == "huggingface-tokenizers"
+    assert manifest["format"] == "tokenizer.json"
+    assert manifest["browser_compatible"] is True
+    assert manifest["converter_architecture"] == "gpt2"
+    assert manifest["verification"]["reference"].startswith("immutable GGUF")
+    assert any(item["path"] == "tokenizer.json" for item in manifest["artifacts"])
 
 
-def test_gguf_pack_rejects_vocabulary_that_differs_from_source(tmp_path: Path) -> None:
+def test_gguf_pack_rejects_portable_vocabulary_that_differs_from_native_oracle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
     source = workspace / "model.gguf"
@@ -293,17 +323,30 @@ def test_gguf_pack_rejects_vocabulary_that_differs_from_source(tmp_path: Path) -
     source.write_bytes(b"GGUF" + struct.pack("<IQQ", 3, 0, 1) + metadata)
     repository_id, revision_id, files = _revision_files(workspace)
 
-    class DriftingPool:
-        def encode(self, artifact, _pack_sha256, text, **_kwargs):
-            token_id = len(text) + (1 if artifact.name == "tokenizer.gguf" else 0)
-            return {"token_ids": [token_id], "decoded_sha256": "a" * 64}
+    class DriftingVerifier:
+        def encode_ids(self, _artifact, _source_sha256, text, **_kwargs):
+            return [len(text) + 1]
+
+    def fake_export(_source, destination, _vectors, *, context_length):  # noqa: ANN001, ANN202
+        _wordlevel_tokenizer(destination)
+        return {
+            "source_architecture": "test",
+            "source_tokenizer_type": "gpt2",
+            "converter_architecture": "gpt2",
+            "written": ["tokenizer.json"],
+        }
+
+    monkeypatch.setattr(
+        "superii_runtime.tokenizer_packs.export_portable_gguf_tokenizer",
+        fake_export,
+    )
 
     store = TokenizerPackStore(
         Settings(storage_root=tmp_path / "storage"),
-        DriftingPool(),  # type: ignore[arg-type]
+        DriftingVerifier(),  # type: ignore[arg-type]
     )
 
-    with pytest.raises(RuntimeError, match="differs from the immutable source"):
+    with pytest.raises(RuntimeError, match="differs from pinned llama.cpp"):
         store.build(
             repository_id=repository_id,
             revision_id=revision_id,
@@ -324,7 +367,7 @@ def test_gguf_pack_enforces_generated_artifact_size_limit(
     monkeypatch.setattr("superii_runtime.tokenizer_packs.MAX_PACK_BYTES", 16)
     store = TokenizerPackStore(
         Settings(storage_root=tmp_path / "storage"),
-        LlamaTokenizerPool(),
+        LlamaTokenizerVerifier(),
     )
 
     with pytest.raises(ValueError, match="exceeds the 256 MiB safety limit"):

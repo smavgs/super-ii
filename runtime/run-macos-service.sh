@@ -5,7 +5,9 @@ runtime_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 llama_root="$runtime_root/vendor/llama.cpp/b10516"
 test -x "$llama_root/llama-cli"
 test -x "$llama_root/llama-server"
+test -x "$llama_root/llama-tokenize"
 "$llama_root/llama-server" --version 2>&1 | grep -Eq 'build[[:space:]]+10516([,)]|$)'
+"$llama_root/llama-tokenize" --version 2>&1 | grep -Eq 'build[[:space:]]+10516([,)]|$)'
 export PATH="$llama_root:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 
 runtime_database_url=$(security find-generic-password \
@@ -31,6 +33,7 @@ export SUPERII_CLAMAV_CONFIG_FILE="$runtime_root/clamd-host.conf"
 export SUPERII_GITLEAKS_COMMAND="gitleaks"
 export SUPERII_LLAMA_CLI_COMMAND="$llama_root/llama-cli"
 export SUPERII_LLAMA_SERVER_COMMAND="$llama_root/llama-server"
+export SUPERII_LLAMA_TOKENIZE_COMMAND="$llama_root/llama-tokenize"
 export SUPERII_PUBLIC_BASE_URL="https://runtime.superii.site"
 export SUPERII_SPACES_IMAGE="superii/gradio-space:0.1.0"
 export SUPERII_NOTEBOOK_IMAGE="superii/notebook-executor:0.1.0"

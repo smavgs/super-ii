@@ -13,6 +13,9 @@ VERIFICATION_TEXTS = (
     ("multilingual", "café · Привет · 你好 · مرحبا"),
     ("emoji", "Build 🤖 with 👩🏽‍💻 and share it."),
 )
+VERIFICATION_CASES = tuple((*item, False) for item in VERIFICATION_TEXTS) + (
+    ("special-tokens", "Super ii tokenizer verification.", True),
+)
 
 
 def _offline_environment() -> None:
@@ -202,13 +205,13 @@ def decode_token_ids(
 def tokenizer_verification_vectors(root: Path) -> list[dict[str, Any]]:
     tokenizer = _load(root)
     vectors: list[dict[str, Any]] = []
-    for name, text in VERIFICATION_TEXTS:
-        encoded = _encoded(tokenizer, text, False)
+    for name, text, add_special_tokens in VERIFICATION_CASES:
+        encoded = _encoded(tokenizer, text, add_special_tokens)
         vectors.append(
             {
                 "name": name,
                 "text": text,
-                "add_special_tokens": False,
+                "add_special_tokens": add_special_tokens,
                 "token_ids": encoded["token_ids"],
                 "decoded_sha256": encoded["decoded_sha256"],
             }
