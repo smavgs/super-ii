@@ -2899,6 +2899,309 @@ pre {
   grid-column: 1 / -1;
 }
 
+.tool-card--tokenizer {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tokenizer-workbench {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  background: var(--surface-raised);
+}
+
+.tokenizer-workbench__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-workbench__header h3 {
+  margin: 0.2rem 0 0.4rem;
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  letter-spacing: -0.035em;
+}
+
+.tokenizer-workbench__header p:last-child {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.tokenizer-workbench__trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  justify-content: end;
+  gap: 0.5rem;
+}
+
+.tokenizer-workbench__trust span,
+.tokenizer-workbench__trust a {
+  padding: 0.42rem 0.68rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tokenizer-workbench__trust span {
+  border-color: color-mix(in srgb, var(--green) 55%, var(--line));
+  background: color-mix(in srgb, var(--green) 12%, var(--surface));
+}
+
+.tokenizer-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-tabs button {
+  padding: 0.85rem 0.15rem 0.75rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.tokenizer-tabs button + button {
+  margin-left: 1.5rem;
+}
+
+.tokenizer-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--brand);
+  color: var(--ink);
+}
+
+.tokenizer-form {
+  display: grid;
+  gap: 0.8rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.tokenizer-form > label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.tokenizer-form > label small {
+  margin-left: 0.4rem;
+  color: var(--muted-soft);
+  font-weight: 400;
+}
+
+.tokenizer-form textarea {
+  width: 100%;
+  min-height: 135px;
+  padding: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 0.92rem/1.55 var(--font-mono);
+  resize: vertical;
+}
+
+.tokenizer-form__actions,
+.tokenizer-result__footer,
+.tokenizer-result__footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.tokenizer-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.tokenizer-check input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--ink);
+}
+
+.tokenizer-status {
+  min-height: 1.3rem;
+  margin: 0;
+  padding: 0 clamp(1.25rem, 3vw, 2rem) 1.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.tokenizer-result {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 78%, var(--surface-raised));
+}
+
+.tokenizer-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-metrics div {
+  display: grid;
+  gap: 0.1rem;
+  padding: 1rem clamp(0.8rem, 2vw, 1.4rem);
+}
+
+.tokenizer-metrics div + div {
+  border-left: 1px solid var(--line);
+}
+
+.tokenizer-metrics strong {
+  font-size: clamp(1.15rem, 2.5vw, 1.7rem);
+  letter-spacing: -0.025em;
+}
+
+.tokenizer-metrics span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tokenizer-context {
+  height: 5px;
+  background: var(--line);
+}
+
+.tokenizer-context span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+
+.tokenizer-boundaries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-boundaries span {
+  max-width: 100%;
+  padding: 0.38rem 0.52rem;
+  border: 1px solid rgb(7 26 47 / 12%);
+  border-radius: 6px;
+  color: #071a2f;
+  overflow-wrap: anywhere;
+  font: 0.8rem/1.2 var(--font-mono);
+}
+
+.tokenizer-decoded {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.25rem clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-decoded > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tokenizer-decoded pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tokenizer-table-wrap {
+  max-height: 430px;
+  overflow: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.tokenizer-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font: 0.76rem/1.35 var(--font-mono);
+}
+
+.tokenizer-table th,
+.tokenizer-table td {
+  padding: 0.68rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.tokenizer-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-raised);
+  color: var(--muted);
+}
+
+.tokenizer-result__footer {
+  padding: 1rem clamp(1.25rem, 3vw, 2rem);
+}
+
+.tokenizer-result__footer p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.tokenizer-page {
+  padding-block: clamp(2rem, 5vw, 4.5rem);
+}
+
+.tokenizer-page > .tokenizer-workbench {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tokenizer-model-picker {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 720px;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.tokenizer-model-picker select {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
 .generation-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -5648,6 +5951,33 @@ pre {
 
   .tool-card--wide {
     grid-column: auto;
+  }
+
+  .tokenizer-workbench__header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .tokenizer-workbench__trust {
+    justify-content: start;
+  }
+
+  .tokenizer-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tokenizer-metrics div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .tokenizer-metrics div:nth-child(4) {
+    border-top: 1px solid var(--line);
+  }
+
+  .tokenizer-result__footer {
+    align-items: start;
+    flex-direction: column;
   }
 
   .repository-section__heading {

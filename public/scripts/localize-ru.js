@@ -61,6 +61,8 @@
       const count = Number(match[1]);
       return `${count} ${plural(count, 'навык', 'навыка', 'навыков')}${match[2] ? ` в категории «${exact(match[2])}»` : ''}`;
     }
+    match = value.match(/^Verified (server|browser) result · ([\d.,\s\u00a0]+) tokens(?: · first ([\d.,\s\u00a0]+) shown; JSON contains all)?\.$/);
+    if (match) return `Проверенный результат · ${exact(match[1])} · ${match[2].trim()} токенов${match[3] ? ` · показаны первые ${match[3].trim()}; JSON содержит все` : ''}.`;
     match = value.match(/^Open (.+) skill$/);
     if (match) return `Открыть навык «${match[1]}»`;
     match = value.match(/^Open (.+) organization$/);
@@ -243,7 +245,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/ru.json?v=20260908-8', { credentials: 'same-origin' })
+  fetch('/locales/ru.json?v=20260921-9', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Russian catalogue unavailable');
       return response.json();

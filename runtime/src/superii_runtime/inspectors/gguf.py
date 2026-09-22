@@ -134,3 +134,47 @@ def inspect_gguf(
         "tensors": tensors,
         "tensors_truncated": tensor_count > MAX_TENSOR_PREVIEW,
     }
+
+
+def write_vocab_only_gguf(source_path: Path, target_path: Path) -> dict[str, int]:
+    """Copy exact GGUF metadata into a small, tensor-free tokenizer artifact."""
+
+    source_path = source_path.resolve(strict=True)
+    if source_path.suffix.lower() != ".gguf" or not source_path.is_file():
+        raise ValueError("tokenizer source must be a GGUF file")
+    target_path.parent.mkdir(mode=0o750, parents=True, exist_ok=True)
+    with source_path.open("rb") as source:
+        if source.read(4) != b"GGUF":
+            raise ValueError("GGUF magic bytes are invalid")
+        version = _unpack(source, "<I")
+        if version not in {2, 3}:
+            raise ValueError(f"unsupported GGUF version: {version}")
+        _tensor_count = _unpack(source, "<Q")
+        metadata_count = _unpack(source, "<Q")
+        if metadata_count > MAX_METADATA_ITEMS:
+            raise ValueError("GGUF metadata count exceeds safety limit")
+        metadata_start = source.tell()
+        for _ in range(metadata_count):
+            _string(source)
+            _value(source, _unpack(source, "<I"), collect=False)
+        metadata_end = source.tell()
+        metadata_bytes = metadata_end - metadata_start
+        source.seek(metadata_start)
+
+        with target_path.open("xb") as target:
+            target.write(b"GGUF")
+            target.write(struct.pack("<IQQ", version, 0, metadata_count))
+            remaining = metadata_bytes
+            while remaining:
+                chunk = source.read(min(1024 * 1024, remaining))
+                if not chunk:
+                    raise ValueError("GGUF metadata is truncated")
+                target.write(chunk)
+                remaining -= len(chunk)
+
+    target_path.chmod(0o440)
+    return {
+        "version": version,
+        "metadata_count": metadata_count,
+        "size_bytes": target_path.stat().st_size,
+    }

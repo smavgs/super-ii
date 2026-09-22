@@ -55,6 +55,7 @@ export type PublicRepository = {
   mlx_compatible: boolean | null;
   llama_cpp_compatible: boolean | null;
   browser_compatible: boolean | null;
+  tokenizer_available: boolean;
 };
 
 export type CatalogResult = {
@@ -139,7 +140,33 @@ export async function searchCatalog(
              compatibility.metal_compatible,
              compatibility.mlx_compatible,
              compatibility.llama_cpp_compatible,
-             compatibility.browser_compatible
+             compatibility.browser_compatible,
+             (
+               coalesce((
+                 select analysis.status = 'passed'
+                   and analysis.result->>'verified' = 'true'
+                   and coalesce(analysis.result->>'applicable', 'true') = 'true'
+                 from app.repository_revision_analyses analysis
+                 where analysis.revision_id = repository.latest_revision_id
+                   and analysis.analysis_type = 'tokenizer'
+                 limit 1
+               ), false)
+               or (
+                 not exists (
+                   select 1 from app.repository_revision_analyses analysis
+                   where analysis.revision_id = repository.latest_revision_id
+                     and analysis.analysis_type = 'tokenizer'
+                 )
+                 and exists (
+                   select 1 from app.repository_files file
+                   where file.revision_id = repository.latest_revision_id
+                     and (
+                       lower(file.path) like '%.gguf'
+                       or lower(file.path) ~ '(^|/)(tokenizer\\.json|tokenizer\\.model|spiece\\.model|sentencepiece\\.bpe\\.model|vocab\\.txt|vocab\\.json)$'
+                     )
+                 )
+               )
+             ) as tokenizer_available
       from matches
       join app.repositories repository on repository.id = matches.repository_id
       left join app.profiles creator

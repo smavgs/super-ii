@@ -66,7 +66,7 @@ Never treat an upload, commit, scan, submission, or agent result as a published 
 
 The signed-in Workspace includes a separate, collapsed AI Worker guide for a member who wants to run Ollama and OpenCode on their own Mac, Windows, or Linux computer. Its four manual steps install Ollama, pull qwen3.5:4b, recommend at least 64K context for coding tools, and run ollama launch opencode. Checklist state stays in that browser's local storage. Super ii cannot inspect the computer or confirm that any command succeeded. Local inference has no Super ii AI subscription or per-token charge, but uses the member's hardware, storage, electricity, and internet connection.
 
-The optional final connection uses opencode mcp add, the remote name superii, https://superii.site/mcp, and opencode mcp list. That MCP is public and read-only. It cannot publish, access private data, invoke hosted compute, change identity, or pay.
+The optional final connection uses opencode mcp add, the remote name superii, https://superii.site/mcp, and opencode mcp list. That MCP is public and read-only. Its verified tokenizer tools perform bounded encode/decode against immutable packs. It cannot publish, access private data, run model inference or arbitrary hosted compute, change identity, or pay.
 
 ## Use Super ii pathways
 
@@ -100,7 +100,7 @@ REST exposes the same contract at <code>/api/commerce/catalog</code>, <code>/api
 
 Transport: Streamable HTTP at https://superii.site/mcp
 
-Public tools search reviewed catalogs; read repository cards, files, schemas, lineage, compatibility, papers, and system state; and resolve verified downloads. They do not execute repository code or mutate state. Empty search results are real.
+Public tools search reviewed catalogs; read repository cards, files, schemas, lineage, compatibility, papers, and system state; resolve verified downloads; and encode or decode with immutable verified tokenizer packs. They do not execute repository code, run model inference, or mutate state. Empty search results are real.
 
 ## Super ii Robot
 

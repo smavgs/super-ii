@@ -1,0 +1,214 @@
+---
+interface Props {
+  owner: string;
+  slug: string;
+  title?: string;
+}
+
+const { owner, slug, title = `${owner}/${slug}` } = Astro.props;
+---
+
+<section class="tokenizer-workbench" data-tokenizer-workbench data-owner={owner} data-slug={slug}>
+  <header class="tokenizer-workbench__header">
+    <div>
+      <p class="eyebrow">Verified tokenizer</p>
+      <h3>See exactly how this model reads your text.</h3>
+      <p data-tokenizer-model>{title}</p>
+    </div>
+    <div class="tokenizer-workbench__trust">
+      <span><i class="ph ph-seal-check" aria-hidden="true"></i> Verified pack</span>
+      <a data-tokenizer-manifest href={`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest`}>Manifest</a>
+    </div>
+  </header>
+
+  <div class="tokenizer-tabs" role="tablist" aria-label="Tokenizer operation">
+    <button type="button" role="tab" aria-selected="true" data-tokenizer-tab="encode">Encode text</button>
+    <button type="button" role="tab" aria-selected="false" data-tokenizer-tab="decode">Decode IDs</button>
+  </div>
+
+  <form class="tokenizer-form" data-tokenizer-encode>
+    <label>
+      <span>Text</span>
+      <textarea name="text" maxlength="100000" required>Super ii makes AI work understandable. 🤖</textarea>
+    </label>
+    <div class="tokenizer-form__actions">
+      <label class="tokenizer-check"><input name="add_special_tokens" type="checkbox" checked /> Add model special tokens</label>
+      <button class="button button--dark button--small" type="submit"><i class="ph ph-squares-four" aria-hidden="true"></i> Tokenize</button>
+    </div>
+  </form>
+
+  <form class="tokenizer-form" data-tokenizer-decode hidden>
+    <label>
+      <span>Token IDs <small>Separate with commas or spaces.</small></span>
+      <textarea name="token_ids" maxlength="1200000" required placeholder="1, 450, 982"></textarea>
+    </label>
+    <div class="tokenizer-form__actions">
+      <label class="tokenizer-check"><input name="skip_special_tokens" type="checkbox" /> Skip special tokens</label>
+      <button class="button button--dark button--small" type="submit"><i class="ph ph-text-aa" aria-hidden="true"></i> Decode</button>
+    </div>
+  </form>
+
+  <p class="tokenizer-status" data-tokenizer-status aria-live="polite">Ready. Exact results use the verified runtime; portable packs can fall back to this browser.</p>
+
+  <section class="tokenizer-result" data-tokenizer-result hidden aria-live="polite">
+    <div class="tokenizer-metrics">
+      <div><strong data-token-count>0</strong><span>tokens</span></div>
+      <div><strong data-context-used>—</strong><span>context used</span></div>
+      <div><strong data-context-left>—</strong><span>remaining</span></div>
+      <div><strong data-execution>—</strong><span>execution</span></div>
+    </div>
+    <div class="tokenizer-context" data-tokenizer-context hidden><span></span></div>
+    <div class="tokenizer-boundaries" data-tokenizer-boundaries hidden></div>
+    <div class="tokenizer-decoded" data-tokenizer-decoded hidden>
+      <span>Decoded text</span><pre></pre>
+    </div>
+    <div class="tokenizer-table-wrap" data-tokenizer-table-wrap hidden>
+      <table class="tokenizer-table">
+        <thead><tr><th>#</th><th>ID</th><th>Token</th><th>Piece</th><th>Characters</th><th>Bytes</th></tr></thead>
+        <tbody data-tokenizer-rows></tbody>
+      </table>
+    </div>
+    <footer class="tokenizer-result__footer">
+      <p><span data-tokenizer-engine>—</span> · revision <code data-tokenizer-revision>—</code> · pack <code data-tokenizer-pack>—</code></p>
+      <div>
+        <button class="button button--secondary button--small" type="button" data-tokenizer-copy>Copy JSON</button>
+        <button class="button button--secondary button--small" type="button" data-tokenizer-download>Download JSON</button>
+      </div>
+    </footer>
+  </section>
+</section>
+
+<script>
+  import { decodeVerified, encodeVerified } from '@/lib/browser-tokenizer';
+
+  const palette = ['#ffe08a', '#bdebd5', '#cdd8ff', '#ffd0c2', '#e7cff8', '#cdebf3'];
+  const renderLimit = 500;
+
+  function text(value: unknown): string {
+    return typeof value === 'string' ? value : String(value ?? '');
+  }
+
+  function idsFrom(value: FormDataEntryValue | null): number[] {
+    const source = String(value ?? '').trim();
+    if (!source) throw new Error('Enter at least one token ID.');
+    const values = source.split(/[\s,]+/).filter(Boolean).map(Number);
+    if (values.length > 100000 || values.some((id) => !Number.isSafeInteger(id) || id < 0 || id > 2147483647)) {
+      throw new Error('Use 1 to 100000 non-negative 32-bit token IDs.');
+    }
+    return values;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-tokenizer-workbench]').forEach((root) => {
+    if (root.dataset.ready === 'true') return;
+    root.dataset.ready = 'true';
+    let latest: Record<string, unknown> | null = null;
+    const status = root.querySelector<HTMLElement>('[data-tokenizer-status]');
+    const result = root.querySelector<HTMLElement>('[data-tokenizer-result]');
+    const encodeForm = root.querySelector<HTMLFormElement>('[data-tokenizer-encode]');
+    const decodeForm = root.querySelector<HTMLFormElement>('[data-tokenizer-decode]');
+
+    root.querySelectorAll<HTMLButtonElement>('[data-tokenizer-tab]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const encode = tab.dataset.tokenizerTab === 'encode';
+        encodeForm?.toggleAttribute('hidden', !encode);
+        decodeForm?.toggleAttribute('hidden', encode);
+        root.querySelectorAll<HTMLButtonElement>('[data-tokenizer-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+      });
+    });
+
+    const render = (value: Record<string, unknown>) => {
+      latest = value;
+      if (result) result.hidden = false;
+      const tokenIds = Array.isArray(value.token_ids) ? value.token_ids.map(Number) : [];
+      const context = typeof value.context_length === 'number' ? value.context_length : null;
+      const count = typeof value.token_count === 'number' ? value.token_count : tokenIds.length;
+      const set = (selector: string, content: string) => { const node = root.querySelector<HTMLElement>(selector); if (node) node.textContent = content; };
+      set('[data-token-count]', count.toLocaleString());
+      set('[data-context-used]', context ? `${((count / context) * 100).toFixed(2)}%` : '—');
+      set('[data-context-left]', context ? Math.max(0, context - count).toLocaleString() : '—');
+      set('[data-execution]', text(value.execution || 'server'));
+      set('[data-tokenizer-engine]', text(value.engine));
+      set('[data-tokenizer-revision]', text(value.revision_id).slice(0, 12));
+      set('[data-tokenizer-pack]', text(value.pack_sha256).slice(0, 12));
+      const bar = root.querySelector<HTMLElement>('[data-tokenizer-context]');
+      const fill = bar?.querySelector<HTMLElement>('span');
+      if (bar) bar.hidden = !context;
+      if (fill && context) fill.style.width = `${Math.min(100, (count / context) * 100)}%`;
+
+      const decoded = root.querySelector<HTMLElement>('[data-tokenizer-decoded]');
+      const decodedPre = decoded?.querySelector('pre');
+      const decodedText = typeof value.text === 'string' ? value.text : typeof value.decoded === 'string' ? value.decoded : '';
+      if (decoded) decoded.hidden = !decodedText;
+      if (decodedPre) decodedPre.textContent = decodedText;
+
+      const pieces = Array.isArray(value.pieces) ? value.pieces as Array<Record<string, unknown>> : [];
+      const visiblePieces = pieces.slice(0, renderLimit);
+      const boundaries = root.querySelector<HTMLElement>('[data-tokenizer-boundaries]');
+      if (boundaries) {
+        boundaries.replaceChildren(...visiblePieces.map((piece, index) => {
+          const chip = document.createElement('span');
+          chip.style.background = palette[index % palette.length];
+          chip.textContent = text(piece.piece || piece.token || '∅');
+          chip.title = `#${index} · ID ${text(piece.id)}`;
+          return chip;
+        }));
+        boundaries.hidden = pieces.length === 0;
+      }
+      const rows = root.querySelector<HTMLElement>('[data-tokenizer-rows]');
+      if (rows) {
+        rows.replaceChildren(...visiblePieces.map((piece, index) => {
+          const row = document.createElement('tr');
+          const range = (start: unknown, end: unknown) => typeof start === 'number' && typeof end === 'number' ? `${start}–${end}` : 'not reported';
+          for (const content of [index, piece.id, piece.token, piece.piece, range(piece.character_start, piece.character_end), range(piece.byte_start, piece.byte_end)]) {
+            const cell = document.createElement('td');
+            cell.textContent = text(content);
+            row.appendChild(cell);
+          }
+          return row;
+        }));
+      }
+      const table = root.querySelector<HTMLElement>('[data-tokenizer-table-wrap]');
+      if (table) table.hidden = pieces.length === 0;
+      if (status) status.textContent = `Verified ${text(value.execution || 'server')} result · ${count.toLocaleString()} tokens${pieces.length > renderLimit ? ` · first ${renderLimit.toLocaleString()} shown; JSON contains all` : ''}.`;
+    };
+
+    const run = async (form: HTMLFormElement, operation: 'encode' | 'decode') => {
+      const owner = root.dataset.owner ?? '';
+      const slug = root.dataset.slug ?? '';
+      const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (submit) submit.disabled = true;
+      if (status) status.textContent = 'Loading and verifying the tokenizer pack…';
+      try {
+        const data = new FormData(form);
+        const value = operation === 'encode'
+          ? await encodeVerified(owner, slug, String(data.get('text') ?? ''), data.get('add_special_tokens') === 'on')
+          : await decodeVerified(owner, slug, idsFrom(data.get('token_ids')), data.get('skip_special_tokens') === 'on');
+        render(value);
+      } catch (error) {
+        if (status) status.textContent = error instanceof Error ? error.message : 'Verified tokenizer request failed.';
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    };
+    encodeForm?.addEventListener('submit', (event) => { event.preventDefault(); void run(encodeForm, 'encode'); });
+    decodeForm?.addEventListener('submit', (event) => { event.preventDefault(); void run(decodeForm, 'decode'); });
+    root.querySelector<HTMLButtonElement>('[data-tokenizer-copy]')?.addEventListener('click', async () => {
+      if (!latest) return;
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(latest, null, 2));
+        if (status) status.textContent = 'Tokenizer JSON copied.';
+      } catch {
+        if (status) status.textContent = 'Clipboard access was blocked. Download the JSON instead.';
+      }
+    });
+    root.querySelector<HTMLButtonElement>('[data-tokenizer-download]')?.addEventListener('click', () => {
+      if (!latest) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(latest, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${root.dataset.owner}-${root.dataset.slug}-tokens.json`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    });
+  });
+</script>

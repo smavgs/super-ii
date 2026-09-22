@@ -226,6 +226,84 @@ def test_redirect_does_not_forward_token(tmp_path):
     assert len(requests) == 1
 
 
+def test_verified_tokenizer_manifest_encode_and_decode(tmp_path):
+    requests = []
+    revision = "11111111-1111-4111-8111-111111111111"
+
+    def handle(request):
+        requests.append(request)
+        common = {
+            "pack_sha256": "a" * 64,
+            "source_revision_id": revision,
+        }
+        if request.url.path.endswith("/manifest"):
+            return httpx.Response(200, json={**common, "engine": "huggingface-tokenizers"})
+        payload = json.loads(request.content)
+        if request.url.path.endswith("/encode"):
+            assert payload == {"text": "hello", "add_special_tokens": False}
+            return httpx.Response(
+                200,
+                json={
+                    **common,
+                    "revision_id": common["source_revision_id"],
+                    "token_ids": [7],
+                    "token_count": 1,
+                    "verified": True,
+                },
+            )
+        assert payload == {"token_ids": [7], "skip_special_tokens": True}
+        return httpx.Response(
+            200,
+            json={
+                **common,
+                "revision_id": common["source_revision_id"],
+                "text": "hello",
+                "token_count": 1,
+                "verified": True,
+            },
+        )
+
+    with Client(
+        ORIGIN,
+        cache_dir=tmp_path,
+        require_attestation=False,
+        transport=httpx.MockTransport(handle),
+    ) as client:
+        manifest = client.tokenizer_manifest("owner/model", revision=revision)
+        encoded = client.tokenize(
+            "owner/model", "hello", add_special_tokens=False, revision=revision
+        )
+        decoded = client.decode_tokens(
+            "owner/model", [7], skip_special_tokens=True, revision=revision
+        )
+        assert manifest["engine"] == "huggingface-tokenizers"
+        assert encoded["token_ids"] == [7]
+        assert decoded["text"] == "hello"
+    assert [request.method for request in requests] == ["GET", "POST", "POST"]
+    assert all(request.url.host == "superii.test" for request in requests)
+    assert all(request.url.params["revision"] == revision for request in requests)
+
+
+def test_tokenizer_client_rejects_bad_input_and_unbound_response(tmp_path):
+    def handle(_request):
+        return httpx.Response(200, json={"token_ids": [1]})
+
+    with Client(
+        ORIGIN,
+        cache_dir=tmp_path,
+        require_attestation=False,
+        transport=httpx.MockTransport(handle),
+    ) as client:
+        with pytest.raises(ValueError):
+            client.tokenize("not-a-repository", "hello")
+        with pytest.raises(ValueError):
+            client.decode_tokens("owner/model", [])
+        with pytest.raises(ValueError):
+            client.tokenizer_manifest("owner/model", revision="latest")
+        with pytest.raises(IntegrityError):
+            client.tokenize("owner/model", "hello")
+
+
 def test_attestation_requires_trusted_signature_for_exact_manifest():
     manifest = Manifest.parse(document({"model.gguf": b"weights"}), ORIGIN)
     key = Ed25519PrivateKey.generate()

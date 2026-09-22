@@ -4,6 +4,7 @@ import CreatorLink from '@/components/CreatorLink.astro';
 import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import UseModel from '@/components/UseModel.astro';
 import BuildShip from '@/components/BuildShip.astro';
+import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
 import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
@@ -26,6 +27,15 @@ function relatedPath(relationship: RepositoryBundle['relationships'][number]): s
 }
 
 const hasGguf = repository?.files.some((file) => file.path.toLowerCase().endsWith('.gguf')) ?? false;
+const tokenizerAnalysis = repository?.analyses.find((analysis) => analysis.analysis_type === 'tokenizer');
+const hasTokenizerSource = repository?.files.some((file) => /(^|\/)(tokenizer\.json|tokenizer\.model|spiece\.model|sentencepiece\.bpe\.model|vocab\.txt|vocab\.json)$/i.test(file.path)) ?? false;
+const hasVerifiedTokenizer = kind === 'model' && (
+  tokenizerAnalysis
+    ? tokenizerAnalysis.status === 'passed'
+      && tokenizerAnalysis.result.verified === true
+      && tokenizerAnalysis.result.applicable !== false
+    : hasGguf || hasTokenizerSource
+);
 const hasDiffusers = repository?.files.some((file) => file.path.toLowerCase() === 'model_index.json') ?? false;
 const cardTitle = kind === 'model' ? 'Model Card' : kind === 'dataset' ? 'Data Card' : 'App Card';
 const folders = repository
@@ -272,13 +282,11 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         <section class="repository-section model-tools" id="model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
           <div class="repository-section__heading"><div><p class="eyebrow">Local tools</p><h2>Try this model</h2></div></div>
           <div class="tool-grid">
-            <form class="tool-card" data-tokenizer-form>
-              <h3>Tokenizer</h3>
-              <p>Tokenize locally on the Super ii Runtime without any external model API.</p>
-              <textarea name="text" maxlength="100000" required placeholder="Type text to inspect tokens"></textarea>
-              <button class="button button--dark button--small" type="submit">Tokenize</button>
-              <pre data-tokenizer-output hidden></pre>
-            </form>
+            {hasVerifiedTokenizer && (
+              <div class="tool-card tool-card--wide tool-card--tokenizer">
+                <TokenizerWorkbench owner={repository.owner_handle} slug={repository.slug} title={`${repository.owner_handle}/${repository.slug}`} />
+              </div>
+            )}
             {repository.compatibility?.browser_compatible === true ? (
               <form class="tool-card" data-browser-ai-form>
                 <h3>Browser inference</h3>
@@ -548,36 +556,6 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
   if (tools instanceof HTMLElement) {
     const repositoryId = tools.dataset.repositoryId;
     const browserModel = tools.dataset.browserModel;
-    const tokenizerForm = tools.querySelector('[data-tokenizer-form]');
-    tokenizerForm?.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      if (!(tokenizerForm instanceof HTMLFormElement) || !repositoryId) return;
-      const output = tokenizerForm.querySelector('[data-tokenizer-output]');
-      const submit = tokenizerForm.querySelector('button[type="submit"]');
-      if (submit instanceof HTMLButtonElement) submit.disabled = true;
-      try {
-        const form = new FormData(tokenizerForm);
-        const response = await fetch(`/api/repositories/${repositoryId}/tokenize`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text: form.get('text'), add_special_tokens: true }),
-        });
-        const data = await response.json() as Record<string, unknown>;
-        if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Tokenizer unavailable');
-        if (output instanceof HTMLElement) {
-          output.hidden = false;
-          output.textContent = JSON.stringify(data, null, 2);
-        }
-      } catch (error) {
-        if (output instanceof HTMLElement) {
-          output.hidden = false;
-          output.textContent = error instanceof Error ? error.message : 'Tokenizer unavailable';
-        }
-      } finally {
-        if (submit instanceof HTMLButtonElement) submit.disabled = false;
-      }
-    });
-
     const browserForm = tools.querySelector('[data-browser-ai-form]');
     const browserTask = browserForm?.querySelector('[data-browser-task]');
     const browserTextField = browserForm?.querySelector('[data-browser-text-field]');

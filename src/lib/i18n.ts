@@ -46,6 +46,7 @@ const localizableRoots = new Set([
   'spaces',
   'status',
   'system-state',
+  'tokenizer',
   'use',
 ]);
 
@@ -368,6 +369,57 @@ const coreRussian: Record<string, string> = {
     '(далее — «Сервис»). «Super ii», «мы», «нас» и «наш» относятся к оператору Сервиса.',
   'provides , , , , and . Install with Python 3.11 or newer; the Python import and command are both . The catalogue fills through creator submissions; example model names are placeholders.':
     'предоставляет эти возможности. Установите пакет для Python 3.11 или новее; импорт Python и команда описаны рядом. Каталог пополняется публикациями создателей; названия моделей в примерах являются условными.',
+  'Tokenizer': 'Токенизатор',
+  'Exact model text': 'Точная обработка текста моделью',
+  'Paste text. See its token boundaries, IDs and context use. Every result is tied to the model revision and verified tokenizer-pack hash.':
+    'Вставьте текст и посмотрите границы токенов, их идентификаторы и использование контекста. Каждый результат связан с точной ревизией модели и хешем проверенного пакета токенизатора.',
+  'Published model': 'Опубликованная модель',
+  'Catalog is honest': 'Честный каталог',
+  'No verified text model is published yet.': 'Проверенных текстовых моделей пока нет.',
+  'The workbench appears with the first model that passes the tokenizer publication gate. No demo result is substituted.':
+    'Рабочая область появится после публикации первой модели, прошедшей проверку токенизатора. Демонстрационные результаты не подставляются.',
+  'View models': 'Посмотреть модели',
+  'Verified tokenizer': 'Проверенный токенизатор',
+  'See exactly how this model reads your text.': 'Посмотрите, как именно эта модель читает ваш текст.',
+  'Verified pack': 'Проверенный пакет',
+  'Manifest': 'Манифест',
+  'Encode text': 'Кодировать текст',
+  'Decode IDs': 'Декодировать ID',
+  'Text': 'Текст',
+  'Add model special tokens': 'Добавить специальные токены модели',
+  'Tokenize': 'Разбить на токены',
+  'Token IDs': 'ID токенов',
+  'Separate with commas or spaces.': 'Разделяйте запятыми или пробелами.',
+  'Skip special tokens': 'Пропустить специальные токены',
+  'Decode': 'Декодировать',
+  'Ready. Exact results use the verified runtime; portable packs can fall back to this browser.':
+    'Готово. Точные результаты предоставляет проверенная среда выполнения; переносимый пакет может резервно работать в этом браузере.',
+  'tokens': 'токенов',
+  'context used': 'контекст использован',
+  'remaining': 'осталось',
+  'execution': 'выполнение',
+  'Decoded text': 'Декодированный текст',
+  'Token': 'Токен',
+  'Piece': 'Фрагмент',
+  'Characters': 'Символы',
+  'Bytes': 'Байты',
+  'revision': 'ревизия',
+  'pack': 'пакет',
+  'Copy JSON': 'Копировать JSON',
+  'Download JSON': 'Скачать JSON',
+  'Model changed. Ready to load its verified tokenizer pack.':
+    'Модель изменена. Можно загрузить её проверенный пакет токенизатора.',
+  'Loading and verifying the tokenizer pack…': 'Загружаем и проверяем пакет токенизатора…',
+  'Tokenizer JSON copied.': 'JSON токенизатора скопирован.',
+  'Clipboard access was blocked. Download the JSON instead.':
+    'Доступ к буферу обмена заблокирован. Вместо этого скачайте JSON.',
+  'Verified tokenizer request failed.': 'Запрос к проверенному токенизатору завершился ошибкой.',
+  'Enter at least one token ID.': 'Введите хотя бы один ID токена.',
+  'Use 1 to 100000 non-negative 32-bit token IDs.':
+    'Введите от 1 до 100000 неотрицательных 32-битных ID токенов.',
+  'not reported': 'не указано',
+  'server': 'сервер',
+  'browser': 'браузер',
 };
 
 const pricingRussian: Record<string, string> = {

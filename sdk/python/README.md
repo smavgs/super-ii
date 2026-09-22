@@ -19,6 +19,39 @@ with superii.load("owner/model") as model:
     print(model.generate("Hello", max_tokens=128))
 ```
 
+## Verified tokenizer
+
+Every applicable text model accepted by Super ii has an immutable verified tokenizer pack. Use it without downloading model weights:
+
+```python
+from superii import decode_tokens, tokenize, tokenizer_manifest
+
+proof = tokenizer_manifest("owner/model")
+encoded = tokenize("owner/model", "Hello, Super ii")
+decoded = decode_tokens("owner/model", encoded["token_ids"])
+
+assert encoded["pack_sha256"] == proof["pack_sha256"]
+assert encoded["revision_id"] == proof["source_revision_id"]
+
+# Re-run that exact published tokenizer after a newer model version appears.
+same = tokenize(
+    "owner/model",
+    "Hello, Super ii",
+    revision=proof["source_revision_id"],
+)
+assert same["token_ids"] == encoded["token_ids"]
+```
+
+The same operations are available from the CLI:
+
+```sh
+superii tokenize owner/model "Hello, Super ii"
+superii tokenize owner/model "Hello, Super ii" --revision REVISION_UUID
+superii decode owner/model 1 450 982
+```
+
+Responses identify the exact model revision, model commit when present, and tokenizer-pack SHA-256. The manifest supplies a revision-addressed artifact URL template. Requests are bounded, never execute repository Python, and use either a normalized safe fast-tokenizer pack or the pinned llama.cpp vocabulary engine for GGUF.
+
 The public catalogue contains only creator submissions that passed quarantine,
 inspection, immutable-manifest, provenance, and signed publication policy. Use
 `smavgs/minicpm-v4.6-q4-k-m-verified-ollama` for a current public GGUF example;

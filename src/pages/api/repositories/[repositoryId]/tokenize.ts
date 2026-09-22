@@ -1,17 +1,12 @@
 import type { APIRoute } from 'astro';
 import { sameOrigin } from '@/lib/auth';
+import { readBoundedJsonObject } from '@/lib/bounded-json';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { runtimeFetch } from '@/lib/runtime';
 
 export const POST: APIRoute = async ({ locals, params, request }) => {
   if (!sameOrigin(request)) return Response.json({ error: 'invalid origin' }, { status: 403 });
-  if (!request.headers.get('content-type')?.toLowerCase().includes('application/json')) {
-    return Response.json({ error: 'expected JSON' }, { status: 415 });
-  }
-  if (Number(request.headers.get('content-length') ?? 0) > 110_000) {
-    return Response.json({ error: 'request is too large' }, { status: 413 });
-  }
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const rateLimit = await consumeRateLimit(locals, request, sql, 'tokenize', 60, 3600);
@@ -22,14 +17,17 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
     return Response.json({ error: 'tokenizer safety service unavailable' }, { status: 503 });
   }
   const repositoryId = params.repositoryId ?? '';
-  let payload: { text?: unknown; add_special_tokens?: unknown };
-  try {
-    payload = await request.json();
-  } catch {
-    return Response.json({ error: 'invalid JSON' }, { status: 400 });
+  const parsed = await readBoundedJsonObject(request, 1_000_000);
+  if (!parsed.ok) return Response.json({ error: parsed.error }, { status: parsed.status });
+  const payload = parsed.value;
+  if (Object.keys(payload).some((key) => !['text', 'add_special_tokens'].includes(key))) {
+    return Response.json({ error: 'request contains unsupported fields' }, { status: 422 });
   }
   if (typeof payload.text !== 'string' || payload.text.length > 100_000) {
-    return Response.json({ error: 'text must contain at most 100000 characters' }, { status: 400 });
+    return Response.json({ error: 'text must contain at most 100000 characters' }, { status: 422 });
+  }
+  if (payload.add_special_tokens !== undefined && typeof payload.add_special_tokens !== 'boolean') {
+    return Response.json({ error: 'add_special_tokens must be boolean' }, { status: 422 });
   }
   let revisionId: string;
   try {

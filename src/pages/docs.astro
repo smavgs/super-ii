@@ -54,12 +54,12 @@ const russian = Astro.locals.locale === 'ru';
       <h2 id="agent-starter">Agent Starter</h2>
       <p><a href="/account#agent-starter">Agent Starter</a> is the default new-user activation path. It detects Mac, Windows, or Linux; shows the current official Ollama installer command; then guides the user through <code>ollama signin</code> and <code>ollama launch opencode</code>. Completion is manual and saved only in that browser on that device—Super ii does not inspect the user's computer or claim that a command succeeded.</p>
       <p>The recommended model is a current lower-usage cloud starting point, not a permanent entitlement. Ollama controls model availability and applies session and weekly cloud limits; the Workspace links to its current cloud catalog and account usage. Local models remain available separately and use the user's own hardware.</p>
-      <p>After OpenCode starts, the guide can connect Super ii's public, read-only Streamable HTTP MCP endpoint. That connection can discover reviewed public resources and resolve verified downloads; it cannot publish, access private data, pay, or invoke Super ii server compute.</p>
+      <p>After OpenCode starts, the guide can connect Super ii's public, read-only Streamable HTTP MCP endpoint. That connection can discover reviewed public resources, resolve verified downloads, and use the bounded verified tokenizer tools. It cannot publish, access private data, pay, run model inference, or invoke arbitrary server compute.</p>
 
       <h2 id="ai-worker">AI Worker</h2>
       <p><a href="/account#ai-worker">AI Worker</a> is the separate local-AI path in Workspace. Its compact drawer stays closed until the member opens it. The four-step guide detects Mac, Windows, or Linux, installs Ollama, pulls <code>qwen3.5:4b</code>, recommends at least 64K context for coding tools, and launches OpenCode with <code>ollama launch opencode</code>.</p>
       <p>Every completion control is a manual checklist—not remote device detection—and progress stays in that browser's local storage. Super ii does not run the installer, read the member's computer, verify the download, or claim the worker started. Local inference avoids an AI subscription and per-token billing, but it still uses the member's hardware, electricity, storage, and internet connection.</p>
-      <p>The final optional step uses OpenCode's guided <code>opencode mcp add</code> flow to connect <code>https://superii.site/mcp</code>. The endpoint remains public and read-only; publishing, private data, compute, identity, and payment stay outside it.</p>
+      <p>The final optional step uses OpenCode's guided <code>opencode mcp add</code> flow to connect <code>https://superii.site/mcp</code>. The endpoint remains public and read-only. Its verified tokenizer is a bounded utility; publishing, private data, model inference, arbitrary compute, identity, and payment stay outside it.</p>
 
       <h2 id="frontier-ai">Frontier AI path</h2>
       <p><a href="/frontier-ai">Frontier AI</a> is a separate three-step path for people who already have OpenCode and want to use NVIDIA's hosted Kimi K3 endpoint. It links directly to NVIDIA Build for the API key, then guides the user through <code>/connect</code> and <code>/models</code> inside OpenCode. Super ii never asks for, proxies, or stores the NVIDIA key.</p>
@@ -90,6 +90,28 @@ const russian = Astro.locals.locale === 'ru';
         <li><a href="/datasets">Datasets</a> hold schemas, bounded previews, licenses, provenance, data cards, and immutable files.</li>
         <li><a href="/spaces">Apps</a> hold reviewed Gradio projects and their project information.</li>
       </ul>
+
+      {russian ? (
+        <>
+          <h2 id="tokenizer">Проверенный токенизатор</h2>
+          <p><a href="/tokenizer">Tokenizer</a> показывает, как именно опубликованная модель читает текст: количество токенов, границы, текст и идентификаторы токенов, специальные токены, позиции символов и байтов, а также использованное и оставшееся контекстное окно. Код репозитория не выполняется.</p>
+          <p>При публикации текстовой модели Super ii выбирает безопасный движок, проверяет кодирование и декодирование на обычном, многоязычном и содержащем эмодзи тексте и создаёт небольшой неизменяемый пакет токенизатора. Hugging Face-совместимые токенизаторы преобразуются в переносимый <code>tokenizer.json</code>; GGUF использует словарь той же ревизии через закреплённую версию llama.cpp без загрузки весов модели. Не прошедшая проверку текстовая модель не публикуется.</p>
+          <p>Та же возможность доступна через публичные REST API, MCP, Python SDK и CLI. Каждый ответ содержит неизменяемый идентификатор ревизии, коммит модели при его наличии и SHA-256 пакета. Передайте UUID ревизии обратно через <code>?revision=</code>, MCP <code>revision_id</code> или параметр SDK/CLI <code>revision</code>, чтобы воспроизвести те же идентификаторы токенов после публикации новой версии модели.</p>
+        </>
+      ) : (
+        <>
+          <h2 id="tokenizer">Verified Tokenizer</h2>
+          <p><a href="/tokenizer">Tokenizer</a> shows exactly how a published model reads text: token count, boundaries, token text and IDs, special tokens, character and byte positions, and context used and remaining. Repository code never executes.</p>
+          <p>During publication, Super ii selects a safe native engine, verifies encode and decode on plain, multilingual and emoji text, and creates a small immutable tokenizer pack. Compatible Hugging Face, SentencePiece, tiktoken, BPE, WordPiece, Unigram and WordLevel sources are normalized to portable <code>tokenizer.json</code>. GGUF uses the vocabulary from the same revision through pinned llama.cpp without loading model weights. A text model that fails this gate is not published.</p>
+          <p>The same capability is available through the public REST API, MCP, Python SDK and CLI. Every response carries the immutable model revision, model commit when present, and tokenizer-pack SHA-256. Pass that revision UUID back through <code>?revision=</code>, MCP <code>revision_id</code>, or SDK/CLI <code>revision</code> to reproduce the same token IDs after a newer model version is published.</p>
+          <pre><code>{`superii tokenize owner/model "Hello, Super ii"
+superii tokenize owner/model "Hello, Super ii" --revision REVISION_UUID
+superii decode owner/model 1 450 982
+
+POST /api/tokenizers/owner/model/encode?revision=REVISION_UUID
+POST /api/tokenizers/owner/model/decode`}</code></pre>
+        </>
+      )}
 
       <h2 id="use-superii">Use Super ii your way</h2>
       <p><a href="/use">Use Super ii</a> is the open starting page for three paths: run a reviewed model with a supported local runtime, build from reviewed local files in Python, or publish work with one canonical public link. Anyone can inspect public model pages and copy their instructions without creating an account. Saving and publishing use the authenticated repository workflow.</p>

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { recipeApiPaths } from '@/lib/recipe-openapi';
 import { robotApiPaths, robotOpenApiSchemas } from '@/lib/robot-openapi';
 import { transparentApiPaths, transparentOpenApiSchemas } from '@/lib/transparent-openapi';
+import { tokenizerApiPaths, tokenizerOpenApiSchemas } from '@/lib/tokenizer-openapi';
 
 export const prerender = true;
 
@@ -30,11 +31,13 @@ const openapi = {
     { name: 'Highlights' },
     { name: 'Robot' },
     { name: 'Transparent' },
+    { name: 'Tokenizer' },
   ],
   paths: {
     ...recipeApiPaths,
     ...robotApiPaths,
     ...transparentApiPaths,
+    ...tokenizerApiPaths,
     '/api/sdk/models/{owner}/{slug}': {
       get: {
         tags: ['Python SDK'],
@@ -647,6 +650,7 @@ const openapi = {
     schemas: {
       ...robotOpenApiSchemas,
       ...transparentOpenApiSchemas,
+      ...tokenizerOpenApiSchemas,
       Skill: {
         type: 'object',
         required: ['slug', 'name', 'category', 'integrations', 'prompt'],

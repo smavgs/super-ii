@@ -18,7 +18,17 @@ def main() -> None:
     recipe_command = commands.add_parser("recipe")
     recipe_command.add_argument("request_file", type=Path)
     recipe_command.add_argument("destination", type=Path)
-    for name in ("inspect", "plan", "pull", "generate", "benchmark", "mcp", "serve"):
+    for name in (
+        "inspect",
+        "plan",
+        "pull",
+        "tokenize",
+        "decode",
+        "generate",
+        "benchmark",
+        "mcp",
+        "serve",
+    ):
         sub = commands.add_parser(name)
         sub.add_argument("repository")
         sub.add_argument("--revision")
@@ -32,6 +42,12 @@ def main() -> None:
             sub.add_argument("--max-tokens", type=int, default=128)
         if name == "serve":
             sub.add_argument("--port", type=int, default=8765)
+        if name == "tokenize":
+            sub.add_argument("text")
+            sub.add_argument("--no-special-tokens", action="store_true")
+        if name == "decode":
+            sub.add_argument("token_ids", nargs="+", type=int)
+            sub.add_argument("--skip-special-tokens", action="store_true")
     args = parser.parse_args()
     if args.command == "hardware":
         print(json.dumps(asdict(hardware()), indent=2))
@@ -57,6 +73,24 @@ def main() -> None:
                 args.repository, revision=args.revision, kind=args.kind
             )
         print(json.dumps(asdict(result), indent=2, default=str))
+    elif args.command in {"tokenize", "decode"}:
+        with Client(**options) as client:
+            value = (
+                client.tokenize(
+                    args.repository,
+                    args.text,
+                    add_special_tokens=not args.no_special_tokens,
+                    revision=args.revision,
+                )
+                if args.command == "tokenize"
+                else client.decode_tokens(
+                    args.repository,
+                    args.token_ids,
+                    skip_special_tokens=args.skip_special_tokens,
+                    revision=args.revision,
+                )
+            )
+        print(json.dumps(value, indent=2, ensure_ascii=False))
     elif args.command == "plan":
         print(
             json.dumps(
