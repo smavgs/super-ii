@@ -14,15 +14,16 @@ from uuid import UUID
 
 from .database import RevisionFile
 from .inspectors.gguf import inspect_gguf, write_vocab_only_gguf
+from .inspectors.gguf_tokenizers import export_portable_gguf_tokenizer
 from .inspectors.tokenizers import (
-    VERIFICATION_TEXTS,
+    VERIFICATION_CASES,
     decode_token_ids,
     export_portable_tokenizer,
     inspect_tokenizer,
     tokenize_text,
     tokenizer_verification_vectors,
 )
-from .runtimes.llama_tokenizer import LlamaTokenizerPool
+from .runtimes.llama_tokenizer import LlamaTokenizerVerifier
 from .settings import Settings
 
 PACK_VERSION = "superii-tokenizer-pack-v1"
@@ -80,16 +81,6 @@ def _safe_context_from_gguf(inspection: dict[str, Any]) -> int | None:
     return None
 
 
-def _gguf_vocab_size(inspection: dict[str, Any]) -> int | None:
-    metadata = inspection.get("metadata")
-    if not isinstance(metadata, dict):
-        return None
-    tokens = metadata.get("tokenizer.ggml.tokens")
-    if isinstance(tokens, dict) and type(tokens.get("count")) is int:
-        return int(tokens["count"])
-    return None
-
-
 def _gguf_tokenizer_format(inspection: dict[str, Any]) -> str:
     metadata = inspection.get("metadata")
     if isinstance(metadata, dict) and isinstance(metadata.get("tokenizer.ggml.model"), str):
@@ -97,21 +88,10 @@ def _gguf_tokenizer_format(inspection: dict[str, Any]) -> str:
     return "gguf"
 
 
-def _gguf_special_tokens(inspection: dict[str, Any]) -> dict[str, int]:
-    metadata = inspection.get("metadata")
-    if not isinstance(metadata, dict):
-        return {}
-    result: dict[str, int] = {}
-    for key, value in metadata.items():
-        if key.startswith("tokenizer.ggml.") and key.endswith("_token_id") and type(value) is int:
-            result[key.removeprefix("tokenizer.ggml.")] = int(value)
-    return result
-
-
 class TokenizerPackStore:
-    def __init__(self, settings: Settings, llama_pool: LlamaTokenizerPool) -> None:
+    def __init__(self, settings: Settings, llama_verifier: LlamaTokenizerVerifier) -> None:
         self.settings = settings
-        self.llama_pool = llama_pool
+        self.llama_verifier = llama_verifier
         self.root = (settings.storage_root / "tokenizer-packs").resolve()
         self.root.mkdir(mode=0o750, parents=True, exist_ok=True)
         self._verification_lock = threading.RLock()
@@ -143,21 +123,6 @@ class TokenizerPackStore:
         engine = manifest.get("engine")
         if engine == "huggingface-tokenizers":
             result = tokenize_text(pack_root, text, add_special_tokens)
-        elif engine == "llama.cpp":
-            special_ids = {
-                int(value)
-                for value in (manifest.get("special_tokens") or {}).values()
-                if type(value) is int
-            }
-            result = self.llama_pool.encode(
-                pack_root / "tokenizer.gguf",
-                str(manifest["pack_sha256"]),
-                text,
-                add_special_tokens=add_special_tokens,
-                special_token_ids=special_ids,
-                settings=self.settings,
-            )
-            result["context_length"] = manifest.get("context_length")
         else:
             raise ValueError("tokenizer pack engine is unsupported")
         return {
@@ -182,20 +147,6 @@ class TokenizerPackStore:
                 pack_root,
                 token_ids,
                 skip_special_tokens=skip_special_tokens,
-            )
-        elif engine == "llama.cpp":
-            special_ids = {
-                int(value)
-                for value in (manifest.get("special_tokens") or {}).values()
-                if type(value) is int
-            }
-            result = self.llama_pool.decode(
-                pack_root / "tokenizer.gguf",
-                str(manifest["pack_sha256"]),
-                token_ids,
-                skip_special_tokens=skip_special_tokens,
-                special_token_ids=special_ids,
-                settings=self.settings,
             )
         else:
             raise ValueError("tokenizer pack engine is unsupported")
@@ -319,6 +270,7 @@ class TokenizerPackStore:
                     "encode": "passed",
                     "decode": "passed",
                     "unicode": "passed",
+                    "special_tokens": "passed",
                     "reference": "immutable source through pinned native engine",
                 },
                 "integrity": "sha256-content-addressed",
@@ -341,88 +293,84 @@ class TokenizerPackStore:
         inspection = inspect_gguf(source)
         staging = self._staging(revision_id)
         try:
-            artifact = staging / "tokenizer.gguf"
-            write_vocab_only_gguf(source, artifact)
-            if artifact.stat().st_size > MAX_PACK_BYTES:
+            metadata_source = staging / ".source-tokenizer.gguf"
+            write_vocab_only_gguf(source, metadata_source)
+            if metadata_source.stat().st_size > MAX_PACK_BYTES:
                 raise ValueError("GGUF tokenizer pack exceeds the 256 MiB safety limit")
-            artifact_sha256 = _sha256(artifact)
-            preliminary = hashlib.sha256(
-                _canonical(
-                    {
-                        "version": PACK_VERSION,
-                        "source_revision_id": str(revision_id),
-                        "source_sha256": source_file.sha256,
-                        "artifact_sha256": artifact_sha256,
-                    }
-                )
-            ).hexdigest()
-            special_ids = set(_gguf_special_tokens(inspection).values())
             reference_vectors: list[dict[str, Any]] = []
-            for name, text in VERIFICATION_TEXTS:
-                encoded = self.llama_pool.encode(
+            for name, text, add_special_tokens in VERIFICATION_CASES:
+                token_ids = self.llama_verifier.encode_ids(
                     source,
                     source_file.sha256,
                     text,
-                    add_special_tokens=False,
-                    special_token_ids=special_ids,
+                    add_special_tokens=add_special_tokens,
                     settings=self.settings,
                 )
                 reference_vectors.append(
                     {
                         "name": name,
                         "text": text,
-                        "add_special_tokens": False,
-                        "token_ids": encoded["token_ids"],
-                        "decoded_sha256": encoded["decoded_sha256"],
+                        "add_special_tokens": add_special_tokens,
+                        "token_ids": token_ids,
                     }
                 )
-            vectors: list[dict[str, Any]] = []
-            for name, text in VERIFICATION_TEXTS:
-                encoded = self.llama_pool.encode(
-                    artifact,
-                    preliminary,
-                    text,
-                    add_special_tokens=False,
-                    special_token_ids=special_ids,
-                    settings=self.settings,
-                )
-                vectors.append(
+            conversion = export_portable_gguf_tokenizer(
+                metadata_source,
+                staging,
+                reference_vectors,
+                context_length=_safe_context_from_gguf(inspection),
+            )
+            metadata_source.unlink()
+            portable_inspection = inspect_tokenizer(staging)
+            vectors = tokenizer_verification_vectors(staging)
+            if any(
+                vector["token_ids"] != reference["token_ids"]
+                or vector["add_special_tokens"] != reference["add_special_tokens"]
+                for vector, reference in zip(vectors, reference_vectors, strict=True)
+            ):
+                raise RuntimeError("portable GGUF tokenizer differs from pinned llama.cpp")
+            artifacts: list[dict[str, Any]] = []
+            staging_root = staging.resolve()
+            for target in sorted(path for path in staging.rglob("*") if path.is_file()):
+                if target.is_symlink() or not target.resolve().is_relative_to(staging_root):
+                    raise ValueError("generated tokenizer artifact path is unsafe")
+                target.chmod(0o440)
+                artifacts.append(
                     {
-                        "name": name,
-                        "text": text,
-                        "add_special_tokens": False,
-                        "token_ids": encoded["token_ids"],
-                        "decoded_sha256": encoded["decoded_sha256"],
+                        "path": target.relative_to(staging).as_posix(),
+                        "sha256": _sha256(target),
+                        "size_bytes": target.stat().st_size,
+                        "source_path": source_file.path,
+                        "generated": True,
                     }
                 )
-            if vectors != reference_vectors:
-                raise RuntimeError(
-                    "GGUF tokenizer pack differs from the immutable source vocabulary"
-                )
+            if sum(item["size_bytes"] for item in artifacts) > MAX_PACK_BYTES:
+                raise ValueError("generated tokenizer pack exceeds the 256 MiB safety limit")
             base = {
                 "version": PACK_VERSION,
                 "repository_id": str(repository_id),
                 "source_revision_id": str(revision_id),
-                "engine": "llama.cpp",
-                "engine_version": self.settings.llama_cpp_version,
-                "converter_versions": {"llama.cpp": self.settings.llama_cpp_version},
-                "format": _gguf_tokenizer_format(inspection),
-                "tokenizer_class": "GGUF vocabulary",
-                "vocabulary_size": _gguf_vocab_size(inspection),
-                "context_length": _safe_context_from_gguf(inspection),
-                "special_tokens": _gguf_special_tokens(inspection),
-                "chat_template": "tokenizer.chat_template" in inspection.get("metadata", {}),
-                "browser_compatible": False,
+                "engine": "huggingface-tokenizers",
+                "engine_version": _package_version("tokenizers"),
+                "converter_versions": {
+                    "gguf": _package_version("gguf"),
+                    "llama.cpp": self.settings.llama_cpp_version,
+                    "tokenizers": _package_version("tokenizers"),
+                    "transformers": _package_version("transformers"),
+                },
+                "format": "tokenizer.json",
+                "source_format": _gguf_tokenizer_format(inspection),
+                "source_architecture": conversion["source_architecture"],
+                "converter_architecture": conversion["converter_architecture"],
+                "tokenizer_class": portable_inspection["class"],
+                "vocabulary_size": portable_inspection["vocabulary_size"],
+                "context_length": portable_inspection["model_max_length"],
+                "special_tokens": portable_inspection["special_tokens"],
+                "chat_template": portable_inspection["chat_template"],
+                "browser_compatible": True,
                 "offline": True,
                 "trust_remote_code": False,
-                "artifacts": [
-                    {
-                        "path": "tokenizer.gguf",
-                        "sha256": artifact_sha256,
-                        "size_bytes": artifact.stat().st_size,
-                        "source_path": source_file.path,
-                    }
-                ],
+                "artifacts": artifacts,
                 "source_files": [
                     {
                         "path": source_file.path,
@@ -435,7 +383,9 @@ class TokenizerPackStore:
                     "encode": "passed",
                     "decode": "passed",
                     "unicode": "passed",
-                    "reference": "immutable source through pinned llama.cpp vocabulary engine",
+                    "special_tokens": "passed",
+                    "reference": "immutable GGUF source through pinned llama.cpp tokenizer oracle",
+                    "portable_conversion": "exact token IDs and round-trip text matched",
                 },
                 "integrity": "sha256-content-addressed",
             }

@@ -2,9 +2,11 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const requiredFiles = [
   'runtime/src/superii_runtime/tokenizer_packs.py',
+  'runtime/src/superii_runtime/inspectors/gguf_tokenizers.py',
   'runtime/src/superii_runtime/runtimes/llama_tokenizer.py',
   'runtime/install-llama-macos.sh',
   'runtime/tests/test_tokenizer_packs.py',
+  'runtime/tests/test_gguf_tokenizers.py',
   'runtime/tests/test_llama_tokenizer.py',
   'database/migrations/0024_verified_tokenizer.sql',
   'src/components/TokenizerWorkbench.astro',
@@ -39,6 +41,7 @@ requireText('runtime/src/superii_runtime/tokenizer_packs.py', [
   'superii-tokenizer-pack-v1',
   'export_portable_tokenizer',
   'write_vocab_only_gguf',
+  'export_portable_gguf_tokenizer',
   'verification_vectors',
 ]);
 requireText('runtime/install-llama-macos.sh', [
@@ -49,6 +52,7 @@ requireText('runtime/install-llama-macos.sh', [
 requireText('runtime/run-macos-service.sh', [
   'vendor/llama.cpp/b10516',
   'SUPERII_LLAMA_SERVER_COMMAND="$llama_root/llama-server"',
+  'SUPERII_LLAMA_TOKENIZE_COMMAND="$llama_root/llama-tokenize"',
 ]);
 requireText('src/components/RepositoryPage.astro', ['TokenizerWorkbench']);
 requireText('src/components/TokenizerWorkbench.astro', [

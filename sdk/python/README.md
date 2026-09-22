@@ -50,7 +50,7 @@ superii tokenize owner/model "Hello, Super ii" --revision REVISION_UUID
 superii decode owner/model 1 450 982
 ```
 
-Responses identify the exact model revision, model commit when present, and tokenizer-pack SHA-256. The manifest supplies a revision-addressed artifact URL template. Requests are bounded, never execute repository Python, and use either a normalized safe fast-tokenizer pack or the pinned llama.cpp vocabulary engine for GGUF.
+Responses identify the exact model revision, model commit when present, and tokenizer-pack SHA-256. The manifest supplies a revision-addressed artifact URL template. Requests are bounded and never execute repository Python. Hugging Face and GGUF sources both become portable safe fast-tokenizer packs; GGUF token IDs must first match the pinned llama.cpp oracle exactly.
 
 The public catalogue contains only creator submissions that passed quarantine,
 inspection, immutable-manifest, provenance, and signed publication policy. Use

@@ -140,15 +140,15 @@ def get_llama_pool():
 
 
 @lru_cache
-def get_llama_tokenizer_pool():
-    from .runtimes.llama_tokenizer import LlamaTokenizerPool
+def get_llama_tokenizer_verifier():
+    from .runtimes.llama_tokenizer import LlamaTokenizerVerifier
 
-    return LlamaTokenizerPool()
+    return LlamaTokenizerVerifier()
 
 
 @lru_cache
 def get_tokenizer_pack_store() -> TokenizerPackStore:
-    return TokenizerPackStore(get_settings(), get_llama_tokenizer_pool())
+    return TokenizerPackStore(get_settings(), get_llama_tokenizer_verifier())
 
 
 @lru_cache
