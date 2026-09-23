@@ -640,7 +640,7 @@ class RepositoryDatabase:
         return RevisionFile(**row) if row else None
 
     def revision_is_public(self, repository_id: UUID, revision_id: UUID) -> bool:
-        """Require the exact approved revision currently published by a public repository."""
+        """Require an immutable published revision of a currently public repository."""
 
         with self.connect() as connection:
             row = connection.execute(
@@ -648,7 +648,7 @@ class RepositoryDatabase:
                 select exists (
                   select 1
                   from app.repositories r
-                  join app.repository_revisions rr on rr.id = r.latest_revision_id
+                  join app.repository_revisions rr on rr.repository_id = r.id
                   where r.id = %s
                     and rr.id = %s
                     and r.visibility = 'public'

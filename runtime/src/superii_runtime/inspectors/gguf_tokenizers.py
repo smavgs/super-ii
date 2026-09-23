@@ -163,6 +163,26 @@ def _matches_reference(tokenizer: Any, vectors: list[dict[str, Any]]) -> bool:
     return True
 
 
+def _conversion_variants(tokenizer: Any) -> list[tuple[str, Any]]:
+    """Return bounded, code-free converter variants for native-oracle matching.
+
+    Some upstream GGUF converters add NFC normalization even when llama.cpp
+    preserves the original Unicode code points. The unmodified conversion is
+    always tried first. A structurally identical clone with normalization disabled is
+    also tried and can only be selected when every native reference vector
+    matches, including decomposed Unicode and exact decoded text.
+    """
+
+    from tokenizers import Tokenizer
+
+    variants = [("converter-default", tokenizer)]
+    if tokenizer.normalizer is not None:
+        without_normalizer = Tokenizer.from_str(tokenizer.to_str())
+        without_normalizer.normalizer = None
+        variants.append(("normalizer-disabled", without_normalizer))
+    return variants
+
+
 def export_portable_gguf_tokenizer(
     source: Path,
     destination: Path,
@@ -211,19 +231,27 @@ def export_portable_gguf_tokenizer(
     converted = None
     additional_kwargs: dict[str, Any] = {}
     selected_architecture = ""
+    selected_variant = ""
     for candidate in candidates:
         try:
             candidate_tokenizer, candidate_kwargs = convert_gguf_tokenizer(
                 candidate,
                 tokenizer_dictionary,
             )
-            matches_reference = _matches_reference(candidate_tokenizer, reference_vectors)
         except (IndexError, KeyError, RuntimeError, TypeError, ValueError):
             continue
-        if matches_reference:
-            converted = candidate_tokenizer
-            additional_kwargs = dict(candidate_kwargs)
-            selected_architecture = candidate
+        for variant_name, variant_tokenizer in _conversion_variants(candidate_tokenizer):
+            try:
+                matches_reference = _matches_reference(variant_tokenizer, reference_vectors)
+            except (IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                continue
+            if matches_reference:
+                converted = variant_tokenizer
+                additional_kwargs = dict(candidate_kwargs)
+                selected_architecture = candidate
+                selected_variant = variant_name
+                break
+        if converted is not None:
             break
     if converted is None:
         raise ValueError("GGUF tokenizer conversion did not match pinned llama.cpp")
@@ -263,5 +291,6 @@ def export_portable_gguf_tokenizer(
         "source_architecture": architecture,
         "source_tokenizer_type": tokenizer_type,
         "converter_architecture": selected_architecture,
+        "converter_variant": selected_variant,
         "written": sorted(paths),
     }

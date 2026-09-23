@@ -1,3 +1,5 @@
+import { waitUntil } from 'cloudflare:workers';
+import { sqlClient } from './db';
 import { getPublicRepository } from './repository';
 import { proxiedFileResponse, runtimeFetch } from './runtime';
 
@@ -14,6 +16,59 @@ export type TokenizerModel = {
 export type TokenizerResolution =
   | { state: 'ok'; model: TokenizerModel }
   | { state: 'not_found' | 'unavailable'; model: null };
+
+function isRecordedTokenizerManifest(value: unknown, revisionId: string): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const manifest = value as Record<string, unknown>;
+  return manifest.version === 'superii-tokenizer-pack-v1'
+    && manifest.source_revision_id === revisionId
+    && typeof manifest.pack_sha256 === 'string'
+    && /^[a-f0-9]{64}$/.test(manifest.pack_sha256)
+    && Array.isArray(manifest.artifacts)
+    && Array.isArray(manifest.verification_vectors)
+    && manifest.verification_vectors.length > 0;
+}
+
+async function recordedTokenizerManifest(
+  locals: App.Locals,
+  model: TokenizerModel,
+): Promise<Record<string, unknown> | null> {
+  const sql = sqlClient(locals);
+  if (!sql) return null;
+  try {
+    const rows = await sql`
+      select analysis.result->'manifest' as manifest
+      from app.repository_revision_analyses analysis
+      join app.repository_revisions revision
+        on revision.id = analysis.revision_id
+       and revision.repository_id = analysis.repository_id
+      join app.repositories repository
+        on repository.id = revision.repository_id
+      where analysis.repository_id = ${model.repositoryId}
+        and analysis.revision_id = ${model.revisionId}
+        and analysis.analysis_type = 'tokenizer'
+        and analysis.status = 'passed'
+        and analysis.result->>'verified' = 'true'
+        and coalesce(analysis.result->>'applicable', 'true') = 'true'
+        and revision.status = 'published'
+        and repository.status = 'published'
+        and repository.visibility = 'public'
+      limit 1
+    `;
+    const manifest = rows[0]?.manifest;
+    return isRecordedTokenizerManifest(manifest, model.revisionId) ? manifest : null;
+  } catch {
+    return null;
+  }
+}
+
+function publicTokenizerManifest(model: TokenizerModel, manifest: Record<string, unknown>) {
+  return {
+    ...manifest,
+    model_commit_sha: model.commitSha,
+    artifact_url_template: `/api/tokenizers/${encodeURIComponent(model.owner)}/${encodeURIComponent(model.slug)}/revisions/${encodeURIComponent(model.revisionId)}/pack/{path}`,
+  };
+}
 
 export function acceptsPublicMachineRequest(request: Request): boolean {
   const origin = request.headers.get('origin');
@@ -74,11 +129,22 @@ export async function tokenizerJson(
   operation: 'manifest' | 'encode' | 'decode',
   payload?: Record<string, unknown>,
 ): Promise<{ status: number; value: Record<string, unknown> }> {
+  if (operation === 'manifest') {
+    const recorded = await recordedTokenizerManifest(locals, model);
+    if (recorded) return { status: 200, value: publicTokenizerManifest(model, recorded) };
+  }
   const upstream = await tokenizerRuntimeFetch(locals, model, operation, payload);
   if (!upstream) return { status: 503, value: { error: 'tokenizer runtime unavailable' } };
   if (!upstream.ok) {
+    const status = upstream.status === 404
+      ? 404
+      : upstream.status === 429
+        ? 429
+        : upstream.status >= 500
+          ? 503
+          : 422;
     return {
-      status: upstream.status === 404 ? 404 : upstream.status === 429 ? 429 : 422,
+      status,
       value: { error: upstream.status === 404 ? 'verified tokenizer not found' : 'verified tokenizer request failed' },
     };
   }
@@ -86,15 +152,9 @@ export async function tokenizerJson(
     const value = await upstream.json() as Record<string, unknown>;
     return {
       status: 200,
-      value: {
-        ...value,
-        model_commit_sha: model.commitSha,
-        ...(operation === 'manifest'
-          ? {
-              artifact_url_template: `/api/tokenizers/${encodeURIComponent(model.owner)}/${encodeURIComponent(model.slug)}/revisions/${encodeURIComponent(model.revisionId)}/pack/{path}`,
-            }
-          : {}),
-      },
+      value: operation === 'manifest'
+        ? publicTokenizerManifest(model, value)
+        : { ...value, model_commit_sha: model.commitSha },
     };
   } catch {
     return { status: 503, value: { error: 'tokenizer runtime returned an invalid response' } };
@@ -122,7 +182,23 @@ export async function tokenizerArtifactResponse(
   locals: App.Locals,
   model: TokenizerModel,
   path: string,
+  request: Request,
 ): Promise<Response> {
+  const cacheStorage = typeof caches === 'undefined'
+    ? null
+    : caches as CacheStorage & { default: Cache };
+  const cache = cacheStorage?.default ?? null;
+  const cacheKey = new Request(request.url, { method: 'GET' });
+  let cached: Response | undefined;
+  try {
+    cached = cache ? await cache.match(cacheKey) : undefined;
+  } catch (error) {
+    console.warn('Tokenizer artifact edge cache read failed', {
+      kind: error instanceof Error ? error.name : 'UnknownError',
+    });
+  }
+  if (cached) return cached;
+
   const segments = path.split('/').map(encodeURIComponent).join('/');
   const upstream = await runtimeFetch(
     locals,
@@ -135,5 +211,13 @@ export async function tokenizerArtifactResponse(
       { status: upstream.status === 404 ? 404 : 422 },
     );
   }
-  return proxiedFileResponse(upstream, true);
+  const response = proxiedFileResponse(upstream, true);
+  if (cache) {
+    waitUntil(cache.put(cacheKey, response.clone()).catch((error: unknown) => {
+      console.warn('Tokenizer artifact edge cache write failed', {
+        kind: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }));
+  }
+  return response;
 }

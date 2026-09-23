@@ -165,8 +165,20 @@ def test_huggingface_tokenizer_returns_ids_offsets_decode_and_vectors(tmp_path: 
         "plain",
         "multilingual",
         "emoji",
+        "unicode-nfd",
+        "multiscript-extra",
+        "emoji-family",
+        "whitespace",
+        "punctuation-code",
         "special-tokens",
     ]
+
+
+def test_decode_rejects_ids_outside_the_tokenizer_vocabulary(tmp_path: Path) -> None:
+    _wordlevel_tokenizer(tmp_path)
+
+    with pytest.raises(ValueError, match="2147483647 is not in this tokenizer vocabulary"):
+        decode_token_ids(tmp_path, [2_147_483_647])
 
 
 def test_huggingface_pack_is_content_addressed_and_executable(tmp_path: Path) -> None:
@@ -329,6 +341,7 @@ def test_gguf_pack_is_verified_and_exported_as_portable_tokenizer(
             "source_architecture": "test",
             "source_tokenizer_type": "gpt2",
             "converter_architecture": "gpt2",
+            "converter_variant": "converter-default",
             "written": ["tokenizer.json"],
         }
 
@@ -377,6 +390,7 @@ def test_gguf_pack_rejects_portable_vocabulary_that_differs_from_native_oracle(
             "source_architecture": "test",
             "source_tokenizer_type": "gpt2",
             "converter_architecture": "gpt2",
+            "converter_variant": "converter-default",
             "written": ["tokenizer.json"],
         }
 

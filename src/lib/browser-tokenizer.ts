@@ -40,12 +40,16 @@ async function digest(value: string): Promise<string> {
   return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export async function tokenizerManifest(owner: string, slug: string): Promise<TokenizerManifest> {
-  const response = await fetch(`/api/tokenizers/${encodeURIComponent(safeIdentity(owner))}/${encodeURIComponent(safeIdentity(slug))}/manifest`, {
+function revisionQuery(revision?: string): string {
+  return revision ? `?revision=${encodeURIComponent(safeIdentity(revision))}` : '';
+}
+
+export async function tokenizerManifest(owner: string, slug: string, revision?: string): Promise<TokenizerManifest> {
+  const response = await fetch(`/api/tokenizers/${encodeURIComponent(safeIdentity(owner))}/${encodeURIComponent(safeIdentity(slug))}/manifest${revisionQuery(revision)}`, {
     headers: { accept: 'application/json' },
   });
   const value = await response.json() as TokenizerManifest & { error?: string };
-  if (!response.ok) throw new Error(value.error ?? 'Verified tokenizer is unavailable.');
+  if (!response.ok) throw new TokenizerRequestError(value.error ?? 'Verified tokenizer is unavailable.', response.status);
   return value;
 }
 
@@ -137,6 +141,8 @@ export async function decodeInBrowser(
     throw new Error('Token IDs must contain 1 to 100000 non-negative 32-bit integers.');
   }
   const { tokenizer } = await loadBrowserTokenizer(owner, slug, manifest);
+  const invalid = tokenIds.find((value) => tokenizer._tokenizer.id_to_token(value) === undefined);
+  if (invalid !== undefined) throw new Error(`Token ID ${invalid} is not in this tokenizer vocabulary.`);
   const text = tokenizer.decode(tokenIds, {
     skip_special_tokens: skipSpecialTokens,
     clean_up_tokenization_spaces: false,
@@ -162,8 +168,9 @@ async function request(
   slug: string,
   operation: 'encode' | 'decode',
   payload: Record<string, unknown>,
+  revision?: string,
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/${operation}`, {
+  const response = await fetch(`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/${operation}${revisionQuery(revision)}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
@@ -173,24 +180,30 @@ async function request(
   return { ...value, execution: 'server' };
 }
 
-export async function encodeVerified(owner: string, slug: string, text: string, addSpecialTokens: boolean) {
-  const manifest = await tokenizerManifest(owner, slug);
+function canUseBrowserFallback(error: unknown): boolean {
+  return !(error instanceof TokenizerRequestError) || error.status === 503;
+}
+
+export async function encodeVerified(owner: string, slug: string, text: string, addSpecialTokens: boolean, revision?: string) {
   try {
     // The canonical runtime returns verified character and byte offsets. The
     // portable browser pack is a resilience path when that runtime is down.
-    return await request(owner, slug, 'encode', { text, add_special_tokens: addSpecialTokens });
+    return await request(owner, slug, 'encode', { text, add_special_tokens: addSpecialTokens }, revision);
   } catch (error) {
-    if (!manifest.browser_compatible || (error instanceof TokenizerRequestError && error.status !== 503)) throw error;
+    if (!canUseBrowserFallback(error)) throw error;
+    const manifest = await tokenizerManifest(owner, slug, revision);
+    if (!manifest.browser_compatible) throw error;
     return encodeInBrowser(owner, slug, manifest, text, addSpecialTokens);
   }
 }
 
-export async function decodeVerified(owner: string, slug: string, tokenIds: number[], skipSpecialTokens: boolean) {
-  const manifest = await tokenizerManifest(owner, slug);
+export async function decodeVerified(owner: string, slug: string, tokenIds: number[], skipSpecialTokens: boolean, revision?: string) {
   try {
-    return await request(owner, slug, 'decode', { token_ids: tokenIds, skip_special_tokens: skipSpecialTokens });
+    return await request(owner, slug, 'decode', { token_ids: tokenIds, skip_special_tokens: skipSpecialTokens }, revision);
   } catch (error) {
-    if (!manifest.browser_compatible || (error instanceof TokenizerRequestError && error.status !== 503)) throw error;
+    if (!canUseBrowserFallback(error)) throw error;
+    const manifest = await tokenizerManifest(owner, slug, revision);
+    if (!manifest.browser_compatible) throw error;
     return decodeInBrowser(owner, slug, manifest, tokenIds, skipSpecialTokens);
   }
 }

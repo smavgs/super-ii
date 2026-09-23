@@ -439,6 +439,7 @@ class TokenizerPackStore:
                 "source_format": _gguf_tokenizer_format(inspection),
                 "source_architecture": conversion["source_architecture"],
                 "converter_architecture": conversion["converter_architecture"],
+                "converter_variant": conversion["converter_variant"],
                 "tokenizer_class": portable_inspection["class"],
                 "vocabulary_size": portable_inspection["vocabulary_size"],
                 "context_length": portable_inspection["model_max_length"],
@@ -462,7 +463,10 @@ class TokenizerPackStore:
                     "unicode": "passed",
                     "special_tokens": "passed",
                     "reference": "immutable GGUF source through pinned llama.cpp tokenizer oracle",
-                    "portable_conversion": "exact token IDs and round-trip text matched",
+                    "portable_conversion": (
+                        "native token IDs and exact text matched the deterministic "
+                        "verification corpus"
+                    ),
                 },
                 "integrity": "sha256-content-addressed",
             }

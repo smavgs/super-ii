@@ -12,6 +12,7 @@ const requiredFiles = [
   'src/components/TokenizerWorkbench.astro',
   'src/lib/browser-tokenizer.ts',
   'src/lib/tokenizers.ts',
+  'src/lib/tokenizer-models.ts',
   'src/lib/tokenizer-openapi.ts',
   'src/pages/tokenizer.astro',
   'src/pages/api/tokenizers/[owner]/[slug]/manifest.ts',
@@ -19,6 +20,7 @@ const requiredFiles = [
   'src/pages/api/tokenizers/[owner]/[slug]/decode.ts',
   'src/pages/api/tokenizers/[owner]/[slug]/pack/[...path].ts',
   'src/pages/api/tokenizers/[owner]/[slug]/revisions/[revision]/pack/[...path].ts',
+  'src/pages/api/tokenizers/models.ts',
   'docs/verification/sdk-0.3.0-release.json',
   'docs/verification/tokenizer-production.json',
 ];
@@ -45,6 +47,18 @@ requireText('runtime/src/superii_runtime/tokenizer_packs.py', [
   'write_vocab_only_gguf',
   'export_portable_gguf_tokenizer',
   'verification_vectors',
+  'converter_variant',
+]);
+requireText('runtime/src/superii_runtime/inspectors/tokenizers.py', [
+  'unicode-nfd',
+  'multiscript-extra',
+  'emoji-family',
+  'backend.id_to_token',
+]);
+requireText('runtime/src/superii_runtime/inspectors/gguf_tokenizers.py', [
+  'normalizer-disabled',
+  '_conversion_variants',
+  '_matches_reference',
 ]);
 requireText('runtime/install-llama-macos.sh', [
   'b10516',
@@ -69,16 +83,38 @@ requireText('src/styles/global.css', [
   '.tokenizer-workbench > *',
   '.tokenizer-table-wrap',
   'max-width: 100%;',
+  '.tokenizer-form[hidden]',
+  '.tokenizer-model-search',
 ]);
 requireText('src/lib/browser-tokenizer.ts', [
   'Browser tokenizer did not match its verified reference vectors.',
   "execution: 'browser'",
   'manifest.source_revision_id',
+  'id_to_token',
+  'canUseBrowserFallback',
+  'revisionQuery',
 ]);
 requireText('src/lib/tokenizers.ts', [
   'artifact_url_template',
   'model_commit_sha',
   'requestedRevision',
+  'recordedTokenizerManifest',
+  'cache.put',
+]);
+const tokenizerPage = requireText('src/pages/tokenizer.astro', [
+  'data-tokenizer-search-input',
+  'data-tokenizer-search-results',
+  'superii-tokenizer-recent-v1',
+  'history.replaceState',
+  'revision_id',
+]);
+if (tokenizerPage.includes('data-tokenizer-model-picker') || tokenizerPage.includes('<select')) {
+  throw new Error('The standalone tokenizer must use bounded search instead of a growing model select.');
+}
+requireText('src/pages/api/tokenizers/models.ts', [
+  'searchTokenizerModels',
+  'tokenizer-model-search',
+  '.max(10)',
 ]);
 requireText('src/lib/mcp-server.ts', [
   "'get_tokenizer_manifest'",

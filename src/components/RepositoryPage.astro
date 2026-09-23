@@ -284,7 +284,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
           <div class="tool-grid">
             {hasVerifiedTokenizer && (
               <div class="tool-card tool-card--wide tool-card--tokenizer">
-                <TokenizerWorkbench owner={repository.owner_handle} slug={repository.slug} title={`${repository.owner_handle}/${repository.slug}`} />
+                <TokenizerWorkbench owner={repository.owner_handle} slug={repository.slug} revision={repository.revision_id} title={`${repository.owner_handle}/${repository.slug}`} />
               </div>
             )}
             {repository.compatibility?.browser_compatible === true ? (

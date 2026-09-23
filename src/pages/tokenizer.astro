@@ -2,35 +2,94 @@
 import PageHero from '@/components/PageHero.astro';
 import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { searchCatalog } from '@/lib/catalog';
+import { parseTokenizerModelReference, searchTokenizerModels } from '@/lib/tokenizer-models';
+import { resolveTokenizerModel } from '@/lib/tokenizers';
 
-const catalog = await searchCatalog(Astro.locals, 'model', { sort: 'updated' }, 50, 0);
-const models = catalog.items.filter((model) => model.tokenizer_available);
-const selected = models[0] ?? null;
+const requestedModel = parseTokenizerModelReference(Astro.url.searchParams.get('model'));
+const requestedRevision = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(Astro.url.searchParams.get('revision') ?? '')
+  ? Astro.url.searchParams.get('revision')!
+  : null;
+const initial = await searchTokenizerModels(Astro.locals, requestedModel ?? '', 8);
+const selected = initial.items.find((model) => `${model.owner_handle}/${model.slug}` === requestedModel)
+  ?? initial.items[0]
+  ?? null;
+let selectedRevision = selected?.revision_id;
+if (selected && requestedModel === `${selected.owner_handle}/${selected.slug}` && requestedRevision) {
+  const resolved = await resolveTokenizerModel(Astro.locals, selected.owner_handle, selected.slug, requestedRevision);
+  if (resolved.model) selectedRevision = resolved.model.revisionId;
+}
 ---
 
 <BaseLayout title="Tokenizer" description="See exactly how a published Super ii model reads text with its verified immutable tokenizer pack.">
   <PageHero
     eyebrow="Exact model text"
     title="Tokenizer"
-    description="Paste text. See its token boundaries, IDs and context use. Every result is tied to the model revision and verified tokenizer-pack hash."
+    description="Search or paste a model link. See token boundaries, IDs and context use tied to one immutable model revision and tokenizer-pack hash."
     compact
   />
   <section class="shell tokenizer-page">
+    <section class="tokenizer-model-search" data-tokenizer-model-search>
+      <div class="tokenizer-model-search__copy">
+        <p class="eyebrow">Choose a verified model</p>
+        <h2>Find the model—never scroll a giant list.</h2>
+        <p>Search by model or creator, or paste a Super ii model link. Sign-in is not required.</p>
+      </div>
+      <form class="tokenizer-model-search__form" role="search" data-tokenizer-search-form>
+        <label for="tokenizer-model-query">Model or Super ii link</label>
+        <div>
+          <input
+            id="tokenizer-model-query"
+            name="q"
+            type="search"
+            value={selected ? `${selected.owner_handle}/${selected.slug}` : ''}
+            maxlength="300"
+            autocomplete="off"
+            spellcheck="false"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="tokenizer-model-results"
+            aria-expanded="false"
+            data-tokenizer-search-input
+            placeholder="smavgs/model-name or https://superii.site/models/…"
+          />
+          <button class="button button--dark button--small" type="submit">Find model</button>
+        </div>
+      </form>
+      <p class="tokenizer-model-search__status" data-tokenizer-search-status aria-live="polite">
+        {initial.state === 'ok' ? `${initial.items.length} verified model${initial.items.length === 1 ? '' : 's'} ready.` : 'Model search is temporarily unavailable.'}
+      </p>
+      <div class="tokenizer-model-results" id="tokenizer-model-results" role="listbox" aria-label="Verified tokenizer models" data-tokenizer-search-results>
+        {initial.items.map((model) => (
+          <button
+            type="button"
+            role="option"
+            aria-selected={selected?.repository_id === model.repository_id ? 'true' : 'false'}
+            data-tokenizer-option
+            data-owner={model.owner_handle}
+            data-slug={model.slug}
+            data-title={model.title}
+            data-revision={model.revision_id}
+          >
+            <span><strong>{model.title}</strong><small>{model.owner_handle}/{model.slug}</small></span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </button>
+        ))}
+      </div>
+      <div class="tokenizer-recent" data-tokenizer-recent hidden>
+        <span>Recent on this device</span>
+        <div data-tokenizer-recent-list></div>
+      </div>
+    </section>
+
     {selected ? (
-      <>
-        <label class="tokenizer-model-picker">
-          <span>Published model</span>
-          <select data-tokenizer-model-picker>
-            {models.map((model) => (
-              <option value={`${model.owner_handle}/${model.slug}`}>{model.title} · {model.owner_handle}/{model.slug}</option>
-            ))}
-          </select>
-        </label>
-        <TokenizerWorkbench owner={selected.owner_handle} slug={selected.slug} title={`${selected.owner_handle}/${selected.slug}`} />
-      </>
+      <TokenizerWorkbench
+        owner={selected.owner_handle}
+        slug={selected.slug}
+        revision={selectedRevision ?? selected.revision_id}
+        title={`${selected.owner_handle}/${selected.slug}`}
+      />
     ) : (
-      <div class="empty-state">
+      <div class="empty-state" data-tokenizer-empty>
         <p class="eyebrow">Catalog is honest</p>
         <h2>No verified text model is published yet.</h2>
         <p>The workbench appears with the first model that passes the tokenizer publication gate. No demo result is substituted.</p>
@@ -40,21 +99,176 @@ const selected = models[0] ?? null;
   </section>
 </BaseLayout>
 
-{selected && <script>
-  const picker = document.querySelector('[data-tokenizer-model-picker]');
-  const workbench = document.querySelector('[data-tokenizer-workbench]');
-  if (picker instanceof HTMLSelectElement && workbench instanceof HTMLElement) picker.addEventListener('change', () => {
-    const [owner, slug] = picker.value.split('/');
-    if (!owner || !slug) return;
-    workbench.dataset.owner = owner;
-    workbench.dataset.slug = slug;
-    const label = workbench.querySelector<HTMLElement>('[data-tokenizer-model]');
-    if (label) label.textContent = `${owner}/${slug}`;
-    const manifest = workbench.querySelector<HTMLAnchorElement>('[data-tokenizer-manifest]');
-    if (manifest) manifest.href = `/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest`;
-    const result = workbench.querySelector<HTMLElement>('[data-tokenizer-result]');
-    if (result) result.hidden = true;
-    const status = workbench.querySelector<HTMLElement>('[data-tokenizer-status]');
-    if (status) status.textContent = 'Model changed. Ready to load its verified tokenizer pack.';
+<script>
+  type ModelOption = {
+    owner_handle: string;
+    slug: string;
+    title: string;
+    revision_id: string;
+  };
+
+  const storageKey = 'superii-tokenizer-recent-v1';
+
+  function optionFromButton(button: HTMLButtonElement): ModelOption | null {
+    const { owner, slug, title, revision } = button.dataset;
+    return owner && slug && title && revision
+      ? { owner_handle: owner, slug, title, revision_id: revision }
+      : null;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-tokenizer-model-search]').forEach((searchRoot) => {
+    const form = searchRoot.querySelector<HTMLFormElement>('[data-tokenizer-search-form]');
+    const input = searchRoot.querySelector<HTMLInputElement>('[data-tokenizer-search-input]');
+    const results = searchRoot.querySelector<HTMLElement>('[data-tokenizer-search-results]');
+    const status = searchRoot.querySelector<HTMLElement>('[data-tokenizer-search-status]');
+    const recent = searchRoot.querySelector<HTMLElement>('[data-tokenizer-recent]');
+    const recentList = searchRoot.querySelector<HTMLElement>('[data-tokenizer-recent-list]');
+    const workbench = document.querySelector<HTMLElement>('[data-tokenizer-workbench]');
+    if (!form || !input || !results) return;
+
+    let requestSequence = 0;
+    let timer = 0;
+    let activeIndex = -1;
+
+    const readRecent = (): ModelOption[] => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(storageKey) ?? '[]') as unknown;
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((item): item is ModelOption => Boolean(
+          item && typeof item === 'object'
+          && typeof item.owner_handle === 'string'
+          && typeof item.slug === 'string'
+          && typeof item.title === 'string'
+          && typeof item.revision_id === 'string',
+        )).slice(0, 5);
+      } catch {
+        return [];
+      }
+    };
+
+    const renderRecent = () => {
+      if (!recent || !recentList) return;
+      const models = readRecent();
+      recent.hidden = models.length === 0;
+      recentList.replaceChildren(...models.map((model) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `${model.owner_handle}/${model.slug}`;
+        button.addEventListener('click', () => updateSelectedModel(model));
+        return button;
+      }));
+    };
+
+    const writeRecent = (model: ModelOption) => {
+      const identity = `${model.owner_handle}/${model.slug}@${model.revision_id}`;
+      const next = [model, ...readRecent().filter((item) => `${item.owner_handle}/${item.slug}@${item.revision_id}` !== identity)].slice(0, 5);
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* Storage can be disabled. */ }
+      renderRecent();
+    };
+
+    const updateSelectedModel = (model: ModelOption) => {
+      const identity = `${model.owner_handle}/${model.slug}`;
+      input.value = identity;
+      results.querySelectorAll<HTMLButtonElement>('[data-tokenizer-option]').forEach((button) => {
+        button.setAttribute('aria-selected', String(button.dataset.owner === model.owner_handle && button.dataset.slug === model.slug));
+      });
+      if (!workbench) return;
+      workbench.dataset.owner = model.owner_handle;
+      workbench.dataset.slug = model.slug;
+      workbench.dataset.revision = model.revision_id;
+      const label = workbench.querySelector<HTMLElement>('[data-tokenizer-model]');
+      if (label) label.textContent = identity;
+      const params = new URLSearchParams({ model: identity, revision: model.revision_id });
+      const manifest = workbench.querySelector<HTMLAnchorElement>('[data-tokenizer-manifest]');
+      if (manifest) manifest.href = `/api/tokenizers/${encodeURIComponent(model.owner_handle)}/${encodeURIComponent(model.slug)}/manifest?revision=${encodeURIComponent(model.revision_id)}`;
+      const fullLink = workbench.querySelector<HTMLAnchorElement>('[data-tokenizer-full-link]');
+      if (fullLink) fullLink.href = `/tokenizer?${params.toString()}`;
+      const result = workbench.querySelector<HTMLElement>('[data-tokenizer-result]');
+      if (result) result.hidden = true;
+      const workbenchStatus = workbench.querySelector<HTMLElement>('[data-tokenizer-status]');
+      if (workbenchStatus) workbenchStatus.textContent = 'Model changed. Ready to load its verified tokenizer pack.';
+      history.replaceState(null, '', `/tokenizer?${params.toString()}`);
+      writeRecent(model);
+      workbench.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    };
+
+    const bindOption = (button: HTMLButtonElement) => {
+      button.addEventListener('click', () => {
+        const model = optionFromButton(button);
+        if (model) updateSelectedModel(model);
+      });
+    };
+
+    const modelButton = (model: ModelOption, selected = false) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('role', 'option');
+      button.setAttribute('aria-selected', String(selected));
+      button.dataset.tokenizerOption = '';
+      button.dataset.owner = model.owner_handle;
+      button.dataset.slug = model.slug;
+      button.dataset.title = model.title;
+      button.dataset.revision = model.revision_id;
+      const copy = document.createElement('span');
+      const title = document.createElement('strong');
+      const identity = document.createElement('small');
+      const icon = document.createElement('i');
+      title.textContent = model.title;
+      identity.textContent = `${model.owner_handle}/${model.slug}`;
+      icon.className = 'ph ph-arrow-right';
+      icon.setAttribute('aria-hidden', 'true');
+      copy.appendChild(title);
+      copy.appendChild(identity);
+      button.appendChild(copy);
+      button.appendChild(icon);
+      bindOption(button);
+      return button;
+    };
+
+    const search = async () => {
+      const sequence = ++requestSequence;
+      const query = input.value.trim();
+      input.setAttribute('aria-expanded', 'true');
+      if (status) status.textContent = 'Finding verified tokenizer models…';
+      try {
+        const response = await fetch(`/api/tokenizers/models?q=${encodeURIComponent(query)}&limit=8`, { headers: { accept: 'application/json' } });
+        const value = await response.json() as { items?: ModelOption[]; error?: string };
+        if (sequence !== requestSequence) return;
+        if (!response.ok) throw new Error(value.error ?? 'Model search is unavailable.');
+        const models = Array.isArray(value.items) ? value.items : [];
+        results.replaceChildren(...models.map((model) => modelButton(model)));
+        activeIndex = -1;
+        if (status) status.textContent = models.length
+          ? `${models.length} verified model${models.length === 1 ? '' : 's'} found.`
+          : 'No verified tokenizer model matched that search.';
+      } catch (error) {
+        if (sequence !== requestSequence) return;
+        if (status) status.textContent = error instanceof Error ? error.message : 'Model search is unavailable.';
+      }
+    };
+
+    results.querySelectorAll<HTMLButtonElement>('[data-tokenizer-option]').forEach(bindOption);
+    renderRecent();
+    form.addEventListener('submit', (event) => { event.preventDefault(); void search(); });
+    input.addEventListener('input', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => { void search(); }, 250);
+    });
+    input.addEventListener('keydown', (event) => {
+      const options = [...results.querySelectorAll<HTMLButtonElement>('[data-tokenizer-option]')];
+      if (!options.length) return;
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        activeIndex = event.key === 'ArrowDown'
+          ? (activeIndex + 1) % options.length
+          : (activeIndex - 1 + options.length) % options.length;
+        options[activeIndex].focus();
+      } else if (event.key === 'Escape') {
+        input.setAttribute('aria-expanded', 'false');
+      }
+    });
+    results.addEventListener('focusout', () => window.setTimeout(() => {
+      if (!searchRoot.contains(document.activeElement)) input.setAttribute('aria-expanded', 'false');
+    }, 0));
   });
-</script>}
+</script>

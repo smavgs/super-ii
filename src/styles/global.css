@@ -2993,6 +2993,16 @@ pre {
   padding: clamp(1.25rem, 3vw, 2rem);
 }
 
+.tokenizer-form[hidden],
+.tokenizer-result[hidden],
+.tokenizer-context[hidden],
+.tokenizer-boundaries[hidden],
+.tokenizer-decoded[hidden],
+.tokenizer-table-wrap[hidden],
+.tokenizer-recent[hidden] {
+  display: none;
+}
+
 .tokenizer-form > label {
   display: grid;
   gap: 0.5rem;
@@ -3188,25 +3198,139 @@ pre {
   overflow: hidden;
 }
 
-.tokenizer-model-picker {
+.tokenizer-model-search {
   display: grid;
-  gap: 0.45rem;
-  max-width: 720px;
-  margin-bottom: 1rem;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 750;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+  gap: 1rem 2rem;
+  margin-bottom: clamp(1.2rem, 3vw, 2rem);
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
 }
 
-.tokenizer-model-picker select {
+.tokenizer-model-search__copy {
+  grid-row: span 3;
+}
+
+.tokenizer-model-search__copy h2 {
+  margin: 0.25rem 0 0.45rem;
+  font-size: clamp(1.4rem, 2.7vw, 2.15rem);
+  letter-spacing: -0.035em;
+}
+
+.tokenizer-model-search__copy > p:last-child,
+.tokenizer-model-search__status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.tokenizer-model-search__form {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tokenizer-model-search__form > label,
+.tokenizer-recent > span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tokenizer-model-search__form > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+}
+
+.tokenizer-model-search__form input {
   width: 100%;
-  min-height: 3rem;
+  min-height: 2.85rem;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
-  background: var(--surface-raised);
+  background: var(--surface);
   color: var(--ink);
-  font: inherit;
+  font: 0.86rem/1.3 var(--font-mono);
+}
+
+.tokenizer-model-search__status {
+  min-height: 1.25rem;
+  font-size: 0.78rem;
+}
+
+.tokenizer-model-results {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 258px;
+  overflow: auto;
+}
+
+.tokenizer-model-results > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tokenizer-model-results > button:hover,
+.tokenizer-model-results > button:focus-visible,
+.tokenizer-model-results > button[aria-selected='true'] {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+}
+
+.tokenizer-model-results > button span {
+  display: grid;
+  min-width: 0;
+}
+
+.tokenizer-model-results strong,
+.tokenizer-model-results small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tokenizer-model-results strong {
+  font-size: 0.9rem;
+}
+
+.tokenizer-model-results small {
+  color: var(--muted);
+  font: 0.72rem/1.35 var(--font-mono);
+}
+
+.tokenizer-recent {
+  display: grid;
+  grid-column: 2;
+  gap: 0.45rem;
+}
+
+.tokenizer-recent > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tokenizer-recent button {
+  padding: 0.36rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 0.7rem/1.2 var(--font-mono);
 }
 
 .generation-grid {
@@ -4729,6 +4853,16 @@ pre {
   min-height: 1.25rem;
 }
 
+@media (max-width: 520px) {
+  .tokenizer-model-search__form > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tokenizer-model-search__form .button {
+    width: 100%;
+  }
+}
+
 @media (max-width: 700px) {
   .member-profile-workspace__heading,
   .member-profile-form__footer {
@@ -5930,6 +6064,18 @@ pre {
 }
 
 @media (max-width: 800px) {
+  .tokenizer-model-search {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tokenizer-model-search__copy {
+    grid-row: auto;
+  }
+
+  .tokenizer-recent {
+    grid-column: 1;
+  }
+
   .use-agent-grid,
   .use-notebook-grid,
   .use-derived-grid,

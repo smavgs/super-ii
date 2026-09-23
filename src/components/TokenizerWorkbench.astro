@@ -3,12 +3,16 @@ interface Props {
   owner: string;
   slug: string;
   title?: string;
+  revision?: string;
 }
 
-const { owner, slug, title = `${owner}/${slug}` } = Astro.props;
+const { owner, slug, title = `${owner}/${slug}`, revision } = Astro.props;
+const revisionQuery = revision ? `?revision=${encodeURIComponent(revision)}` : '';
+const fullTokenizerQuery = new URLSearchParams({ model: `${owner}/${slug}` });
+if (revision) fullTokenizerQuery.set('revision', revision);
 ---
 
-<section class="tokenizer-workbench" data-tokenizer-workbench data-owner={owner} data-slug={slug}>
+<section class="tokenizer-workbench" data-tokenizer-workbench data-owner={owner} data-slug={slug} data-revision={revision}>
   <header class="tokenizer-workbench__header">
     <div>
       <p class="eyebrow">Verified tokenizer</p>
@@ -17,7 +21,8 @@ const { owner, slug, title = `${owner}/${slug}` } = Astro.props;
     </div>
     <div class="tokenizer-workbench__trust">
       <span><i class="ph ph-seal-check" aria-hidden="true"></i> Verified pack</span>
-      <a data-tokenizer-manifest href={`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest`}>Manifest</a>
+      <a data-tokenizer-full-link href={`/tokenizer?${fullTokenizerQuery.toString()}`}>Open full tokenizer</a>
+      <a data-tokenizer-manifest href={`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest${revisionQuery}`}>Manifest</a>
     </div>
   </header>
 
@@ -175,14 +180,15 @@ const { owner, slug, title = `${owner}/${slug}` } = Astro.props;
     const run = async (form: HTMLFormElement, operation: 'encode' | 'decode') => {
       const owner = root.dataset.owner ?? '';
       const slug = root.dataset.slug ?? '';
+      const revision = root.dataset.revision || undefined;
       const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (submit) submit.disabled = true;
       if (status) status.textContent = 'Loading and verifying the tokenizer pack…';
       try {
         const data = new FormData(form);
         const value = operation === 'encode'
-          ? await encodeVerified(owner, slug, String(data.get('text') ?? ''), data.get('add_special_tokens') === 'on')
-          : await decodeVerified(owner, slug, idsFrom(data.get('token_ids')), data.get('skip_special_tokens') === 'on');
+          ? await encodeVerified(owner, slug, String(data.get('text') ?? ''), data.get('add_special_tokens') === 'on', revision)
+          : await decodeVerified(owner, slug, idsFrom(data.get('token_ids')), data.get('skip_special_tokens') === 'on', revision);
         render(value);
       } catch (error) {
         if (status) status.textContent = error instanceof Error ? error.message : 'Verified tokenizer request failed.';
