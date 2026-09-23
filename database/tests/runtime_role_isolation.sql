@@ -63,6 +63,27 @@ select * from app.create_repository_with_revision(
 ) \gset repository_
 update app.repositories set visibility='private'
 where id=:'repository_repository_id'::uuid;
+update app.repository_revisions set status='rejected'
+where id=:'repository_revision_id'::uuid;
+select * from app.create_repository_commit(
+  :'repository_repository_id'::uuid,
+  :'repository_branch_id'::uuid,
+  'Least-privilege web commit',
+  :'profile_id'
+) \gset next_
+select (
+  :'next_parent_revision_id'::uuid = :'repository_revision_id'::uuid
+  and exists (
+    select 1 from app.repository_branches
+    where id=:'repository_branch_id'::uuid
+      and head_revision_id=:'next_id'::uuid
+  )
+) as web_commit_ok \gset
+\if :web_commit_ok
+\else
+  \echo least-privilege web commit did not advance the branch safely
+  select 1/0;
+\endif
 commit;
 
 begin;
