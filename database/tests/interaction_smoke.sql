@@ -537,6 +537,21 @@ begin
     raise exception 'human contribution review did not update accepted reputation';
   end if;
 
+  insert into app.repository_files (
+    repository_id, revision_id, path, size_bytes, mime_type, sha256,
+    storage_key, storage_state, scan_status, created_by
+  ) values (
+    created_repository.repository_id, created_repository.revision_id,
+    'README.md', 4, 'text/markdown', repeat('8', 64),
+    'objects/sha256/88/' || repeat('8', 64),
+    'available', 'clean', alice_id::text
+  ) returning id into file_id;
+  insert into app.repository_file_inspections (
+    repository_file_id, inspector, status, tool_version, completed_at
+  ) values
+    (file_id, 'clamav', 'passed', 'smoke-parent-only', now()),
+    (file_id, 'gitleaks', 'passed', 'smoke-parent-only', now());
+
   update app.repository_revisions
   set status = 'rejected'
   where id = created_repository.revision_id;
@@ -556,6 +571,20 @@ begin
     where id = created_repository.branch_id and head_revision_id = created_commit.id
   ) then
     raise exception 'repository commit did not advance the branch head';
+  end if;
+  if not exists (
+    select 1 from app.repository_files
+    where revision_id = created_commit.id and path = 'README.md'
+  ) then
+    raise exception 'repository commit did not reuse clean parent object bytes';
+  end if;
+  if exists (
+    select 1
+    from app.repository_file_inspections inspection
+    join app.repository_files copied on copied.id = inspection.repository_file_id
+    where copied.revision_id = created_commit.id
+  ) then
+    raise exception 'repository commit inherited parent inspection evidence';
   end if;
 
   insert into app.payment_orders (
