@@ -48,6 +48,16 @@ TOKENIZER_FILENAMES = frozenset(
 LICENSE_FILENAMES = frozenset(
     {"license", "license.md", "license.txt", "notice", "notice.md", "notice.txt"}
 )
+VERIFICATION_STATES = ("encode", "decode", "unicode", "special_tokens")
+UPGRADEABLE_MANIFEST_FIELDS = frozenset(
+    {
+        "converter_versions",
+        "engine_version",
+        "pack_sha256",
+        "verification",
+        "verification_vectors",
+    }
+)
 
 
 def _canonical(value: Any) -> bytes:
@@ -86,6 +96,73 @@ def _gguf_tokenizer_format(inspection: dict[str, Any]) -> str:
     if isinstance(metadata, dict) and isinstance(metadata.get("tokenizer.ggml.model"), str):
         return str(metadata["tokenizer.ggml.model"])
     return "gguf"
+
+
+def manifest_meets_current_verification(manifest: dict[str, Any]) -> bool:
+    verification = manifest.get("verification")
+    vectors = manifest.get("verification_vectors")
+    expected_cases = [
+        (name, add_special_tokens) for name, _, add_special_tokens in VERIFICATION_CASES
+    ]
+    if not isinstance(verification, dict) or any(
+        verification.get(state) != "passed" for state in VERIFICATION_STATES
+    ):
+        return False
+    if not isinstance(vectors, list) or len(vectors) != len(expected_cases):
+        return False
+    observed_cases: list[tuple[str, bool]] = []
+    for vector in vectors:
+        if (
+            not isinstance(vector, dict)
+            or not isinstance(vector.get("name"), str)
+            or not isinstance(vector.get("text"), str)
+            or type(vector.get("add_special_tokens")) is not bool
+            or not isinstance(vector.get("token_ids"), list)
+            or not isinstance(vector.get("decoded_sha256"), str)
+            or not re.fullmatch(r"[a-f0-9]{64}", vector["decoded_sha256"])
+            or any(
+                type(token_id) is not int or token_id < 0 or token_id > 2_147_483_647
+                for token_id in vector["token_ids"]
+            )
+        ):
+            return False
+        observed_cases.append((vector["name"], vector["add_special_tokens"]))
+    return observed_cases == expected_cases
+
+
+def is_safe_verification_metadata_upgrade(
+    recorded: dict[str, Any], rebuilt: dict[str, Any]
+) -> bool:
+    """Allow stronger evidence only when tokenizer bytes and prior vectors are unchanged."""
+
+    if not manifest_meets_current_verification(rebuilt):
+        return False
+    stable_recorded = {
+        key: value for key, value in recorded.items() if key not in UPGRADEABLE_MANIFEST_FIELDS
+    }
+    stable_rebuilt = {
+        key: value for key, value in rebuilt.items() if key not in UPGRADEABLE_MANIFEST_FIELDS
+    }
+    if stable_recorded != stable_rebuilt:
+        return False
+    old_vectors = recorded.get("verification_vectors")
+    new_vectors = rebuilt.get("verification_vectors")
+    if not isinstance(old_vectors, list) or not isinstance(new_vectors, list):
+        return False
+    new_by_name = {vector.get("name"): vector for vector in new_vectors if isinstance(vector, dict)}
+    if not old_vectors or any(
+        not isinstance(vector, dict)
+        or not isinstance(vector.get("name"), str)
+        or new_by_name.get(vector["name"]) != vector
+        for vector in old_vectors
+    ):
+        return False
+    old_verification = recorded.get("verification")
+    return bool(
+        isinstance(old_verification, dict)
+        and all(old_verification.get(state) == "passed" for state in VERIFICATION_STATES[:-1])
+        and old_verification.get("special_tokens") in (None, "passed")
+    )
 
 
 class TokenizerPackStore:

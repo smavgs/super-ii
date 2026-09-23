@@ -87,6 +87,114 @@ def test_tokenizer_pack_disk_rebuild_must_match_published_hash(monkeypatch, tmp_
         _tokenizer_pack_manifest(Database(), repository_id, revision_id)
 
 
+def test_tokenizer_pack_can_add_evidence_when_existing_bytes_and_vectors_match(
+    monkeypatch, tmp_path
+) -> None:
+    repository_id = uuid4()
+    revision_id = uuid4()
+    common = {
+        "version": "superii-tokenizer-pack-v1",
+        "repository_id": str(repository_id),
+        "source_revision_id": str(revision_id),
+        "engine": "huggingface-tokenizers",
+        "format": "tokenizer.json",
+        "artifacts": [
+            {
+                "path": "tokenizer.json",
+                "sha256": "c" * 64,
+                "size_bytes": 42,
+                "source_path": "tokenizer.json",
+                "generated": False,
+            }
+        ],
+        "source_files": [{"path": "tokenizer.json", "sha256": "c" * 64, "size_bytes": 42}],
+    }
+    plain = {
+        "name": "plain",
+        "text": "Super ii makes AI work understandable.",
+        "add_special_tokens": False,
+        "token_ids": [1],
+        "decoded_sha256": "d" * 64,
+    }
+    multilingual = {
+        "name": "multilingual",
+        "text": "café · Привет · 你好 · مرحبا",
+        "add_special_tokens": False,
+        "token_ids": [2],
+        "decoded_sha256": "e" * 64,
+    }
+    emoji = {
+        "name": "emoji",
+        "text": "Build 🤖 with 👩🏽‍💻 and share it.",
+        "add_special_tokens": False,
+        "token_ids": [3],
+        "decoded_sha256": "f" * 64,
+    }
+    special = {
+        "name": "special-tokens",
+        "text": "Super ii tokenizer verification.",
+        "add_special_tokens": True,
+        "token_ids": [4],
+        "decoded_sha256": "1" * 64,
+    }
+    legacy = {
+        **common,
+        "pack_sha256": "a" * 64,
+        "verification_vectors": [plain, multilingual, emoji],
+        "verification": {
+            "encode": "passed",
+            "decode": "passed",
+            "unicode": "passed",
+        },
+    }
+    current = {
+        **common,
+        "pack_sha256": "b" * 64,
+        "verification_vectors": [plain, multilingual, emoji, special],
+        "verification": {
+            "encode": "passed",
+            "decode": "passed",
+            "unicode": "passed",
+            "special_tokens": "passed",
+        },
+    }
+
+    class Database:
+        def __init__(self):
+            self.saved = []
+
+        def get_revision_analysis(self, *_args):
+            return {
+                "status": "passed",
+                "result": {"applicable": True, "manifest": legacy},
+            }
+
+        def list_revision_files(self, _revision_id):
+            return []
+
+        def save_revision_analysis(self, *args):
+            self.saved.append(args)
+
+    class WorkspaceCache:
+        def materialize(self, *_args):
+            return tmp_path
+
+    class TokenizerStore:
+        def artifact(self, *_args):
+            raise AssertionError("legacy evidence must be upgraded before it is served")
+
+        def build(self, **_kwargs):
+            return current
+
+    database = Database()
+    monkeypatch.setattr(api_module, "get_workspace_cache", lambda: WorkspaceCache())
+    monkeypatch.setattr(api_module, "get_tokenizer_pack_store", lambda: TokenizerStore())
+
+    assert _tokenizer_pack_manifest(database, repository_id, revision_id) == current
+    assert len(database.saved) == 1
+    assert database.saved[0][4]["manifest"] == current
+
+
 def test_model_inspection_fails_closed_without_returning_tokenizer_exception_details(
     monkeypatch, tmp_path
 ) -> None:
