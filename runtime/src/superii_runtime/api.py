@@ -54,7 +54,12 @@ from .security import RuntimeAuth
 from .settings import Settings, get_settings
 from .spaces import SpaceRunner
 from .storage import ObjectStore, StorageError, normalize_repository_path
-from .tokenizer_packs import PACK_VERSION, TokenizerPackStore
+from .tokenizer_packs import (
+    PACK_VERSION,
+    TokenizerPackStore,
+    is_safe_verification_metadata_upgrade,
+    manifest_meets_current_verification,
+)
 from .transfers import (
     TUS_RESPONSE_HEADERS,
     TUS_VERSION,
@@ -1176,25 +1181,26 @@ def _tokenizer_pack_manifest(
         manifest = result.get("manifest") if isinstance(result, dict) else None
         if isinstance(manifest, dict):
             recorded_manifest = manifest
-            try:
-                # This also proves that DB evidence still resolves to immutable local bytes.
-                artifacts = manifest.get("artifacts")
-                if not isinstance(artifacts, list) or not artifacts:
-                    raise ValueError("tokenizer pack has no artifacts")
-                first_artifact = artifacts[0]
-                if not isinstance(first_artifact, dict) or not isinstance(
-                    first_artifact.get("path"), str
-                ):
-                    raise ValueError("tokenizer pack artifact path is invalid")
-                get_tokenizer_pack_store().artifact(
-                    manifest,
-                    first_artifact["path"],
-                )
-                return manifest
-            except (FileNotFoundError, OSError, RuntimeError, ValueError):
-                # Packs are derived from immutable repository bytes. Rebuild after a
-                # runtime-disk replacement instead of leaving a published model broken.
-                pass
+            if manifest_meets_current_verification(manifest):
+                try:
+                    # This also proves that DB evidence still resolves to immutable local bytes.
+                    artifacts = manifest.get("artifacts")
+                    if not isinstance(artifacts, list) or not artifacts:
+                        raise ValueError("tokenizer pack has no artifacts")
+                    first_artifact = artifacts[0]
+                    if not isinstance(first_artifact, dict) or not isinstance(
+                        first_artifact.get("path"), str
+                    ):
+                        raise ValueError("tokenizer pack artifact path is invalid")
+                    get_tokenizer_pack_store().artifact(
+                        manifest,
+                        first_artifact["path"],
+                    )
+                    return manifest
+                except (FileNotFoundError, OSError, RuntimeError, ValueError):
+                    # Packs are derived from immutable repository bytes. Rebuild after a
+                    # runtime-disk replacement instead of leaving a published model broken.
+                    pass
 
     # Existing public releases predate the publication gate. Backfill once through
     # the same verifier, then persist the immutable pack evidence for every caller.
@@ -1212,13 +1218,37 @@ def _tokenizer_pack_manifest(
         if (
             not isinstance(recorded_hash, str)
             or len(recorded_hash) != 64
-            or rebuilt_hash != recorded_hash
+            or any(character not in "0123456789abcdef" for character in recorded_hash)
         ):
             raise RuntimeError(
                 "rebuilt tokenizer pack does not match the immutable published record"
             )
-        # A runtime-disk replacement may remove derived bytes, but it may never
-        # change the tokenizer bound to an already-published model revision.
+        if rebuilt_hash == recorded_hash:
+            # A runtime-disk replacement may remove derived bytes, but it may never
+            # change the tokenizer bound to an already-published model revision.
+            return manifest
+        if not is_safe_verification_metadata_upgrade(recorded_manifest, manifest):
+            raise RuntimeError(
+                "rebuilt tokenizer pack does not match the immutable published record"
+            )
+        # Verification rules can become stronger without changing a single source
+        # or portable artifact byte. Preserve all previous vectors, add the new
+        # evidence, and retain the old content-addressed pack on disk for audit.
+        database.save_revision_analysis(
+            repository_id,
+            revision_id,
+            "tokenizer",
+            "passed",
+            {"applicable": True, "verified": True, "manifest": manifest},
+            {
+                "superii_tokenizer_pack": PACK_VERSION,
+                "tokenizers": _package_version("tokenizers"),
+                "transformers": _package_version("transformers"),
+                "sentencepiece": _package_version("sentencepiece"),
+                "tiktoken": _package_version("tiktoken"),
+                "llama.cpp": get_settings().llama_cpp_version,
+            },
+        )
         return manifest
 
     database.save_revision_analysis(

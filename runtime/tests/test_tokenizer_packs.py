@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
+from copy import deepcopy
 from pathlib import Path
 from uuid import uuid4
 
@@ -20,7 +21,11 @@ from superii_runtime.inspectors.tokenizers import (
 )
 from superii_runtime.runtimes.llama_tokenizer import LlamaTokenizerVerifier
 from superii_runtime.settings import Settings
-from superii_runtime.tokenizer_packs import TokenizerPackStore
+from superii_runtime.tokenizer_packs import (
+    TokenizerPackStore,
+    is_safe_verification_metadata_upgrade,
+    manifest_meets_current_verification,
+)
 
 
 def _wordlevel_tokenizer(root: Path) -> None:
@@ -194,6 +199,7 @@ def test_huggingface_pack_is_content_addressed_and_executable(tmp_path: Path) ->
     assert decoded["text"] == "hello world"
     assert hashlib.sha256(artifact.read_bytes()).hexdigest() == record["sha256"]
     assert rebuilt == manifest
+    assert manifest_meets_current_verification(manifest) is True
 
     original_artifact = artifact.read_bytes()
     artifact.chmod(0o640)
@@ -219,6 +225,44 @@ def test_huggingface_pack_is_content_addressed_and_executable(tmp_path: Path) ->
             workspace=workspace,
             files=files,
         )
+
+
+def test_legacy_manifest_can_add_special_token_evidence_without_changing_bytes(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    _wordlevel_tokenizer(workspace)
+    repository_id, revision_id, files = _revision_files(workspace)
+    store = TokenizerPackStore(
+        Settings(storage_root=tmp_path / "storage"),
+        LlamaTokenizerVerifier(),
+    )
+    current = store.build(
+        repository_id=repository_id,
+        revision_id=revision_id,
+        workspace=workspace,
+        files=files,
+    )
+    legacy = deepcopy(current)
+    legacy["pack_sha256"] = "a" * 64
+    legacy["verification_vectors"] = legacy["verification_vectors"][:-1]
+    del legacy["verification"]["special_tokens"]
+
+    assert manifest_meets_current_verification(legacy) is False
+    assert is_safe_verification_metadata_upgrade(legacy, current) is True
+
+    changed_artifact = deepcopy(current)
+    changed_artifact["artifacts"][0]["sha256"] = "b" * 64
+    assert is_safe_verification_metadata_upgrade(legacy, changed_artifact) is False
+
+    changed_vector = deepcopy(current)
+    changed_vector["verification_vectors"][0]["token_ids"] = [999]
+    assert is_safe_verification_metadata_upgrade(legacy, changed_vector) is False
+
+    failed_special_tokens = deepcopy(legacy)
+    failed_special_tokens["verification"]["special_tokens"] = "failed"
+    assert is_safe_verification_metadata_upgrade(failed_special_tokens, current) is False
 
 
 def test_legacy_wordpiece_source_is_converted_to_portable_verified_pack(tmp_path: Path) -> None:
