@@ -21,6 +21,8 @@ export type CatalogFilters = {
 
 export type PublicRepository = {
   repository_id: string;
+  revision_id: string;
+  commit_sha: string | null;
   kind: RepositoryKind;
   owner_handle: string;
   creator_handle: string | null;
@@ -119,6 +121,8 @@ export async function searchCatalog(
         )
       )
       select matches.*,
+             repository.latest_revision_id as revision_id,
+             latest_revision.commit_sha,
              creator.handle as creator_handle,
              creator.display_name as creator_display_name,
              creator.avatar_url as creator_avatar_url,
@@ -169,6 +173,8 @@ export async function searchCatalog(
              ) as tokenizer_available
       from matches
       join app.repositories repository on repository.id = matches.repository_id
+      join app.repository_revisions latest_revision
+        on latest_revision.id = repository.latest_revision_id
       left join app.profiles creator
         on creator.id = repository.owner_profile_id and creator.is_public
       left join app.organizations owner_organization

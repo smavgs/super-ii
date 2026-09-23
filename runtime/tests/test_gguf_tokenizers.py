@@ -4,8 +4,14 @@ import struct
 from pathlib import Path
 
 import pytest
+from tokenizers import Tokenizer, normalizers
+from tokenizers.models import WordLevel
 
-from superii_runtime.inspectors.gguf_tokenizers import export_portable_gguf_tokenizer
+from superii_runtime.inspectors.gguf_tokenizers import (
+    _conversion_variants,
+    _matches_reference,
+    export_portable_gguf_tokenizer,
+)
 from superii_runtime.inspectors.tokenizers import decode_token_ids, tokenize_text
 
 
@@ -109,3 +115,30 @@ def test_gguf_conversion_fails_closed_when_native_ids_do_not_match(tmp_path: Pat
             ],
             context_length=None,
         )
+
+
+def test_native_oracle_can_select_exact_non_normalizing_unicode_variant() -> None:
+    tokenizer = Tokenizer(
+        WordLevel(
+            {
+                "<unk>": 0,
+                "café": 1,
+                "cafe\u0301": 2,
+            },
+            unk_token="<unk>",  # noqa: S106 - tokenizer sentinel, not a credential
+        )
+    )
+    tokenizer.normalizer = normalizers.NFC()
+    vectors = [
+        {
+            "name": "unicode-nfd",
+            "text": "cafe\u0301",
+            "add_special_tokens": False,
+            "token_ids": [2],
+        }
+    ]
+
+    variants = dict(_conversion_variants(tokenizer, source_pretokenizer="gpt2"))
+
+    assert _matches_reference(variants["converter-default"], vectors) is False
+    assert _matches_reference(variants["normalizer-disabled"], vectors) is True

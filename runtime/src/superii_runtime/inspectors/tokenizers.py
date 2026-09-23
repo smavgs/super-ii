@@ -12,6 +12,11 @@ VERIFICATION_TEXTS = (
     ("plain", "Super ii makes AI work understandable."),
     ("multilingual", "café · Привет · 你好 · مرحبا"),
     ("emoji", "Build 🤖 with 👩🏽‍💻 and share it."),
+    ("unicode-nfd", "cafe\u0301 · A\u030a · n\u0303"),
+    ("multiscript-extra", "हिन्दी · 日本語 · 한국어 · ไทย"),
+    ("emoji-family", "👨‍👩‍👧‍👦 · ❤️ · 🏳️‍🌈"),
+    ("whitespace", "line one\n\tline two  \n"),
+    ("punctuation-code", 'x := foo_bar[0] -> {"ok": true}; C:\\\\models'),
 )
 VERIFICATION_CASES = tuple((*item, False) for item in VERIFICATION_TEXTS) + (
     ("special-tokens", "Super ii tokenizer verification.", True),
@@ -186,6 +191,12 @@ def decode_token_ids(
     if any(type(value) is not int or value < 0 or value > 2**31 - 1 for value in token_ids):
         raise ValueError("token IDs must be non-negative 32-bit integers")
     tokenizer = _load(root)
+    backend = tokenizer.backend_tokenizer
+    invalid = next(
+        (token_id for token_id in token_ids if backend.id_to_token(token_id) is None), None
+    )
+    if invalid is not None:
+        raise ValueError(f"token ID {invalid} is not in this tokenizer vocabulary")
     text = tokenizer.decode(
         token_ids,
         skip_special_tokens=skip_special_tokens,

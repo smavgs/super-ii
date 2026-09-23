@@ -12,6 +12,7 @@ import superii_runtime.api as api_module
 from superii_runtime.api import _tokenizer_pack_manifest, app, inspect_revision
 from superii_runtime.api_models import DetokenizeRequest, InspectRevisionRequest
 from superii_runtime.capabilities import capability_report
+from superii_runtime.inspectors.tokenizers import VERIFICATION_CASES
 from superii_runtime.settings import Settings
 
 
@@ -109,38 +110,23 @@ def test_tokenizer_pack_can_add_evidence_when_existing_bytes_and_vectors_match(
         ],
         "source_files": [{"path": "tokenizer.json", "sha256": "c" * 64, "size_bytes": 42}],
     }
-    plain = {
-        "name": "plain",
-        "text": "Super ii makes AI work understandable.",
-        "add_special_tokens": False,
-        "token_ids": [1],
-        "decoded_sha256": "d" * 64,
-    }
-    multilingual = {
-        "name": "multilingual",
-        "text": "café · Привет · 你好 · مرحبا",
-        "add_special_tokens": False,
-        "token_ids": [2],
-        "decoded_sha256": "e" * 64,
-    }
-    emoji = {
-        "name": "emoji",
-        "text": "Build 🤖 with 👩🏽‍💻 and share it.",
-        "add_special_tokens": False,
-        "token_ids": [3],
-        "decoded_sha256": "f" * 64,
-    }
-    special = {
-        "name": "special-tokens",
-        "text": "Super ii tokenizer verification.",
-        "add_special_tokens": True,
-        "token_ids": [4],
-        "decoded_sha256": "1" * 64,
-    }
+    current_vectors = [
+        {
+            "name": name,
+            "text": text,
+            "add_special_tokens": add_special_tokens,
+            "token_ids": [index],
+            "decoded_sha256": format(index, "x") * 64,
+        }
+        for index, (name, text, add_special_tokens) in enumerate(VERIFICATION_CASES, start=1)
+    ]
+    legacy_vectors = [
+        vector for vector in current_vectors if vector["name"] in {"plain", "multilingual", "emoji"}
+    ]
     legacy = {
         **common,
         "pack_sha256": "a" * 64,
-        "verification_vectors": [plain, multilingual, emoji],
+        "verification_vectors": legacy_vectors,
         "verification": {
             "encode": "passed",
             "decode": "passed",
@@ -150,7 +136,7 @@ def test_tokenizer_pack_can_add_evidence_when_existing_bytes_and_vectors_match(
     current = {
         **common,
         "pack_sha256": "b" * 64,
-        "verification_vectors": [plain, multilingual, emoji, special],
+        "verification_vectors": current_vectors,
         "verification": {
             "encode": "passed",
             "decode": "passed",
