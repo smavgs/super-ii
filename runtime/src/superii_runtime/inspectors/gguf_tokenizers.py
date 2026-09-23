@@ -163,7 +163,13 @@ def _matches_reference(tokenizer: Any, vectors: list[dict[str, Any]]) -> bool:
     return True
 
 
-def _conversion_variants(tokenizer: Any) -> list[tuple[str, Any]]:
+QWEN35_PRETOKENIZER_PATTERN = (
+    r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}|"
+    r" ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"
+)
+
+
+def _conversion_variants(tokenizer: Any, *, source_pretokenizer: str) -> list[tuple[str, Any]]:
     """Return bounded, code-free converter variants for native-oracle matching.
 
     Some upstream GGUF converters add NFC normalization even when llama.cpp
@@ -173,13 +179,28 @@ def _conversion_variants(tokenizer: Any) -> list[tuple[str, Any]]:
     matches, including decomposed Unicode and exact decoded text.
     """
 
-    from tokenizers import Tokenizer
+    from tokenizers import Regex, Tokenizer
+    from tokenizers.pre_tokenizers import ByteLevel, Sequence, Split
 
     variants = [("converter-default", tokenizer)]
     if tokenizer.normalizer is not None:
         without_normalizer = Tokenizer.from_str(tokenizer.to_str())
         without_normalizer.normalizer = None
         variants.append(("normalizer-disabled", without_normalizer))
+    if source_pretokenizer == "qwen35":
+        qwen35_native = Tokenizer.from_str(tokenizer.to_str())
+        qwen35_native.normalizer = None
+        qwen35_native.pre_tokenizer = Sequence(
+            [
+                Split(
+                    Regex(QWEN35_PRETOKENIZER_PATTERN),
+                    behavior="isolated",
+                    invert=False,
+                ),
+                ByteLevel(add_prefix_space=False, trim_offsets=True, use_regex=False),
+            ]
+        )
+        variants.append(("qwen35-native", qwen35_native))
     return variants
 
 
@@ -220,6 +241,12 @@ def export_portable_gguf_tokenizer(
     tokenizer_type = tokenizer_dictionary.get("tokenizer_type")
     if not isinstance(tokenizer_type, str) or len(tokenizer_type) > 64:
         raise ValueError("GGUF tokenizer type is invalid")
+    pretokenizer_field = reader.fields.get("tokenizer.ggml.pre")
+    source_pretokenizer = (
+        _field_value(pretokenizer_field) if pretokenizer_field is not None else architecture
+    )
+    if not isinstance(source_pretokenizer, str) or len(source_pretokenizer) > 64:
+        raise ValueError("GGUF tokenizer pre-tokenizer is invalid")
     candidates = _converter_candidates(
         architecture,
         tokenizer_type,
@@ -240,7 +267,10 @@ def export_portable_gguf_tokenizer(
             )
         except (IndexError, KeyError, RuntimeError, TypeError, ValueError):
             continue
-        for variant_name, variant_tokenizer in _conversion_variants(candidate_tokenizer):
+        for variant_name, variant_tokenizer in _conversion_variants(
+            candidate_tokenizer,
+            source_pretokenizer=source_pretokenizer,
+        ):
             try:
                 matches_reference = _matches_reference(variant_tokenizer, reference_vectors)
             except (IndexError, KeyError, RuntimeError, TypeError, ValueError):

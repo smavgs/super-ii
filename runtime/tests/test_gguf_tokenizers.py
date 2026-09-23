@@ -138,7 +138,7 @@ def test_native_oracle_can_select_exact_non_normalizing_unicode_variant() -> Non
         }
     ]
 
-    variants = dict(_conversion_variants(tokenizer))
+    variants = dict(_conversion_variants(tokenizer, source_pretokenizer="gpt2"))
 
     assert _matches_reference(variants["converter-default"], vectors) is False
     assert _matches_reference(variants["normalizer-disabled"], vectors) is True

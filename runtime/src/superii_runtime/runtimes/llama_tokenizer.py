@@ -41,6 +41,7 @@ class LlamaTokenizerVerifier:
             str(resolved),
             "--stdin",
             "--ids",
+            "--no-escape",
             "--offline",
             "--log-disable",
         ]

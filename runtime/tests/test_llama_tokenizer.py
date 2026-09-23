@@ -47,7 +47,7 @@ def test_llama_tokenizer_uses_pinned_offline_cli_as_exact_id_oracle(
     assert "--no-bos" not in calls[1][0]
     assert calls[0][0][0] == "/opt/llama/llama-tokenize"
     assert calls[0][0][calls[0][0].index("--model") + 1] == str(artifact)
-    assert {"--stdin", "--ids", "--offline", "--log-disable"}.issubset(calls[0][0])
+    assert {"--stdin", "--ids", "--no-escape", "--offline", "--log-disable"}.issubset(calls[0][0])
     assert calls[0][1]["input"] == "Super ii"
     assert calls[0][1]["check"] is False
     assert calls[0][1]["env"]["HF_HUB_OFFLINE"] == "1"
