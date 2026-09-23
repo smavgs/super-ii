@@ -1,0 +1,133 @@
+{
+  "verified_at": "2026-09-23T04:13:23Z",
+  "status": "production",
+  "source": {
+    "implementation_pull_request": "https://github.com/smavgs/super-ii/pull/35",
+    "implementation_merge": "a25ccb0",
+    "gguf_portability_pull_request": "https://github.com/smavgs/super-ii/pull/36",
+    "gguf_portability_merge": "4672c08c3daba7dd61b89139aef1cc5de9afa84c",
+    "mobile_layout_pull_request": "https://github.com/smavgs/super-ii/pull/37",
+    "mobile_layout_merge": "5e62a7b647d1d3faa8a896ae22609122ce8acfde",
+    "legacy_upgrade_pull_request": "https://github.com/smavgs/super-ii/pull/38",
+    "legacy_upgrade_merge": "aee7f8323547ebd09f285c54b917af837ccab395"
+  },
+  "deployment": {
+    "database_migration": "0024_verified_tokenizer.sql applied",
+    "worker_version_at_functional_verification": "4c0869c7-cee9-43e2-86e1-cb0686ee8d3c",
+    "runtime_source_commit": "aee7f8323547ebd09f285c54b917af837ccab395",
+    "runtime_readiness": {
+      "status": "ready",
+      "database": true,
+      "storage": true,
+      "transfer_service": true,
+      "clamav": true,
+      "gitleaks": true,
+      "publication_policy": true,
+      "publishing_enabled": true
+    },
+    "publication_policy": {
+      "version": "superii-auto-publish-v2",
+      "sha256": "d556f65daba8fa102929cc68e6e7a2957b3e5a66a0bf5ec7ba37209786975a11",
+      "key_id": "superii-publication-v2-d556f65daba8"
+    }
+  },
+  "models": [
+    {
+      "repository": "smavgs/lfm2.5-2.6b-mlx-4bit-repaired",
+      "repository_id": "8a3401fd-0384-4aa8-a1ec-c83b4a88e517",
+      "revision_id": "8be9389c-a9f9-41e2-9398-9778b7ee4a53",
+      "model_commit_sha": "41e0347fc64847e5c7c56f492d95edd9a510b0a977d94c037c24b4e5837ca75c",
+      "source_format": "Hugging Face tokenizer files",
+      "engine": "huggingface-tokenizers",
+      "pack_format": "tokenizer.json",
+      "pack_sha256": "7611a6ab046d0aff1b2630e751dfc05162e8a8d982be314603cac84409308a16",
+      "prior_pack_sha256_retained_for_audit": "9297994af8a31acac2d58d2e4c1758ad3e081c5c339f8986bf06134b4c80885f",
+      "browser_compatible": true,
+      "artifact_count": 7,
+      "verification_vector_count": 4,
+      "special_token_verification": "passed",
+      "sample": {
+        "input": "Super ii ✅ Привет",
+        "token_ids": [21579, 40309, 91819, 14309, 12827],
+        "exact_round_trip": true
+      }
+    },
+    {
+      "repository": "smavgs/minicpm-v4.6-q4-k-m-verified-ollama",
+      "repository_id": "8f1dea11-14b0-45f6-9775-3ea209330e4f",
+      "revision_id": "2940d8b2-fbc3-4293-88e2-6c7b379b07bd",
+      "model_commit_sha": "df373ca13291582e9d5319ce4334e330b5a4ecc06ebaa3ee8c93c6b47370e574",
+      "source_format": "GGUF qwen35 vocabulary converted only after pinned llama.cpp agreement",
+      "converter_tokenizer_family": "qwen3",
+      "llama_cpp_version": "b10516",
+      "engine": "huggingface-tokenizers",
+      "pack_format": "tokenizer.json",
+      "pack_sha256": "4045187f20be606fa8ee49660625f72dc54f32adf5a605104ff6498bf8590a40",
+      "browser_compatible": true,
+      "artifact_count": 3,
+      "verification_vector_count": 4,
+      "special_token_verification": "passed",
+      "tokenizer_artifact": {
+        "sha256": "ec280fd197cc2babd6b33e397e347f12b14570600aaa721139557613e95d9133",
+        "size_bytes": 19985247
+      },
+      "sample": {
+        "input": "Super ii ✅ Привет",
+        "token_ids": [18701, 14045, 189551, 239029],
+        "exact_round_trip": true
+      }
+    }
+  ],
+  "public_interfaces": {
+    "rest": {
+      "manifest_status": 200,
+      "encode_status": 200,
+      "decode_status": 200,
+      "invalid_token_array_status": 422,
+      "immutable_artifact_status": 200,
+      "immutable_artifact_cache": "public, max-age=31536000, immutable",
+      "revision_addressed": true
+    },
+    "mcp": {
+      "endpoint": "https://superii.site/mcp",
+      "tool_count": 19,
+      "tokenizer_tools": [
+        "get_tokenizer_manifest",
+        "tokenize_model_text",
+        "decode_model_tokens"
+      ],
+      "live_calls": "passed with exact revision, pack hash, token IDs and round-trip text"
+    },
+    "web_workbench": {
+      "desktop": "manifest, encode and decode passed",
+      "mobile_viewport_width_px": 320,
+      "document_scroll_width_px": 320,
+      "form_width_px": 302,
+      "token_table_client_width_px": 302,
+      "token_table_scroll_width_px": 760,
+      "page_wide_horizontal_overflow": false,
+      "encode_decode": "passed"
+    },
+    "sdk": {
+      "package": "superii-sdk",
+      "version": "0.3.0",
+      "release_evidence": "docs/verification/sdk-0.3.0-release.json"
+    }
+  },
+  "backfill": {
+    "legacy_hugging_face_pack_rebuild_seconds_approximate": 35,
+    "subsequent_manifest_requests": "warm and content-addressed",
+    "prior_artifacts_unchanged": true,
+    "prior_verification_vectors_unchanged": true,
+    "old_pack_retained": true,
+    "staging_directories_remaining": 0,
+    "future_publication": "packs are built before a text model reaches usable public state"
+  },
+  "boundaries": [
+    "The guarantee applies to text-capable models accepted and published by Super ii, not every arbitrary Internet repository.",
+    "Pure image, audio or other models that genuinely do not use text have no tokenizer requirement.",
+    "Browser execution can require an initial immutable pack download before it becomes cache-local.",
+    "The first legacy backfill can be slower than subsequent requests; future publication prebuilds the pack.",
+    "Repository Python or other arbitrary source code is never executed to tokenize visitor input."
+  ]
+}
