@@ -1,0 +1,58 @@
+{
+  "verified_at": "2026-09-23T04:13:23Z",
+  "sdk": "superii-sdk",
+  "version": "0.3.0",
+  "source_commit": "5e62a7b647d1d3faa8a896ae22609122ce8acfde",
+  "source_branch": "main",
+  "publisher": "GitHub Actions OIDC trusted publishing",
+  "publisher_run": "https://github.com/smavgs/super-ii/actions/runs/35815029113",
+  "publisher_run_result": "success",
+  "release_tests": {
+    "passed": 45,
+    "skipped": 5,
+    "skip_scope": "hardware or optional-runtime gated",
+    "format_check": "passed",
+    "lint_check": "passed",
+    "build": "passed"
+  },
+  "pypi": {
+    "current_version": "0.3.0",
+    "files": [
+      {
+        "filename": "superii_sdk-0.3.0-py3-none-any.whl",
+        "package_type": "bdist_wheel",
+        "sha256": "01ac177a9991b8b8df81ff2815423593a217aa8ea1d89c2a1f1ca1fcc3a2f007",
+        "size_bytes": 61629,
+        "uploaded_at": "2026-09-23T03:39:08.352561Z"
+      },
+      {
+        "filename": "superii_sdk-0.3.0.tar.gz",
+        "package_type": "sdist",
+        "sha256": "a166aafc1d52a4cd999b2959115aabe85eea8e17b9b3176bb14a224c1a3a337e",
+        "size_bytes": 263171,
+        "uploaded_at": "2026-09-23T03:39:09.730551Z"
+      }
+    ]
+  },
+  "fresh_install_checks": {
+    "python_client_manifest": "passed",
+    "python_client_encode_decode": "passed",
+    "cli_uvx_refresh_consecutive_passes": 3,
+    "model": "smavgs/minicpm-v4.6-q4-k-m-verified-ollama",
+    "revision_id": "2940d8b2-fbc3-4293-88e2-6c7b379b07bd",
+    "pack_sha256": "4045187f20be606fa8ee49660625f72dc54f32adf5a605104ff6498bf8590a40",
+    "input": "Super ii ✅ Привет",
+    "token_ids": [18701, 14045, 189551, 239029],
+    "exact_round_trip": true
+  },
+  "transient_observation": "The first CLI call immediately after the runtime rollout returned 422 once. Direct REST and installed-Python requests were already successful, three consecutive fresh uvx calls then passed, and the response did not recur.",
+  "hardware_boundaries": {
+    "cpu": "existing tested fixtures remain verified",
+    "apple_metal": "existing tested fixtures remain verified",
+    "gguf": "existing tested fixtures and the live tokenizer path are verified",
+    "cuda": "unverified on required hardware",
+    "rocm": "unverified on required hardware",
+    "qlora": "unverified on required hardware",
+    "vllm": "unverified on required hardware"
+  }
+}

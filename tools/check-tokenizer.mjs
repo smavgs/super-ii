@@ -19,6 +19,8 @@ const requiredFiles = [
   'src/pages/api/tokenizers/[owner]/[slug]/decode.ts',
   'src/pages/api/tokenizers/[owner]/[slug]/pack/[...path].ts',
   'src/pages/api/tokenizers/[owner]/[slug]/revisions/[revision]/pack/[...path].ts',
+  'docs/verification/sdk-0.3.0-release.json',
+  'docs/verification/tokenizer-production.json',
 ];
 
 for (const path of requiredFiles) {
@@ -101,7 +103,27 @@ requireText('src/pages/docs.astro', [
   'Verified Tokenizer',
   'superii tokenize owner/model',
 ]);
-requireText('SYSTEM-STATE.md', ['Verified model tokenizer packs']);
+requireText('SYSTEM-STATE.md', [
+  '| Verified model tokenizer packs | production | live on both public text models |',
+  '| Public read-only Super ii MCP | production | live with 19 read-only tools |',
+  'superii-sdk 0.3.0 on PyPI',
+]);
+requireText('src/lib/system-state-localization.ts', [
+  "availability: 'работают для обеих публичных текстовых моделей'",
+  "availability: 'работают 19 инструментов только для чтения'",
+  'superii-sdk 0.3.0 доступен в PyPI',
+]);
+requireText('docs/verification/tokenizer-production.json', [
+  '"status": "production"',
+  '7611a6ab046d0aff1b2630e751dfc05162e8a8d982be314603cac84409308a16',
+  '4045187f20be606fa8ee49660625f72dc54f32adf5a605104ff6498bf8590a40',
+  '"tool_count": 19',
+]);
+requireText('docs/verification/sdk-0.3.0-release.json', [
+  '"version": "0.3.0"',
+  '01ac177a9991b8b8df81ff2815423593a217aa8ea1d89c2a1f1ca1fcc3a2f007',
+  'a166aafc1d52a4cd999b2959115aabe85eea8e17b9b3176bb14a224c1a3a337e',
+]);
 
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
 if (!packageJson.scripts.validate.includes('check-tokenizer.mjs')) {
