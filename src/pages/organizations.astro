@@ -2,6 +2,8 @@
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { sqlClient } from '@/lib/db';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import '@/styles/workspace.css';
 
 type OrganizationSummary = {
   handle: string;
@@ -15,6 +17,11 @@ type OrganizationSummary = {
 };
 
 const sql = sqlClient(Astro.locals);
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const signedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+if (signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
+let myOrganizations: Array<{ id: string; handle: string; full_name: string; role: string }> = [];
+let membershipsUnavailable = true;
 let organizations: OrganizationSummary[] = [];
 let unavailable = false;
 if (sql) {
@@ -36,6 +43,19 @@ if (sql) {
   } catch {
     unavailable = true;
   }
+  if (signedIn) {
+    try {
+      const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+      if (profile) {
+        myOrganizations = await sql`
+          select o.id, o.handle, coalesce(o.full_name, o.name) as full_name, m.role
+          from app.organization_members m join app.organizations o on o.id = m.organization_id
+          where m.profile_id = ${profile.profileId}::uuid order by o.handle
+        ` as typeof myOrganizations;
+        membershipsUnavailable = false;
+      }
+    } catch { membershipsUnavailable = true; }
+  }
 }
 ---
 
@@ -51,6 +71,16 @@ if (sql) {
       <a class="button button--secondary" href="/contact?interest=team">Discuss a team plan</a>
     </div>
   </PageHero>
+
+  {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-organizations">
+    <summary>My organizations<small>Your memberships and team work.</small></summary>
+    <div class="workspace-disclosure__body">
+      {membershipsUnavailable ? <p role="status">Your memberships could not be loaded. Please refresh to try again.</p> : myOrganizations.length ? <div class="account-list">
+        {myOrganizations.map((organization) => <a href={`/organizations/${organization.handle}`}><span><strong>{organization.full_name}</strong><small>@{organization.handle} · {organization.role}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
+      </div> : <p>You do not belong to an organization yet.</p>}
+      <p><a href="/organizations/new">Create organization</a></p>
+    </div>
+  </details></div>}
 
   <section class="section">
     <div class="shell feature-rows">
@@ -105,3 +135,7 @@ if (sql) {
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import '@/scripts/personal-work';
+</script>

@@ -30,7 +30,7 @@ const { profile } = Astro.props;
       ? <img src={profile.avatar_url} alt="" referrerpolicy="no-referrer" />
       : <span aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
     <div><strong>{profile.display_name}</strong><small>@{profile.handle}</small></div>
-    <p>Your name and photo come from your login profile. You can change them in <a href="#identity">Login, name and photo</a> below.</p>
+    <p>Your name and photo come from your login profile. You can change them in <a href="#identity">Identity and security</a>.</p>
   </div>
 
   <form class="member-profile-form" data-member-profile-form>

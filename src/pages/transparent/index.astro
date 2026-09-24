@@ -1,17 +1,34 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
+import TransparencyWorkspace from '@/components/TransparencyWorkspace.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
-import { searchTransparencyReports } from '@/lib/transparent-store';
+import { listProfileTransparency, searchTransparencyReports } from '@/lib/transparent-store';
 import '@/styles/transparent.css';
+import '@/styles/workspace.css';
 
 export const prerender = false;
 
 const sql = sqlClient(Astro.locals);
+const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const signedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+if (signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
+let personalReports: Awaited<ReturnType<typeof listProfileTransparency>> = [];
+let personalReportsUnavailable = true;
 const query = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 120);
 let reports: Awaited<ReturnType<typeof searchTransparencyReports>> = [];
 if (sql) {
   try { reports = await searchTransparencyReports(sql, { query, limit: 24 }); } catch { reports = []; }
+  if (signedIn) {
+    try {
+      const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+      if (profile) {
+        personalReports = await listProfileTransparency(sql, profile.profileId);
+        personalReportsUnavailable = false;
+      }
+    } catch { personalReportsUnavailable = true; }
+  }
 }
 ---
 
@@ -25,6 +42,13 @@ if (sql) {
     <div class="shell transparent-page__hero">
       <TransparencyChecker variant="page" initialSource={Astro.url.searchParams.get('source') ?? ''} />
     </div>
+
+    {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-reports">
+      <summary>My reports<small>Saved reports, watched revisions and verified claims.</small></summary>
+      <div class="workspace-disclosure__body">
+        {personalReportsUnavailable ? <p role="status">Your reports could not be loaded. Please refresh to try again.</p> : <TransparencyWorkspace items={personalReports} />}
+      </div>
+    </details></div>}
 
     <section class="shell transparent-principles" aria-labelledby="transparent-principles-title">
       <div>
@@ -78,3 +102,7 @@ if (sql) {
     });
   </script>
 </BaseLayout>
+
+<script>
+  import '@/scripts/personal-work';
+</script>

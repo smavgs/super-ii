@@ -24,6 +24,7 @@ const paths = {
   delegationApi: 'src/pages/api/commerce/delegations/index.ts',
   revokeApi: 'src/pages/api/commerce/delegations/[delegationId].ts',
   workspace: 'src/components/CommerceWorkspace.astro',
+  memberWorkspace: 'src/components/MemberWorkspace.astro',
   account: 'src/pages/account.astro',
   workMcp: 'src/lib/work-mcp-server.ts',
   ipn: 'src/pages/api/payments/nowpayments/ipn.ts',
@@ -159,8 +160,9 @@ for (const marker of [
   'Total authorized', 'Maximum orders', 'Expires after', 'Shown once',
   'sii_agent_', 'cannot open, sign, or debit any wallet',
 ]) requireText('workspace', marker);
-requireText('account', '<CommerceWorkspace />');
-requireText('account', 'href="#commerce"');
+requireText('account', '<MemberWorkspace ');
+requireText('memberWorkspace', '<CommerceWorkspace />');
+requireText('memberWorkspace', "id: 'commerce', label: 'Agent commerce'");
 requireText('workMcp', 'The agent cannot approve its own release, delete, pay');
 if (files.workMcp.includes('commerce_create_order') || files.workMcp.includes('sii_commerce_')) {
   errors.push('Work MCP must remain separate from commerce authority');

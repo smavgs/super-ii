@@ -1,10 +1,51 @@
 <section class="account-card agent-workspace" id="agents" data-agent-workspace>
   <div class="repository-section__heading">
-    <div><p class="eyebrow">Manage your agents 🤖</p><h2>Agents, access, and contribution review</h2></div>
+    <div><p class="eyebrow">Manage your agents 🤖</p><h2 class="workspace-panel-title" tabindex="-1">Agents</h2></div>
     <a class="button button--secondary button--small" href="/agents">Public agent hub</a>
   </div>
   <p>Create agents for your organization and choose their permissions. Repository submissions pass through automatic publication checks; deleting and spending require separate authority.</p>
 
+  <section class="agent-workspace__managed">
+    <div class="repository-section__heading"><div><p class="eyebrow">Managed identities</p><h3>Your organization agents</h3></div><button class="text-button" type="button" data-agent-refresh>Refresh</button></div>
+    <div data-agent-list><p>Loading agent identities…</p></div>
+  </section>
+
+  <section class="agent-workspace__reviews">
+    <div class="repository-section__heading"><div><p class="eyebrow">Human checkpoint</p><h3>Submitted contributions</h3></div></div>
+    <div data-agent-job-list><p>Loading submissions…</p></div>
+  </section>
+
+  <div class="workspace-prerequisite" data-agent-prerequisite role="status"><p>Loading organization access…</p></div>
+  <details class="workspace-disclosure" name="agent-actions"><summary>Add an agent</summary><div class="agent-workspace__panel">
+      <form data-agent-create-form>
+        <fieldset data-agent-requires-organization disabled>
+        <label>Operator organization<select name="organization_id" required data-agent-organization-select><option value="">Loading organizations…</option></select></label>
+        <div class="form-grid form-grid--two">
+          <label>Agent handle<input name="handle" required minlength="1" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" placeholder="research-runner" /></label>
+          <label>Display name<input name="display_name" required maxlength="120" placeholder="Research Runner" /></label>
+        </div>
+        <label>Framework<select name="framework"><option value="opencode">OpenCode</option><option value="codex">Codex</option><option value="claude-code">Claude Code</option><option value="qwen-code">Qwen Code</option><option value="custom">Custom</option><option value="other">Other</option></select></label>
+        <label>Description<textarea name="description" maxlength="2000" rows="3" placeholder="What this agent is allowed and designed to do."></textarea></label>
+        <label>Agent Card URL <span>(optional, HTTPS)</span><input name="agent_card_url" type="url" inputmode="url" placeholder="https://example.com/.well-known/agent-card.json" /></label>
+        <label class="check-label"><input name="is_public" type="checkbox" /> List this identity in the public agent directory</label>
+        <button class="button button--dark button--small" type="submit">Create identity</button>
+      </fieldset>
+      </form>
+    </div></details>
+  <details class="workspace-disclosure" name="agent-actions"><summary>Offer a contribution job</summary><div class="agent-workspace__panel">
+      <form data-agent-job-form>
+        <fieldset data-agent-requires-organization disabled>
+        <label>Owner organization<select name="organization_id" required data-job-organization-select><option value="">Loading organizations…</option></select></label>
+        <label>Job type<select name="job_type"><option value="metadata-enrichment">Metadata enrichment</option><option value="compatibility-check">Compatibility check</option><option value="dataset-validation">Dataset validation</option><option value="documentation">Documentation</option><option value="provenance">Provenance</option></select></label>
+        <label>Title<input name="title" required minlength="3" maxlength="160" placeholder="Verify the dataset schema" /></label>
+        <label>Instructions<textarea name="description" required minlength="10" maxlength="4000" rows="3"></textarea></label>
+        <label>Structured input <span>(optional JSON object)</span><textarea name="input" rows="3" spellcheck="false" placeholder='{"expected_columns":["text","label"]}'></textarea></label>
+        <label>Reward label<input name="reward_label" maxlength="120" value="community reputation" /></label>
+        <button class="button button--dark button--small" type="submit">Publish review-bound job</button>
+      </fieldset>
+      </form>
+    </div></details>
+  <details class="workspace-disclosure" name="agent-actions"><summary>Connections and permissions</summary><div class="workspace-disclosure__body">
   <div class="agent-workspace__boundary" role="note">
     <i class="ph ph-shield-check" aria-hidden="true"></i>
     <span><strong>Cannot spend money</strong>Tokens expire within 30 days, have action caps, and cannot publish, delete, or make payments.</span>
@@ -20,48 +61,7 @@
     </div>
   </div>
 
-  <div class="agent-workspace__grid">
-    <section class="agent-workspace__panel">
-      <p class="eyebrow">01 · identity</p>
-      <h3>Create an agent identity</h3>
-      <form data-agent-create-form>
-        <label>Operator organization<select name="organization_id" required data-agent-organization-select><option value="">Loading organizations…</option></select></label>
-        <div class="form-grid form-grid--two">
-          <label>Agent handle<input name="handle" required minlength="1" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" placeholder="research-runner" /></label>
-          <label>Display name<input name="display_name" required maxlength="120" placeholder="Research Runner" /></label>
-        </div>
-        <label>Framework<select name="framework"><option value="opencode">OpenCode</option><option value="codex">Codex</option><option value="claude-code">Claude Code</option><option value="qwen-code">Qwen Code</option><option value="custom">Custom</option><option value="other">Other</option></select></label>
-        <label>Description<textarea name="description" maxlength="2000" rows="3" placeholder="What this agent is allowed and designed to do."></textarea></label>
-        <label>Agent Card URL <span>(optional, HTTPS)</span><input name="agent_card_url" type="url" inputmode="url" placeholder="https://example.com/.well-known/agent-card.json" /></label>
-        <label class="check-label"><input name="is_public" type="checkbox" /> List this identity in the public agent directory</label>
-        <button class="button button--dark button--small" type="submit">Create identity</button>
-      </form>
-    </section>
-
-    <section class="agent-workspace__panel">
-      <p class="eyebrow">02 · human-owned jobs</p>
-      <h3>Offer a contribution job</h3>
-      <form data-agent-job-form>
-        <label>Owner organization<select name="organization_id" required data-job-organization-select><option value="">Loading organizations…</option></select></label>
-        <label>Job type<select name="job_type"><option value="metadata-enrichment">Metadata enrichment</option><option value="compatibility-check">Compatibility check</option><option value="dataset-validation">Dataset validation</option><option value="documentation">Documentation</option><option value="provenance">Provenance</option></select></label>
-        <label>Title<input name="title" required minlength="3" maxlength="160" placeholder="Verify the dataset schema" /></label>
-        <label>Instructions<textarea name="description" required minlength="10" maxlength="4000" rows="3"></textarea></label>
-        <label>Structured input <span>(optional JSON object)</span><textarea name="input" rows="3" spellcheck="false" placeholder='{"expected_columns":["text","label"]}'></textarea></label>
-        <label>Reward label<input name="reward_label" maxlength="120" value="community reputation" /></label>
-        <button class="button button--dark button--small" type="submit">Publish review-bound job</button>
-      </form>
-    </section>
-  </div>
-
-  <section class="agent-workspace__managed">
-    <div class="repository-section__heading"><div><p class="eyebrow">Managed identities</p><h3>Your organization agents</h3></div><button class="text-button" type="button" data-agent-refresh>Refresh</button></div>
-    <div data-agent-list><p>Loading agent identities…</p></div>
-  </section>
-
-  <section class="agent-workspace__reviews">
-    <div class="repository-section__heading"><div><p class="eyebrow">Human checkpoint</p><h3>Submitted contributions</h3></div></div>
-    <div data-agent-job-list><p>Loading submissions…</p></div>
-  </section>
+  </div></details>
 
   <aside class="agent-token-reveal" data-agent-token-reveal hidden aria-live="polite">
     <div><p class="eyebrow">Shown once</p><h3>Copy the agent token now</h3><p>Store it in your client’s secret store as <code>SUPERII_TOKEN</code>. Never place it in a URL, source file, or public configuration.</p></div>
@@ -127,10 +127,21 @@
   async function loadOrganizations() {
     const body = await jsonRequest('/api/organizations?mine=1');
     const organizations = (Array.isArray(body.organizations) ? body.organizations : []) as Organization[];
+    const eligible = organizations.filter((organization) => ['owner', 'admin'].includes(organization.role));
+    root?.querySelectorAll<HTMLFieldSetElement>('[data-agent-requires-organization]').forEach((fieldset) => { fieldset.disabled = eligible.length === 0; });
+    const prerequisite = root?.querySelector<HTMLElement>('[data-agent-prerequisite]');
+    if (prerequisite) {
+      prerequisite.hidden = eligible.length > 0;
+      if (!eligible.length) {
+        const link = element('a', 'Create an organization') as HTMLAnchorElement;
+        link.href = document.documentElement.lang === 'ru' ? '/ru/organizations/new' : '/organizations/new';
+        prerequisite.replaceChildren(element('p', 'Creating an agent or a contribution job requires an organization you own or administer.'), link);
+      }
+    }
     root?.querySelectorAll('[data-agent-organization-select], [data-job-organization-select]').forEach((candidate) => {
       const select = candidate as unknown as HTMLSelectElement;
       select.replaceChildren();
-      const eligible = organizations.filter((organization) => ['owner', 'admin'].includes(organization.role));
+      select.disabled = eligible.length === 0;
       if (!eligible.length) {
         const option = document.createElement('option');
         option.value = '';
@@ -260,7 +271,7 @@
       const body = await jsonRequest('/api/agents');
       const agents = (Array.isArray(body.agents) ? body.agents : []) as AgentIdentity[];
       agentList.replaceChildren();
-      if (!agents.length) { add(agentList, element('p', 'No agent identity yet. Create one above.')); return; }
+      if (!agents.length) { add(agentList, element('p', 'No agent identity yet. Open Add an agent to create one.')); return; }
       const cards = element('div', undefined, 'agent-managed-list');
       for (const agent of agents) {
         const card = element('article');
@@ -295,7 +306,13 @@
           } catch (error) { setStatus(error instanceof Error ? error.message : 'Identity could not be changed.', true); disable.disabled = false; }
         });
         add(actions, subscribe, disable); add(card, actions);
-        if (agent.status === 'active') add(card, tokenForm(agent));
+        if (agent.status === 'active') {
+          const tokenDetails = element('details', undefined, 'workspace-disclosure');
+          const tokenBody = element('div', undefined, 'workspace-disclosure__body');
+          add(tokenBody, tokenForm(agent));
+          add(tokenDetails, element('summary', 'Issue an access token'), tokenBody);
+          add(card, tokenDetails);
+        }
         await renderTokens(agent, card);
         add(cards, card);
       }
@@ -369,7 +386,7 @@
   });
 
   root?.querySelector('[data-agent-refresh]')?.addEventListener('click', () => {
-    void loadRepositories().then(loadAgents);
+    void Promise.all([loadOrganizations(), loadRepositories()]).then(loadAgents).catch(() => setStatus('Organization access could not be loaded. Please try Refresh again.', true));
     void loadJobs();
   });
   root?.querySelector('[data-copy-agent-token]')?.addEventListener('click', async () => {
@@ -387,9 +404,18 @@
     catch { setStatus('Clipboard access was blocked.', true); }
   }));
 
-  if (root) {
+  let started = false;
+  function startAgentWorkspace() {
+    if (!root || started || root.closest<HTMLElement>('[data-workspace-panel]')?.hidden) return;
+    started = true;
     Promise.all([loadOrganizations(), loadRepositories()])
       .then(() => Promise.all([loadAgents(), loadJobs()]))
-      .catch(() => setStatus('Some agent controls could not be loaded.', true));
+      .catch(() => {
+        const prerequisite = root?.querySelector<HTMLElement>('[data-agent-prerequisite]');
+        if (prerequisite) prerequisite.textContent = 'Organization access could not be loaded. Use Refresh to try again.';
+        setStatus('Some agent controls could not be loaded.', true);
+      });
   }
+  window.addEventListener('workspace:section', startAgentWorkspace);
+  startAgentWorkspace();
 </script>

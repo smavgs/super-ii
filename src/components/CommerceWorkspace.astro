@@ -6,11 +6,16 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
 
 <section class="account-card commerce-workspace" id="commerce" data-commerce-workspace>
   <div class="repository-section__heading">
-    <div><p class="eyebrow">Agent commerce · USDC on Ethereum</p><h2>Let an agent prepare approved purchases</h2></div>
+    <div><p class="eyebrow">Agent commerce · USDC on Ethereum</p><h2 class="workspace-panel-title" tabindex="-1">Agent commerce</h2></div>
     <a class="button button--secondary button--small" href="/agents#commerce-lane">Machine guide</a>
   </div>
   <p>Issue a separate, revocable commerce token with exact products, dollars, targets, order count, and expiry. It can create a NOWPayments invoice; it cannot open, sign, or debit any wallet.</p>
 
+  <section class="commerce-managed">
+    <div class="repository-section__heading"><div><p class="eyebrow">Revoke and audit</p><h3>Your delegations</h3></div><button class="text-button" type="button" data-commerce-refresh>Refresh</button></div>
+    <div data-commerce-list><p>Loading commerce delegations…</p></div>
+  </section>
+  <details class="workspace-disclosure" name="commerce-actions"><summary>Create a commerce delegation</summary><div class="workspace-disclosure__body">
   <div class="commerce-boundary" role="note">
     <span><strong>Separate from Work tokens</strong><code>sii_agent_</code> tokens remain permanently zero-spend.</span>
     <span><strong>External wallet only</strong>The payer—not Super ii—chooses whether to send USDC on Ethereum.</span>
@@ -18,7 +23,7 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
   </div>
 
   <form class="commerce-form" data-commerce-form>
-    <div class="commerce-form__heading"><p class="eyebrow">01 · explicit authority</p><h3>Create a commerce delegation</h3></div>
+    <div class="commerce-form__heading"><p class="eyebrow">Explicit authority</p><h3>Create a commerce delegation</h3></div>
     <label>Agent identity <span>(optional)</span><select name="agent_identity_id" data-commerce-agent><option value="">External or unregistered agent</option></select></label>
 
     <fieldset>
@@ -46,6 +51,14 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
     <label class="commerce-confirm"><input type="checkbox" name="confirm" required /> I understand this token can prepare invoices within these limits, but payment still requires an external Ethereum wallet.</label>
     <button class="button button--dark button--small" type="submit">Issue commerce token</button>
   </form>
+  </div></details>
+  <details class="workspace-disclosure" name="commerce-actions"><summary>Connect a compatible agent</summary><div class="workspace-disclosure__body">  <section class="commerce-connect">
+    <p class="eyebrow">Use from any compatible agent</p>
+    <div><span>Commerce MCP</span><code>https://superii.site/mcp/commerce</code></div>
+    <div><span>REST catalog</span><code>https://superii.site/api/commerce/catalog</code></div>
+    <div><span>A2A Agent Card</span><code>https://superii.site/.well-known/commerce-agent-card.json</code></div>
+  </section></div></details>
+
 
   <section class="commerce-token" data-commerce-token hidden>
     <p class="eyebrow">Shown once</p>
@@ -55,17 +68,8 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
     <div class="button-row"><button class="button button--dark button--small" type="button" data-commerce-copy>Copy token</button><button class="button button--secondary button--small" type="button" data-commerce-clear>Clear</button></div>
   </section>
 
-  <section class="commerce-connect">
-    <p class="eyebrow">02 · use from any compatible agent</p>
-    <div><span>Commerce MCP</span><code>https://superii.site/mcp/commerce</code></div>
-    <div><span>REST catalog</span><code>https://superii.site/api/commerce/catalog</code></div>
-    <div><span>A2A Agent Card</span><code>https://superii.site/.well-known/commerce-agent-card.json</code></div>
-  </section>
 
-  <section class="commerce-managed">
-    <div class="repository-section__heading"><div><p class="eyebrow">03 · revoke and audit</p><h3>Your delegations</h3></div><button class="text-button" type="button" data-commerce-refresh>Refresh</button></div>
-    <div data-commerce-list><p>Loading commerce delegations…</p></div>
-  </section>
+
   <p class="form-status" data-commerce-status aria-live="polite"></p>
 </section>
 
@@ -209,7 +213,14 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
   });
   root?.querySelector('[data-commerce-refresh]')?.addEventListener('click', () => { void loadDelegations(); });
 
-  if (root) Promise.all([loadChoices(), loadDelegations()]).catch(() => setStatus('Some commerce controls could not be loaded.', true));
+  let started = false;
+  function startCommerceWorkspace() {
+    if (!root || started || root.closest<HTMLElement>('[data-workspace-panel]')?.hidden) return;
+    started = true;
+    Promise.all([loadChoices(), loadDelegations()]).catch(() => setStatus('Some commerce controls could not be loaded.', true));
+  }
+  window.addEventListener('workspace:section', startCommerceWorkspace);
+  startCommerceWorkspace();
 </script>
 
 <style>

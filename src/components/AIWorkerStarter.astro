@@ -9,7 +9,7 @@ const installCommands = {
 };
 ---
 
-<details class="ai-worker" id="ai-worker" data-ai-worker>
+<details class="ai-worker" id="ai-worker" name="workspace-ai-setup" data-ai-worker>
   <summary class="ai-worker__summary">
     <span class="ai-worker__summary-icon" aria-hidden="true"><i class="ph ph-desktop-tower"></i></span>
     <span class="ai-worker__summary-copy">
@@ -322,6 +322,7 @@ const installCommands = {
     };
 
     const openFromLocation = () => {
+      if (worker.closest('[data-member-workspace]')) return;
       const requested = location.hash === '#ai-worker' || new URLSearchParams(location.search).get('welcome') === 'ai-worker';
       if (!requested) return;
       const settledUrl = new URL(location.href);
