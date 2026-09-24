@@ -182,12 +182,48 @@ commit;
 do $runtime_boundary$
 begin
   if not has_table_privilege(current_user,'app.repository_files','SELECT,INSERT,UPDATE,DELETE')
+    or not has_table_privilege(current_user,'app.repository_compatibility','SELECT,INSERT,UPDATE,DELETE')
     or has_table_privilege(current_user,'app.payment_orders','SELECT')
     or has_schema_privilege(current_user,'app_private','USAGE') then
     raise exception 'runtime login privilege boundary is incorrect';
   end if;
 end
 $runtime_boundary$;
+
+begin;
+select repository.id as repository_id, revision.id as revision_id
+from app.repositories repository
+join app.repository_branches branch
+  on branch.repository_id=repository.id and branch.is_default
+join app.repository_revisions revision on revision.id=branch.head_revision_id
+where repository.slug='private-model'
+\gset runtime_
+insert into app.repository_revision_analyses (
+  repository_id, revision_id, analysis_type, status, result, completed_at
+) values (
+  :'runtime_repository_id'::uuid,
+  :'runtime_revision_id'::uuid,
+  'model',
+  'passed',
+  '{"offline":true,"compatibility":{"architecture":"runtime-boundary-smoke","model_size_bytes":4,"minimum_ram_bytes":8,"minimum_vram_bytes":0,"cpu_compatible":true,"llama_cpp_compatible":true,"confidence":"verified"}}'::jsonb,
+  now()
+)
+on conflict (revision_id, analysis_type) do update set
+  status=excluded.status,
+  result=excluded.result,
+  completed_at=excluded.completed_at;
+select exists (
+  select 1 from app.repository_compatibility
+  where repository_id=:'runtime_repository_id'::uuid
+    and revision_id=:'runtime_revision_id'::uuid
+    and architecture='runtime-boundary-smoke'
+) as runtime_compatibility_ok \gset
+\if :runtime_compatibility_ok
+\else
+  \echo runtime analysis did not maintain the compatibility projection
+  select 1/0;
+\endif
+rollback;
 
 \else
   \echo one runtime-role test selector must be enabled
