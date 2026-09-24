@@ -48,7 +48,13 @@ from .inspectors import (
 from .inspectors.compatibility import derive_model_compatibility
 from .inspectors.gguf import inspect_gguf
 from .notebooks import NotebookRunner
-from .pipeline import UploadHeld, UploadRejected, process_completed_transfer, process_upload
+from .pipeline import (
+    UploadHeld,
+    UploadRejected,
+    process_completed_transfer,
+    process_upload,
+    rescan_revision_files,
+)
 from .scanners import scanner_readiness
 from .security import RuntimeAuth
 from .settings import Settings, get_settings
@@ -574,6 +580,13 @@ def inspect_revision(
     notebook_result: dict[str, Any] | None = None
     try:
         with materialized_revision(database, get_store(), revision_id) as workspace:
+            rescan_revision_files(
+                revision_id=revision_id,
+                files=files,
+                workspace=workspace,
+                settings=get_settings(),
+                database=database,
+            )
             if has_notebooks:
                 try:
                     notebook_result = inspect_notebooks(workspace)

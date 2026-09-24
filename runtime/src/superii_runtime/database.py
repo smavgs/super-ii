@@ -626,6 +626,41 @@ class RepositoryDatabase:
             ).fetchall()
         return [RevisionFile(**row) for row in rows]
 
+    def revision_files_missing_inspections(
+        self,
+        revision_id: UUID,
+        inspectors: tuple[str, ...],
+    ) -> set[UUID]:
+        """Return files whose latest required inspection is not a versioned pass."""
+
+        if not inspectors:
+            return set()
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                select file.id
+                from app.repository_files file
+                where file.revision_id = %s
+                  and exists (
+                    select 1
+                    from unnest(%s::text[]) required(inspector)
+                    where coalesce((
+                      select inspection.status = 'passed'
+                        and inspection.completed_at is not null
+                        and coalesce(length(inspection.tool_version), 0) > 0
+                      from app.repository_file_inspections inspection
+                      where inspection.repository_file_id = file.id
+                        and inspection.inspector = required.inspector
+                      order by inspection.started_at desc, inspection.id desc
+                      limit 1
+                    ), false) = false
+                  )
+                order by file.path
+                """,
+                (revision_id, list(inspectors)),
+            ).fetchall()
+        return {row["id"] for row in rows}
+
     def get_revision_file(self, repository_file_id: UUID) -> RevisionFile | None:
         with self.connect() as connection:
             row = connection.execute(

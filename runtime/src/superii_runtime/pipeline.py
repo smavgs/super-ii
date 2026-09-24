@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, BinaryIO
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from .database import RepositoryDatabase
+from .database import RepositoryDatabase, RevisionFile
 from .inspectors import inspect_safetensors
 from .inspectors.gguf import inspect_gguf
 from .scanners import (
@@ -30,6 +30,9 @@ class UploadHeld(RuntimeError):
     def __init__(self, results: list[ScanResult]) -> None:
         self.results = results
         super().__init__("upload remains quarantined because a required scanner errored")
+
+
+REQUIRED_FILE_INSPECTORS = ("clamav", "format_policy", "gitleaks")
 
 
 def _safetensors_scan(path: Path, repository_path: str) -> ScanResult:
@@ -118,6 +121,77 @@ def _record_results(
             result.tool_version,
             result.result,
         )
+
+
+def rescan_revision_files(
+    *,
+    revision_id: UUID,
+    files: list[RevisionFile],
+    workspace: Path,
+    settings: Settings,
+    database: RepositoryDatabase,
+) -> list[dict[str, Any]]:
+    """Attach fresh, revision-scoped evidence to copied content-addressed files.
+
+    New commits may reuse immutable CAS bytes, but they must never reuse a parent
+    revision's security evidence. Only files missing a latest versioned pass are
+    scanned, so an exact retry does not repeatedly scan multi-gigabyte weights.
+    """
+
+    missing = database.revision_files_missing_inspections(
+        revision_id,
+        REQUIRED_FILE_INSPECTORS,
+    )
+    if not missing:
+        return []
+
+    database.set_revision_status(revision_id, "scanning")
+    evidence: list[dict[str, Any]] = []
+    for file in files:
+        if file.id not in missing:
+            continue
+        relative = Path(*normalize_repository_path(file.path).split("/"))
+        absolute_path = (workspace / relative).resolve()
+        if not absolute_path.is_relative_to(workspace) or not absolute_path.is_file():
+            database.set_revision_status(revision_id, "quarantined")
+            raise RuntimeError("revision file is unavailable for security inspection")
+        if absolute_path.stat().st_size != file.size_bytes:
+            database.set_revision_status(revision_id, "quarantined")
+            raise RuntimeError("revision file size changed before security inspection")
+
+        staged = StagedObject(
+            upload_id=uuid4(),
+            path=file.path,
+            size_bytes=file.size_bytes,
+            mime_type=file.mime_type,
+            sha256=file.sha256,
+            storage_key=file.storage_key,
+            absolute_path=absolute_path,
+        )
+        try:
+            results = _scan_staged(staged, settings)
+        except Exception:
+            database.set_revision_status(revision_id, "quarantined")
+            raise
+        _record_results(database, file.id, results)
+        evidence.append(
+            {
+                "file_id": str(file.id),
+                "path": file.path,
+                "inspections": [asdict(result) for result in results],
+            }
+        )
+        if any(result.status == "failed" for result in results):
+            database.mark_file_rejected(file.id, "failed")
+            database.set_revision_status(revision_id, "rejected")
+            raise UploadRejected(results)
+        if any(result.status == "error" for result in results):
+            database.mark_file_scan_error(file.id)
+            database.set_revision_status(revision_id, "quarantined")
+            raise UploadHeld(results)
+
+    database.set_revision_status(revision_id, "quarantined")
+    return evidence
 
 
 def process_upload(
