@@ -203,6 +203,9 @@ def test_model_inspection_fails_closed_without_returning_tokenizer_exception_det
                 )
             ]
 
+        def revision_files_missing_inspections(self, *_args):
+            return set()
+
         def save_revision_analysis(self, *args):
             self.saved.append(args)
 

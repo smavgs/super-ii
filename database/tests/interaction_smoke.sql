@@ -45,6 +45,7 @@ declare
   bridge_already_imported boolean;
   bridge_organization_id uuid;
   policy_payload text;
+  publication_candidate jsonb;
 begin
   alice_id := app.ensure_profile('clerk-alice', 'alice', 'Alice', null);
   bob_id := app.ensure_profile('clerk-bob', 'bob', 'Bob', null);
@@ -739,6 +740,31 @@ begin
     now()
   );
   insert into app.repository_revision_analyses (
+    repository_id, revision_id, analysis_type, status, result, tool_versions, completed_at
+  ) values (
+    publish_repository_id,
+    revision_row.id,
+    'tokenizer',
+    'passed',
+    jsonb_build_object(
+      'applicable', true,
+      'verified', true,
+      'manifest', jsonb_build_object(
+        'version', 'superii-tokenizer-pack-v1',
+        'source_revision_id', revision_row.id::text,
+        'pack_sha256', repeat('a', 64),
+        'engine', 'huggingface-tokenizers',
+        'integrity', 'sha256-content-addressed',
+        'verification', jsonb_build_object(
+          'encode', 'passed', 'decode', 'passed', 'unicode', 'passed',
+          'special_tokens', 'passed'
+        )
+      )
+    ),
+    '{"superii_tokenizer_pack":"superii-tokenizer-pack-v1"}'::jsonb,
+    now()
+  );
+  insert into app.repository_revision_analyses (
     repository_id, revision_id, analysis_type, status, result, completed_at
   ) values (
     publish_repository_id,
@@ -787,6 +813,17 @@ begin
       total_size_bytes = 4,
       status = 'review'
   where id = revision_row.id;
+
+  publication_candidate := app.publication_candidate(
+    publish_repository_id,
+    revision_row.id
+  );
+  if not jsonb_path_exists(
+    publication_candidate,
+    '$.analyses[*] ? (@.analysis_type == "tokenizer" && @.result.verified == true && @.result.manifest.pack_sha256 == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")'
+  ) then
+    raise exception 'publication candidate omitted immutable tokenizer evidence';
+  end if;
 
   begin
     perform app.publish_repository_revision(revision_row.id, 'smoke-test');

@@ -10,7 +10,8 @@ import pytest
 from safetensors.numpy import save_file
 
 from superii_runtime.capabilities import capability_report
-from superii_runtime.pipeline import _scan_staged
+from superii_runtime.database import RevisionFile
+from superii_runtime.pipeline import UploadRejected, _scan_staged, rescan_revision_files
 from superii_runtime.scanners import (
     ScanResult,
     enforce_format_policy,
@@ -21,6 +22,104 @@ from superii_runtime.scanners import (
 )
 from superii_runtime.settings import Settings
 from superii_runtime.storage import StagedObject
+
+
+class RevisionScanDatabase:
+    def __init__(self, missing: set) -> None:
+        self.missing = missing
+        self.statuses: list[str] = []
+        self.inspections: list[tuple] = []
+        self.rejected: list[tuple] = []
+
+    def revision_files_missing_inspections(self, *_args):
+        return self.missing
+
+    def set_revision_status(self, _revision_id, status):
+        self.statuses.append(status)
+
+    def record_inspection(self, *args):
+        self.inspections.append(args)
+
+    def mark_file_rejected(self, *args):
+        self.rejected.append(args)
+
+    def mark_file_scan_error(self, *_args):
+        raise AssertionError("clean fixture must not enter scanner-error quarantine")
+
+
+def test_copied_revision_bytes_receive_fresh_revision_scoped_scans(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository_id, revision_id, file_id = uuid4(), uuid4(), uuid4()
+    payload = tmp_path / "README.md"
+    payload.write_text("safe", encoding="utf-8")
+    file = RevisionFile(
+        id=file_id,
+        repository_id=repository_id,
+        revision_id=revision_id,
+        path="README.md",
+        size_bytes=payload.stat().st_size,
+        mime_type="text/markdown",
+        sha256="a" * 64,
+        storage_key="objects/sha256/aa/" + "a" * 64,
+    )
+    results = [
+        ScanResult(name, "passed", f"{name}-fixture-1", {"clean": True})
+        for name in ("format_policy", "clamav", "gitleaks")
+    ]
+    monkeypatch.setattr("superii_runtime.pipeline._scan_staged", lambda *_: results)
+    database = RevisionScanDatabase({file_id})
+
+    evidence = rescan_revision_files(
+        revision_id=revision_id,
+        files=[file],
+        workspace=tmp_path,
+        settings=Settings(storage_root=tmp_path / "data"),
+        database=database,
+    )
+
+    assert database.statuses == ["scanning", "quarantined"]
+    assert [item[1] for item in database.inspections] == [
+        "format_policy",
+        "clamav",
+        "gitleaks",
+    ]
+    assert evidence[0]["file_id"] == str(file_id)
+
+
+def test_copied_revision_rescan_rejects_failed_evidence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository_id, revision_id, file_id = uuid4(), uuid4(), uuid4()
+    payload = tmp_path / "README.md"
+    payload.write_text("unsafe", encoding="utf-8")
+    file = RevisionFile(
+        id=file_id,
+        repository_id=repository_id,
+        revision_id=revision_id,
+        path="README.md",
+        size_bytes=payload.stat().st_size,
+        mime_type="text/markdown",
+        sha256="b" * 64,
+        storage_key="objects/sha256/bb/" + "b" * 64,
+    )
+    results = [ScanResult("gitleaks", "failed", "gitleaks-fixture-1", {"findings": 1})]
+    monkeypatch.setattr("superii_runtime.pipeline._scan_staged", lambda *_: results)
+    database = RevisionScanDatabase({file_id})
+
+    with pytest.raises(UploadRejected):
+        rescan_revision_files(
+            revision_id=revision_id,
+            files=[file],
+            workspace=tmp_path,
+            settings=Settings(storage_root=tmp_path / "data"),
+            database=database,
+        )
+
+    assert database.rejected == [(file_id, "failed")]
+    assert database.statuses == ["scanning", "rejected"]
 
 
 def test_unsafe_pickle_style_formats_fail_policy() -> None:
