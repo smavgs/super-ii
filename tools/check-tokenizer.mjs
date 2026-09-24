@@ -9,6 +9,9 @@ const requiredFiles = [
   'runtime/tests/test_gguf_tokenizers.py',
   'runtime/tests/test_llama_tokenizer.py',
   'database/migrations/0024_verified_tokenizer.sql',
+  'database/migrations/0025_revision_commit_rescan.sql',
+  'database/migrations/0026_runtime_compatibility_boundary.sql',
+  'database/migrations/0027_revision_evidence_rescan.sql',
   'src/components/TokenizerWorkbench.astro',
   'src/lib/browser-tokenizer.ts',
   'src/lib/tokenizers.ts',
@@ -59,6 +62,21 @@ requireText('runtime/src/superii_runtime/inspectors/gguf_tokenizers.py', [
   'normalizer-disabled',
   '_conversion_variants',
   '_matches_reference',
+]);
+requireText('runtime/src/superii_runtime/pipeline.py', [
+  'Attach fresh, revision-scoped evidence to copied content-addressed files.',
+  'scan_revision_files(',
+]);
+requireText('database/migrations/0025_revision_commit_rescan.sql', [
+  'inspection evidence is regenerated on submit',
+]);
+requireText('database/migrations/0026_runtime_compatibility_boundary.sql', [
+  'superii_runtime_service_all',
+  'repository_compatibility',
+]);
+requireText('database/migrations/0027_revision_evidence_rescan.sql', [
+  "when analysis.analysis_type = 'tokenizer' then analysis.result",
+  'publication_candidate',
 ]);
 requireText('runtime/install-llama-macos.sh', [
   'b10516',
@@ -152,6 +170,11 @@ requireText('src/lib/system-state-localization.ts', [
 requireText('docs/verification/tokenizer-production.json', [
   '"status": "production"',
   '7611a6ab046d0aff1b2630e751dfc05162e8a8d982be314603cac84409308a16',
+  '588001e4-8738-4396-9ab8-494ab3c56ed2',
+  '05afc1b1ac9b00815293ad927893e63e32688afbbe09d361df82a0fe6c9942da',
+  '"converter_variant": "qwen35-native"',
+  '"verification_vector_count": 9',
+  '33254b75-cbc4-473d-b25d-43e0060539bc',
   '4045187f20be606fa8ee49660625f72dc54f32adf5a605104ff6498bf8590a40',
   '"tool_count": 19',
 ]);
