@@ -1,16 +1,24 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import RobotWorkspace from '@/components/RobotWorkspace.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { robotCatalog } from '@/lib/robot';
-import { listPublicRobots } from '@/lib/robot-store';
+import { activeRobotPlan, listHardware, listOwnedRobots, listPublicRobots, type RobotPlanTier } from '@/lib/robot-store';
 import { sqlClient } from '@/lib/db';
 import '@/styles/robot.css';
+import '@/styles/workspace.css';
 
 export const prerender = false;
 
 const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
 const signedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+if (signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 let publicRobots: Awaited<ReturnType<typeof listPublicRobots>> = [];
+let myRobots: Awaited<ReturnType<typeof listOwnedRobots>> = [];
+let hardware: Awaited<ReturnType<typeof listHardware>> = [];
+let myOrganizations: Array<{ id: string; handle: string; full_name: string; role: string }> = [];
+let robotPlan: RobotPlanTier = 'free';
+let personalWorkUnavailable = true;
 let organizationOwners: Array<{ id: string; handle: string; name: string }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -28,6 +36,15 @@ if (sql) {
             and app.organization_robot_plan_rank(${profile.profileId}::uuid, organization.id) >= 2
           order by organization.handle
         ` as typeof organizationOwners;
+        myOrganizations = await sql`
+          select o.id, o.handle, coalesce(o.full_name, o.name) as full_name, m.role
+          from app.organization_members m join app.organizations o on o.id = m.organization_id
+          where m.profile_id = ${profile.profileId}::uuid order by o.handle
+        ` as typeof myOrganizations;
+        robotPlan = await activeRobotPlan(sql, profile);
+        myRobots = await listOwnedRobots(sql, profile.profileId);
+        if (robotPlan !== 'free') hardware = await listHardware(sql, profile.profileId);
+        personalWorkUnavailable = false;
       }
     } catch { organizationOwners = []; }
   }
@@ -64,6 +81,13 @@ const reference = robotCatalog.referenceRobots[0];
         </div>
       </div>
     </section>
+
+    {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-robots">
+      <summary>My robots and hardware<small>Your saved plans, versions and private inventory.</small></summary>
+      <div class="workspace-disclosure__body">
+        {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} />}
+      </div>
+    </details></div>}
 
     <section class="robot-proofbar" aria-label="Robot evidence principles">
       <div class="shell">
@@ -233,3 +257,7 @@ const reference = robotCatalog.referenceRobots[0];
     import '@/scripts/robot-page';
   </script>
 </BaseLayout>
+
+<script>
+  import '@/scripts/personal-work';
+</script>

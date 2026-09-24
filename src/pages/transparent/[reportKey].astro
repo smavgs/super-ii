@@ -182,7 +182,7 @@ const description = report
       const button = candidate;
       const action = button.dataset.reportAction;
       button.disabled = true;
-      try { await request(action, { [action === 'save' ? 'saved' : 'watched']: true }); button.textContent = action === 'save' ? 'Saved ✓' : 'Watching ✓'; show(action === 'save' ? 'Report saved to your Workspace.' : 'You will be notified when Super ii records a newer checked revision.'); }
+      try { await request(action, { [action === 'save' ? 'saved' : 'watched']: true }); button.textContent = action === 'save' ? 'Saved ✓' : 'Watching ✓'; show(action === 'save' ? 'Report saved. Find it in My reports on Transparent.' : 'You will be notified when Super ii records a newer checked revision.'); }
       catch (error) { show(error instanceof Error ? error.message : 'Action failed.', true); button.disabled = false; }
     }));
     root?.querySelector('[data-share-report]')?.addEventListener('click', async (event) => {

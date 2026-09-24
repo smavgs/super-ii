@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFile(path.join(root, file), 'utf8');
-const [home, usePage, newPage, account, repositoryPage, styles, siteSource, sitemap, llms, docs, systemState] = await Promise.all([
+const [home, usePage, newPage, account, repositoryPage, styles, siteSource, sitemap, llms, docs, systemState, memberWorkspace] = await Promise.all([
   read('src/pages/index.astro'),
   read('src/pages/use.astro'),
   read('src/pages/new.astro'),
@@ -19,6 +19,7 @@ const [home, usePage, newPage, account, repositoryPage, styles, siteSource, site
   read('public/llms.txt'),
   read('src/pages/docs.astro'),
   read('SYSTEM-STATE.md'),
+  read('src/components/MemberWorkspace.astro'),
 ]);
 
 const requireAll = (source, markers, label) => {
@@ -60,7 +61,7 @@ requireAll(usePage, [
 ], '/use page');
 
 requireAll(newPage, ['Astro.url.searchParams.get(\'kind\')', "requestedKind === 'dataset' || requestedKind === 'space'", "selected={selectedKind === 'model'}", "selected={selectedKind === 'space'}"], 'repository type preselection');
-assert.ok(account.includes('class="account-card" id="repositories"'), 'Workspace repository anchor is missing');
+assert.ok(account.includes('<MemberWorkspace ') && memberWorkspace.includes('id="repositories"'), 'Workspace repository anchor is missing');
 requireAll(repositoryPage, ['data-copy-public-link', "new URL(location.pathname, location.origin).toString()", 'Public link copied.'], 'canonical public-link copy');
 requireAll(styles, ['.use-home-hook', '.use-way-hero', '.use-way-section--share', '.use-python-example', '@media (max-width: 430px)', '@media (prefers-reduced-motion: reduce)'], 'Use responsive styles');
 

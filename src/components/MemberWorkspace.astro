@@ -1,0 +1,142 @@
+---
+import AgentStarter from './AgentStarter.astro';
+import AIWorkerStarter from './AIWorkerStarter.astro';
+import AgentWorkspace from './AgentWorkspace.astro';
+import CommerceWorkspace from './CommerceWorkspace.astro';
+import MemberProfileWorkspace from './MemberProfileWorkspace.astro';
+import type { EditableMemberProfile } from '@/lib/member-profile';
+import '@/styles/workspace.css';
+
+interface Props {
+  repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }>;
+  notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }>;
+  bridgeSources: Array<{ repository_id: string; provider_repo_id: string; source_revision: string; source_visibility: string; imported_at: string; sync_enabled: boolean }>;
+  subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }>;
+  payments: Array<{ id: string; plan_id: string; billing_term: string; price_amount_cents: number; status: string }>;
+  memberProfile: (EditableMemberProfile & { id: string; handle: string; display_name: string; avatar_url: string | null }) | null;
+  unavailable?: boolean;
+}
+
+const { repositories, notifications, bridgeSources, subscriptions, payments, memberProfile, unavailable = false } = Astro.props;
+const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const sections = [
+  { id: 'work', label: 'Your work', icon: 'ph-folder-open' },
+  { id: 'setup', label: 'AI setup', icon: 'ph-sparkle' },
+  { id: 'agents', label: 'Agents', icon: 'ph-robot' },
+  { id: 'commerce', label: 'Agent commerce', icon: 'ph-handshake' },
+  { id: 'account', label: 'Account', icon: 'ph-user-circle' },
+];
+const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space: 'App' })[kind] ?? kind;
+---
+
+<section class="shell member-workspace" data-member-workspace>
+  <header class="workspace-heading">
+    <h1>Workspace</h1>
+    <p>Your work, tools and account.</p>
+  </header>
+  {unavailable && <p class="workspace-prerequisite" role="status">Some Workspace details could not be loaded. Please refresh to try again.</p>}
+  <div class="workspace-layout">
+    <div class="workspace-navigation">
+      <nav class="workspace-nav" aria-label="Workspace sections">
+        {sections.map((section) => <a href={`#${section.id}`} data-workspace-nav={section.id} aria-current={section.id === 'work' ? 'page' : undefined}><i class={`ph ${section.icon}`} aria-hidden="true"></i>{section.label}</a>)}
+      </nav>
+      <label class="workspace-mobile-picker" hidden>Workspace section
+        <select data-workspace-select>{sections.map((section) => <option value={section.id}>{section.label}</option>)}</select>
+      </label>
+    </div>
+
+    <div class="workspace-panels">
+      <section data-workspace-panel="work" id="work" aria-labelledby="work-title">
+        <div class="workspace-panel-heading" id="repositories">
+          <div><h2 class="workspace-panel-title" id="work-title" tabindex="-1">Your work</h2><p>Continue with a repository or start something new.</p></div>
+          <div class="button-row"><a class="button button--dark button--small" href="/new">Create</a><a class="button button--secondary button--small" href="/bring-my-work">Bring my work</a></div>
+        </div>
+        {repositories.length > 0 ? <>
+          <div class="workspace-filters" hidden data-workspace-filters>
+            <label>Find your work<input type="search" data-repository-search placeholder="Search titles or names" autocomplete="off" /></label>
+            <label>Type<select data-repository-kind><option value="all">All types</option><option value="model">Models</option><option value="dataset">Datasets</option><option value="space">Apps</option></select></label>
+          </div>
+          <p class="workspace-results" data-repository-results aria-live="polite" aria-atomic="true"></p>
+          {repositories.length === 50 && <p class="workspace-results">Showing your 50 most recently updated repositories.</p>}
+          <div class="workspace-repositories">
+            {repositories.map((repository) => <a class="workspace-repository" data-repository-row data-kind={repository.kind} data-search={`${repository.title} ${repository.owner_handle}/${repository.slug}`} href={`/repositories/${repository.id}/edit`}>
+              <span><strong>{repository.title || repository.slug}</strong><small>{repository.owner_handle}/{repository.slug}</small><small>{kindLabel(repository.kind)} · {repository.revision_status}</small></span>
+              <span class="workspace-repository__action"><span>Open</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></span>
+            </a>)}
+          </div>
+          <p data-repository-empty hidden>No repositories match. Try another search or type.</p>
+          <button class="text-button workspace-more" type="button" data-repository-more hidden>Show more repositories</button>
+        </> : <div class="workspace-empty">
+          <h3>{unavailable ? 'Your work is temporarily unavailable' : 'Make yourself at home'}</h3>
+          <p>{unavailable ? 'Refresh to load your repositories.' : 'Create your first repository or bring work you already have.'}</p>
+          {!unavailable && <a href="#setup">Set up your first AI agent</a>}
+        </div>}
+
+        {bridgeSources.length > 0 && <details class="workspace-disclosure" id="imports">
+          <summary>Imported sources<small>Review source versions and update checks.</small></summary>
+          <div class="workspace-disclosure__body">
+            <p>New public source versions arrive as revisions for your review before publishing.</p>
+            <div class="account-list account-list--static bridge-source-list">
+              {bridgeSources.map((source) => <div><span><strong>{source.provider_repo_id}</strong><small>{source.source_visibility} · revision {source.source_revision.slice(0, 8)} · imported {new Date(source.imported_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</small></span>
+                {source.source_visibility === 'public' ? <button class:list={['button', 'button--small', source.sync_enabled ? 'button--secondary' : 'button--dark']} type="button" data-bridge-sync={source.repository_id} data-enabled={String(source.sync_enabled)}>{source.sync_enabled ? 'Pause checks' : 'Check for updates'}</button> : <span class="status-badge">manual only</span>}
+              </div>)}
+            </div>
+            <p class="form-status" data-bridge-sync-status aria-live="polite"></p>
+            <a href="/bring-my-work">Open Bridge</a>
+          </div>
+        </details>}
+
+        <section class="workspace-activity" id="activity" aria-labelledby="activity-title">
+          <h3 id="activity-title">Recent activity</h3>
+          {notifications.length ? <>
+            <div class="notification-list">
+              {notifications.map((notification) => <article data-notification={notification.id} data-read={String(Boolean(notification.read_at))}>
+                <div><strong>{notification.title}</strong><p>{notification.body}</p><time datetime={notification.created_at}>{new Date(notification.created_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</time></div>
+                {notification.href && <a href={notification.href}>Open</a>}
+                {!notification.read_at && <button class="text-button" type="button" data-mark-read>Mark read</button>}
+              </article>)}
+            </div>
+            <button class="text-button" type="button" data-activity-more hidden>Show more activity</button>
+          </> : <p>No recent activity.</p>}
+          <p class="form-status" data-activity-status role="status"></p>
+        </section>
+      </section>
+
+      <section data-workspace-panel="setup" id="setup" aria-labelledby="setup-title" hidden>
+        <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="setup-title" tabindex="-1">AI setup</h2><p>Choose a guide. Your progress stays on this device.</p></div></div>
+        <details class="workspace-disclosure" name="workspace-ai-setup" data-agent-starter-disclosure>
+          <summary>Agent Starter<small>Run your first agent with a free cloud model.</small></summary>
+          <AgentStarter />
+        </details>
+        <AIWorkerStarter />
+      </section>
+
+      <section data-workspace-panel="agents" aria-label="Agents" hidden><AgentWorkspace /></section>
+      <section data-workspace-panel="commerce" aria-label="Agent commerce" hidden><CommerceWorkspace /></section>
+
+      <section data-workspace-panel="account" id="account" aria-labelledby="account-title" hidden>
+        <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="account-title" tabindex="-1">Account</h2><p>Open the settings you want to change.</p></div></div>
+        <details class="workspace-disclosure" name="workspace-account">
+          <summary>Profile<small>Your introduction, interests and public links.</small></summary>
+          {memberProfile ? <MemberProfileWorkspace profile={memberProfile} /> : <p class="workspace-disclosure__body">Your public profile could not be loaded. Please refresh to try again.</p>}
+        </details>
+        <details class="workspace-disclosure" id="identity" name="workspace-account">
+          <summary>Identity and security<small>Login, name and photo.</small></summary>
+          <div class="account-card"><slot name="identity" /></div>
+        </details>
+        <details class="workspace-disclosure" id="billing" name="workspace-account">
+          <summary>Billing<small>Your subscriptions and payment history.</small></summary>
+          <div class="workspace-disclosure__body">
+            {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
+            {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · {payment.billing_term === '12_months' ? '12 months' : '30 days'} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+</section>
+
+<noscript><style>[data-workspace-panel][hidden] { display: grid !important; margin-top: 2rem; }</style></noscript>
+<script>
+  import '../scripts/workspace';
+</script>
