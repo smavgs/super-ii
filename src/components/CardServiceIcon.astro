@@ -1,0 +1,69 @@
+---
+import {
+  siGithub,
+  siHuggingface,
+  siQq,
+  siSinaweibo,
+  siTelegram,
+  siWechat,
+  siWhatsapp,
+  siXiaohongshu,
+} from 'simple-icons';
+
+interface Props {
+  service: string;
+}
+
+const { service } = Astro.props;
+const brands = {
+  wechat: siWechat,
+  whatsapp: siWhatsapp,
+  telegram: siTelegram,
+  github: siGithub,
+  huggingface: siHuggingface,
+  qq: siQq,
+  red: siXiaohongshu,
+  weibo: siSinaweibo,
+} as const;
+const generic = {
+  email: { icon: 'ph-envelope-simple', color: '#2f80ed', ink: '#ffffff' },
+  phone: { icon: 'ph-phone', color: '#16a34a', ink: '#ffffff' },
+  website: { icon: 'ph-globe-hemisphere-west', color: '#0e7490', ink: '#ffffff' },
+  linkedin: { icon: 'ph-linkedin-logo', color: '#0a66c2', ink: '#ffffff' },
+  custom: { icon: 'ph-link', color: '#0b2947', ink: '#ffffff' },
+} as const;
+const brand = brands[service as keyof typeof brands];
+const fallback = generic[service as keyof typeof generic] ?? generic.custom;
+const background = brand ? `#${brand.hex}` : fallback.color;
+const foreground = service === 'huggingface' ? '#111827' : (brand ? '#ffffff' : fallback.ink);
+---
+
+<span
+  class="card-service-mark"
+  style={`--service-mark-bg:${background};--service-mark-ink:${foreground}`}
+  data-service-mark={service}
+  aria-hidden="true"
+>
+  {brand
+    ? <svg viewBox="0 0 24 24" role="img"><path d={brand.path}></path></svg>
+    : <i class={`ph ${fallback.icon}`}></i>}
+</span>
+
+<style>
+  .card-service-mark {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 1px solid rgb(255 255 255 / 0.72);
+    border-radius: 0.72rem;
+    background: var(--service-mark-bg);
+    color: var(--service-mark-ink);
+    box-shadow: 0 5px 12px rgb(7 26 47 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.24);
+  }
+
+  .card-service-mark :is(svg, i) { width: 1.35rem; height: 1.35rem; }
+  .card-service-mark svg { fill: currentColor; }
+  .card-service-mark i { display: grid; place-items: center; font-size: 1.35rem; }
+</style>

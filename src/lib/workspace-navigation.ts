@@ -1,4 +1,4 @@
-export const workspaceSections = ['work', 'setup', 'agents', 'commerce', 'account'] as const;
+export const workspaceSections = ['work', 'cards', 'setup', 'agents', 'commerce', 'account'] as const;
 export type WorkspaceSection = typeof workspaceSections[number];
 
 export type WorkspaceDestination = {

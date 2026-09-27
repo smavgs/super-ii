@@ -2,6 +2,7 @@ import {
   bigint,
   boolean,
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -1933,4 +1934,79 @@ export const transparencyDiscoveryDaily = app.table(
     events: bigint('events', { mode: 'bigint' }).notNull().default(0n),
   },
   (table) => [primaryKey({ columns: [table.day, table.channel, table.action, table.resourceKey] })],
+);
+
+export const cardContactVaults = app.table('card_contact_vaults', {
+  profileId: uuid('profile_id').primaryKey().references(() => profiles.id, { onDelete: 'cascade' }),
+  ciphertext: text('ciphertext').notNull(),
+  iv: text('iv').notNull(),
+  keyVersion: text('key_version').notNull().default('v1'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const cards = app.table(
+  'cards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerProfileId: uuid('owner_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    preset: text('preset').notNull().default('custom'),
+    status: text('status').notNull().default('draft'),
+    shareTokenHash: text('share_token_hash').notNull().unique(),
+    shareTokenCiphertext: text('share_token_ciphertext').notNull(),
+    shareTokenIv: text('share_token_iv').notNull(),
+    config: jsonb('config').$type<Record<string, unknown>>().notNull().default({}),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('cards_owner_updated_idx').on(table.ownerProfileId, table.updatedAt),
+    uniqueIndex('cards_id_owner_idx').on(table.id, table.ownerProfileId),
+  ],
+);
+
+export const cardPublicSnapshots = app.table(
+  'card_public_snapshots',
+  {
+    cardId: uuid('card_id').primaryKey(),
+    ownerProfileId: uuid('owner_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+    revision: integer('revision').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('card_public_snapshots_owner_idx').on(table.ownerProfileId, table.updatedAt),
+    foreignKey({
+      name: 'card_public_snapshots_owner_matches_card',
+      columns: [table.cardId, table.ownerProfileId],
+      foreignColumns: [cards.id, cards.ownerProfileId],
+    }).onDelete('cascade'),
+  ],
+);
+
+export const cardConnections = app.table(
+  'card_connections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerProfileId: uuid('owner_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id').notNull(),
+    payloadCiphertext: text('payload_ciphertext').notNull(),
+    payloadIv: text('payload_iv').notNull(),
+    contextCiphertext: text('context_ciphertext'),
+    contextIv: text('context_iv'),
+    sharedCardId: uuid('shared_card_id').references(() => cards.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('card_connections_owner_created_idx').on(table.ownerProfileId, table.createdAt),
+    foreignKey({
+      name: 'card_connections_owner_matches_card',
+      columns: [table.cardId, table.ownerProfileId],
+      foreignColumns: [cards.id, cards.ownerProfileId],
+    }).onDelete('cascade'),
+  ],
 );

@@ -102,6 +102,10 @@ docker exec -i "$container_name" \
 
 docker exec -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
+  < "$project_root/database/tests/cards_smoke.sql" >/dev/null
+
+docker exec -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
   < "$project_root/database/tests/backend_role_smoke.sql" >/dev/null
 
 docker exec -e PGPASSWORD=web-test-password -i "$container_name" \
@@ -154,7 +158,7 @@ docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_tes
 counts=$(docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atc \
   "select count(*) || ':' || (select count(*) from app.repositories) from information_schema.tables where table_schema = 'app'")
 
-if [ "$counts" != "107:0" ]; then
+if [ "$counts" != "111:0" ]; then
   echo "ERROR: unexpected post-test database state: $counts" >&2
   exit 1
 fi

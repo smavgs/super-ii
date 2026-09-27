@@ -1,0 +1,105 @@
+---
+import CardLayout from '@/layouts/CardLayout.astro';
+import CardServiceIcon from '@/components/CardServiceIcon.astro';
+import { loadPublicCardByToken } from '@/lib/card-data';
+import { personalBadgeLabels, verifiedBadgeLabels } from '@/lib/cards';
+
+const token = Astro.params.token ?? '';
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+const result = await loadPublicCardByToken(Astro.locals, token);
+if (!result) Astro.response.status = 404;
+const snapshot = result?.snapshot;
+const path = `/c/${token}`;
+const description = snapshot
+  ? [snapshot.identity_en.role, snapshot.identity_en.organization, snapshot.identity_en.tagline].filter(Boolean).join(' · ') || 'A Super ii contact card.'
+  : 'This Super ii Card is unavailable.';
+const locale = snapshot?.default_locale ?? 'en';
+const identity = locale === 'zh-CN' && snapshot?.identity_zh ? snapshot.identity_zh : snapshot?.identity_en;
+const vcardHref = `${path}/contact.vcf${locale === 'zh-CN' ? '?language=zh-CN' : ''}`;
+---
+
+<CardLayout title={identity?.name ?? 'Card unavailable'} {description} {path} unavailable={!snapshot}>
+  {!snapshot || !identity ? <section class="card-unavailable">
+    <img src="/brand/super-ii-icon-192.png" alt="Super ii" width="64" height="64" />
+    <p class="eyebrow">Super ii Card</p>
+    <h1>This card is not available.</h1>
+    <p>Its owner may have paused it or changed its unlisted link.</p>
+    <a class="button button--dark" href="/">Visit Super ii</a>
+  </section> : <article class:list={['public-card', `public-card--${snapshot.preset}`]} data-public-card data-locale={locale}>
+    <header class="public-card__masthead">
+      <a class="public-card__brand" href="/" aria-label="Super ii home">
+        <img src="/brand/super-ii-icon-192.png" alt="" width="42" height="42" />
+        <strong>Super ii Card</strong>
+      </a>
+      {snapshot.identity_zh && <div class="card-language" role="group" aria-label="Card language">
+        <button type="button" data-card-language="en" aria-pressed={locale === 'en'}>EN</button>
+        <span aria-hidden="true">/</span>
+        <button type="button" data-card-language="zh-CN" aria-pressed={locale === 'zh-CN'}>中文</button>
+      </div>}
+    </header>
+
+    <section class="public-card__identity">
+      {snapshot.photo_url ? <img class="public-card__photo" src={snapshot.photo_url} alt="" width="132" height="132" referrerpolicy="no-referrer" /> : <div class="public-card__monogram" aria-hidden="true">{identity.name.slice(0, 1).toUpperCase()}</div>}
+      <div>
+        <p class="eyebrow">{snapshot.name}</p>
+        <h1 data-identity-name>{identity.name}</h1>
+        <p class="public-card__role" data-identity-role>{[identity.role, identity.organization].filter(Boolean).join(' · ')}</p>
+        <p class="public-card__tagline" data-identity-tagline hidden={!identity.tagline}>{identity.tagline}</p>
+        {snapshot.location && <p class="public-card__location"><i class="ph ph-map-pin" aria-hidden="true"></i>{snapshot.location}</p>}
+      </div>
+    </section>
+
+    {(snapshot.verified_badges.length > 0 || snapshot.personal_badges.length > 0) && <section class="public-card__badges" aria-label="Badges">
+      {snapshot.verified_badges.map((badge) => <span class="card-badge card-badge--verified" title="Verified by Super ii"><i class="ph ph-seal-check" aria-hidden="true"></i>{verifiedBadgeLabels[badge]}</span>)}
+      {snapshot.personal_badges.map((badge) => <span class="card-badge">{personalBadgeLabels[badge]}</span>)}
+    </section>}
+
+    <p class="public-card__bio" data-identity-bio hidden={!identity.bio}>{identity.bio}</p>
+
+    <section class="public-card__actions" aria-label="Card actions">
+      <a class="button button--yellow" href={vcardHref} download data-card-vcard><i class="ph ph-user-plus" aria-hidden="true"></i>Save contact</a>
+      <button class="button button--secondary" type="button" data-share-card><i class="ph ph-share-network" aria-hidden="true"></i>Share</button>
+      <button class="button button--secondary" type="button" data-show-card-qr><i class="ph ph-qr-code" aria-hidden="true"></i>Show QR</button>
+    </section>
+
+    <section class="public-card__services" aria-label="Contact links">
+      <h2>Connect</h2>
+      {snapshot.services.map((service) => service.href
+        ? <a href={service.href} target={service.href.startsWith('https://') ? '_blank' : undefined} rel="noreferrer"><CardServiceIcon service={service.id} /><span>{service.label}</span></a>
+        : <button type="button" data-copy-value={service.value} data-copy-label={service.label}><CardServiceIcon service={service.id} /><span>{service.label}</span></button>)}
+    </section>
+
+    {snapshot.allow_share_back && <section class="public-card__connect">
+      <div><p class="eyebrow">Make this mutual</p><h2>Share yours back.</h2><p>Your details go privately to <span data-card-recipient-name>{identity.name}</span>. They are not added to a public directory.</p></div>
+      <button class="button button--yellow" type="button" data-open-share-back>Share mine back</button>
+    </section>}
+
+    <footer class="public-card__footer">
+      <span>Unlisted link · Not indexed</span>
+      <a href="/account#cards">Make your Super ii Card</a>
+    </footer>
+
+    <dialog class="card-qr-dialog" data-card-qr-dialog>
+      <div class="card-qr-dialog__header"><span>Super ii Card</span><button type="button" data-close-card-qr aria-label="Close QR code"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+      <img src={`${path}/qr.svg`} alt={`QR code for ${identity.name}'s Super ii Card`} width="720" height="720" />
+      <strong>Scan to connect</strong><small><span data-card-recipient-name>{identity.name}</span> · superii.site</small>
+    </dialog>
+
+    {snapshot.allow_share_back && <dialog class="card-share-back" data-share-back-dialog>
+      <form data-share-back-form>
+        <div class="card-share-back__heading"><div><p class="eyebrow">Private connection</p><h2>Share yours back</h2></div><button type="button" data-close-share-back aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+        <label>Your name<input name="name" maxlength="100" autocomplete="name" required /></label>
+        <div class="card-share-back__row"><label>Email<input name="email" type="email" maxlength="254" autocomplete="email" /></label><label>Phone<input name="phone" maxlength="40" autocomplete="tel" /></label></div>
+        <label>Message <span>(optional)</span><textarea name="message" maxlength="1000" rows="3"></textarea></label>
+        <p class="card-form-status" data-share-back-status role="status"></p>
+        <button class="button button--dark" type="submit">Send privately</button>
+      </form>
+    </dialog>}
+
+    <div class="card-toast" data-card-toast role="status" aria-live="polite" hidden></div>
+    {snapshot.identity_zh && <script is:inline type="application/json" data-card-locales set:html={JSON.stringify({ en: snapshot.identity_en, 'zh-CN': snapshot.identity_zh }).replaceAll('<', '\\u003c')} />}
+  </article>}
+  {snapshot && <script>
+    import '../../scripts/card-public';
+  </script>}
+</CardLayout>
