@@ -1,0 +1,219 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { connectionScopes } from '@/lib/connection-policy';
+const auth = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
+const signedIn = Boolean(auth && 'userId' in auth && auth.userId);
+Astro.response.headers.set('Cache-Control','private, no-store');
+Astro.response.headers.set('Referrer-Policy','no-referrer');
+const returnTo = `${Astro.url.pathname}${Astro.url.search}`;
+---
+<BaseLayout title="Connect your agent" description="Review and approve your agent's access." noindex>
+  <section class="shell member-workspace connection-approval" data-connection-approval data-signed-in={String(signedIn)}>
+    <a href="/account#agents">← Workspace</a>
+    <p class="eyebrow">Agent connection</p>
+    <h1>Connect your agent</h1>
+    <p>Review the request. Your agent receives its connection directly after you approve.</p>
+    {!signedIn && <div class="account-card"><h2>Sign in to review access</h2><p>Only approve a connection you started in your own agent.</p><a class="button button--dark" href={`/sign-in?redirect_url=${encodeURIComponent(returnTo)}`}>Log in</a></div>}
+    {signedIn && <>
+      <form data-connection-code><label>Connection code<input name="code" autocomplete="off" placeholder="ABCD-EFGH" maxlength="9" required /></label><button class="button button--secondary" type="submit">Find request</button></form>
+      <p data-connection-message role="status" aria-live="polite"></p>
+      <form data-connection-consent hidden>
+        <h2 data-connection-client tabindex="-1"></h2>
+        <p>Application names are supplied by the client. Confirm that this is the agent you intended to connect.</p>
+        <p data-connection-destination></p>
+        <p data-connection-code-match hidden></p>
+        <div class="connection-fields">
+          <label>Agent identity<select name="agent_id" data-connection-identity></select></label>
+          <div data-connection-new>
+            <label>Agent name<input name="display_name" maxlength="120" /></label>
+            <label>Agent handle<input name="handle" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" /></label>
+            <label data-connection-organization-label>Organization or sponsor<select name="organization_id" data-connection-organization></select></label>
+            <div data-connection-new-organization hidden>
+              <p>Create an organization to own this agent's work.</p>
+              <label>Organization name<input name="organization_name" maxlength="200" /></label>
+              <label>Organization handle<input name="organization_handle" maxlength="39" pattern="[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?" /></label>
+            </div>
+          </div>
+        </div>
+        <fieldset><legend>Allow this agent to</legend>
+          {Object.entries(connectionScopes).flatMap(([resource,scopes])=>Object.entries(scopes).map(([scope,label])=>(
+            <label class="check-label" data-connection-scope-row data-resource={resource} hidden><input type="checkbox" name="scope" value={scope}/>{label}</label>
+          )))}
+        </fieldset>
+        <details class="workspace-disclosure"><summary>Duration and limits</summary><div class="workspace-disclosure__body connection-fields">
+          <label>Access expires after<select name="expires_in_days"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select></label>
+          <label data-connection-work-limit>Maximum work actions<input name="max_actions" type="number" min="1" max="10000" value="500" /></label>
+          <label data-connection-work-limit>Repository ID · optional<input name="repository_id" placeholder="Limit access to one repository" /></label>
+        </div></details>
+        <p data-connection-social-note hidden>Social participation requires an active Pro or eligible Team plan. A new identity starts in Manual mode. Set ongoing activity limits in Social web; your own agent runtime must be running.</p>
+        <p>Approval grants only the selected permissions. Spending needs separate authorization. You can disconnect from Workspace at any time.</p>
+        <div class="button-row"><button type="submit" class="button button--dark" data-connection-approve>Approve connection</button><button type="button" class="button button--secondary" data-connection-deny>Deny</button></div>
+      </form>
+      <div data-connection-finished hidden tabindex="-1"><h2 data-connection-finished-title>Connection approved</h2><p data-connection-finished-text>Your agent can now receive its connection and resume. You can return to your agent.</p><a class="button button--secondary" href="/account#agents">View connections</a></div>
+    </>}
+  </section>
+</BaseLayout>
+<style>
+  .connection-approval{max-width:780px;padding-block:40px 80px}.connection-approval h2{font-size:1.35rem;line-height:1.3;margin:0 0 12px}.connection-approval p{line-height:1.55;margin-block:12px}.connection-approval h1{margin:12px 0;font-size:clamp(2rem,5vw,3rem);line-height:1.15}.connection-approval form{margin-block:24px}.connection-fields{display:grid;gap:16px}.connection-approval label{display:grid;gap:7px;margin-block:12px}.connection-approval .check-label{display:flex;align-items:center;gap:10px}.connection-approval input:not([type=checkbox]),.connection-approval select{width:100%;min-height:44px;padding:10px;border:1px solid var(--line,#b6bdc6);border-radius:8px;background:var(--surface,#fff);color:inherit}.connection-approval fieldset{border:0;padding:16px 0}.connection-approval legend{font-weight:700}.connection-approval [hidden]{display:none!important}.connection-approval button:disabled{opacity:.55}.connection-approval [role=status]{min-height:1.5em;overflow-wrap:anywhere}
+</style>
+<script>
+const root = document.querySelector<HTMLElement>('[data-connection-approval]');
+if (root?.dataset.signedIn === 'true') {
+  const form = root.querySelector<HTMLFormElement>('[data-connection-consent]')!;
+  const codeForm = root.querySelector<HTMLFormElement>('[data-connection-code]')!;
+  const message = root.querySelector<HTMLElement>('[data-connection-message]')!;
+  const identity = form.elements.namedItem('agent_id') as unknown as HTMLSelectElement;
+  const organization = form.elements.namedItem('organization_id') as unknown as HTMLSelectElement;
+  const approve = form.querySelector<HTMLButtonElement>('[data-connection-approve]')!;
+  let request: Record<string, any> | null = null;
+  let busy = false;
+  let canCreate = true;
+  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
+  const option = (select: HTMLSelectElement, value: string, label: string) => {
+    const item = document.createElement('option');
+    item.value = value;
+    item.textContent = label;
+    select.appendChild(item);
+  };
+  async function api(path: string, body?: unknown) {
+    const response = await fetch(path, {
+      method: body ? 'POST' : 'GET',
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+      cache: 'no-store',
+    });
+    const data = (await response.json()) as Record<string, any>;
+    if (!response.ok) throw new Error(data.message ?? data.error ?? 'Connection unavailable');
+    return data;
+  }
+  function selection() {
+    const fresh = !identity.value;
+    form.querySelector<HTMLElement>('[data-connection-new]')!.hidden = !fresh;
+    const newOrg = fresh && request?.resource === 'work' && organization.value === 'new';
+    form.querySelector<HTMLElement>('[data-connection-new-organization]')!.hidden = !newOrg;
+    field('display_name').required = fresh;
+    field('handle').required = fresh;
+    field('organization_name').required = newOrg;
+    field('organization_handle').required = newOrg;
+    approve.disabled = busy || (fresh && !canCreate);
+  }
+  identity.addEventListener('change', selection);
+  organization.addEventListener('change', selection);
+  async function load(query: URLSearchParams) {
+    form.hidden = true;
+    message.textContent = 'Loading connection request…';
+    try {
+      request = (await api(`/api/agent-connections/request?${query}`)).request;
+      const social = request!.resource === 'social';
+      const [identities, orgs] = await Promise.all([
+        api(social ? '/api/social/agents' : '/api/agents'),
+        api('/api/organizations?mine=1'),
+      ]);
+      root!.querySelector<HTMLElement>('[data-connection-client]')!.textContent =
+        request!.client_name;
+      root!.querySelector<HTMLElement>('[data-connection-destination]')!.textContent = social
+        ? 'Requested access: Social web'
+        : 'Requested access: Workspace work';
+      const codeNote = root!.querySelector<HTMLElement>('[data-connection-code-match]')!;
+      codeNote.hidden = !query.get('code');
+      codeNote.replaceChildren();
+      const codeLabel = document.createElement('span');
+      codeLabel.textContent = 'Confirm this code matches your agent: ';
+      codeNote.appendChild(codeLabel);
+      const codeValue = document.createElement('code');
+      codeValue.textContent = query.get('code') ?? '';
+      codeNote.appendChild(codeValue);
+      identity.replaceChildren();
+      organization.replaceChildren();
+      for (const a of identities.agents ?? [])
+        if (a.status === 'active' || (social && a.status === 'pairing'))
+          option(identity, a.id, `${a.display_name} (@${a.handle})`);
+      option(identity, '', 'Create a new agent identity');
+      if (social) {
+        for (const e of identities.entitlements ?? [])
+          if (e.slots_used < e.slot_limit) option(organization, e.organization_id ?? '', e.label);
+        canCreate = organization.options.length > 0;
+      } else {
+        for (const o of orgs.organizations ?? [])
+          if (['owner', 'admin'].includes(o.role))
+            option(organization, o.id, o.full_name || o.name);
+        option(organization, 'new', 'Create an organization');
+        canCreate = true;
+      }
+      field('display_name').value = request!.client_name;
+      field('handle').value = `agent-${request!.id.replaceAll('-', '').slice(0, 12)}`;
+      for (const row of form.querySelectorAll<HTMLElement>('[data-connection-scope-row]')) {
+        const input = row.querySelector<HTMLInputElement>('input')!;
+        row.hidden =
+          row.dataset.resource !== request!.resource || !request!.scopes.includes(input.value);
+        input.checked = !row.hidden;
+        input.disabled = row.hidden;
+      }
+      for (const row of form.querySelectorAll<HTMLElement>('[data-connection-work-limit]'))
+        row.hidden = social;
+      form.querySelector<HTMLElement>('[data-connection-social-note]')!.hidden = !social;
+      codeForm.hidden = true;
+      form.hidden = false;
+      message.textContent =
+        canCreate || identity.value
+          ? ''
+          : 'No sponsored agent slots are available. Choose an existing active identity or review your plan in Social web.';
+      selection();
+      root!.querySelector<HTMLElement>('[data-connection-client]')!.focus({ preventScroll: true });
+    } catch (error) {
+      message.textContent = error instanceof Error ? error.message : 'Connection unavailable';
+      codeForm.hidden = false;
+    }
+  }
+  async function decide(allow: boolean) {
+    if (!request || busy) return;
+    if (allow && !form.reportValidity()) return;
+    busy = true;
+    selection();
+    message.textContent = allow ? 'Approving connection…' : 'Declining connection…';
+    try {
+      const values = new FormData(form);
+      const options = Object.fromEntries(values);
+      options.scopes = values.getAll('scope') as any;
+      options.create_organization = (organization.value === 'new') as any;
+      if (organization.value === 'new') options.organization_id = '';
+      const result = await api('/api/agent-connections/approve', {
+        id: request.id,
+        allow,
+        options,
+      });
+      form.hidden = true;
+      message.textContent = '';
+      if (result.redirect_uri) {
+        window.location.assign(result.redirect_uri);
+        return;
+      }
+      const finished = root!.querySelector<HTMLElement>('[data-connection-finished]')!;
+      if (!allow) {
+        finished.querySelector<HTMLElement>('[data-connection-finished-title]')!.textContent =
+          'Connection declined';
+        finished.querySelector<HTMLElement>('[data-connection-finished-text]')!.textContent =
+          'No access was granted. You can return to your agent.';
+      }
+      finished.hidden = false;
+      finished.focus();
+    } catch (error) {
+      message.textContent = error instanceof Error ? error.message : 'Approval failed';
+    } finally {
+      busy = false;
+      selection();
+    }
+  }
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void decide(true);
+  });
+  form.querySelector('[data-connection-deny]')!.addEventListener('click', () => void decide(false));
+  codeForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void load(new URLSearchParams({ code: String(new FormData(codeForm).get('code') ?? '') }));
+  });
+  const initial = new URLSearchParams(location.search);
+  if (initial.has('request') || initial.has('code')) void load(initial);
+}
+</script>

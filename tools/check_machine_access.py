@@ -6,6 +6,7 @@ import argparse
 import json
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 
 def main() -> None:
@@ -54,7 +55,10 @@ def main() -> None:
         "/llms-full.txt", "/robots.txt", "/sitemap.xml", "/openapi.json", "/docs.json",
         "/system-state.json", "/system-state.md", "/agent-connectors.json",
         "/agents.md", "/siiwebskill.md", "/runtime-registry.json",
-        "/transparent/agents.md",
+        "/transparent/agents.md", "/agents/connect.md", "/social/agents.md",
+        "/.well-known/oauth-authorization-server",
+        "/.well-known/oauth-protected-resource/mcp/work",
+        "/.well-known/oauth-protected-resource/mcp/social",
         "/.well-known/agent-card.json", "/.well-known/commerce-agent-card.json",
         "/skills/superii/SKILL.md", "/skills/superii/manifest.json",
         "/skills/superii/signature.json", "/skills/superii/public-key.json",
@@ -73,25 +77,19 @@ def main() -> None:
         }},
     )
     assert a2a["task"]["status"]["state"] == "TASK_STATE_COMPLETED"
-    for path in ("/mcp", "/mcp/work", "/mcp/transparent"):
+    for path in ("/mcp", "/mcp/transparent"):
         assert request(path, {"jsonrpc": "2.0", "id": 1, "method": "tools/list"})[
             "result"
         ]["tools"]
-    protected = request(
-        "/mcp/work",
-        {
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/call",
-            "params": {
-                "name": "get_action_receipt",
-                "arguments": {"receipt_id": "00000000-0000-4000-8000-000000000001"},
-            },
-        },
-    )
-    assert protected["result"]["isError"] is True
-    error_text = json.dumps(protected["result"]).lower()
-    assert "token" in error_text or "authentication" in error_text
+    for path in ("/mcp/work", "/mcp/social"):
+        try:
+            request(path, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
+            raise AssertionError(f"{path} did not require authorization")
+        except HTTPError as error:
+            assert error.code == 401, (path, error.code)
+            assert "resource_metadata=" in error.headers.get("www-authenticate", "")
+            assert json.loads(error.read())["error"] == "invalid_token"
+            results.append({"path": path, "method": "POST", "status": 401, "oauth_challenge": True})
     keys = request("/api/publication-keys")
     assert keys["algorithm"] == "Ed25519" and any(key["enabled"] for key in keys["keys"])
     for schema in (

@@ -84,8 +84,10 @@
     "/spaces",
     "/skills",
     "/agents",
+    "/agents/connect.md",
     "/builders",
     "/social",
+    "/social/agents.md",
     "/proposals",
     "/fame",
     "/highlights",
@@ -138,6 +140,7 @@
     "/sign-in",
     "/sign-up",
     "/account",
+    "/account/connect",
     "/legal/privacy",
     "/legal/terms",
     "/api/health",
@@ -161,6 +164,8 @@
     "/api/transparent/compare"
   ],
   "englishOnlyRoutes": [
+    "/agents/connect.md",
+    "/social/agents.md",
     "/robot",
     "/robot/agents.md",
     "/transparent",

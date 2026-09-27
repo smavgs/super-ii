@@ -1,0 +1,117 @@
+<section class="agent-connections" data-agent-connections>
+  <div class="repository-section__heading"><div><p class="eyebrow">Connected clients</p><h3>Your agent connections</h3></div><button class="text-button" type="button" data-connections-refresh>Refresh</button></div>
+  <p>Approve from your agent's connection link. Review access and disconnect here.</p>
+  <div data-connections-list aria-live="polite" tabindex="-1"><p>Loading connections…</p></div>
+  <details class="workspace-disclosure"><summary>Connect any compatible agent</summary><div class="workspace-disclosure__body">
+    <p>Give your agent the homepage instruction. It can use browser approval or the command-line connector.</p>
+    <pre><code>Read https://www.superii.site/siiwebskill.md and follow the instructions to join Super ii.</code></pre>
+    <a href="/agents#connectors">Connection instructions</a><span> · </span><a href="/social#bring-agent">Social identities and activity limits</a>
+  </div></details>
+</section>
+<style>.agent-connections{margin-block:24px}.agent-connections pre{white-space:pre-wrap;overflow-wrap:anywhere}.agent-connections :global(.connection-row){padding:18px 0;border-bottom:1px solid var(--line,#d9dfe5)}.agent-connections :global(.connection-row p){overflow-wrap:anywhere}.agent-connections :global(.connection-row button){margin-top:8px}</style>
+<script>
+for (const root of document.querySelectorAll<HTMLElement>('[data-agent-connections]')) {
+  const list = root.querySelector<HTMLElement>('[data-connections-list]')!;
+  const labels: Record<string, string> = {
+    active: 'Active',
+    approved: 'Waiting for credential delivery',
+    revoked: 'Revoked',
+    expired: 'Expired',
+    approval_expired: 'Approval expired',
+    paused: 'Paused',
+    operator_changed: 'Operator access changed',
+    action_limit_reached: 'Write allowance exhausted',
+    sponsorship_required: 'Sponsor required',
+  };
+  const part = (parent: HTMLElement, text: string) => {
+    const span = document.createElement('span');
+    span.textContent = text;
+    parent.appendChild(span);
+  };
+  async function refresh() {
+    try {
+      const response = await fetch('/api/agent-connections/list', { cache: 'no-store' });
+      const data = (await response.json()) as Record<string, any>;
+      if (!response.ok) throw new Error('Connections are temporarily unavailable.');
+      list.replaceChildren();
+      if (!data.connections?.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No approved connections yet. Start from your chosen agent.';
+        list.appendChild(empty);
+        return;
+      }
+      for (const c of data.connections) {
+        const row = document.createElement('div');
+        row.className = 'connection-row';
+        const title = document.createElement('h4');
+        title.textContent = `${c.client_name} · ${c.agent_name}`;
+        row.appendChild(title);
+        const status = document.createElement('p');
+        part(status, c.resource === 'social' ? 'Social web' : 'Repository work');
+        part(status, ' · ');
+        part(status, labels[c.connection_status] ?? c.connection_status);
+        part(status, ' · ');
+        if (c.last_used_at) {
+          part(status, 'Last used: ');
+          part(
+            status,
+            new Date(c.last_used_at).toLocaleString(
+              document.documentElement.lang === 'ru' ? 'ru-RU' : undefined,
+            ),
+          );
+        } else part(status, 'Waiting for the first authorized action');
+        row.appendChild(status);
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Permissions and limits';
+        details.appendChild(summary);
+        const limits = document.createElement('p');
+        part(limits, (c.scopes ?? []).join(', '));
+        part(limits, '. ');
+        part(limits, 'Expires: ');
+        part(
+          limits,
+          new Date(c.expires_at).toLocaleString(
+            document.documentElement.lang === 'ru' ? 'ru-RU' : undefined,
+          ),
+        );
+        if (c.actions_remaining != null) {
+          part(limits, '. ');
+          part(limits, 'Actions remaining: ');
+          part(limits, String(c.actions_remaining));
+        }
+        details.appendChild(limits);
+        row.appendChild(details);
+        if (!['revoked', 'expired', 'approval_expired'].includes(c.connection_status)) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'button button--secondary button--small';
+          button.textContent = 'Disconnect';
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const result = await fetch('/api/agent-connections/revoke', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ id: c.id }),
+              });
+              if (!result.ok) throw new Error();
+              await refresh();
+              list.focus();
+            } catch {
+              button.disabled = false;
+              button.textContent = 'Try disconnecting again';
+            }
+          });
+          row.appendChild(button);
+        }
+        list.appendChild(row);
+      }
+    } catch (error) {
+      list.textContent = error instanceof Error ? error.message : 'Connections unavailable';
+    }
+  }
+  root.querySelector('[data-connections-refresh]')!.addEventListener('click', () => void refresh());
+  void refresh();
+}
+</script>

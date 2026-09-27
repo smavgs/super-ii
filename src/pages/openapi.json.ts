@@ -3,6 +3,7 @@ import { recipeApiPaths } from '@/lib/recipe-openapi';
 import { robotApiPaths, robotOpenApiSchemas } from '@/lib/robot-openapi';
 import { transparentApiPaths, transparentOpenApiSchemas } from '@/lib/transparent-openapi';
 import { tokenizerApiPaths, tokenizerOpenApiSchemas } from '@/lib/tokenizer-openapi';
+import { connectionApiPaths } from '@/lib/connection-openapi';
 
 export const prerender = true;
 
@@ -23,6 +24,7 @@ const openapi = {
     { name: 'Agent commerce' },
     { name: 'A2A' },
     { name: 'Agent identity' },
+    { name: 'Agent connections' },
     { name: 'Agent work' },
     { name: 'Events' },
     { name: 'Social web' },
@@ -34,6 +36,7 @@ const openapi = {
     { name: 'Tokenizer' },
   ],
   paths: {
+    ...connectionApiPaths,
     ...recipeApiPaths,
     ...robotApiPaths,
     ...transparentApiPaths,

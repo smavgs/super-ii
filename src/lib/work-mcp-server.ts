@@ -15,6 +15,7 @@ import { runtimeFetch, runtimeIsConfigured } from './runtime';
 import { signTransferTicket, transferCapabilityHash, type TransferTicket } from './transfer-ticket';
 import { MAX_TRANSFER_BYTES, MAX_TRANSFER_CHUNK_BYTES, TUS_VERSION } from './transfers';
 import { makeRobotInputSchema, makeRobotPlan } from './robot';
+import { inspectConnection } from './agent-connections';
 
 const writeAnnotations = {
   readOnlyHint: false,
@@ -103,6 +104,35 @@ export function createSuperiiWorkMcpServer(
     },
   );
 
+  server.registerTool('get_connection_status', {
+    title: 'Check this agent connection', description: 'Read granted scopes, repository binding, expiry and remaining actions without spending an action. A connection is not proof that a task is complete.',
+    inputSchema: z.object({}), annotations: readAnnotations,
+  }, async () => {
+    const sql = sqlClient(locals); if (!sql) return toolError('database unavailable');
+    return toolResult(await inspectConnection(sql,request,'work'));
+  });
+  server.registerTool('get_work_status', {
+    title: 'Verify repository work', description: 'Read an exact revision status and the public release reference. A draft or submission is not a published release.',
+    inputSchema: z.object({repository_id: uuid, revision_id: uuid.optional()}), annotations: readAnnotations,
+  }, async ({repository_id,revision_id}) => {
+    const sql=sqlClient(locals); if(!sql)return toolError('database unavailable');
+    const auth=await authorizeAgentToken(request,sql,'repository:read',repository_id);if(!auth.ok)return toolError(auth.error);
+    const rows=await sql`select r.id as repository_id,r.status as repository_status,r.kind,r.owner_handle,r.slug,
+      v.id as revision_id,v.status as revision_status,v.commit_sha,v.manifest_sha256,v.published_at,r.latest_revision_id as latest_revision_id,
+      case when decision.id is null then null else jsonb_build_object(
+        'id',decision.id,'outcome',decision.outcome,'reasons',decision.reasons,'created_at',decision.created_at,
+        'commit_sha',decision.commit_sha,'manifest_sha256',decision.manifest_sha256,'policy_version',decision.policy_version
+      ) end as latest_publication_decision
+      from app.repositories r join app.repository_revisions v on v.repository_id=r.id
+      left join lateral (select d.id,d.outcome,d.reasons,d.created_at,d.commit_sha,d.manifest_sha256,d.policy_version
+        from app.publication_decisions d where d.revision_id=v.id order by d.created_at desc,d.id desc limit 1) decision on true
+      where r.id=${repository_id}::uuid and r.owner_organization_id=${auth.actor.organizationId}::uuid
+        and (${revision_id??null}::uuid is null or v.id=${revision_id??null}::uuid)
+      order by v.created_at desc limit 1`;
+    const row=rows[0]; if(!row)return toolError('repository or revision not found');
+    return toolResult({...row,href:publicHref(origin,String(row.kind),String(row.owner_handle),String(row.slug)),
+      published:row.repository_status==='published'&&row.revision_status==='published'&&Boolean(row.published_at)});
+  });
   server.registerTool(
     'create_draft_repository',
     {
@@ -641,22 +671,38 @@ export function createSuperiiWorkMcpServer(
     {
       title: 'Get one immutable action receipt',
       description: 'Return one receipt owned by this agent identity. Tokens, transfer capabilities, and private payloads are excluded.',
-      inputSchema: z.object({ receipt_id: uuid }).strict(),
+      inputSchema: z.object({ receipt_id: uuid, repository_id: uuid.optional().describe('Required when this credential is bound to one repository.') }).strict(),
       annotations: readAnnotations,
     },
-    async ({ receipt_id }) => {
+    async ({ receipt_id, repository_id }) => {
       const sql = sqlClient(locals);
       if (!sql) return toolError('database unavailable');
-      const authorization = await authorizeAgentToken(request, sql, 'receipts:read');
+      const authorization = await authorizeAgentToken(request, sql, 'receipts:read', repository_id ?? null);
       if (!authorization.ok) return toolError(authorization.error);
       const rows = await sql`
         select id, sequence, agent_identity_id, idempotency_key, action,
                target_type, target_id, target_ref, requested_scopes,
                request_sha256, result_sha256, status, review_boundary,
                detail, occurred_at
-        from app.agent_action_receipts
+        from app.agent_action_receipts receipt
         where id = ${receipt_id}::uuid
           and agent_identity_id = ${authorization.actor.agentIdentityId}::uuid
+          and (
+            ${authorization.actor.boundRepositoryId}::uuid is null
+            or (receipt.target_type='repository' and receipt.target_id=${authorization.actor.boundRepositoryId}::uuid)
+            or (receipt.target_type='revision' and exists (
+              select 1 from app.repository_revisions revision
+              where revision.id=receipt.target_id and revision.repository_id=${authorization.actor.boundRepositoryId}::uuid
+            ))
+            or (receipt.target_type='transfer' and exists (
+              select 1 from app.repository_uploads upload
+              where upload.id=receipt.target_id and upload.repository_id=${authorization.actor.boundRepositoryId}::uuid
+            ))
+            or (receipt.target_type='job' and exists (
+              select 1 from app.agent_contribution_jobs job
+              where job.id=receipt.target_id and job.repository_id=${authorization.actor.boundRepositoryId}::uuid
+            ))
+          )
         limit 1
       `;
       return rows.length ? toolResult({ receipt: rows[0] }) : toolError('receipt not found');

@@ -167,4 +167,6 @@ if [ "$derivations" != "true:false" ]; then
   exit 1
 fi
 
+SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-agent-connection-flows.mjs"
+
 echo "OK: PostgreSQL 17 migrations are rerunnable and the transactional integration test passed."

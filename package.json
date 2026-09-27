@@ -53,9 +53,11 @@
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "@cloudflare/workers-types": "^5.20260827.1",
+    "@modelcontextprotocol/client": "2.0.0",
     "@types/node": "26.4.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
+    "esbuild": "0.28.2",
     "typescript": "6.0.3",
     "wrangler": "4.126.0"
   },
