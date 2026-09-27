@@ -66,6 +66,37 @@ for (const outcome of ['rag', 'api', 'sft']) {
  assert.throws(() => generateProject({ ...request, generator: { ...ref('generator'), files: ['../escape'] } }, resolved));
  projects.push(directory);
 }
+const soupRequest = {
+ outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'),
+ configuration: { training_engine: 'soup', training_epochs: 2, sequence_length: 64 },
+};
+assert.ok(validateRequest(soupRequest), JSON.stringify(validateRequest.errors));
+const soupProject = generateProject(soupRequest, resolved);
+assert.ok(validate(soupProject.recipe), JSON.stringify(validate.errors));
+assert.equal(soupProject.recipe.template.id, 'superii-sft-soup');
+assert.equal(soupProject.recipe.dependencies['training-engine'], 'soup@0.75.1');
+assert.equal(soupProject.recipe.dependencies['training-epochs'], '2');
+assert.equal(soupProject.recipe.configuration.training_engine, undefined);
+assert.equal(soupProject.recipe.configuration.training_epochs, undefined);
+assert.match(soupProject.files['soup/pyproject.toml'], /soup-cli==0\.75\.1/);
+assert.doesNotMatch(soupProject.files['soup/pyproject.toml'], /bitsandbytes/);
+assert.match(soupProject.files['soup/uv.lock'], /name = "soup-cli"/);
+assert.match(soupProject.files['train.py'], /--dry-run/);
+assert.match(soupProject.files['train.py'], /verified_reload/);
+assert.match(soupProject.files['train.py'], /"format": "alpaca"/);
+assert.match(soupProject.files['train.py'], /"train_on_responses_only": False/);
+assert.match(soupProject.files['train.py'], /optimizer\.pt/);
+assert.match(soupProject.files['.github/workflows/publish-project.yml'], /uv sync --project soup --frozen/);
+assert.match(soupProject.files['pyproject.toml'], /superii-sdk\[train\]==0\.3\.0/);
+const soupDirectory = path.join(temporary, 'soup-sft');
+await mkdir(soupDirectory);
+for (const [name, text] of Object.entries(soupProject.files)) {
+ const target = path.join(soupDirectory, name);
+ await mkdir(path.dirname(target), { recursive: true });
+ await writeFile(target, text);
+}
+await writeFile(path.join(temporary, 'soup-sft.zip'), projectZip(soupProject.files));
+projects.push(soupDirectory);
 const ragRequest = { outcome: 'rag', generator: ref('generator'), embedding: ref('embedding') };
 for (const [generator, embedding] of [['gpt2', 'bert'], ['GPTNeoXForCausalLM', 'XLMRobertaModel']]) {
  assert.ok(generateProject(ragRequest, {
@@ -89,6 +120,8 @@ for (const invalid of [
  { outcome: 'sft', generator: ref('generator'), dataset: null },
  { outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), accelerator: 'metal' },
  { outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), configuration: { ui: 'gradio' } },
+ { outcome: 'api', generator: ref('generator'), configuration: { training_engine: 'soup' } },
+ { outcome: 'sft', generator: ref('generator'), dataset: ref('dataset'), configuration: { training_engine: 'soup', sequence_length: 32 } },
  { outcome: 'api', generator: ref('generator'), runtime: 'mlx' },
 ]) assert.equal(validateRequest(invalid), false, JSON.stringify(invalid));
 assert.ok(validateRequest({ outcome: 'api', generator: ref('generator'), runtime: 'mlx', accelerator: 'metal' }));

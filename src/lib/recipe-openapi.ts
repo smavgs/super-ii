@@ -22,6 +22,15 @@ const requestSchema = {
         configuration: { properties: { framework: { const: 'python' }, ui: { const: 'none' } } },
       },
     } },
+    { if: { properties: { outcome: { enum: ['rag', 'api'] } }, required: ['outcome'] }, then: {
+      properties: { configuration: { properties: { training_engine: { const: 'native' } } } },
+    } },
+    { if: {
+      properties: { configuration: { properties: { training_engine: { const: 'soup' } }, required: ['training_engine'] } },
+      required: ['configuration'],
+    }, then: {
+      properties: { configuration: { properties: { sequence_length: { minimum: 64 } } } },
+    } },
     { if: { properties: { runtime: { const: 'mlx' } }, required: ['runtime'] }, then: { required: ['accelerator'], properties: { accelerator: { const: 'metal' } } } },
   ],
 };
@@ -49,7 +58,7 @@ export const recipeApiPaths = {
     post: {
       tags: ['Build & Ship'],
       operationId: 'generateEngineeringProject', summary: 'Generate a local RAG, model API or LoRA project',
-      description: 'Resolves published immutable model and dataset inputs, then returns text files and SHA-256 checksums. This does not execute code, start training, deploy or publish anything. Maximum JSON request: 16 KiB. Browser Origin must match; ordinary software clients may omit it. SFT uses CPU Transformers. NVIDIA exports require explicit opt-in and have no GPU execution evidence.',
+      description: 'Resolves published immutable model and dataset inputs, then returns text files and SHA-256 checksums. This does not execute code, start training, deploy or publish anything. Maximum JSON request: 16 KiB. Browser Origin must match; ordinary software clients may omit it. SFT uses CPU Transformers through the native Super ii path or an explicitly selected, isolated and frozen Soup environment. NVIDIA exports require explicit opt-in and have no GPU execution evidence.',
       security: [{}, ...protectedAccess], parameters: sourceTokens,
       requestBody: { required: true, content: { 'application/json': { schema: requestSchema } } },
       responses: {

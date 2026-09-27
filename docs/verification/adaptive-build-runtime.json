@@ -1,0 +1,47 @@
+{
+  "schema": "superii-verification-evidence-v1",
+  "verified_at": "2026-09-27T04:02:29Z",
+  "source_base": "4f313c8a175da7a97a0e32ad7ab2947b38dbf80c",
+  "soup": {
+    "package": "soup-cli==0.75.1",
+    "upstream_tag": "v0.75.1",
+    "upstream_commit": "d1b28dd2766de7b83e3b474d84f66fc396fe3906",
+    "environment_lock_sha256": "f9fe7ffae1878ddf3210a4167008ee849f476428d6666845cf9041d37bc537b3",
+    "generated_runner_sha256": "bf8b4d05314ea56fd4c27176b454a106b782aba21d5e7a5b3c8c01750d318bf6",
+    "container_image": "ghcr.io/astral-sh/uv:python3.12-bookworm-slim",
+    "container_image_digest": "sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58",
+    "fixture": "locally-created tiny GPT-2 safetensors model and 12-row JSONL dataset",
+    "network_model_download": false,
+    "dry_run_passed": true,
+    "training_passed": true,
+    "adapter_reload_passed": true,
+    "symlink_output_rejected": true,
+    "bounded_generation_tokens": 1,
+    "train_rows": 11,
+    "held_out_rows": 1,
+    "initial_eval_loss": 2.823843479156494,
+    "final_eval_loss": 2.8238301277160645,
+    "engine_config_sha256": "25a8a09f449ed3fedf3bd088cf8daeebfa42f07887f94d5ee82983b1fe4684bf",
+    "recipe_sha256": "ce0de96b669ed43db80ccc45cada84780ca4d516c4b434b2b64eb9b1c78ff0a3",
+    "model_quality_claim": false,
+    "command": "docker run --rm --volume superii-uv-cache:/root/.cache/uv --volume $PWD:/source:ro ghcr.io/astral-sh/uv:python3.12-bookworm-slim and run tools/verify-soup-runner.py against the generated runner"
+  },
+  "ktransformers": {
+    "packages": [
+      "kt-kernel[sglang]==0.7.0.post4",
+      "sglang-kt==0.7.0.post4"
+    ],
+    "upstream_commit_reviewed": "c40722bf04c494f2492b7eb9e86ef01a4ede45b3",
+    "wrapper_sha256": "26d27ae76c1164d11cd43f9bc74338a3d7aae77388fbba796bbbc90d8d690270",
+    "contract_reviewed": true,
+    "symlinked_model_paths_rejected": true,
+    "doctor_and_dry_run_commands_generated": true,
+    "supported_large_moe_hardware_run": false,
+    "claim": "docs-reviewed planning path only"
+  },
+  "limits": [
+    "The Soup fixture proves execution and artifact reload, not improvement on a real task.",
+    "The pinned current PyTorch stack has no Intel macOS wheel; generated documentation identifies the supported current platforms and the standard Super ii path remains separate.",
+    "KTransformers requires a compatible Linux CUDA server, model-specific settings, and enough RAM and VRAM; no supported large MoE model was executed in this verification."
+  ]
+}

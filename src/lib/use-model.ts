@@ -1,6 +1,7 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import runtimeRegistrySource from '@/content/runtime-registry.json';
+import ktransformersWrapper from '@/data/use-model/superii-ktransformers.py?raw';
 import type { RepositoryBundle, RepositoryFileView } from './repository';
 import { kindPath } from './repository-path';
 
@@ -322,7 +323,9 @@ function makeCandidate(
     .map((command) => renderCommand(command, tokens));
   const generatedFiles = integration.id === 'ollama' && primaryFile
     ? [{ path: 'Modelfile', content: `FROM ${JSON.stringify(fileLocalPath)}\n` }]
-    : [];
+    : integration.id === 'ktransformers'
+      ? [{ path: 'superii-ktransformers.py', content: ktransformersWrapper }]
+      : [];
   const minimumRam = Number(repository.compatibility?.minimum_ram_bytes ?? 0);
   const minimumVram = Number(repository.compatibility?.minimum_vram_bytes ?? 0);
   return {
@@ -380,13 +383,26 @@ function integrationMatchesRepository(
   repository: RepositoryBundle,
   matchedFormats: ModelFormat[],
 ): boolean {
-  if (integration.id !== 'comfyui') return true;
-  if (!matchedFormats.includes('safetensors')) return false;
   const context = [repository.task, repository.library, repository.modality]
     .filter((value): value is string => typeof value === 'string')
     .join(' ')
     .toLowerCase();
-  return /(^|[^a-z])(comfy|diffusion|stable diffusion|text-to-image|image-to-image|image generation|image-generation|sdxl|flux|image)([^a-z]|$)/.test(context);
+  if (integration.id === 'comfyui') {
+    return matchedFormats.includes('safetensors')
+      && /(^|[^a-z])(comfy|diffusion|stable diffusion|text-to-image|image-to-image|image generation|image-generation|sdxl|flux|image)([^a-z]|$)/.test(context);
+  }
+  if (integration.id === 'ktransformers') {
+    if (!matchedFormats.includes('safetensors')) return false;
+    const moeContext = [
+      repository.compatibility?.architecture,
+      repository.title,
+      repository.slug,
+      repository.task,
+      repository.library,
+    ].filter((value): value is string => typeof value === 'string').join(' ').toLowerCase();
+    return /(deepseek.{0,8}v[234]|glm.{0,12}(moe|4\.7|5)|kimi.{0,8}k2|minimax.{0,8}m[23]|mixtral|qwen[23].{0,12}(moe|a3b|next))/.test(moeContext);
+  }
+  return true;
 }
 
 export function modelUseCandidates(repository: RepositoryBundle, origin: string): ModelUseCandidate[] {

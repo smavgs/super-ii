@@ -2,7 +2,8 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -185,6 +186,60 @@ try {
     false,
     'text Safetensors must not be presented as ComfyUI compatible',
   );
+  assert.equal(
+    textSafetensorsManifest.integrations.some((candidate) => candidate.integrationId === 'ktransformers'),
+    false,
+    'ordinary text Safetensors must not be presented as KTransformers compatible',
+  );
+
+  const moeRepository = {
+    ...textSafetensorsRepository,
+    slug: 'qwen3-moe-fixture',
+    title: 'Qwen3 MoE fixture',
+    compatibility: {
+      ...textSafetensorsRepository.compatibility,
+      architecture: 'Qwen3MoeForCausalLM',
+      minimum_ram_bytes: String(96 * 1024 ** 3),
+      minimum_vram_bytes: String(24 * 1024 ** 3),
+    },
+    files: [
+      { ...repository.files[0], path: 'config.json' },
+      { ...repository.files[0], id: '44444444-4444-4444-8444-444444444444', path: 'model.safetensors' },
+    ],
+  };
+  const moeManifest = useModel.buildUseManifest(moeRepository, origin);
+  const ktransformers = moeManifest.integrations.find((candidate) => candidate.integrationId === 'ktransformers');
+  assert.ok(ktransformers, 'reviewed MoE families should expose the KTransformers planning path');
+  assert.equal(ktransformers.status, 'community');
+  assert.equal(ktransformers.api, null);
+  assert.equal(ktransformers.generatedFiles[0].path, 'superii-ktransformers.py');
+  assert.match(ktransformers.generatedFiles[0].content, /auto_map/);
+  assert.ok(ktransformers.commands.some((command) => command.id === 'check'));
+  assert.ok(ktransformers.commands.some((command) => command.id === 'plan'));
+  const linuxPlan = useModel.recommendUseOptions(moeManifest.integrations, {
+    os: 'linux', architecture: 'x64', accelerator: 'cuda', ramGiB: 128, vramGiB: 48, webgpu: false,
+  }).find((recommendation) => recommendation.candidateId === ktransformers.id);
+  assert.notEqual(linuxPlan.suitability, 'incompatible');
+  const macPlan = useModel.recommendUseOptions(moeManifest.integrations, {
+    os: 'macos', architecture: 'arm64', accelerator: 'metal', ramGiB: 128, vramGiB: null, webgpu: false,
+  }).find((recommendation) => recommendation.candidateId === ktransformers.id);
+  assert.equal(macPlan.suitability, 'incompatible');
+  const ktransformersFixture = await mkdtemp(path.join(tmpdir(), 'superii-ktransformers-'));
+  const wrapperPath = path.join(ktransformersFixture, 'superii-ktransformers.py');
+  const modelPath = path.join(ktransformersFixture, 'model');
+  await writeFile(wrapperPath, ktransformers.generatedFiles[0].content);
+  await mkdir(modelPath);
+  await writeFile(path.join(modelPath, 'config.json'), JSON.stringify({ model_type: 'qwen3_moe' }));
+  await writeFile(path.join(modelPath, 'model.safetensors'), 'fixture');
+  const linkedModel = path.join(ktransformersFixture, 'linked-model');
+  await symlink(modelPath, linkedModel, 'dir');
+  const linkedResult = spawnSync('python3', [wrapperPath, 'check', linkedModel], { encoding: 'utf8' });
+  assert.notEqual(linkedResult.status, 0);
+  assert.match(linkedResult.stderr, /must not be a symlink/);
+  await symlink(path.join(modelPath, 'model.safetensors'), path.join(modelPath, 'linked.safetensors'));
+  const nestedResult = spawnSync('python3', [wrapperPath, 'check', modelPath], { encoding: 'utf8' });
+  assert.notEqual(nestedResult.status, 0);
+  assert.match(nestedResult.stderr, /only regular files and directories/);
 
   const mlxRepository = {
     ...textSafetensorsRepository,

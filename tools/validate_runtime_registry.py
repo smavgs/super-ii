@@ -29,6 +29,7 @@ EXPECTED_INTEGRATIONS = {
     "docker-model-runner",
     "vllm",
     "sglang",
+    "ktransformers",
     "superii-runtime",
 }
 EXPECTED_AGENTS = {"codex", "pi", "hermes", "openclaw"}
@@ -48,6 +49,7 @@ INTEGRATION_DOCUMENTATION_HOSTS = {
     "docker-model-runner": "docs.docker.com",
     "vllm": "docs.vllm.ai",
     "sglang": "docs.sglang.io",
+    "ktransformers": "github.com",
     "superii-runtime": "superii.site",
 }
 AGENT_DOCUMENTATION_HOSTS = {

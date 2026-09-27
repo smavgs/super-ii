@@ -24,12 +24,14 @@ export const recipeRequest = z.object({
     query_prefix: z.string().max(200).default(''), document_prefix: z.string().max(200).default(''),
     seed: z.number().int().min(0).max(2147483647).default(42),
     max_steps: z.number().int().min(1).max(100000).default(20),
+    training_epochs: z.number().int().min(1).max(100).default(1),
     batch_size: z.number().int().min(1).max(128).default(1),
     gradient_accumulation_steps: z.number().int().min(1).max(1024).default(4),
     sequence_length: z.number().int().min(32).max(32768).default(256),
     lora_rank: z.number().int().min(1).max(256).default(8),
     learning_rate: z.number().min(0.000001).max(0.01).default(0.0002),
     adapter: z.literal('lora').default('lora'),
+    training_engine: z.enum(['native', 'soup']).default('native'),
     framework: z.enum(['python', 'langchain']).default('python'),
     ui: z.enum(['none', 'gradio']).default('none'), observability: z.boolean().default(false),
   }).strict().prefault({}),
@@ -41,6 +43,8 @@ export const recipeRequest = z.object({
   if (value.outcome === 'sft' && !value.dataset) invalid('SFT needs a dataset and immutable revision');
   if (value.outcome === 'sft' && (value.accelerator !== 'cpu' || !['auto', 'transformers'].includes(value.runtime))) invalid('The verified SFT recipe uses Transformers on CPU');
   if (value.outcome === 'sft' && (value.configuration.framework !== 'python' || value.configuration.ui !== 'none')) invalid('Framework and UI exports are available for inference projects');
+  if (value.outcome !== 'sft' && value.configuration.training_engine !== 'native') invalid('Training engines apply only to SFT projects');
+  if (value.outcome === 'sft' && value.configuration.training_engine === 'soup' && value.configuration.sequence_length < 64) invalid('Soup training needs at least 64 sequence tokens');
   if (value.runtime === 'mlx' && value.accelerator !== 'metal') invalid('MLX needs an Apple target');
 });
 export type RecipeRequest = z.infer<typeof recipeRequest>;
@@ -52,7 +56,7 @@ export type SdkInput = {
   files: { path: string; size_bytes: number; sha256: string }[];
 };
 export const dependencies = {
-  'superii-sdk': '0.2.2', torch: '2.14.0', transformers: '5.16.1', accelerate: '1.14.0',
+  'superii-sdk': '0.3.0', torch: '2.14.0', transformers: '5.16.1', accelerate: '1.14.0',
   'faiss-cpu': '1.15.0', numpy: '2.5.2', peft: '0.20.0', trl: '1.12.0', datasets: '5.0.1',
   fastapi: '0.141.1', uvicorn: '0.52.4', 'prometheus-client': '0.26.0', safetensors: '0.8.0',
 };
@@ -99,16 +103,23 @@ function artifact(role: 'generator' | 'embedding' | 'dataset', selected: InputRe
 
 export function generateProject(raw: unknown, resolved: { generator: SdkInput; embedding?: SdkInput; dataset?: SdkInput }) {
   const request = recipeRequest.parse(raw);
+  const { training_engine, training_epochs, ...portableConfiguration } = request.configuration;
+  const trainingDependencies: Record<string, string> = request.outcome === 'sft'
+    ? {
+        'training-engine': training_engine === 'soup' ? 'soup@0.75.1' : 'superii-native@0.3.0',
+        'training-epochs': String(training_epochs),
+      }
+    : {};
   const value = {
     schema: 'https://superii.site/schemas/superii-recipe-v1.json', recipe_version: 1,
-    outcome: request.outcome, template: { id: `superii-${request.outcome}`, version: '1.0.0' },
+    outcome: request.outcome, template: { id: `superii-${request.outcome}${training_engine === 'soup' ? '-soup' : ''}`, version: '1.0.0' },
     inputs: {
       generator: artifact('generator', request.generator, resolved.generator, request),
       embedding: request.embedding && resolved.embedding ? artifact('embedding', request.embedding, resolved.embedding, request) : null,
       dataset: request.dataset && resolved.dataset ? artifact('dataset', request.dataset, resolved.dataset, request) : null,
     },
     target: { accelerator: request.accelerator, python: '3.12', runtime: request.runtime },
-    configuration: request.configuration, dependencies,
+    configuration: portableConfiguration, dependencies: { ...dependencies, ...trainingDependencies },
     verification: { scope: 'template-fixture-tests', model_quality: 'not-established', hardware: request.outcome === 'sft' ? ['cpu'] : ['cpu', 'metal'] },
   };
   if ((request.embedding && !value.inputs.embedding) || (request.dataset && !value.inputs.dataset)) throw new Error('A required source could not be resolved');
