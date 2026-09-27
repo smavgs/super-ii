@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "publishedAt": "2026-09-06",
+  "publishedAt": "2026-09-26",
   "reviewCadenceDays": 90,
   "allowedTemplateTokens": [
     "model_dir",
@@ -363,6 +363,51 @@
         "chatPath": "/chat/completions"
       },
       "warnings": ["The generated package command is local-only and deliberately omits --push."]
+    },
+    {
+      "id": "ktransformers",
+      "name": "KTransformers",
+      "category": "api-server",
+      "status": "community",
+      "summary": "Check and plan CPU + NVIDIA GPU inference for selected very-large MoE models.",
+      "documentation": "https://github.com/kvcache-ai/ktransformers/blob/main/doc/en/kt-kernel/kt-cli.md",
+      "verifiedAt": "2026-09-25",
+      "expiresAt": "2026-12-24",
+      "verification": "The official kt-kernel 0.7.0.post4 package, KT CLI contract, environment doctor and dry-run planning path were reviewed. Super ii has not executed a supported large MoE model on the required Linux server hardware.",
+      "platforms": ["linux-x64"],
+      "formats": ["safetensors"],
+      "accelerators": ["cuda"],
+      "capabilities": ["hardware-plan", "api"],
+      "priority": 80,
+      "commands": [
+        {
+          "id": "install",
+          "kind": "install",
+          "label": "Install the pinned engine in an active Linux virtual environment",
+          "executable": "uv",
+          "args": ["pip", "install", "kt-kernel[sglang]==0.7.0.post4"]
+        },
+        {
+          "id": "check",
+          "kind": "setup",
+          "label": "Check this computer and the reviewed model files",
+          "executable": "python3",
+          "args": ["superii-ktransformers.py", "check", "{{model_dir}}"]
+        },
+        {
+          "id": "plan",
+          "kind": "setup",
+          "label": "Build a dry-run launch plan",
+          "executable": "python3",
+          "args": ["superii-ktransformers.py", "plan", "{{model_dir}}"]
+        }
+      ],
+      "warnings": [
+        "KTransformers is shown only for selected MoE architecture families. A matching model-specific precision method and sufficient RAM, VRAM, CPU instructions and disk remain required.",
+        "The current KT CLI is explicitly under active development. Super ii generates a dry-run plan, not an automatic launch or performance claim.",
+        "The Super ii wrapper rejects model configurations that declare custom Python code. Review the emitted command and the official guide for the exact model before running it.",
+        "KTransformers CPU + GPU inference still requires NVIDIA CUDA on Linux; it is not a Mac laptop path."
+      ]
     },
     {
       "id": "vllm",

@@ -1,0 +1,23 @@
+[project]
+name = "superii-soup-engine"
+version = "1.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "soup-cli==0.75.1",
+  "torch==2.14.0",
+  "transformers==5.16.1",
+  "peft==0.20.0",
+  "trl==0.29.0",
+  "datasets==5.0.1",
+  "accelerate==1.14.0",
+  "safetensors==0.8.0",
+  "numpy==2.5.2",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -32,3 +32,19 @@ Installed-version probes are read-only and do not upgrade, install, download, or
 Generated local API servers bind to `127.0.0.1`. Codex receives the read-only Super ii MCP for repository discovery; Pi, Hermes, and OpenClaw receive placeholder-only configuration for a compatible local OpenAI-style endpoint. The two paths are explicitly separate.
 
 Derived recommendations use only reviewed typed lineage: fine-tuned, quantized, converted, adapter, merged, and distilled relations. External hosted providers, regions, and prices remain empty until real funded capacity is measured and published. vLLM and SGLang are therefore user-provisioned API guidance, not a claim of free Super ii GPU hosting.
+
+## Adaptive runtime planning
+
+Adaptive Runtime is a decision layer inside Use Model, not another inference
+engine. Ordinary models continue to receive the smallest compatible local path.
+Only selected reviewed large-MoE families with Safetensors can receive the
+KTransformers candidate.
+
+That candidate is deliberately a plan, not a launch button. Its generated
+wrapper checks a bounded local `config.json`, rejects `auto_map`, custom
+pipelines and model-file code, requires a reviewed built-in model family, runs
+the pinned `kt doctor`, and requests a loopback-only `kt run --dry-run` plan.
+The current upstream CLI is under active development. A compatible Linux x64
+CUDA host, CPU instruction set, RAM, VRAM, storage, model-specific precision
+method and operator review remain required. No supported large-MoE hardware run
+is claimed by Super ii.

@@ -133,3 +133,30 @@ capacity, broad model benchmarks and GA operational maturity are not claimed.
 Earlier SDK 0.2.0 and 0.2.1 receipts remain as release history. The passing live
 workflow supersedes the earlier pending integration notes. Pricing, existing
 onboarding, Use Model and Run/Code/Share remain in place.
+
+## 2026-09-26 optional Soup engine extension
+
+The product flow remains Build & Ship: users choose a result first, and engine
+selection stays under advanced execution settings. CPU SFT can now select a
+separately frozen Soup 0.75.1 environment without changing the published
+Super ii recipe schema or requiring a new SDK release. The recipe checksum binds
+the engine and training-pass count through its dependency record.
+
+The generated runner acquires and verifies the exact model and dataset, applies
+the existing memory plan and deterministic 90/10 split, writes bounded local
+training data, validates the Soup configuration with `--dry-run`, and runs the
+training process without a shell. It refuses model-supplied Python code through
+the existing Super ii acquisition and planning boundary. After training it
+removes known non-portable optimizer state, accepts only a small output suffix
+allowlist, requires Safetensors adapter weights, rewrites base lineage to the
+immutable Super ii source, and independently reloads the adapter for held-out
+loss and a one-token generation probe. Only then can the run record complete.
+
+The complete generated runner executed on Linux x64 CPU in an isolated
+Python 3.12 container against a locally created tiny GPT-2 Safetensors fixture
+and 12-row dataset. It produced an 11/1 train/held-out split, completed one
+training pass, reloaded the adapter and generated one token. The measured loss
+is retained as execution evidence and explicitly not interpreted as model
+quality. Exact versions, hashes, results and limitations are recorded in
+`verification/adaptive-build-runtime.json`. Current PyTorch wheels do not cover
+Intel macOS; the generated README and interface state that boundary.
