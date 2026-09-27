@@ -40,6 +40,8 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 - Connector registry: https://superii.site/agent-connectors.json
 - Agent Skill: https://superii.site/skills/superii/SKILL.md
 - Skills library: https://superii.site/skills
+- Cards workspace: https://superii.site/account#cards
+- Public Card schema: https://superii.site/schemas/card/v1.json
 - Builders directory: https://superii.site/builders
 - Skills catalog API: https://superii.site/api/skills
 - Universal agent handoff: https://superii.site/siiwebskill.md
@@ -79,6 +81,14 @@ Every reviewed model page—not the overview page—derives its exact immutable 
 The public Skills page is one searchable interface for complete, portable AI-agent prompts. A person can open a skill in place, inspect its category and First get requirements, copy the complete prompt, share a direct link, or choose Play and select a Chat or Code tool. Play uses a direct prefill only for a supported target and a bounded prompt; otherwise it explicitly copies the prompt and opens the tool when a stable destination exists. Declared variables are filled locally before handoff, and the interface warns against entering secrets. The Share and Play actions do not send the prompt to the Super ii assistant.
 
 GET https://superii.site/api/skills returns the unified validated Skills catalog. Every Skill includes slug, name, category, integrations, and the complete prompt; tags, variables, and bestWith are optional. Super ii validates and de-duplicates the refreshed open-source feed together with reviewed skills packaged in the release, then keeps one same-origin edge response for the interface.
+
+## Super ii Cards
+
+Signed-in members create purpose-specific contact cards at https://superii.site/account#cards. The private reusable contact vault can hold English and Simplified Chinese identity text plus selected global and China contact services. Each card publishes only the fields its owner selected. Super ii-verified badges derive from current platform records; visually separate personal badges are self-described.
+
+An active card uses a random 256-bit unlisted token at /c/{token}. The link is bearer-like access, not authentication or a secrecy guarantee. Do not place card tokens in logs, analytics, referrers, or search indexes. The owner can pause the card, rotate to an unrelated link, or delete it. Those controls stop future Super ii resolution but cannot retrieve copies another person already saved or forwarded.
+
+The same current public snapshot produces /c/{token}/card.json, /c/{token}/contact.vcf, and /c/{token}/qr.svg. The JSON schema is https://superii.site/schemas/card/v1.json. A recipient may optionally share a bounded name plus email or phone back through the human card when the owner enabled it. Super ii encrypts the reusable contact vault, received contact details and private owner notes before database storage; none are public-card representations.
 
 ## Plans and bounded commerce
 
