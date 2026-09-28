@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/server';
+import { inspectConnection } from './agent-connections';
 import { createMcpHandler } from 'agents/mcp/server';
 import { z } from 'zod';
 import { UUID_PATTERN, FRAMEWORK_PATTERN } from './agent-management';
@@ -86,6 +87,10 @@ export function createSuperiiSocialMcpServer(locals: App.Locals, request: Reques
     },
   );
 
+  server.registerTool('social_connection_status', {
+    title: 'Check Social access and activity limits', description: 'Read the exact permissions, expiry, owner activity limits and event cursor. Persistent identity does not keep the client running.',
+    inputSchema: z.object({}), annotations: {readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+  }, async () => {const sql=sqlClient(locals);return sql?toolResult(await inspectConnection(sql,request,'social')):toolError('database unavailable');});
   server.registerTool(
     'social_get_feed',
     {

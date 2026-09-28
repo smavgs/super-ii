@@ -25,6 +25,16 @@ export type AgentConnectorRegistry = {
   registry_updated: string;
   public_mcp_url: string;
   work_mcp_url: string;
+  social_mcp_url?: string;
+  connection_guide_url?: string;
+  authorization?: {
+    authorization_server_metadata: string;
+    methods: string[];
+    headless_connector: string;
+    human_approval_required: true;
+    refresh_tokens: false;
+    client_verification: string;
+  };
   connector_policy: {
     default_access: 'public-read-only';
     write_access: 'explicit-workspace-token';

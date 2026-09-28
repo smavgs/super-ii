@@ -1,4 +1,5 @@
 import russianCatalog from '@/content/locales/ru.json';
+import { connectionRussian } from './connection-localization';
 
 export type SiteLocale = 'en' | 'ru';
 
@@ -2732,6 +2733,7 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
   ...notebooksUseRussian,
   ...buildShipRussian,
   ...assistantContinuityRussian,
+  ...connectionRussian,
 });
 export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedRussian,

@@ -3,7 +3,7 @@ export type BoundedJsonResult =
   | { ok: false; status: 400 | 413 | 415; error: string };
 
 export async function readBoundedJsonObject(
-  request: Request,
+  request: Pick<Request, 'headers' | 'body'>,
   maxBytes: number,
   allowEmpty = false,
   acceptedMediaTypes: readonly string[] = ['application/json'],

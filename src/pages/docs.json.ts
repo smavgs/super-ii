@@ -23,6 +23,8 @@ const documents = {
     { id: 'llms-full', title: 'Full machine guide', media_type: 'text/plain', url: 'https://superii.site/llms-full.txt' },
     { id: 'agent-contract', title: 'Global agent contract', media_type: 'text/markdown', url: 'https://superii.site/agents.md' },
     { id: 'agent-handoff', title: 'Universal agent handoff', media_type: 'text/markdown', url: 'https://superii.site/siiwebskill.md' },
+    { id: 'agent-connections', title: 'Agent approval, OAuth and device connection guide', media_type: 'text/markdown', url: 'https://superii.site/api/agent-connections/guide.md' },
+    { id: 'social-agent-guide', title: 'Social participation and runtime contract', media_type: 'text/markdown', url: 'https://superii.site/social/agents.md' },
     { id: 'agent-card', title: 'A2A v1.0 Agent Card', media_type: 'application/json', url: 'https://superii.site/.well-known/agent-card.json' },
     { id: 'commerce-catalog', title: 'Agent commerce catalog', media_type: 'application/json', url: 'https://superii.site/.well-known/commerce.json' },
     { id: 'commerce-agent-card', title: 'Agent commerce A2A v1.0 Agent Card', media_type: 'application/json', url: 'https://superii.site/.well-known/commerce-agent-card.json' },

@@ -183,7 +183,8 @@ grant execute on function app.resolve_public_card(text),
 
 -- install_least_privilege_policies intentionally revokes all application
 -- grants first. Restore the reviewed gateways from 0023 plus the later runtime
--- compatibility projection, then add only the two card gateways above.
+-- compatibility projection and scoped connection gateways from 0028, then add
+-- only the two card gateways above.
 do $restore_invoker_grants$
 declare function_record record;
 begin
@@ -224,6 +225,15 @@ grant execute on function app.consume_scoped_access_token(text,text,uuid),
   app.record_highlight_event(uuid,text,text),
   app.record_robot_discovery(text,text,text),
   app.record_transparency_discovery(text,text,text)
+  to superii_web_backend;
+grant execute on function app.register_agent_oauth_client(text,jsonb),
+  app.start_agent_connection(uuid,text,text,text[],text,text,text,text,text),
+  app.read_agent_connection_request(uuid,text),
+  app.approve_agent_connection(uuid,uuid,boolean,jsonb,text),
+  app.exchange_agent_connection(uuid,text,text,text,text,text,text,text),
+  app.inspect_agent_connection(text,text),
+  app.list_agent_connections(),
+  app.revoke_agent_connection(uuid)
   to superii_web_backend;
 grant execute on function app.consume_commerce_delegation(text,text)
   to superii_payment_backend;

@@ -106,7 +106,7 @@ const contracts = [
   [client, "record.type === 'characterData'", 'dynamic text replacement localization'],
   [client, "new Set(['/api', '/locales', '/.well-known', '/mcp', '/checkout/api'])", 'machine-route link protection'],
   [client, "x-superii-locale", 'localized client requests'],
-  [client, '/locales/ru.json?v=20260921-9', 'current Russian catalogue cache key'],
+  [client, '/locales/ru.json?v=20260927-1', 'current Russian catalogue cache key'],
   [i18n, "'tokenizer',", 'localizable Tokenizer route'],
   [i18n, "'Verified tokenizer': 'Проверенный токенизатор'", 'reviewed Tokenizer translation'],
   [clerkLocale, 'ruRU', 'Clerk Russian localization'],
@@ -148,7 +148,7 @@ const canonicalCapabilityCount = capabilitySection
   .filter((line) => line.split('|').length >= 6)
   .length;
 const russianCapabilityCount = (systemStateLocalization.match(/^  ['"].+['"]: \{$/gm) ?? []).length;
-if (canonicalCapabilityCount !== 55) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 55`);
+if (canonicalCapabilityCount !== 56) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 56`);
 if (russianCapabilityCount !== canonicalCapabilityCount) {
   errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
 }

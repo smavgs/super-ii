@@ -214,7 +214,9 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   headers.set('cross-origin-opener-policy', 'same-origin-allow-popups');
   headers.set('cross-origin-resource-policy', isolatedSpaceFrame ? 'cross-origin' : 'same-origin');
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
-  headers.set('referrer-policy', /^\/c\/[^/]+(?:\/|$)/.test(url.pathname) ? 'no-referrer' : 'strict-origin-when-cross-origin');
+  headers.set('referrer-policy', /^\/c\/[^/]+(?:\/|$)/.test(url.pathname)
+    ? 'no-referrer'
+    : headers.get('referrer-policy') ?? 'strict-origin-when-cross-origin');
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-frame-options', sameOriginFrame ? 'SAMEORIGIN' : 'DENY');

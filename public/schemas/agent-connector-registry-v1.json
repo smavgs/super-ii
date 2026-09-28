@@ -10,6 +10,9 @@
     "registry_updated": { "type": "string", "format": "date" },
     "public_mcp_url": { "type": "string", "format": "uri", "pattern": "^https://" },
     "work_mcp_url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "connection_guide_url": {"type": "string", "format": "uri"},
+    "social_mcp_url": {"type": "string", "format": "uri"},
+    "authorization": {"type": "object", "additionalProperties": false, "required": ["authorization_server_metadata", "methods", "headless_connector", "human_approval_required", "refresh_tokens", "client_verification"], "properties": {"authorization_server_metadata": {"type": "string", "format": "uri"}, "methods": {"type": "array", "items": {"enum": ["authorization-code-pkce-s256", "device-code"]}}, "headless_connector": {"type": "string", "format": "uri"}, "human_approval_required": {"const": true}, "refresh_tokens": {"const": false}, "client_verification": {"type": "string"}}},
     "connector_policy": {
       "type": "object",
       "additionalProperties": false,

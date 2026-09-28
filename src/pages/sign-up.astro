@@ -4,6 +4,7 @@ import AuthStory from '@/components/AuthStory.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { localizedHref, localizedPath, stripLocalePrefix } from '@/lib/i18n';
 import { authIsConfigured } from '@/lib/site';
+import { connectionReturnPath } from '@/lib/connection-policy';
 
 const authConfigured = authIsConfigured(Astro.locals);
 const locale = Astro.locals.locale ?? 'en';
@@ -22,7 +23,7 @@ const allowedRedirects = new Set([
 ]);
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
 const requestedPlainRedirect = requestedRedirect ? stripLocalePrefix(requestedRedirect) : null;
-const plainPostSignUpRedirect = requestedPlainRedirect && allowedRedirects.has(requestedPlainRedirect)
+const plainPostSignUpRedirect = requestedPlainRedirect && (allowedRedirects.has(requestedPlainRedirect) || connectionReturnPath(requestedPlainRedirect))
   ? requestedPlainRedirect
   : agentStarterRedirect;
 const postSignUpRedirect = localizedHref(plainPostSignUpRedirect, locale);

@@ -1,7 +1,10 @@
 import type { APIRoute } from 'astro';
+import { readBoundedJsonObject } from '@/lib/bounded-json';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { createSuperiiWorkMcpHandler } from '@/lib/work-mcp-server';
+import { requireConnection } from '@/lib/agent-connections';
+import { workToolScopes } from '@/lib/connection-policy';
 
 export const ALL: APIRoute = async ({ locals, request }) => {
   if (request.method === 'GET' && request.headers.get('accept')?.includes('text/html')) {
@@ -17,6 +20,13 @@ export const ALL: APIRoute = async ({ locals, request }) => {
         { status: rate === 'limited' ? 429 : 503 },
       );
     }
+    let scope: string | undefined;
+    if (request.method === 'POST') {
+      try { const parsed = await readBoundedJsonObject(request.clone(), 262_144); if (!parsed.ok) return Response.json({error:parsed.error},{status:parsed.status}); const body=parsed.value; if (body.method === 'tools/call' && body.params && typeof body.params==='object') scope = workToolScopes[String((body.params as Record<string,unknown>).name ?? '')]; } catch { /* MCP validates the body. */ }
+    }
+    const challenge = await requireConnection(locals,request,'work',scope);
+    if (challenge) return challenge;
+
   }
   const origin = new URL(request.url).origin;
   return createSuperiiWorkMcpHandler(locals, origin, request).fetch(request);

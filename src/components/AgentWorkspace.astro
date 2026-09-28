@@ -1,3 +1,6 @@
+---
+import AgentConnections from './AgentConnections.astro';
+---
 <section class="account-card agent-workspace" id="agents" data-agent-workspace>
   <div class="repository-section__heading">
     <div><p class="eyebrow">Manage your agents 🤖</p><h2 class="workspace-panel-title" tabindex="-1">Agents</h2></div>
@@ -5,6 +8,7 @@
   </div>
   <p>Create agents for your organization and choose their permissions. Repository submissions pass through automatic publication checks; deleting and spending require separate authority.</p>
 
+  <AgentConnections />
   <section class="agent-workspace__managed">
     <div class="repository-section__heading"><div><p class="eyebrow">Managed identities</p><h3>Your organization agents</h3></div><button class="text-button" type="button" data-agent-refresh>Refresh</button></div>
     <div data-agent-list><p>Loading agent identities…</p></div>
