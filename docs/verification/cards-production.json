@@ -1,20 +1,27 @@
 {
-  "verified_at": "2026-09-28T08:23:38Z",
+  "verified_at": "2026-09-28T13:33:20Z",
   "status": "production",
   "source": {
     "implementation_pull_request": "https://github.com/smavgs/super-ii/pull/49",
     "implementation_merge": "6ba51d15d166cfef1a9f4af9975ee0af3683323a",
     "photo_and_reliability_pull_request": "https://github.com/smavgs/super-ii/pull/53",
-    "photo_and_reliability_merge": "dac456bc604556f6c8acbac31edffef8563a345a"
+    "photo_and_reliability_merge": "dac456bc604556f6c8acbac31edffef8563a345a",
+    "sharing_and_limit_pull_request": "https://github.com/smavgs/super-ii/pull/56",
+    "sharing_and_limit_merge": "a0f0cef88805a854a5830d54513e5b6c5d51b3c1"
   },
   "database": {
-    "migration": "0029_super_ii_cards.sql and 0030_card_photos.sql applied",
+    "migration": "0029_super_ii_cards.sql, 0030_card_photos.sql and 0031_card_limit.sql applied",
     "application_tables": 111,
     "rls_tables": 111,
     "card_tables": 5,
     "card_owner_policies": 5,
     "card_gateway_functions": 3,
-    "card_photo_rows_at_verification": 0,
+    "card_rows_at_verification": 1,
+    "maximum_cards_per_owner_at_verification": 1,
+    "owners_above_six_at_verification": 0,
+    "six_card_limit_function": true,
+    "six_card_limit_trigger": true,
+    "web_backend_can_execute_six_card_limit_function": true,
     "resolve_public_card_function": true,
     "resolve_public_card_photo_function": true,
     "submit_card_connection_function": true,
@@ -31,7 +38,7 @@
   },
   "deployment": {
     "worker": "super-ii-site",
-    "worker_version_at_functional_verification": "6b033ec8-5bfd-452f-b035-e1323a5e50a2",
+    "worker_version_at_functional_verification": "0cc13d95-8a5b-4e23-8ad0-fd8f0a370e45",
     "traffic_percent": 100,
     "custom_domains": [
       "superii.site",
@@ -87,13 +94,47 @@
       "private_details_save_succeeded": true,
       "local_photo_control_rendered": true,
       "phone_camera_control_rendered": true,
-      "photo_url_input_hidden": true
+      "photo_url_input_hidden": true,
+      "card_count_display": "1 of 6",
+      "duplicate_copy_link_action_absent": true,
+      "share_action_neon_pink": true,
+      "save_and_publish_success_copy_implemented": true
+    },
+    "active_public_card": {
+      "status": 200,
+      "portrait_status": 200,
+      "portrait_content_type": "image/jpeg",
+      "portrait_source_is_same_origin": true,
+      "portrait_natural_width": 720,
+      "portrait_natural_height": 720,
+      "portrait_is_circular_and_center_cropped": true,
+      "duplicate_heading_name_absent": true,
+      "duplicate_copy_link_action_absent": true,
+      "share_action_neon_pink": true,
+      "creation_action_neon_orange": true,
+      "wechat_handoff_scheme": "weixin://",
+      "wechat_id_copy_on_handoff": true
+    },
+    "public_card_localization": {
+      "english_interface": true,
+      "simplified_chinese_interface": true,
+      "document_language_switches": true,
+      "document_title_switches": true,
+      "actions_services_badges_and_dialogs_switch": true
     },
     "responsive_workspace": {
       "viewport_width": 390,
       "body_scroll_width": 390,
       "workspace_width": 370,
       "photo_picker_within_viewport": true
+    },
+    "responsive_public_card": {
+      "viewport_width": 390,
+      "body_scroll_width": 390,
+      "horizontal_overflow": false,
+      "portrait_width": 104,
+      "portrait_height": 104,
+      "portrait_loaded_at_full_720_by_720_resolution": true
     }
   },
   "verification": {
@@ -109,6 +150,7 @@
     "An active unlisted card link is bearer-like and can be forwarded by anyone who receives it.",
     "The private reusable contact vault, encrypted photo bytes, received contacts, meeting notes, and raw token are never included in the public snapshot.",
     "No production test photo or connection was created during photo-release verification.",
-    "Automated browser file selection was blocked by the operator's Chrome extension file-access setting; the deployed file and camera controls, upload contract, image processing, encryption path, owner preview, database integration, and public active-snapshot boundary were verified without bypassing that browser safeguard."
+    "WeChat does not publish an authoritative arbitrary-recipient web deep link. Super ii copies the member's WeChat ID and requests the installed app through weixin://; final app opening remains subject to the device, installed WeChat app and browser custom-scheme policy.",
+    "The save and publish success states are covered by release checks; this verification did not republish the member's live Card merely to create a fresh timestamp."
   ]
 }

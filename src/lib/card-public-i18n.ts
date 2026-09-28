@@ -5,6 +5,7 @@ export type CardPublicLocale = 'en' | 'zh-CN';
 export const cardPublicUi = {
   en: {
     brand: 'Super ii Card',
+    skipToCard: 'Skip to card',
     superiiHome: 'Super ii home',
     language: 'Card language',
     badges: 'Badges',
@@ -45,6 +46,7 @@ export const cardPublicUi = {
   },
   'zh-CN': {
     brand: 'Super ii 名片',
+    skipToCard: '跳到名片',
     superiiHome: 'Super ii 首页',
     language: '名片语言',
     badges: '徽章',
