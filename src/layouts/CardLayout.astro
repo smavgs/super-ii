@@ -46,7 +46,7 @@ const publicDataLabel = locale === 'zh-CN' ? '公开名片数据' : 'Public card
     {!unavailable && <link rel="alternate" type="application/json" href={`${path}/card.json`} title={publicDataLabel} />}
   </head>
   <body class="card-page">
-    <a class="skip-link" href="#card-content">{skipLabel}</a>
+    <a class="skip-link" href="#card-content" data-card-skip-link>{skipLabel}</a>
     <main id="card-content"><slot /></main>
   </body>
 </html>

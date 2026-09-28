@@ -37,6 +37,8 @@ if (rootElement) {
     const ui = copy() as Record<string, string>;
     root.dataset.locale = locale;
     document.documentElement.lang = locale;
+    const skipLink = document.querySelector<HTMLElement>('[data-card-skip-link]');
+    if (skipLink) skipLink.textContent = ui.skipToCard;
 
     root.querySelectorAll<HTMLElement>('[data-card-copy]').forEach((node) => {
       const key = node.dataset.cardCopy ?? '';
