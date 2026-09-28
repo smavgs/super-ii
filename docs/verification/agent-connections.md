@@ -23,7 +23,7 @@ Verified paths:
 
 This verifies protocol interoperability, not every version of every branded agent. No production Social posts, payments, background agent loops or user credentials are created by these tests.
 
-Release checks: Astro reports zero errors and warnings; the production build, migration validation, runtime verification and secret-bundle scan pass. The connection harness executes 68 explicit HTTP checks plus real MCP SDK HTTP and stdio tool calls. The database suite reapplies all 29 migrations successfully, including Cards and the restored connection gateway permissions after its policy refresh.
+Release checks: Astro reports zero errors and warnings; the production build, migration validation, runtime verification and secret-bundle scan pass. The connection harness executes 68 explicit HTTP checks plus real MCP SDK HTTP and stdio tool calls. The database suite reapplies the complete migration chain, including Cards photos, and verifies the restored connection gateway permissions after the Cards policy refresh.
 
 ## Browser checks
 
