@@ -1,19 +1,25 @@
 {
-  "verified_at": "2026-09-28T03:08:21Z",
+  "verified_at": "2026-09-28T08:23:38Z",
   "status": "production",
   "source": {
     "implementation_pull_request": "https://github.com/smavgs/super-ii/pull/49",
-    "implementation_merge": "6ba51d15d166cfef1a9f4af9975ee0af3683323a"
+    "implementation_merge": "6ba51d15d166cfef1a9f4af9975ee0af3683323a",
+    "photo_and_reliability_pull_request": "https://github.com/smavgs/super-ii/pull/53",
+    "photo_and_reliability_merge": "dac456bc604556f6c8acbac31edffef8563a345a"
   },
   "database": {
-    "migration": "0029_super_ii_cards.sql applied",
-    "application_tables": 110,
-    "rls_tables": 110,
-    "card_tables": 4,
-    "card_owner_policies": 4,
+    "migration": "0029_super_ii_cards.sql and 0030_card_photos.sql applied",
+    "application_tables": 111,
+    "rls_tables": 111,
+    "card_tables": 5,
+    "card_owner_policies": 5,
+    "card_gateway_functions": 3,
+    "card_photo_rows_at_verification": 0,
     "resolve_public_card_function": true,
+    "resolve_public_card_photo_function": true,
     "submit_card_connection_function": true,
     "web_backend_card_table_access": true,
+    "web_backend_card_photo_access": true,
     "payment_backend_card_table_access": false,
     "runtime_backend_card_table_access": false
   },
@@ -25,7 +31,7 @@
   },
   "deployment": {
     "worker": "super-ii-site",
-    "worker_version_at_functional_verification": "55004508-416b-440b-b216-0f4c14a253dc",
+    "worker_version_at_functional_verification": "6b033ec8-5bfd-452f-b035-e1323a5e50a2",
     "traffic_percent": 100,
     "custom_domains": [
       "superii.site",
@@ -66,13 +72,28 @@
       "cache_control": "private, no-store",
       "referrer_policy": "no-referrer"
     },
+    "invalid_public_card_photo": {
+      "url": "https://www.superii.site/card-images/00000000-0000-4000-8000-000000000001.jpg",
+      "status": 404,
+      "cache_control": "private, no-store"
+    },
     "signed_in_workspace": {
       "url": "https://www.superii.site/account#cards",
       "status": 200,
       "cards_tab_rendered": true,
       "connections_tab_rendered": true,
       "details_tab_rendered": true,
-      "empty_state_rendered": true
+      "card_list_rendered": true,
+      "private_details_save_succeeded": true,
+      "local_photo_control_rendered": true,
+      "phone_camera_control_rendered": true,
+      "photo_url_input_hidden": true
+    },
+    "responsive_workspace": {
+      "viewport_width": 390,
+      "body_scroll_width": 390,
+      "workspace_width": 370,
+      "photo_picker_within_viewport": true
     }
   },
   "verification": {
@@ -86,7 +107,8 @@
   },
   "boundaries": [
     "An active unlisted card link is bearer-like and can be forwarded by anyone who receives it.",
-    "The private reusable contact vault, received contacts, meeting notes, and raw token are never included in the public snapshot.",
-    "No production test card or connection was created during release verification."
+    "The private reusable contact vault, encrypted photo bytes, received contacts, meeting notes, and raw token are never included in the public snapshot.",
+    "No production test photo or connection was created during photo-release verification.",
+    "Automated browser file selection was blocked by the operator's Chrome extension file-access setting; the deployed file and camera controls, upload contract, image processing, encryption path, owner preview, database integration, and public active-snapshot boundary were verified without bypassing that browser safeguard."
   ]
 }
