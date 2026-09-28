@@ -1,0 +1,47 @@
+---
+import '@fontsource-variable/source-sans-3';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '@/styles/global.css';
+import '@/styles/card-public.css';
+import { absoluteUrl, site } from '@/lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  unavailable?: boolean;
+}
+
+const { title, description, path, unavailable = false } = Astro.props;
+const canonical = absoluteUrl(path);
+const pageTitle = unavailable ? `Card unavailable · ${site.brand.name}` : `${title} · ${site.brand.name} Card`;
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffd21e" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:site_name" content="Super ii" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={absoluteUrl('/brand/super-ii-social-card.png')} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{pageTitle}</title>
+    {!unavailable && <link rel="alternate" type="application/json" href={`${path}/card.json`} title="Public card data" />}
+  </head>
+  <body class="card-page">
+    <a class="skip-link" href="#card-content">Skip to card</a>
+    <main id="card-content"><slot /></main>
+  </body>
+</html>

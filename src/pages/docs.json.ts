@@ -11,6 +11,7 @@ const documents = {
     { id: 'agents', title: 'Agent hub', media_type: 'text/html', url: 'https://superii.site/agents' },
     { id: 'skills', title: 'Skills library', media_type: 'text/html', url: 'https://superii.site/skills' },
     { id: 'skills-api', title: 'Skills catalog API', media_type: 'application/json', url: 'https://superii.site/api/skills' },
+    { id: 'cards-schema', title: 'Super ii Card public document schema', media_type: 'application/schema+json', url: 'https://superii.site/schemas/card/v1.json' },
     { id: 'python-sdk', title: 'Python SDK installation and verified local inference', media_type: 'text/html', url: 'https://superii.site/docs#python-sdk' },
     { id: 'sdk-manifest-schema', title: 'Immutable SDK manifest schema', media_type: 'application/schema+json', url: 'https://superii.site/schemas/sdk-manifest-v1.json' },
     { id: 'build-ship', title: 'Build & Ship engineering projects', media_type: 'text/html', url: 'https://superii.site/build' },
@@ -41,6 +42,7 @@ const documents = {
     { id: 'agent-commerce-architecture', title: 'Agent commerce architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/agent-commerce.md' },
     { id: 'robot-architecture', title: 'Super ii Robot architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/robot.md' },
     { id: 'transparent-architecture', title: 'Super ii Transparent architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/transparent.md' },
+    { id: 'cards-architecture', title: 'Super ii Cards architecture', media_type: 'text/markdown', url: 'https://github.com/smavgs/super-ii/blob/main/docs/architecture/cards.md' },
     { id: 'openapi', title: 'OpenAPI service contract', media_type: 'application/vnd.oai.openapi+json;version=3.1', url: 'https://superii.site/openapi.json' },
     { id: 'system-state', title: 'Capability and evidence register', media_type: 'application/json', url: 'https://superii.site/system-state.json' },
     { id: 'proposals', title: 'Public roadmap and Community Leaders', media_type: 'text/html', url: 'https://superii.site/proposals' },
@@ -60,6 +62,12 @@ const documents = {
     base: 'https://superii.site/agents/{handle}',
     suffixes: ['profile.json', 'README.md'],
     availability: 'Only opt-in, active agent identities appear publicly. Private receipts and credentials are never exposed.',
+  },
+  card_rules: {
+    base: 'https://superii.site/c/{high_entropy_token}',
+    suffixes: ['card.json', 'contact.vcf', 'qr.svg'],
+    schema: 'https://superii.site/schemas/card/v1.json',
+    availability: 'Only active cards resolve. The token is unlisted bearer-like access and must not be logged, indexed, or treated as authentication.',
   },
 };
 

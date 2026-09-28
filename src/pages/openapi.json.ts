@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { cardApiPaths, cardOpenApiSchemas } from '@/lib/card-openapi';
 import { recipeApiPaths } from '@/lib/recipe-openapi';
 import { robotApiPaths, robotOpenApiSchemas } from '@/lib/robot-openapi';
 import { transparentApiPaths, transparentOpenApiSchemas } from '@/lib/transparent-openapi';
@@ -34,6 +35,7 @@ const openapi = {
     { name: 'Robot' },
     { name: 'Transparent' },
     { name: 'Tokenizer' },
+    { name: 'Cards' },
   ],
   paths: {
     ...connectionApiPaths,
@@ -41,6 +43,7 @@ const openapi = {
     ...robotApiPaths,
     ...transparentApiPaths,
     ...tokenizerApiPaths,
+    ...cardApiPaths,
     '/api/sdk/models/{owner}/{slug}': {
       get: {
         tags: ['Python SDK'],
@@ -654,6 +657,7 @@ const openapi = {
       ...robotOpenApiSchemas,
       ...transparentOpenApiSchemas,
       ...tokenizerOpenApiSchemas,
+      ...cardOpenApiSchemas,
       Skill: {
         type: 'object',
         required: ['slug', 'name', 'category', 'integrations', 'prompt'],

@@ -1,6 +1,6 @@
 # Agent connection verification
 
-Date: 2026-09-27. Release source: `codex/agent-connection-flow`.
+Date: 2026-09-28. Release source: `codex/agent-connection-flow`.
 
 ## Repeatable protocol and database checks
 
@@ -21,7 +21,7 @@ Verified paths:
 
 This verifies protocol interoperability, not every version of every branded agent. No production Social posts, payments, background agent loops or user credentials are created by these tests.
 
-Release checks: Astro reports zero errors and warnings; the production build, migration validation, runtime verification and secret-bundle scan pass. The connection harness executes 68 explicit HTTP checks plus real MCP SDK HTTP and stdio tool calls. The database suite reapplies all 28 migrations successfully.
+Release checks: Astro reports zero errors and warnings; the production build, migration validation, runtime verification and secret-bundle scan pass. The connection harness executes 68 explicit HTTP checks plus real MCP SDK HTTP and stdio tool calls. The database suite reapplies all 29 migrations successfully, including Cards and the restored connection gateway permissions after its policy refresh.
 
 ## Browser checks
 

@@ -117,6 +117,10 @@ REQUIRED_TABLES = {
     "transparency_creator_responses",
     "transparency_evidence_submissions",
     "transparency_discovery_daily",
+    "card_contact_vaults",
+    "cards",
+    "card_public_snapshots",
+    "card_connections",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}

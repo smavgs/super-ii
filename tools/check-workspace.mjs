@@ -18,6 +18,7 @@ assert.deepEqual(workspaceDestination('#profile'), { section: 'account', target:
 assert.deepEqual(workspaceDestination('#/security'), { section: 'account', target: 'identity' });
 assert.deepEqual(workspaceDestination('#activity'), { section: 'work', target: 'activity' });
 assert.deepEqual(workspaceDestination('#commerce'), { section: 'commerce' });
+assert.deepEqual(workspaceDestination('#cards'), { section: 'cards' });
 
 const work = [
   { text: 'Résumé assistant member/resume', kind: 'model' },

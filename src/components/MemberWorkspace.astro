@@ -4,6 +4,7 @@ import AIWorkerStarter from './AIWorkerStarter.astro';
 import AgentWorkspace from './AgentWorkspace.astro';
 import CommerceWorkspace from './CommerceWorkspace.astro';
 import MemberProfileWorkspace from './MemberProfileWorkspace.astro';
+import CardWorkspace from './CardWorkspace.astro';
 import type { EditableMemberProfile } from '@/lib/member-profile';
 import '@/styles/workspace.css';
 
@@ -21,6 +22,7 @@ const { repositories, notifications, bridgeSources, subscriptions, payments, mem
 const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sections = [
   { id: 'work', label: 'Your work', icon: 'ph-folder-open' },
+  { id: 'cards', label: 'My cards', icon: 'ph-identification-card' },
   { id: 'setup', label: 'AI setup', icon: 'ph-sparkle' },
   { id: 'agents', label: 'Agents', icon: 'ph-robot' },
   { id: 'commerce', label: 'Agent commerce', icon: 'ph-handshake' },
@@ -101,6 +103,8 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
           <p class="form-status" data-activity-status role="status"></p>
         </section>
       </section>
+
+      <section data-workspace-panel="cards" id="cards" aria-labelledby="cards-title" hidden><CardWorkspace /></section>
 
       <section data-workspace-panel="setup" id="setup" aria-labelledby="setup-title" hidden>
         <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="setup-title" tabindex="-1">AI setup</h2><p>Choose a guide. Your progress stays on this device.</p></div></div>

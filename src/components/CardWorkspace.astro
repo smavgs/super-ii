@@ -1,0 +1,188 @@
+---
+import {
+  cardPresetLabels, cardPresets, cardServiceIds, cardServiceLabels,
+  personalBadgeIds, personalBadgeLabels,
+} from '@/lib/cards';
+import CardServiceIcon from '@/components/CardServiceIcon.astro';
+import '@/styles/cards.css';
+
+const cardFieldOptions = [
+  ['photo', 'Photo'], ['role', 'Role'], ['organization', 'Organization'],
+  ['tagline', 'Tagline'], ['bio', 'Bio'], ['location', 'Location'],
+] as const;
+---
+
+<div class="card-workspace" data-card-workspace>
+  <header class="workspace-panel-heading">
+    <div><h2 class="workspace-panel-title" id="cards-title" tabindex="-1">My cards</h2><p>One set of details. Different cards for different moments.</p></div>
+    <button class="button button--dark button--small" type="button" data-new-card><i class="ph ph-plus" aria-hidden="true"></i>New card</button>
+  </header>
+
+  <nav class="card-workspace__tabs" aria-label="Card workspace" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-card-tab="cards"><i class="ph ph-identification-card" aria-hidden="true"></i>Cards</button>
+    <button type="button" role="tab" aria-selected="false" data-card-tab="connections"><i class="ph ph-address-book" aria-hidden="true"></i>Connections <span data-connection-count>0</span></button>
+    <button type="button" role="tab" aria-selected="false" data-card-tab="details"><i class="ph ph-lock-key" aria-hidden="true"></i>Your details</button>
+  </nav>
+
+  <p class="card-workspace__status" data-card-status role="status" aria-live="polite">Loading your private card workspace…</p>
+
+  <section data-card-tab-panel="cards" aria-labelledby="cards-title">
+    <div class="card-studio" data-card-studio hidden>
+      <aside class="card-studio__list" aria-label="Your cards">
+        <div class="card-studio__list-heading"><strong>Your cards</strong><small>Up to 24</small></div>
+        <div data-card-list></div>
+      </aside>
+
+      <section class="card-studio__preview-column" aria-label="Card preview">
+        <div class="card-preview" data-card-preview>
+          <div class="card-preview__top"><span data-preview-preset>Super ii</span><span class="card-live-state" data-preview-state>Draft</span></div>
+          <div class="card-preview__identity">
+            <img data-preview-photo src="/brand/super-ii-icon-192.png" alt="" width="88" height="88" />
+            <div><h3 data-preview-name>Your name</h3><p data-preview-role>Your role · Organization</p><small data-preview-location></small></div>
+          </div>
+          <p class="card-preview__tagline" data-preview-tagline>Add a short line that helps people remember you.</p>
+          <div class="card-preview__badges" data-preview-badges></div>
+          <div class="card-preview__services" data-preview-services></div>
+          <button class="button button--dark" type="button" data-owner-show-qr disabled><i class="ph ph-qr-code" aria-hidden="true"></i>Show QR</button>
+        </div>
+        <p class="card-preview__privacy"><i class="ph ph-lock-key" aria-hidden="true"></i>Only fields selected for this card are published. Your full vault stays private.</p>
+      </section>
+
+      <form class="card-inspector" data-card-form data-card-accordion>
+        <div class="card-inspector__heading"><div><p class="eyebrow">Card settings</p><h3 data-card-editor-title>Select a card</h3></div><div class="card-language-mini" role="group" aria-label="Preview language"><button type="button" data-preview-language="en" aria-pressed="true">EN</button><button type="button" data-preview-language="zh-CN" aria-pressed="false">中文</button></div></div>
+        <div class="card-inspector__sections">
+          <details class="card-disclosure" open>
+            <summary><span><strong>Card basics</strong><small>Name and what people see</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+            <div class="card-disclosure__body">
+              <label>Private card name<input name="name" maxlength="80" required /></label>
+              <fieldset><legend>Show on this card</legend><div class="card-toggle-grid">
+                {cardFieldOptions.map(([value, label]) => <label class="card-toggle-option"><input type="checkbox" name="fields" value={value} /><span class="card-toggle-option__body"><span>{label}</span><span class="card-switch" aria-hidden="true"></span></span></label>)}
+              </div></fieldset>
+            </div>
+          </details>
+
+          <details class="card-disclosure">
+            <summary><span><strong>Contact buttons</strong><small>Choose the apps shown publicly</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+            <div class="card-disclosure__body">
+              <fieldset><legend class="sr-only">Contact buttons</legend><div class="card-service-checks">
+                {cardServiceIds.map((service) => <label class="card-toggle-option card-toggle-option--service"><input type="checkbox" name="services" value={service} /><span class="card-toggle-option__body"><CardServiceIcon {service} /><span>{cardServiceLabels[service]}</span><span class="card-switch" aria-hidden="true"></span></span></label>)}
+              </div><div class="card-toggle-grid" data-custom-link-options></div><small>Only services with saved details appear publicly.</small></fieldset>
+            </div>
+          </details>
+
+          <details class="card-disclosure">
+            <summary><span><strong>Badges</strong><small>Verified proof and personal interests</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+            <div class="card-disclosure__body card-disclosure__body--stacked">
+              <fieldset data-verified-badges><legend>Verified by Super ii</legend><p class="card-inspector__hint">Only badges supported by real Super ii activity are available.</p><div class="card-toggle-grid" data-verified-badge-options></div></fieldset>
+              <fieldset><legend>Personal badges</legend><div class="card-toggle-grid">{personalBadgeIds.map((badge) => <label class="card-toggle-option"><input type="checkbox" name="personal_badges" value={badge} /><span class="card-toggle-option__body"><span>{personalBadgeLabels[badge]}</span><span class="card-switch" aria-hidden="true"></span></span></label>)}</div></fieldset>
+            </div>
+          </details>
+
+          <details class="card-disclosure">
+            <summary><span><strong>Language and sharing</strong><small>Set the default and allow introductions</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+            <div class="card-disclosure__body">
+              <label class="card-toggle-option card-toggle-option--wide"><input type="checkbox" name="allow_share_back" /><span class="card-toggle-option__body"><span>Let people share their details back</span><span class="card-switch" aria-hidden="true"></span></span></label>
+              <label>Default language<select name="default_locale"><option value="en">English</option><option value="zh-CN">简体中文</option></select></label>
+            </div>
+          </details>
+        </div>
+        <div class="card-inspector__actions">
+          <button class="button button--secondary" type="submit" name="intent" value="save">Save draft</button>
+          <button class="button button--dark" type="submit" name="intent" value="publish">Publish changes</button>
+        </div>
+        <div class="card-inspector__share" data-card-live-actions hidden>
+          <button type="button" class="text-button" data-copy-card-link><i class="ph ph-link" aria-hidden="true"></i>Copy unlisted link</button>
+          <button type="button" class="text-button" data-native-share-card><i class="ph ph-share-network" aria-hidden="true"></i>Share</button>
+          <button type="button" class="text-button" data-pause-card>Pause</button>
+          <button type="button" class="text-button" data-rotate-card>Rotate link</button>
+          <button type="button" class="text-button card-danger" data-delete-card>Delete</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card-workspace__empty" data-card-empty hidden>
+      <div class="card-workspace__empty-art"><img src="/brand/super-ii-icon-192.png" alt="" width="76" height="76" /><i class="ph ph-qr-code" aria-hidden="true"></i></div>
+      <p class="eyebrow">Show. Scan. Connected.</p><h3>Make the card you wish you had at your last meeting.</h3>
+      <p>Create a different card for work, conferences, investing, open source, or friends. Each gets its own unlisted link and QR.</p>
+      <button class="button button--dark" type="button" data-new-card>Create my first card</button>
+    </div>
+  </section>
+
+  <section data-card-tab-panel="connections" hidden>
+    <div class="connection-heading"><div><h3>Connections</h3><p>Details people privately shared back after meeting you.</p></div><label>Find a person<input type="search" data-connection-search placeholder="Name, email or context" /></label></div>
+    <div class="connection-list" data-connection-list></div>
+    <div class="card-workspace__empty card-workspace__empty--small" data-connection-empty><i class="ph ph-address-book" aria-hidden="true"></i><h3>No connections yet</h3><p>When someone uses “Share mine back,” their encrypted details appear here.</p></div>
+  </section>
+
+  <section data-card-tab-panel="details" hidden>
+    <form class="card-vault" data-card-vault-form data-card-accordion>
+      <header><div><p class="eyebrow">Encrypted contact vault</p><h3>Your details</h3><p>Save once, then choose what each card reveals. Updating this vault never changes a live card until you publish it again.</p></div><span><i class="ph ph-lock-key" aria-hidden="true"></i>Encrypted before storage</span></header>
+      <div class="card-vault__sections">
+        <details class="card-disclosure" open>
+          <summary><span><strong>Name and identity</strong><small>English and optional Simplified Chinese</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+          <div class="card-disclosure__body card-vault__languages">
+            <fieldset><legend>English</legend>
+              <label>Name<input name="identity_en.name" maxlength="100" autocomplete="name" required /></label>
+              <label>Role<input name="identity_en.role" maxlength="120" autocomplete="organization-title" /></label>
+              <label>Organization<input name="identity_en.organization" maxlength="120" autocomplete="organization" /></label>
+              <label>Tagline<input name="identity_en.tagline" maxlength="180" /></label>
+              <label>Short bio<textarea name="identity_en.bio" maxlength="500" rows="3"></textarea></label>
+            </fieldset>
+            <fieldset><legend>简体中文 <small>optional</small></legend>
+              <label>姓名<input name="identity_zh.name" maxlength="100" /></label>
+              <label>职位<input name="identity_zh.role" maxlength="120" /></label>
+              <label>组织<input name="identity_zh.organization" maxlength="120" /></label>
+              <label>一句话介绍<input name="identity_zh.tagline" maxlength="180" /></label>
+              <label>简介<textarea name="identity_zh.bio" maxlength="500" rows="3"></textarea></label>
+            </fieldset>
+          </div>
+        </details>
+        <details class="card-disclosure">
+          <summary><span><strong>Contact details</strong><small>Photo, location, email, phone and website</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+          <div class="card-disclosure__body"><fieldset><legend class="sr-only">Core contact details</legend><div class="card-vault__grid">
+            <label>Profile photo URL<input name="photo_url" type="url" inputmode="url" placeholder="https://img.clerk.com/…" /><small>Use your Super ii profile image or an approved Super ii-hosted image.</small></label>
+            <label>Location<input name="location" maxlength="120" autocomplete="address-level2" /></label>
+            <label>Email<input name="email" type="email" maxlength="254" autocomplete="email" /></label>
+            <label>Phone<input name="phone" maxlength="40" autocomplete="tel" /></label>
+            <label>Website<input name="website" type="url" inputmode="url" placeholder="https://…" autocomplete="url" /></label>
+          </div></fieldset></div>
+        </details>
+        <details class="card-disclosure">
+          <summary><span><strong>Apps and social</strong><small>Global and China services</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+          <div class="card-disclosure__body"><fieldset><legend class="sr-only">Global and China services</legend><div class="card-vault__grid">
+            {cardServiceIds.filter((service) => !['email', 'phone', 'website'].includes(service)).map((service) => <label>{cardServiceLabels[service]}<span class="card-input-with-icon"><CardServiceIcon {service} /><input name={`services.${service}`} maxlength="240" placeholder={['wechat', 'qq'].includes(service) ? 'ID or handle' : 'Handle or HTTPS link'} /></span></label>)}
+          </div></fieldset></div>
+        </details>
+        <details class="card-disclosure">
+          <summary><span><strong>Custom links</strong><small>Optional destinations unique to you</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+          <div class="card-disclosure__body"><fieldset><legend class="sr-only">Custom links</legend><div class="card-custom-links">{[0, 1, 2, 3, 4].map((index) => <div><label>Label<input name={`custom_links.${index}.label`} maxlength="40" /></label><label>HTTPS link<input name={`custom_links.${index}.url`} type="url" inputmode="url" placeholder="https://…" /></label></div>)}</div></fieldset></div>
+        </details>
+      </div>
+      <button class="button button--dark" type="submit">Save private details</button>
+    </form>
+  </section>
+
+  <dialog class="card-create-dialog" data-card-create-dialog>
+    <form data-card-create-form>
+      <div class="card-create-dialog__heading"><div><p class="eyebrow">New card</p><h3>Choose its job.</h3></div><button type="button" data-close-card-create aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+      <label>Card name<input name="name" maxlength="80" value="My Super ii card" required /></label>
+      <fieldset><legend>Starting style</legend><div class="card-preset-grid">{cardPresets.filter((preset) => preset !== 'custom').map((preset, index) => <label><input type="radio" name="preset" value={preset} checked={index === 0} /><span><i class="ph ph-identification-card" aria-hidden="true"></i><strong>{cardPresetLabels[preset]}</strong></span></label>)}</div></fieldset>
+      <button class="button button--dark" type="submit">Create card</button>
+    </form>
+  </dialog>
+
+  <dialog class="owner-card-qr" data-owner-card-qr-dialog>
+    <div><span>Super ii Card</span><button type="button" data-close-owner-card-qr aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+    <img data-owner-card-qr-image alt="Your Super ii Card QR code" width="720" height="720" />
+    <strong>Scan to connect</strong><small data-owner-card-qr-name></small>
+  </dialog>
+
+  <div class="card-icon-templates" hidden aria-hidden="true">
+    {cardServiceIds.map((service) => <template data-card-service-template={service}><CardServiceIcon {service} /></template>)}
+    <template data-card-service-template="custom"><CardServiceIcon service="custom" /></template>
+  </div>
+</div>
+
+<script>
+  import '../scripts/cards';
+</script>
