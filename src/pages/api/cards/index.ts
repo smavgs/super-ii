@@ -5,6 +5,7 @@ import { createCardToken, decryptCardValue, encryptCardValue, hashCardToken } fr
 import { eligibleCardBadges } from '@/lib/card-data';
 import {
   defaultCardConfig, emptyCardVault, parseCardCreate,
+  maximumCardsPerProfile,
   type CardConfig, type CardVault,
 } from '@/lib/cards';
 import { sqlClient } from '@/lib/db';
@@ -27,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
           from app.cards card
           left join app.card_public_snapshots snapshot on snapshot.card_id = card.id
           where card.owner_profile_id = ${profile.profileId}::uuid
-          order by card.updated_at desc limit 24`,
+          order by card.updated_at desc limit ${maximumCardsPerProfile}`,
       sql`select connection.id, connection.card_id, connection.payload_ciphertext,
                  connection.payload_iv, connection.context_ciphertext, connection.context_iv,
                  connection.created_at, connection.updated_at, card.name as card_name
@@ -103,7 +104,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
     const parsed = parseCardCreate(body.value);
     if (!parsed.ok) return Response.json({ error: parsed.error }, { status: 422, headers: privateHeaders });
     const countRows = await sql`select count(*)::integer as count from app.cards where owner_profile_id = ${profile.profileId}::uuid`;
-    if (Number(countRows[0]?.count ?? 0) >= 24) return Response.json({ error: 'You can keep up to 24 cards' }, { status: 409, headers: privateHeaders });
+    if (Number(countRows[0]?.count ?? 0) >= maximumCardsPerProfile) {
+      return Response.json({ error: 'You can keep up to 6 cards. Edit an existing card whenever you want.' }, { status: 409, headers: privateHeaders });
+    }
     const token = createCardToken();
     const tokenHash = await hashCardToken(token);
     const encrypted = await encryptCardValue(locals, token, `card-token:${profile.profileId}`);
@@ -118,7 +121,10 @@ export const POST: APIRoute = async ({ locals, request }) => {
       ) returning id, name, preset, status, config, created_at, updated_at
     `;
     return Response.json({ card: { ...rows[0], token, path: `/c/${token}` } }, { status: 201, headers: privateHeaders });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('card_limit_reached')) {
+      return Response.json({ error: 'You can keep up to 6 cards. Edit an existing card whenever you want.' }, { status: 409, headers: privateHeaders });
+    }
     return Response.json({ error: 'Card could not be created' }, { status: 503, headers: privateHeaders });
   }
 };

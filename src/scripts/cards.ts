@@ -75,6 +75,8 @@ if (rootElement) {
   const photoStatus = root.querySelector<HTMLElement>('[data-card-photo-status]');
   const photoPreview = root.querySelector<HTMLImageElement>('[data-card-photo-preview]');
   const photoButtons = root.querySelectorAll<HTMLButtonElement>('[data-choose-card-photo], [data-take-card-photo], [data-remove-card-photo]');
+  const saveStatus = root.querySelector<HTMLElement>('[data-card-save-status]');
+  const maximumCards = 6;
   let state: CardState | null = null;
   let selectedId = '';
   let previewLanguage: 'en' | 'zh-CN' = 'en';
@@ -104,6 +106,12 @@ if (rootElement) {
     if (!status) return;
     status.textContent = message;
     status.dataset.error = String(error);
+  }
+
+  function setSaveStatus(message: string, state = '') {
+    if (!saveStatus) return;
+    saveStatus.textContent = message;
+    saveStatus.dataset.state = state;
   }
 
   async function api<T>(url: string, options?: RequestInit): Promise<T> {
@@ -373,6 +381,15 @@ if (rootElement) {
   function renderCardList() {
     if (!state || !cardList || !studio || !empty) return;
     const hasCards = state.cards.length > 0;
+    const count = root.querySelector<HTMLElement>('[data-card-count]');
+    if (count) count.textContent = String(state.cards.length);
+    const limitReached = state.cards.length >= maximumCards;
+    root.querySelectorAll<HTMLButtonElement>('[data-new-card]').forEach((button) => {
+      button.disabled = limitReached;
+      button.title = limitReached ? 'You already have six Cards. Edit an existing Card whenever you want.' : '';
+      if (limitReached) button.setAttribute('aria-label', 'Six-Card limit reached. Edit an existing Card whenever you want.');
+      else button.removeAttribute('aria-label');
+    });
     studio.hidden = !hasCards;
     empty.hidden = hasCards;
     cardList.replaceChildren();
@@ -385,11 +402,20 @@ if (rootElement) {
       const small = document.createElement('small'); small.textContent = `${presetLabels[card.preset] ?? card.preset} · ${card.status}`;
       button.appendChild(strong);
       button.appendChild(small);
-      button.addEventListener('click', () => { selectedId = card.id; previewLanguage = card.config.default_locale; renderCardList(); });
+      button.addEventListener('click', () => {
+        selectedId = card.id;
+        previewLanguage = card.config.default_locale;
+        setSaveStatus('');
+        renderCardList();
+      });
       cardList.appendChild(button);
     }
     const card = selectedCard();
-    if (card) { previewLanguage = previewLanguage || card.config.default_locale; fillCardForm(card); renderPreview(); }
+    if (card) {
+      previewLanguage = previewLanguage || card.config.default_locale;
+      fillCardForm(card);
+      renderPreview();
+    }
   }
 
   function renderConnections() {
@@ -473,11 +499,22 @@ if (rootElement) {
     });
   });
 
-  root.querySelectorAll<HTMLButtonElement>('[data-new-card]').forEach((button) => button.addEventListener('click', () => createDialog?.showModal()));
+  root.querySelectorAll<HTMLButtonElement>('[data-new-card]').forEach((button) => button.addEventListener('click', () => {
+    if (state && state.cards.length >= maximumCards) {
+      setStatus('You already have six Cards. Edit an existing Card whenever you want.');
+      return;
+    }
+    createDialog?.showModal();
+  }));
   root.querySelector('[data-close-card-create]')?.addEventListener('click', () => createDialog?.close());
   createDialog?.addEventListener('click', (event) => { if (event.target === createDialog) createDialog.close(); });
   createForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (state && state.cards.length >= maximumCards) {
+      createDialog?.close();
+      setStatus('You already have six Cards. Edit an existing Card whenever you want.');
+      return;
+    }
     const submit = createForm.querySelector<HTMLButtonElement>('button[type="submit"]');
     if (submit) submit.disabled = true;
     try {
@@ -551,20 +588,45 @@ if (rootElement) {
     };
     const name = cardForm.elements.namedItem('name'); if (name instanceof HTMLInputElement) card.name = name.value;
     renderPreview();
+    setSaveStatus('Unsaved changes.', 'pending');
   });
-  cardForm?.addEventListener('input', () => { const card = selectedCard(); const name = cardForm.elements.namedItem('name'); if (card && name instanceof HTMLInputElement) { card.name = name.value; renderPreview(); } });
+  cardForm?.addEventListener('input', () => {
+    const card = selectedCard();
+    const name = cardForm.elements.namedItem('name');
+    if (card && name instanceof HTMLInputElement) { card.name = name.value; renderPreview(); }
+    setSaveStatus('Unsaved changes.', 'pending');
+  });
   cardForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const card = selectedCard();
     if (!card) return;
     const submitter = event.submitter as HTMLButtonElement | null;
     const action = submitter?.value === 'publish' ? 'publish' : 'save';
-    if (submitter) submitter.disabled = true;
+    const originalLabel = submitter?.textContent ?? '';
+    if (submitter) {
+      submitter.disabled = true;
+      submitter.textContent = action === 'publish' ? 'Publishing…' : 'Saving…';
+    }
+    setSaveStatus(action === 'publish' ? 'Publishing changes…' : 'Saving draft…', 'pending');
     try {
       await api(`/api/cards/${card.id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, name: card.name, config: card.config }) });
-      await load(true); setStatus(action === 'publish' ? 'Card published. Its unlisted link and QR are live.' : 'Draft saved.');
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'Card could not be saved', true); }
-    finally { if (submitter) submitter.disabled = false; }
+      await load(true);
+      const message = action === 'publish'
+        ? 'Published successfully ✓ Your shared Card is now updated.'
+        : 'Draft saved successfully ✓';
+      setSaveStatus(message, 'success');
+      setStatus(action === 'publish' ? 'Card published successfully. Its shared link and QR are updated.' : 'Draft saved successfully.');
+      if (submitter) submitter.textContent = action === 'publish' ? 'Published ✓' : 'Saved ✓';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Card could not be saved';
+      setSaveStatus(message, 'error');
+      setStatus(message, true);
+    } finally {
+      if (submitter) {
+        submitter.disabled = false;
+        window.setTimeout(() => { submitter.textContent = originalLabel; }, 1400);
+      }
+    }
   });
 
   root.querySelectorAll<HTMLButtonElement>('[data-preview-language]').forEach((button) => button.addEventListener('click', () => { previewLanguage = button.dataset.previewLanguage === 'zh-CN' ? 'zh-CN' : 'en'; renderPreview(); }));
@@ -577,15 +639,10 @@ if (rootElement) {
   root.querySelector('[data-close-owner-card-qr]')?.addEventListener('click', () => qrDialog?.close());
   qrDialog?.addEventListener('click', (event) => { if (event.target === qrDialog) qrDialog.close(); });
 
-  root.querySelector('[data-copy-card-link]')?.addEventListener('click', async () => {
-    const card = selectedCard(); if (!card) return;
-    try { await navigator.clipboard.writeText(new URL(card.path, location.origin).toString()); setStatus('Unlisted card link copied.'); }
-    catch { setStatus('The unlisted link could not be copied.', true); }
-  });
   root.querySelector('[data-native-share-card]')?.addEventListener('click', async () => {
     const card = selectedCard(); if (!card) return;
     const url = new URL(card.path, location.origin).toString();
-    try { if (navigator.share) await navigator.share({ title: card.name, text: 'My Super ii Card', url }); else { await navigator.clipboard.writeText(url); setStatus('Unlisted card link copied.'); } }
+    try { if (navigator.share) await navigator.share({ title: card.name, text: 'My Super ii Card', url }); else { await navigator.clipboard.writeText(url); setStatus('Card link copied.'); } }
     catch (error) { if (!(error instanceof DOMException && error.name === 'AbortError')) setStatus('The card could not be shared.', true); }
   });
   root.querySelector('[data-pause-card]')?.addEventListener('click', async () => {
@@ -595,8 +652,8 @@ if (rootElement) {
     catch (error) { setStatus(error instanceof Error ? error.message : 'Card state could not be changed', true); }
   });
   root.querySelector('[data-rotate-card]')?.addEventListener('click', async () => {
-    const card = selectedCard(); if (!card || !confirm('Rotate this unlisted link? The old link and QR will stop working immediately.')) return;
-    try { await api(`/api/cards/${card.id}/rotate`, { method: 'POST' }); await load(true); setStatus('Unlisted link rotated. Share the new link or QR.'); }
+    const card = selectedCard(); if (!card || !confirm('Rotate this card link? The old link and QR will stop working immediately.')) return;
+    try { await api(`/api/cards/${card.id}/rotate`, { method: 'POST' }); await load(true); setStatus('Card link rotated. Share the new link or QR.'); }
     catch (error) { setStatus(error instanceof Error ? error.message : 'Link could not be rotated', true); }
   });
   root.querySelector('[data-delete-card]')?.addEventListener('click', async () => {

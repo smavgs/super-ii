@@ -1,5 +1,6 @@
 export const cardPresets = ['superii', 'business', 'personal', 'conference', 'investor', 'open_source', 'custom'] as const;
 export type CardPreset = typeof cardPresets[number];
+export const maximumCardsPerProfile = 6;
 
 export const cardServiceIds = [
   'email', 'phone', 'website', 'wechat', 'whatsapp', 'telegram', 'linkedin',
@@ -177,6 +178,20 @@ function cardPhotoUrl(value: unknown): string {
     throw new Error('Photo must use your Super ii profile image or an approved Super ii image');
   }
   return result;
+}
+
+export function publicCardPhotoSource(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (
+      ['superii.site', 'www.superii.site'].includes(url.hostname.toLowerCase())
+      && /^\/card-images\/[0-9a-f-]{36}\.jpg$/iu.test(url.pathname)
+    ) return url.pathname;
+  } catch {
+    return null;
+  }
+  return value;
 }
 
 export function validEmailAddress(value: string): boolean {

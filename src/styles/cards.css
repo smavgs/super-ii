@@ -90,8 +90,20 @@
 .card-inspector fieldset > small, .card-inspector__hint { display: block; margin: 0.55rem 0 0; color: var(--muted); font-size: 0.77rem; }
 .card-inspector__actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 0.55rem; }
 .card-inspector__actions .button { justify-content: center; }
+.card-inspector__save-status { min-height: 1.3rem; margin: -0.15rem 0 0; color: var(--muted); font-size: 0.8rem; font-weight: 700; }
+.card-inspector__save-status[data-state="pending"] { color: #805900; }
+.card-inspector__save-status[data-state="success"] { color: #087044; }
+.card-inspector__save-status[data-state="error"] { color: var(--red); }
 .card-inspector__share { display: flex; flex-wrap: wrap; gap: 0.55rem 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
 .card-inspector__share .text-button { font-size: 0.8rem; }
+.card-inspector__share .card-share-button {
+  flex: 1 0 100%; justify-content: center; border-color: #ff2fc8;
+  background: linear-gradient(135deg, #ff78e2 0%, #ff2fc8 52%, #f80aa9 100%); color: #071a2f;
+  box-shadow: 0 8px 22px rgb(255 47 200 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+.card-inspector__share .card-share-button:hover { border-color: #df0091; box-shadow: 0 10px 26px rgb(255 47 200 / 0.43), inset 0 1px 0 rgb(255 255 255 / 0.6); }
+.card-inspector__share .card-share-button:focus-visible { outline: 3px solid rgb(255 47 200 / 0.36); outline-offset: 3px; }
+.card-workspace [data-new-card]:disabled { cursor: not-allowed; opacity: 0.5; }
 .card-danger { color: var(--red); }
 
 .card-workspace__empty { display: grid; justify-items: center; gap: 0.7rem; padding: clamp(2rem, 7vw, 5rem) 1rem; text-align: center; }

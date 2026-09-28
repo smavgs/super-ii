@@ -11,15 +11,20 @@ interface Props {
   description: string;
   path: string;
   unavailable?: boolean;
+  locale?: 'en' | 'zh-CN';
 }
 
-const { title, description, path, unavailable = false } = Astro.props;
+const { title, description, path, unavailable = false, locale = 'en' } = Astro.props;
 const canonical = absoluteUrl(path);
-const pageTitle = unavailable ? `Card unavailable · ${site.brand.name}` : `${title} · ${site.brand.name} Card`;
+const pageTitle = unavailable
+  ? `Card unavailable · ${site.brand.name}`
+  : locale === 'zh-CN' ? `${title} · ${site.brand.name} 名片` : `${title} · ${site.brand.name} Card`;
+const skipLabel = locale === 'zh-CN' ? '跳到名片' : 'Skip to card';
+const publicDataLabel = locale === 'zh-CN' ? '公开名片数据' : 'Public card data';
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang={locale} data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -38,10 +43,10 @@ const pageTitle = unavailable ? `Card unavailable · ${site.brand.name}` : `${ti
     <meta property="og:image" content={absoluteUrl('/brand/super-ii-social-card.png')} />
     <meta name="twitter:card" content="summary_large_image" />
     <title>{pageTitle}</title>
-    {!unavailable && <link rel="alternate" type="application/json" href={`${path}/card.json`} title="Public card data" />}
+    {!unavailable && <link rel="alternate" type="application/json" href={`${path}/card.json`} title={publicDataLabel} />}
   </head>
   <body class="card-page">
-    <a class="skip-link" href="#card-content">Skip to card</a>
+    <a class="skip-link" href="#card-content">{skipLabel}</a>
     <main id="card-content"><slot /></main>
   </body>
 </html>

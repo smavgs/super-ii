@@ -29,7 +29,7 @@ const cardFieldOptions = [
   <section data-card-tab-panel="cards" aria-labelledby="cards-title">
     <div class="card-studio" data-card-studio hidden>
       <aside class="card-studio__list" aria-label="Your cards">
-        <div class="card-studio__list-heading"><strong>Your cards</strong><small>Up to 24</small></div>
+        <div class="card-studio__list-heading"><strong>Your cards</strong><small><span data-card-count>0</span> of 6</small></div>
         <div data-card-list></div>
       </aside>
 
@@ -90,9 +90,9 @@ const cardFieldOptions = [
           <button class="button button--secondary" type="submit" name="intent" value="save">Save draft</button>
           <button class="button button--dark" type="submit" name="intent" value="publish">Publish changes</button>
         </div>
+        <p class="card-inspector__save-status" data-card-save-status role="status" aria-live="polite"></p>
         <div class="card-inspector__share" data-card-live-actions hidden>
-          <button type="button" class="text-button" data-copy-card-link><i class="ph ph-link" aria-hidden="true"></i>Copy unlisted link</button>
-          <button type="button" class="text-button" data-native-share-card><i class="ph ph-share-network" aria-hidden="true"></i>Share</button>
+          <button type="button" class="button card-share-button" data-native-share-card><i class="ph ph-share-network" aria-hidden="true"></i>Share</button>
           <button type="button" class="text-button" data-pause-card>Pause</button>
           <button type="button" class="text-button" data-rotate-card>Rotate link</button>
           <button type="button" class="text-button card-danger" data-delete-card>Delete</button>
