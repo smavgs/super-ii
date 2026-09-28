@@ -5,11 +5,12 @@ Super ii Cards are purpose-specific, reusable contact cards created in the signe
 ## Product boundary
 
 - Workspace entry: `https://superii.site/account#cards`
-- Presets: Super ii, Business, Personal, Conference, Investor, Open Source, and Custom.
-- Content languages: English and optional Simplified Chinese.
+- Presets: six member-facing Cards—Super ii, Business, Personal, Conference, Investor, and Open Source. `custom` remains an internal validated fallback, not a seventh preset or quota slot.
+- Languages: English and optional Simplified Chinese identity content plus a complete English/Simplified Chinese public Card interface.
 - Contact choices: email, phone, website, WeChat, WhatsApp, Telegram, LinkedIn, GitHub, Hugging Face, QQ, RED/Xiaohongshu, Weibo, and up to five HTTPS custom links.
-- Photo privacy: members can choose a local image or take a phone photo. The browser center-crops and re-encodes it as a bounded JPEG, and the server removes JPEG metadata before application-layer encryption. A public image route resolves the portrait only when an active Card snapshot selects it. Clerk-served profile images remain supported, while arbitrary third-party tracking-pixel URLs remain rejected.
-- Sharing: one 256-bit random unlisted token per card, a standards-based QR code, vCard 4.0 download, native share where the browser supports it, and link copy.
+- Photo privacy: members can choose a local image or take a phone photo. The browser center-crops and re-encodes it as a bounded JPEG, and the server removes JPEG metadata before application-layer encryption. A public image route resolves the portrait only when an active Card snapshot selects it. The public page rewrites a Super ii-hosted portrait to a relative same-origin route so `www.superii.site` and `superii.site` cannot disagree with the strict cross-origin resource policy. Clerk-served profile images remain supported, while arbitrary third-party tracking-pixel URLs remain rejected.
+- Sharing: one 256-bit random unlisted token per card, a standards-based QR code, vCard 4.0 download, and one primary native Share action. Browsers without native sharing copy the Card link as that action's fallback; there is no duplicate copy-link control.
+- WeChat: the public WeChat action copies the member's WeChat ID and opens the installed WeChat application with `weixin://`. Super ii does not claim a direct per-user chat URL because WeChat does not provide a documented public scheme for arbitrary account IDs.
 - Recipient choice: optional private “Share mine back” form.
 - Owner controls: draft, publish, pause, resume, rotate link, edit, and delete.
 
@@ -69,7 +70,7 @@ All representations resolve from the same active snapshot. A paused, deleted, un
 
 ## Limits and abuse controls
 
-- At most 24 cards per member.
+- At most six cards per member, enforced in the Workspace, owner API, and a serialized database insert trigger.
 - At most 48 deduplicated Card portraits per member, with each processed JPEG limited to 240,000 bytes and verified between 64 and 2,048 pixels per side.
 - At most 100 recent received connections returned to the Workspace.
 - At most five custom HTTPS links.

@@ -44,6 +44,7 @@ declare
   resolved_photo record;
   mismatched_snapshot_rejected boolean := false;
   mismatched_connection_rejected boolean := false;
+  card_limit_rejected boolean := false;
 begin
   select * into resolved from app.resolve_public_card(repeat('a', 64));
   if resolved.card_id <> '00000000-0000-4000-8000-000000000092'::uuid then
@@ -56,6 +57,39 @@ begin
   if resolved_photo.photo_id <> '00000000-0000-4000-8000-000000000094'::uuid then
     raise exception 'active selected card photo did not resolve';
   end if;
+
+  insert into app.cards (
+    id, owner_profile_id, name, preset, share_token_hash,
+    share_token_ciphertext, share_token_iv, config
+  )
+  select
+    ('00000000-0000-4000-8000-' || lpad((100 + sequence)::text, 12, '0'))::uuid,
+    '00000000-0000-4000-8000-000000000091'::uuid,
+    'Card ' || sequence, 'custom',
+    md5('card-limit-a-' || sequence) || md5('card-limit-b-' || sequence),
+    repeat('l', 32), 'abcdefghijklmnop', '{}'::jsonb
+  from generate_series(1, 5) as generated(sequence);
+
+  begin
+    insert into app.cards (
+      id, owner_profile_id, name, preset, share_token_hash,
+      share_token_ciphertext, share_token_iv, config
+    ) values (
+      '00000000-0000-4000-8000-000000000106',
+      '00000000-0000-4000-8000-000000000091',
+      'Seventh Card', 'custom',
+      md5('card-limit-a-6') || md5('card-limit-b-6'),
+      repeat('l', 32), 'abcdefghijklmnop', '{}'::jsonb
+    );
+  exception when check_violation then
+    if sqlerrm = 'card_limit_reached' then card_limit_rejected := true;
+    else raise;
+    end if;
+  end;
+  if not card_limit_rejected then
+    raise exception 'seventh card was accepted';
+  end if;
+
   connection_id := app.submit_card_connection(
     repeat('a', 64), repeat('p', 32), 'abcdefghijklmnop', null, null
   );

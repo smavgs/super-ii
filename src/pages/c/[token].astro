@@ -2,7 +2,14 @@
 import CardLayout from '@/layouts/CardLayout.astro';
 import CardServiceIcon from '@/components/CardServiceIcon.astro';
 import { loadPublicCardByToken } from '@/lib/card-data';
-import { personalBadgeLabels, verifiedBadgeLabels } from '@/lib/cards';
+import { publicCardPhotoSource } from '@/lib/cards';
+import {
+  cardPublicPersonalBadgeLabels,
+  cardPublicServiceLabels,
+  cardPublicUi,
+  cardPublicVerifiedBadgeLabels,
+  type CardPublicLocale,
+} from '@/lib/card-public-i18n';
 
 const token = Astro.params.token ?? '';
 Astro.response.headers.set('Cache-Control', 'private, no-store');
@@ -13,12 +20,16 @@ const path = `/c/${token}`;
 const description = snapshot
   ? [snapshot.identity_en.role, snapshot.identity_en.organization, snapshot.identity_en.tagline].filter(Boolean).join(' · ') || 'A Super ii contact card.'
   : 'This Super ii Card is unavailable.';
-const locale = snapshot?.default_locale ?? 'en';
+const locale: CardPublicLocale = snapshot?.default_locale ?? 'en';
+const copy = cardPublicUi[locale];
 const identity = locale === 'zh-CN' && snapshot?.identity_zh ? snapshot.identity_zh : snapshot?.identity_en;
+const photoSrc = publicCardPhotoSource(snapshot?.photo_url ?? null);
 const vcardHref = `${path}/contact.vcf${locale === 'zh-CN' ? '?language=zh-CN' : ''}`;
+const photoAlt = identity ? (locale === 'zh-CN' ? `${identity.name}${copy.profilePhoto}` : `${identity.name} ${copy.profilePhoto}`) : '';
+const qrAlt = identity ? `${copy.qrCode} ${identity.name}` : copy.qrCode;
 ---
 
-<CardLayout title={identity?.name ?? 'Card unavailable'} {description} {path} unavailable={!snapshot}>
+<CardLayout title={identity?.name ?? 'Card unavailable'} {description} {path} unavailable={!snapshot} {locale}>
   {!snapshot || !identity ? <section class="card-unavailable">
     <img src="/brand/super-ii-icon-192.png" alt="Super ii" width="64" height="64" />
     <p class="eyebrow">Super ii Card</p>
@@ -27,11 +38,11 @@ const vcardHref = `${path}/contact.vcf${locale === 'zh-CN' ? '?language=zh-CN' :
     <a class="button button--dark" href="/">Visit Super ii</a>
   </section> : <article class:list={['public-card', `public-card--${snapshot.preset}`]} data-public-card data-locale={locale}>
     <header class="public-card__masthead">
-      <a class="public-card__brand" href="/" aria-label="Super ii home">
+      <a class="public-card__brand" href="/" aria-label={copy.superiiHome} data-card-aria-label="superiiHome">
         <img src="/brand/super-ii-icon-192.png" alt="" width="42" height="42" />
-        <strong>Super ii Card</strong>
+        <strong data-card-copy="brand">{copy.brand}</strong>
       </a>
-      {snapshot.identity_zh && <div class="card-language" role="group" aria-label="Card language">
+      {snapshot.identity_zh && <div class="card-language" role="group" aria-label={copy.language} data-card-aria-label="language">
         <button type="button" data-card-language="en" aria-pressed={locale === 'en'}>EN</button>
         <span aria-hidden="true">/</span>
         <button type="button" data-card-language="zh-CN" aria-pressed={locale === 'zh-CN'}>中文</button>
@@ -39,9 +50,8 @@ const vcardHref = `${path}/contact.vcf${locale === 'zh-CN' ? '?language=zh-CN' :
     </header>
 
     <section class="public-card__identity">
-      {snapshot.photo_url ? <img class="public-card__photo" src={snapshot.photo_url} alt="" width="132" height="132" referrerpolicy="no-referrer" /> : <div class="public-card__monogram" aria-hidden="true">{identity.name.slice(0, 1).toUpperCase()}</div>}
+      {photoSrc ? <img class="public-card__photo" src={photoSrc} alt={photoAlt} width="132" height="132" referrerpolicy="no-referrer" data-card-photo /> : <div class="public-card__monogram" aria-hidden="true">{identity.name.slice(0, 1).toUpperCase()}</div>}
       <div>
-        <p class="eyebrow">{snapshot.name}</p>
         <h1 data-identity-name>{identity.name}</h1>
         <p class="public-card__role" data-identity-role>{[identity.role, identity.organization].filter(Boolean).join(' · ')}</p>
         <p class="public-card__tagline" data-identity-tagline hidden={!identity.tagline}>{identity.tagline}</p>
@@ -49,50 +59,54 @@ const vcardHref = `${path}/contact.vcf${locale === 'zh-CN' ? '?language=zh-CN' :
       </div>
     </section>
 
-    {(snapshot.verified_badges.length > 0 || snapshot.personal_badges.length > 0) && <section class="public-card__badges" aria-label="Badges">
-      {snapshot.verified_badges.map((badge) => <span class="card-badge card-badge--verified" title="Verified by Super ii"><i class="ph ph-seal-check" aria-hidden="true"></i>{verifiedBadgeLabels[badge]}</span>)}
-      {snapshot.personal_badges.map((badge) => <span class="card-badge">{personalBadgeLabels[badge]}</span>)}
+    {(snapshot.verified_badges.length > 0 || snapshot.personal_badges.length > 0) && <section class="public-card__badges" aria-label={copy.badges} data-card-aria-label="badges">
+      {snapshot.verified_badges.map((badge) => <span class="card-badge card-badge--verified" title={copy.verifiedBy} data-card-title="verifiedBy"><i class="ph ph-seal-check" aria-hidden="true"></i><span data-card-verified-badge={badge}>{cardPublicVerifiedBadgeLabels[locale][badge]}</span></span>)}
+      {snapshot.personal_badges.map((badge) => <span class="card-badge"><span data-card-personal-badge={badge}>{cardPublicPersonalBadgeLabels[locale][badge]}</span></span>)}
     </section>}
 
     <p class="public-card__bio" data-identity-bio hidden={!identity.bio}>{identity.bio}</p>
 
-    <section class="public-card__actions" aria-label="Card actions">
-      <a class="button button--yellow" href={vcardHref} download data-card-vcard><i class="ph ph-user-plus" aria-hidden="true"></i>Save contact</a>
-      <button class="button button--secondary" type="button" data-share-card><i class="ph ph-share-network" aria-hidden="true"></i>Share</button>
-      <button class="button button--secondary" type="button" data-show-card-qr><i class="ph ph-qr-code" aria-hidden="true"></i>Show QR</button>
+    <section class="public-card__actions" aria-label={copy.actions} data-card-aria-label="actions">
+      <a class="button button--yellow" href={vcardHref} download data-card-vcard><i class="ph ph-user-plus" aria-hidden="true"></i><span data-card-copy="saveContact">{copy.saveContact}</span></a>
+      <button class="button public-card__share-button" type="button" data-share-card><i class="ph ph-share-network" aria-hidden="true"></i><span data-card-copy="share">{copy.share}</span></button>
+      <button class="button button--secondary" type="button" data-show-card-qr><i class="ph ph-qr-code" aria-hidden="true"></i><span data-card-copy="showQr">{copy.showQr}</span></button>
     </section>
 
-    <section class="public-card__services" aria-label="Contact links">
-      <h2>Connect</h2>
-      {snapshot.services.map((service) => service.href
-        ? <a href={service.href} target={service.href.startsWith('https://') ? '_blank' : undefined} rel="noreferrer"><CardServiceIcon service={service.id} /><span>{service.label}</span></a>
-        : <button type="button" data-copy-value={service.value} data-copy-label={service.label}><CardServiceIcon service={service.id} /><span>{service.label}</span></button>)}
+    <section class="public-card__services" aria-label={copy.contactLinks} data-card-aria-label="contactLinks">
+      <h2 data-card-copy="connect">{copy.connect}</h2>
+      {snapshot.services.map((service) => {
+        const serviceLabel = service.id === 'custom' ? service.label : cardPublicServiceLabels[locale][service.id];
+        return service.id === 'wechat'
+          ? <a href="weixin://" data-open-wechat data-copy-value={service.value} data-copy-label={serviceLabel}><CardServiceIcon service={service.id} /><span data-card-service-id={service.id}>{serviceLabel}</span></a>
+          : service.href
+            ? <a href={service.href} target={service.href.startsWith('https://') ? '_blank' : undefined} rel="noreferrer"><CardServiceIcon service={service.id} /><span data-card-service-id={service.id}>{serviceLabel}</span></a>
+            : <button type="button" data-copy-value={service.value} data-copy-label={serviceLabel}><CardServiceIcon service={service.id} /><span data-card-service-id={service.id}>{serviceLabel}</span></button>;
+      })}
     </section>
 
     {snapshot.allow_share_back && <section class="public-card__connect">
-      <div><p class="eyebrow">Make this mutual</p><h2>Share yours back.</h2><p>Your details go privately to <span data-card-recipient-name>{identity.name}</span>. They are not added to a public directory.</p></div>
-      <button class="button button--yellow" type="button" data-open-share-back>Share mine back</button>
+      <div><p class="eyebrow" data-card-copy="makeMutual">{copy.makeMutual}</p><h2 data-card-copy="shareBackTitle">{copy.shareBackTitle}</h2><p><span data-card-copy="shareBackBefore">{copy.shareBackBefore}</span> <span data-card-recipient-name>{identity.name}</span>. <span data-card-copy="shareBackAfter">{copy.shareBackAfter}</span></p></div>
+      <button class="button button--yellow" type="button" data-open-share-back data-card-copy="shareBackButton">{copy.shareBackButton}</button>
     </section>}
 
     <footer class="public-card__footer">
-      <span>Unlisted link · Not indexed</span>
-      <a href="/account#cards">Make your Super ii Card</a>
+      <a class="public-card__make-button" href="/account#cards" data-card-copy="makeCard">{copy.makeCard}</a>
     </footer>
 
     <dialog class="card-qr-dialog" data-card-qr-dialog>
-      <div class="card-qr-dialog__header"><span>Super ii Card</span><button type="button" data-close-card-qr aria-label="Close QR code"><i class="ph ph-x" aria-hidden="true"></i></button></div>
-      <img src={`${path}/qr.svg`} alt={`QR code for ${identity.name}'s Super ii Card`} width="720" height="720" />
-      <strong>Scan to connect</strong><small><span data-card-recipient-name>{identity.name}</span> · superii.site</small>
+      <div class="card-qr-dialog__header"><span data-card-copy="brand">{copy.brand}</span><button type="button" data-close-card-qr aria-label={copy.closeQr} data-card-aria-label="closeQr"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+      <img src={`${path}/qr.svg`} alt={qrAlt} width="720" height="720" data-card-qr-image />
+      <strong data-card-copy="scanToConnect">{copy.scanToConnect}</strong><small><span data-card-recipient-name>{identity.name}</span> · superii.site</small>
     </dialog>
 
     {snapshot.allow_share_back && <dialog class="card-share-back" data-share-back-dialog>
       <form data-share-back-form>
-        <div class="card-share-back__heading"><div><p class="eyebrow">Private connection</p><h2>Share yours back</h2></div><button type="button" data-close-share-back aria-label="Close"><i class="ph ph-x" aria-hidden="true"></i></button></div>
-        <label>Your name<input name="name" maxlength="100" autocomplete="name" required /></label>
-        <div class="card-share-back__row"><label>Email<input name="email" type="email" maxlength="254" autocomplete="email" /></label><label>Phone<input name="phone" maxlength="40" autocomplete="tel" /></label></div>
-        <label>Message <span>(optional)</span><textarea name="message" maxlength="1000" rows="3"></textarea></label>
+        <div class="card-share-back__heading"><div><p class="eyebrow" data-card-copy="privateConnection">{copy.privateConnection}</p><h2 data-card-copy="shareBackHeading">{copy.shareBackHeading}</h2></div><button type="button" data-close-share-back aria-label={copy.close} data-card-aria-label="close"><i class="ph ph-x" aria-hidden="true"></i></button></div>
+        <label><span data-card-copy="yourName">{copy.yourName}</span><input name="name" maxlength="100" autocomplete="name" required /></label>
+        <div class="card-share-back__row"><label><span data-card-copy="email">{copy.email}</span><input name="email" type="email" maxlength="254" autocomplete="email" /></label><label><span data-card-copy="phone">{copy.phone}</span><input name="phone" maxlength="40" autocomplete="tel" /></label></div>
+        <label><span><strong data-card-copy="message">{copy.message}</strong> <span data-card-copy="optional">{copy.optional}</span></span><textarea name="message" maxlength="1000" rows="3"></textarea></label>
         <p class="card-form-status" data-share-back-status role="status"></p>
-        <button class="button button--dark" type="submit">Send privately</button>
+        <button class="button button--dark" type="submit" data-card-copy="sendPrivately">{copy.sendPrivately}</button>
       </form>
     </dialog>}
 

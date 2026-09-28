@@ -1,0 +1,123 @@
+import type { CardServiceId, PersonalBadgeId, VerifiedBadgeId } from './cards';
+
+export type CardPublicLocale = 'en' | 'zh-CN';
+
+export const cardPublicUi = {
+  en: {
+    brand: 'Super ii Card',
+    superiiHome: 'Super ii home',
+    language: 'Card language',
+    badges: 'Badges',
+    verifiedBy: 'Verified by Super ii',
+    actions: 'Card actions',
+    contactLinks: 'Contact links',
+    saveContact: 'Save contact',
+    share: 'Share',
+    showQr: 'Show QR',
+    connect: 'Connect',
+    makeMutual: 'Make this mutual',
+    shareBackTitle: 'Share yours back.',
+    shareBackBefore: 'Your details go privately to',
+    shareBackAfter: 'They are not added to a public directory.',
+    shareBackButton: 'Share mine back',
+    makeCard: 'Make your Super ii Card',
+    closeQr: 'Close QR code',
+    scanToConnect: 'Scan to connect',
+    privateConnection: 'Private connection',
+    shareBackHeading: 'Share yours back',
+    close: 'Close',
+    yourName: 'Your name',
+    email: 'Email',
+    phone: 'Phone',
+    message: 'Message',
+    optional: '(optional)',
+    sendPrivately: 'Send privately',
+    sendingPrivately: 'Sending privately…',
+    sharedPrivately: 'Shared. Only the card owner can read it.',
+    shareBackFailed: 'Your details could not be shared',
+    cardLinkCopied: 'Card link copied.',
+    sharingUnavailable: 'Sharing is unavailable.',
+    copyUnavailable: 'Copy is unavailable.',
+    copied: 'copied.',
+    wechatOpening: 'WeChat ID copied. Opening WeChat…',
+    profilePhoto: 'profile photo',
+    qrCode: 'QR code for',
+  },
+  'zh-CN': {
+    brand: 'Super ii 名片',
+    superiiHome: 'Super ii 首页',
+    language: '名片语言',
+    badges: '徽章',
+    verifiedBy: '由 Super ii 验证',
+    actions: '名片操作',
+    contactLinks: '联系方式',
+    saveContact: '保存联系人',
+    share: '分享',
+    showQr: '显示二维码',
+    connect: '联系我',
+    makeMutual: '互相认识',
+    shareBackTitle: '回传你的名片',
+    shareBackBefore: '你的资料将私下发送给',
+    shareBackAfter: '不会加入公开目录。',
+    shareBackButton: '回传我的资料',
+    makeCard: '制作你的 Super ii 名片',
+    closeQr: '关闭二维码',
+    scanToConnect: '扫码联系',
+    privateConnection: '私密联系',
+    shareBackHeading: '回传你的资料',
+    close: '关闭',
+    yourName: '你的姓名',
+    email: '邮箱',
+    phone: '电话',
+    message: '留言',
+    optional: '（可选）',
+    sendPrivately: '私下发送',
+    sendingPrivately: '正在私下发送…',
+    sharedPrivately: '已发送。只有名片主人可以查看。',
+    shareBackFailed: '无法发送你的资料',
+    cardLinkCopied: '名片链接已复制。',
+    sharingUnavailable: '暂时无法分享。',
+    copyUnavailable: '暂时无法复制。',
+    copied: '已复制。',
+    wechatOpening: '微信号已复制，正在打开微信…',
+    profilePhoto: '的头像',
+    qrCode: '二维码：',
+  },
+} as const;
+
+export const cardPublicServiceLabels: Record<CardPublicLocale, Record<CardServiceId | 'custom', string>> = {
+  en: {
+    email: 'Email', phone: 'Phone', website: 'Website', wechat: 'WeChat', whatsapp: 'WhatsApp',
+    telegram: 'Telegram', linkedin: 'LinkedIn', github: 'GitHub', huggingface: 'Hugging Face',
+    qq: 'QQ', red: 'RED', weibo: 'Weibo', custom: 'Link',
+  },
+  'zh-CN': {
+    email: '邮箱', phone: '电话', website: '网站', wechat: '微信', whatsapp: 'WhatsApp',
+    telegram: 'Telegram', linkedin: 'LinkedIn', github: 'GitHub', huggingface: 'Hugging Face',
+    qq: 'QQ', red: '小红书', weibo: '微博', custom: '链接',
+  },
+};
+
+export const cardPublicVerifiedBadgeLabels: Record<CardPublicLocale, Record<VerifiedBadgeId, string>> = {
+  en: {
+    founding_200: 'Founding 200', community_leader: 'Community leader', publisher: 'Published builder',
+    agent_builder: 'Agent builder', robot_builder: 'Robot builder', transparency_contributor: 'Transparency contributor',
+    open_source_builder: 'Open-source builder',
+  },
+  'zh-CN': {
+    founding_200: '创始 200', community_leader: '社区领袖', publisher: '已发布构建者',
+    agent_builder: '智能体构建者', robot_builder: '机器人构建者', transparency_contributor: '透明度贡献者',
+    open_source_builder: '开源构建者',
+  },
+};
+
+export const cardPublicPersonalBadgeLabels: Record<CardPublicLocale, Record<PersonalBadgeId, string>> = {
+  en: {
+    ai_research: 'AI research', open_source: 'Open source', community: 'Community', robotics: 'Robotics',
+    agents: 'Agents', builder: 'Builder', investor: 'Investor', founder: 'Founder',
+  },
+  'zh-CN': {
+    ai_research: 'AI 研究', open_source: '开源', community: '社区', robotics: '机器人',
+    agents: '智能体', builder: '构建者', investor: '投资人', founder: '创始人',
+  },
+};

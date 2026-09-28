@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   buildPublicCardSnapshot, cardVcard, defaultCardConfig, emptyCardVault,
-  parseCardConfig, parseCardVault, serviceHref,
+  maximumCardsPerProfile, parseCardConfig, parseCardVault, publicCardPhotoSource, serviceHref,
 } from '../src/lib/cards.ts';
 import { jpegDimensions, stripJpegMetadata } from '../src/lib/card-photo.ts';
 
@@ -31,6 +31,16 @@ assert.equal(serviceHref('linkedin', 'https://www.linkedin.com/in/ada'), 'https:
 assert.equal(serviceHref('linkedin', 'https://linkedin.example/in/ada'), null);
 assert.equal(serviceHref('whatsapp', '+1 (415) 555-0123'), 'https://wa.me/14155550123');
 assert.equal(serviceHref('website', 'http://example.com'), null);
+assert.equal(maximumCardsPerProfile, 6);
+assert.equal(
+  publicCardPhotoSource('https://superii.site/card-images/00000000-0000-4000-8000-000000000001.jpg'),
+  '/card-images/00000000-0000-4000-8000-000000000001.jpg',
+);
+assert.equal(
+  publicCardPhotoSource('https://www.superii.site/card-images/00000000-0000-4000-8000-000000000001.jpg'),
+  '/card-images/00000000-0000-4000-8000-000000000001.jpg',
+);
+assert.equal(publicCardPhotoSource('https://img.clerk.com/example.png'), 'https://img.clerk.com/example.png');
 
 const config = defaultCardConfig('open_source');
 config.verified_badges = ['publisher', 'founding_200'];
@@ -87,24 +97,41 @@ for (const required of [
   'card_photos_owner_all', "mime_type = 'image/jpeg'",
 ]) assert.ok(photoMigration.toLowerCase().includes(required), `missing card photo boundary: ${required}`);
 assert.ok(!photoMigration.includes('grant select on app.card_photos to public'));
+const limitMigration = readFileSync(new URL('../database/migrations/0031_card_limit.sql', import.meta.url), 'utf8');
+for (const required of [
+  'pg_advisory_xact_lock', '>= 6', 'card_limit_reached', 'cards_owner_limit_before_insert',
+]) assert.ok(limitMigration.toLowerCase().includes(required), `missing six-Card database boundary: ${required}`);
 
 const cardWorkspace = readFileSync(new URL('../src/components/CardWorkspace.astro', import.meta.url), 'utf8');
 assert.match(cardWorkspace, /data-card-photo-file/);
 assert.match(cardWorkspace, /capture="user"/);
 assert.doesNotMatch(cardWorkspace, /Profile photo URL/);
+assert.match(cardWorkspace, /data-card-count>0<\/span> of 6/);
+assert.match(cardWorkspace, /data-card-save-status/);
+assert.doesNotMatch(cardWorkspace, /data-copy-card-link/);
 const cardScript = readFileSync(new URL('../src/scripts/cards.ts', import.meta.url), 'utf8');
 assert.match(cardScript, /createImageBitmap/);
 assert.match(cardScript, /canvas\.toBlob/);
 assert.match(cardScript, /\/api\/cards\/photo/);
 assert.match(cardScript, /state\.cards = \[result\.card/);
+assert.match(cardScript, /Published successfully ✓/);
+assert.match(cardScript, /state\.cards\.length >= maximumCards/);
 
 const middleware = readFileSync(new URL('../src/middleware.ts', import.meta.url), 'utf8');
 assert.match(middleware, /\^\\\/c\\\/\[\^\/\]\+/);
 const publicCard = readFileSync(new URL('../src/pages/c/[token].astro', import.meta.url), 'utf8');
-assert.match(publicCard, /Unlisted link · Not indexed/);
+assert.doesNotMatch(publicCard, /Unlisted link · Not indexed/);
+assert.doesNotMatch(publicCard, /<p class="eyebrow">\{snapshot\.name\}<\/p>/);
 assert.match(publicCard, /data-card-vcard/);
+assert.match(publicCard, /publicCardPhotoSource/);
+assert.match(publicCard, /href="weixin:\/\/"/);
+assert.match(publicCard, /public-card__share-button/);
+assert.match(publicCard, /public-card__make-button/);
 const publicCardScript = readFileSync(new URL('../src/scripts/card-public.ts', import.meta.url), 'utf8');
 assert.match(publicCardScript, /searchParams\.set\('language', 'zh-CN'\)/);
+assert.match(publicCardScript, /data-card-copy/);
+assert.match(publicCardScript, /data-open-wechat/);
+assert.match(publicCardScript, /document\.documentElement\.lang = locale/);
 const publicJson = readFileSync(new URL('../src/pages/c/[token]/card.json.ts', import.meta.url), 'utf8');
 assert.match(publicJson, /https:\/\/superii\.site\/schemas\/card\/v1\.json/);
 const openapi = readFileSync(new URL('../src/pages/openapi.json.ts', import.meta.url), 'utf8');
@@ -112,4 +139,4 @@ assert.match(openapi, /cardApiPaths/);
 const architecture = readFileSync(new URL('../docs/architecture/cards.md', import.meta.url), 'utf8');
 assert.match(architecture, /AES-256-GCM/);
 assert.match(architecture, /unlisted bearer-like access/);
-console.log('Card checks passed: strict input parsing, safe service links, verified-badge filtering, vCard output, owner-bound encrypted storage, real schema and unlisted-link privacy.');
+console.log('Card checks passed: strict input parsing, safe same-origin photos, six-Card enforcement, complete bilingual UI, safe service actions, verified-badge filtering, vCard output, owner-bound encrypted storage, and bearer-link privacy.');
