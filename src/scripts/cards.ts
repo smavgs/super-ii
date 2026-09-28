@@ -54,6 +54,8 @@ type CardState = {
   eligible_badges: string[];
 };
 
+type CardPhotoUpload = { photo_url: string; preview_url: string };
+
 const rootElement = document.querySelector<HTMLElement>('[data-card-workspace]');
 if (rootElement) {
   const root = rootElement;
@@ -68,6 +70,11 @@ if (rootElement) {
   const createDialog = root.querySelector<HTMLDialogElement>('[data-card-create-dialog]');
   const createForm = root.querySelector<HTMLFormElement>('[data-card-create-form]');
   const qrDialog = root.querySelector<HTMLDialogElement>('[data-owner-card-qr-dialog]');
+  const photoInput = root.querySelector<HTMLInputElement>('[data-card-photo-file]');
+  const cameraInput = root.querySelector<HTMLInputElement>('[data-card-photo-camera]');
+  const photoStatus = root.querySelector<HTMLElement>('[data-card-photo-status]');
+  const photoPreview = root.querySelector<HTMLImageElement>('[data-card-photo-preview]');
+  const photoButtons = root.querySelectorAll<HTMLButtonElement>('[data-choose-card-photo], [data-take-card-photo], [data-remove-card-photo]');
   let state: CardState | null = null;
   let selectedId = '';
   let previewLanguage: 'en' | 'zh-CN' = 'en';
@@ -135,6 +142,108 @@ if (rootElement) {
     if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) input.value = value;
   }
 
+  function ownerPhotoPreviewUrl(value: string): string {
+    if (!value) return '/brand/super-ii-icon-192.png';
+    try {
+      const url = new URL(value, location.origin);
+      const match = url.pathname.match(/^\/card-images\/([0-9a-f-]{36})\.jpg$/iu);
+      return match ? `/api/cards/photos/${match[1]}` : value;
+    } catch { return '/brand/super-ii-icon-192.png'; }
+  }
+
+  function renderPhotoPicker(value: string) {
+    if (photoPreview) photoPreview.src = ownerPhotoPreviewUrl(value);
+    const remove = root.querySelector<HTMLButtonElement>('[data-remove-card-photo]');
+    if (remove) remove.hidden = !value;
+  }
+
+  function setPhotoStatus(message: string, error = false) {
+    if (!photoStatus) return;
+    photoStatus.textContent = message;
+    photoStatus.dataset.error = String(error);
+  }
+
+  function setPhotoBusy(busy: boolean) {
+    photoButtons.forEach((button) => { button.disabled = busy; });
+  }
+
+  async function loadPhotoSource(file: File): Promise<{ source: CanvasImageSource; width: number; height: number; close: () => void }> {
+    if ('createImageBitmap' in window) {
+      try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        return { source: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close() };
+      } catch {
+        // Safari may need its native image decoder for a photo captured as HEIC.
+      }
+    }
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = objectUrl;
+    await image.decode();
+    return { source: image, width: image.naturalWidth, height: image.naturalHeight, close: () => URL.revokeObjectURL(objectUrl) };
+  }
+
+  async function canvasJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+    return new Promise((resolve, reject) => canvas.toBlob(
+      (blob) => blob ? resolve(blob) : reject(new Error('This browser could not prepare the photo')),
+      'image/jpeg',
+      quality,
+    ));
+  }
+
+  async function preparePhoto(file: File): Promise<Blob> {
+    if (!file.type.startsWith('image/') && !/\.(heic|heif)$/iu.test(file.name)) throw new Error('Choose an image file');
+    if (file.size > 12 * 1024 * 1024) throw new Error('Choose a photo smaller than 12 MB');
+    const loaded = await loadPhotoSource(file);
+    try {
+      if (loaded.width < 64 || loaded.height < 64) throw new Error('Choose a photo at least 64 pixels wide and tall');
+      const sourceEdge = Math.min(loaded.width, loaded.height);
+      const sourceX = Math.floor((loaded.width - sourceEdge) / 2);
+      const sourceY = Math.floor((loaded.height - sourceEdge) / 2);
+      let outputEdge = Math.min(720, sourceEdge);
+      let quality = 0.88;
+      let result: Blob | null = null;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const canvas = document.createElement('canvas');
+        canvas.width = outputEdge; canvas.height = outputEdge;
+        const context = canvas.getContext('2d', { alpha: false });
+        if (!context) throw new Error('This browser could not prepare the photo');
+        context.fillStyle = '#ffffff'; context.fillRect(0, 0, outputEdge, outputEdge);
+        context.drawImage(loaded.source, sourceX, sourceY, sourceEdge, sourceEdge, 0, 0, outputEdge, outputEdge);
+        result = await canvasJpeg(canvas, quality);
+        if (result.size <= 240_000) break;
+        if (quality > 0.64) quality -= 0.08;
+        else outputEdge = Math.max(320, Math.round(outputEdge * 0.82));
+      }
+      if (!result || result.size > 240_000) throw new Error('This photo could not be reduced safely. Choose a different image.');
+      return result;
+    } finally { loaded.close(); }
+  }
+
+  async function uploadPhoto(file: File) {
+    setPhotoBusy(true); setPhotoStatus('Preparing a private, metadata-free square photo…');
+    try {
+      const prepared = await preparePhoto(file);
+      const result = await api<CardPhotoUpload>('/api/cards/photo', {
+        method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: prepared,
+      });
+      setInput('photo_url', result.photo_url);
+      if (state) state.vault.photo_url = result.photo_url;
+      if (photoPreview) photoPreview.src = result.preview_url;
+      const remove = root.querySelector<HTMLButtonElement>('[data-remove-card-photo]');
+      if (remove) remove.hidden = false;
+      renderPreview();
+      setPhotoStatus('Photo ready. Save private details to use it on your Cards.');
+    } catch (error) {
+      setPhotoStatus(error instanceof Error ? error.message : 'Photo could not be prepared', true);
+    } finally {
+      setPhotoBusy(false);
+      if (photoInput) photoInput.value = '';
+      if (cameraInput) cameraInput.value = '';
+    }
+  }
+
   function fillVaultForm() {
     if (!state || !vaultForm) return;
     const vault = state.vault;
@@ -142,6 +251,7 @@ if (rootElement) {
       for (const field of ['name', 'role', 'organization', 'tagline', 'bio'] as const) setInput(`${locale}.${field}`, vault[locale][field] ?? '');
     }
     for (const field of ['photo_url', 'email', 'phone', 'website', 'location'] as const) setInput(field, vault[field] ?? '');
+    renderPhotoPicker(vault.photo_url ?? '');
     for (const service of Object.keys(serviceLabels)) setInput(`services.${service}`, vault.services?.[service] ?? '');
     for (let index = 0; index < 5; index += 1) {
       setInput(`custom_links.${index}.label`, vault.custom_links?.[index]?.label ?? '');
@@ -213,7 +323,7 @@ if (rootElement) {
     const preview = root.querySelector<HTMLElement>('[data-card-preview]');
     if (preview) preview.dataset.preset = card.preset;
     const photo = root.querySelector<HTMLImageElement>('[data-preview-photo]');
-    if (photo) photo.src = card.config.fields.includes('photo') && state.vault.photo_url ? state.vault.photo_url : '/brand/super-ii-icon-192.png';
+    if (photo) photo.src = card.config.fields.includes('photo') && state.vault.photo_url ? ownerPhotoPreviewUrl(state.vault.photo_url) : '/brand/super-ii-icon-192.png';
     const set = (selector: string, value: string) => { const node = root.querySelector<HTMLElement>(selector); if (node) { node.textContent = value; node.hidden = !value; } };
     set('[data-preview-preset]', presetLabels[card.preset] ?? card.preset);
     set('[data-preview-name]', identity.name || 'Your name');
@@ -373,7 +483,12 @@ if (rootElement) {
     try {
       const values = new FormData(createForm);
       const result = await api<{ card: CardRecord }>('/api/cards', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: values.get('name'), preset: values.get('preset') }) });
-      selectedId = result.card.id; createDialog?.close(); await load(true); setStatus('Card created. Add details, then publish when it is ready.');
+      selectedId = result.card.id;
+      if (state) {
+        state.cards = [result.card, ...state.cards.filter((card) => card.id !== result.card.id)];
+        renderCardList();
+      } else await load(true);
+      createDialog?.close(); setStatus('Card created. Add details, then publish when it is ready.');
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Card could not be created', true); }
     finally { if (submit) submit.disabled = false; }
   });
@@ -411,6 +526,17 @@ if (rootElement) {
       renderCardList(); setStatus('Private details saved. Publish a card when you want its public snapshot updated.');
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Private details could not be saved', true); }
     finally { if (submit) submit.disabled = false; }
+  });
+
+  root.querySelector('[data-choose-card-photo]')?.addEventListener('click', () => photoInput?.click());
+  root.querySelector('[data-take-card-photo]')?.addEventListener('click', () => cameraInput?.click());
+  photoInput?.addEventListener('change', () => { const file = photoInput.files?.[0]; if (file) void uploadPhoto(file); });
+  cameraInput?.addEventListener('change', () => { const file = cameraInput.files?.[0]; if (file) void uploadPhoto(file); });
+  root.querySelector('[data-remove-card-photo]')?.addEventListener('click', () => {
+    setInput('photo_url', '');
+    if (state) state.vault.photo_url = '';
+    renderPhotoPicker(''); renderPreview();
+    setPhotoStatus('Photo removed from your details. Save to keep this change.');
   });
 
   cardForm?.addEventListener('change', () => {

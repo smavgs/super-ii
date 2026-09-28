@@ -4,6 +4,7 @@ import {
   buildPublicCardSnapshot, cardVcard, defaultCardConfig, emptyCardVault,
   parseCardConfig, parseCardVault, serviceHref,
 } from '../src/lib/cards.ts';
+import { jpegDimensions, stripJpegMetadata } from '../src/lib/card-photo.ts';
 
 const vault = emptyCardVault('Ada Lovelace');
 vault.identity_en.role = 'Builder';
@@ -20,6 +21,7 @@ assert.equal(parseCardVault({ ...vault, website: 'javascript:alert(1)' }).ok, fa
 assert.equal(parseCardVault({ ...vault, email: 'not-an-email' }).ok, false);
 assert.equal(parseCardVault({ ...vault, photo_url: 'https://tracker.example/pixel.gif' }).ok, false);
 assert.equal(parseCardVault({ ...vault, photo_url: 'https://img.clerk.com/example.png' }).ok, true);
+assert.equal(parseCardVault({ ...vault, photo_url: 'https://superii.site/card-images/00000000-0000-4000-8000-000000000001.jpg' }).ok, true);
 assert.equal(parseCardVault({ ...vault, services: { unknown: 'no' } }).ok, false);
 assert.equal(parseCardVault({ ...vault, services: { email: 'other@example.com' } }).ok, false);
 assert.equal(serviceHref('wechat', 'ada_wechat'), null);
@@ -60,6 +62,18 @@ for (const line of cardVcard({ ...snapshot, identity_en: { ...snapshot.identity_
   assert.ok(new TextEncoder().encode(line).byteLength <= 75, 'vCard physical lines must be folded to 75 octets');
 }
 
+const jpegFixture = new Uint8Array([
+  0xff, 0xd8,
+  0xff, 0xe1, 0x00, 0x08, 0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
+  0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x64, 0x00, 0x64, 0x01, 0x01, 0x11, 0x00,
+  0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00,
+  0x00, 0xff, 0xd9,
+]);
+assert.deepEqual(jpegDimensions(jpegFixture), { width: 100, height: 100 });
+const strippedJpeg = stripJpegMetadata(jpegFixture);
+assert.ok(strippedJpeg.byteLength < jpegFixture.byteLength);
+assert.ok(!new TextDecoder().decode(strippedJpeg).includes('Exif'));
+
 const migration = readFileSync(new URL('../database/migrations/0029_super_ii_cards.sql', import.meta.url), 'utf8');
 for (const required of [
   'enable row level security', 'resolve_public_card', 'submit_card_connection',
@@ -67,6 +81,22 @@ for (const required of [
   'card_public_snapshots_owner_matches_card', 'card_connections_owner_matches_card',
 ]) assert.ok(migration.toLowerCase().includes(required), `missing card database boundary: ${required}`);
 assert.ok(!migration.includes('grant select on app.cards to public'));
+const photoMigration = readFileSync(new URL('../database/migrations/0030_card_photos.sql', import.meta.url), 'utf8');
+for (const required of [
+  'enable row level security', 'resolve_public_card_photo', 'security definer',
+  'card_photos_owner_all', "mime_type = 'image/jpeg'",
+]) assert.ok(photoMigration.toLowerCase().includes(required), `missing card photo boundary: ${required}`);
+assert.ok(!photoMigration.includes('grant select on app.card_photos to public'));
+
+const cardWorkspace = readFileSync(new URL('../src/components/CardWorkspace.astro', import.meta.url), 'utf8');
+assert.match(cardWorkspace, /data-card-photo-file/);
+assert.match(cardWorkspace, /capture="user"/);
+assert.doesNotMatch(cardWorkspace, /Profile photo URL/);
+const cardScript = readFileSync(new URL('../src/scripts/cards.ts', import.meta.url), 'utf8');
+assert.match(cardScript, /createImageBitmap/);
+assert.match(cardScript, /canvas\.toBlob/);
+assert.match(cardScript, /\/api\/cards\/photo/);
+assert.match(cardScript, /state\.cards = \[result\.card/);
 
 const middleware = readFileSync(new URL('../src/middleware.ts', import.meta.url), 'utf8');
 assert.match(middleware, /\^\\\/c\\\/\[\^\/\]\+/);

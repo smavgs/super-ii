@@ -23,10 +23,15 @@ function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+function fromEncodedKey(value: string): Uint8Array<ArrayBuffer> {
+  const normalized = value.trim().replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/u, '');
+  return fromBase64Url(normalized);
+}
+
 async function encryptionKey(locals: App.Locals): Promise<CryptoKey> {
   const encoded = runtimeValue(locals, 'CARD_VAULT_ENCRYPTION_KEY');
   if (!encoded) throw new Error('card encryption unavailable');
-  const bytes = fromBase64Url(encoded);
+  const bytes = fromEncodedKey(encoded);
   if (bytes.byteLength !== 32) throw new Error('card encryption unavailable');
   return crypto.subtle.importKey('raw', bytes, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }

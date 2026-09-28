@@ -114,6 +114,14 @@
 .card-vault legend small { color: var(--muted); font-weight: 400; }
 .card-vault__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
 .card-vault textarea { resize: vertical; }
+.card-photo-picker { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1rem; align-items: center; padding: 0.9rem; border: 1px solid var(--line); border-radius: 0.9rem; background: var(--surface); }
+.card-photo-picker > img { width: 6rem; height: 6rem; border: 1px solid var(--line-strong); border-radius: 50%; background: white; object-fit: cover; box-shadow: 0 8px 22px rgb(7 26 47 / 0.09); }
+.card-photo-picker__copy { display: grid; gap: 0.45rem; min-width: 0; }
+.card-photo-picker__copy > strong { font-size: 1rem; }
+.card-photo-picker__copy > p, .card-photo-picker__copy > small { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
+.card-photo-picker__copy > small[data-error="true"] { color: var(--red); }
+.card-photo-picker__actions { display: flex; flex-wrap: wrap; gap: 0.5rem 0.7rem; align-items: center; }
+.card-photo-picker__actions .button { justify-content: center; gap: 0.35rem; }
 .card-input-with-icon { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.45rem; padding-left: 0.35rem; border: 1px solid var(--line-strong); border-radius: 0.65rem; overflow: hidden; }
 .card-input-with-icon .card-service-mark { width: 2rem; height: 2rem; border-radius: 0.58rem; box-shadow: none; }
 .card-input-with-icon input { border: 0; border-left: 1px solid var(--line) !important; border-radius: 0 !important; }
@@ -173,6 +181,8 @@
   .card-vault > header, .connection-heading { align-items: stretch; flex-direction: column; }
   .card-vault > header span { align-self: start; }
   .card-vault__languages, .card-vault__grid, .card-custom-links > div, .connection-card__notes { grid-template-columns: 1fr; }
+  .card-photo-picker { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .card-photo-picker__actions { justify-content: center; }
   .connection-heading label { width: 100%; }
   .card-preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
