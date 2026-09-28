@@ -22,17 +22,26 @@ insert into app.cards (
   repeat('t', 32), 'abcdefghijklmnop', '{}'::jsonb
 ) on conflict (id) do update set status = 'active', share_token_hash = repeat('a', 64);
 
+insert into app.card_photos (
+  id, owner_profile_id, content_hash, mime_type, byte_size, ciphertext, iv
+) values (
+  '00000000-0000-4000-8000-000000000094',
+  '00000000-0000-4000-8000-000000000091',
+  repeat('c', 64), 'image/jpeg', 1024, repeat('z', 2048), 'abcdefghijklmnop'
+) on conflict (id) do update set ciphertext = excluded.ciphertext;
+
 insert into app.card_public_snapshots (card_id, owner_profile_id, snapshot)
 values (
   '00000000-0000-4000-8000-000000000092',
   '00000000-0000-4000-8000-000000000091',
-  '{"version":1,"card_id":"00000000-0000-4000-8000-000000000092","name":"Conference","identity_en":{"name":"Cards Test"},"services":[],"verified_badges":[],"personal_badges":[],"allow_share_back":true}'::jsonb
+  '{"version":1,"card_id":"00000000-0000-4000-8000-000000000092","name":"Conference","identity_en":{"name":"Cards Test"},"photo_url":"https://superii.site/card-images/00000000-0000-4000-8000-000000000094.jpg","services":[],"verified_badges":[],"personal_badges":[],"allow_share_back":true}'::jsonb
 ) on conflict (card_id) do update set snapshot = excluded.snapshot;
 
 do $cards$
 declare
   resolved record;
   connection_id uuid;
+  resolved_photo record;
   mismatched_snapshot_rejected boolean := false;
   mismatched_connection_rejected boolean := false;
 begin
@@ -42,6 +51,10 @@ begin
   end if;
   if exists(select 1 from app.resolve_public_card(repeat('b', 64))) then
     raise exception 'unknown card token resolved';
+  end if;
+  select * into resolved_photo from app.resolve_public_card_photo('00000000-0000-4000-8000-000000000094');
+  if resolved_photo.photo_id <> '00000000-0000-4000-8000-000000000094'::uuid then
+    raise exception 'active selected card photo did not resolve';
   end if;
   connection_id := app.submit_card_connection(
     repeat('a', 64), repeat('p', 32), 'abcdefghijklmnop', null, null
@@ -91,6 +104,9 @@ begin
   update app.cards set status = 'paused' where id = resolved.card_id;
   if exists(select 1 from app.resolve_public_card(repeat('a', 64))) then
     raise exception 'paused card remained public';
+  end if;
+  if exists(select 1 from app.resolve_public_card_photo('00000000-0000-4000-8000-000000000094')) then
+    raise exception 'paused card photo remained public';
   end if;
 end
 $cards$;

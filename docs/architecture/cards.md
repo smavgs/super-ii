@@ -8,7 +8,7 @@ Super ii Cards are purpose-specific, reusable contact cards created in the signe
 - Presets: Super ii, Business, Personal, Conference, Investor, Open Source, and Custom.
 - Content languages: English and optional Simplified Chinese.
 - Contact choices: email, phone, website, WeChat, WhatsApp, Telegram, LinkedIn, GitHub, Hugging Face, QQ, RED/Xiaohongshu, Weibo, and up to five HTTPS custom links.
-- Photo privacy: public cards accept only the member's Clerk-served Super ii profile image or an approved Super ii-hosted image, so a card cannot be used as an arbitrary third-party tracking pixel.
+- Photo privacy: members can choose a local image or take a phone photo. The browser center-crops and re-encodes it as a bounded JPEG, and the server removes JPEG metadata before application-layer encryption. A public image route resolves the portrait only when an active Card snapshot selects it. Clerk-served profile images remain supported, while arbitrary third-party tracking-pixel URLs remain rejected.
 - Sharing: one 256-bit random unlisted token per card, a standards-based QR code, vCard 4.0 download, native share where the browser supports it, and link copy.
 - Recipient choice: optional private “Share mine back” form.
 - Owner controls: draft, publish, pause, resume, rotate link, edit, and delete.
@@ -17,16 +17,17 @@ An unlisted card is not an authenticated or secret page. Its token provides unli
 
 ## Data separation
 
-Four PostgreSQL tables keep responsibilities separate:
+Five PostgreSQL tables keep responsibilities separate:
 
 1. `card_contact_vaults` stores one reusable encrypted contact source per profile.
 2. `cards` stores private card configuration, lifecycle state, the one-way token hash, and the encrypted raw token.
 3. `card_public_snapshots` stores only the fields selected at the last publication.
 4. `card_connections` stores encrypted contact details voluntarily shared back plus encrypted owner notes.
+5. `card_photos` stores small metadata-stripped JPEG portraits encrypted before database storage and deduplicated per owner by SHA-256.
 
 The reusable vault is never read through a public route. Publishing creates a bounded snapshot from the selected fields and current badge eligibility. Later vault edits do not silently rewrite an existing public card; the owner publishes again to create the next snapshot revision.
 
-Every private table has row-level security. Composite foreign keys bind a snapshot or connection to the same owner as its card. A signed-in profile can manage only its own rows. Public card reads and recipient share-back use two reviewed security-definer database functions rather than direct table grants.
+Every private table has row-level security. Composite foreign keys bind a snapshot or connection to the same owner as its card. A signed-in profile can manage only its own rows. Public card reads, public Card-photo reads and recipient share-back use three reviewed security-definer database functions rather than direct table grants. The photo resolver returns encrypted bytes only while an active public snapshot contains that exact Super ii-hosted portrait URL; decryption remains in the Worker.
 
 ## Encryption and token handling
 
@@ -35,7 +36,8 @@ The application uses AES-256-GCM with a unique 96-bit IV and context-specific au
 - reusable contact-vault content;
 - raw unlisted card tokens retained for the owner;
 - received share-back contact payloads; and
-- private connection context and meeting notes.
+- private connection context and meeting notes; and
+- metadata-stripped Card portrait bytes.
 
 The 32-byte encryption key is a deployment secret and is not stored in Git. Public lookup stores and compares only SHA-256 of a syntactically valid 32-byte token. Rotation creates an unrelated token and immediately makes the prior link unresolved. Pause and delete also fail closed.
 
@@ -68,6 +70,7 @@ All representations resolve from the same active snapshot. A paused, deleted, un
 ## Limits and abuse controls
 
 - At most 24 cards per member.
+- At most 48 deduplicated Card portraits per member, with each processed JPEG limited to 240,000 bytes and verified between 64 and 2,048 pixels per side.
 - At most 100 recent received connections returned to the Workspace.
 - At most five custom HTTPS links.
 - Create, update, rotate, and share-back actions have separate server-side rate limits.

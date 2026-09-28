@@ -121,6 +121,7 @@ REQUIRED_TABLES = {
     "cards",
     "card_public_snapshots",
     "card_connections",
+    "card_photos",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}

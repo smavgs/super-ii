@@ -139,8 +139,22 @@ const cardFieldOptions = [
         </details>
         <details class="card-disclosure">
           <summary><span><strong>Contact details</strong><small>Photo, location, email, phone and website</small></span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
-          <div class="card-disclosure__body"><fieldset><legend class="sr-only">Core contact details</legend><div class="card-vault__grid">
-            <label>Profile photo URL<input name="photo_url" type="url" inputmode="url" placeholder="https://img.clerk.com/…" /><small>Use your Super ii profile image or an approved Super ii-hosted image.</small></label>
+          <div class="card-disclosure__body"><fieldset><legend class="sr-only">Core contact details</legend><div class="card-photo-picker">
+            <img data-card-photo-preview src="/brand/super-ii-icon-192.png" alt="Your Card photo preview" width="96" height="96" />
+            <div class="card-photo-picker__copy">
+              <strong>Profile photo</strong>
+              <p>Choose one from this device, or take a new photo on your phone. Super ii crops it square and removes camera metadata before saving.</p>
+              <div class="card-photo-picker__actions">
+                <button class="button button--secondary button--small" type="button" data-choose-card-photo><i class="ph ph-image" aria-hidden="true"></i>Choose photo</button>
+                <button class="button button--secondary button--small" type="button" data-take-card-photo><i class="ph ph-camera" aria-hidden="true"></i>Take photo</button>
+                <button class="text-button card-danger" type="button" data-remove-card-photo>Remove</button>
+              </div>
+              <small data-card-photo-status role="status" aria-live="polite">JPG, PNG, WebP and phone photos are supported.</small>
+            </div>
+            <input name="photo_url" type="hidden" />
+            <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-card-photo-file tabindex="-1" />
+            <input class="sr-only" type="file" accept="image/*" capture="user" data-card-photo-camera tabindex="-1" />
+          </div><div class="card-vault__grid">
             <label>Location<input name="location" maxlength="120" autocomplete="address-level2" /></label>
             <label>Email<input name="email" type="email" maxlength="254" autocomplete="email" /></label>
             <label>Phone<input name="phone" maxlength="40" autocomplete="tel" /></label>
