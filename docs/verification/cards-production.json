@@ -1,0 +1,92 @@
+{
+  "verified_at": "2026-09-28T03:08:21Z",
+  "status": "production",
+  "source": {
+    "implementation_pull_request": "https://github.com/smavgs/super-ii/pull/49",
+    "implementation_merge": "6ba51d15d166cfef1a9f4af9975ee0af3683323a"
+  },
+  "database": {
+    "migration": "0029_super_ii_cards.sql applied",
+    "application_tables": 110,
+    "rls_tables": 110,
+    "card_tables": 4,
+    "card_owner_policies": 4,
+    "resolve_public_card_function": true,
+    "submit_card_connection_function": true,
+    "web_backend_card_table_access": true,
+    "payment_backend_card_table_access": false,
+    "runtime_backend_card_table_access": false
+  },
+  "encryption": {
+    "algorithm": "AES-256-GCM",
+    "cloudflare_secret_configured": true,
+    "secret_value_recorded_in_repository": false,
+    "separate_operator_backup": "macOS Keychain"
+  },
+  "deployment": {
+    "worker": "super-ii-site",
+    "worker_version_at_functional_verification": "55004508-416b-440b-b216-0f4c14a253dc",
+    "traffic_percent": 100,
+    "custom_domains": [
+      "superii.site",
+      "www.superii.site"
+    ]
+  },
+  "live_interfaces": {
+    "health": {
+      "status": 200,
+      "body": {
+        "status": "ok"
+      },
+      "cache_control": "no-store"
+    },
+    "public_card_schema": {
+      "url": "https://www.superii.site/schemas/card/v1.json",
+      "status": 200
+    },
+    "openapi": {
+      "url": "https://www.superii.site/openapi.json",
+      "status": 200,
+      "cards_tag": true,
+      "public_connection_path": true
+    },
+    "machine_docs": {
+      "url": "https://www.superii.site/docs.json",
+      "status": 200,
+      "card_schema_and_architecture_listed": true
+    },
+    "anonymous_owner_api": {
+      "url": "https://www.superii.site/api/cards",
+      "status": 401,
+      "cache_control": "private, no-store"
+    },
+    "invalid_public_card": {
+      "url": "https://www.superii.site/c/not-a-real-token",
+      "status": 404,
+      "cache_control": "private, no-store",
+      "referrer_policy": "no-referrer"
+    },
+    "signed_in_workspace": {
+      "url": "https://www.superii.site/account#cards",
+      "status": 200,
+      "cards_tab_rendered": true,
+      "connections_tab_rendered": true,
+      "details_tab_rendered": true,
+      "empty_state_rendered": true
+    }
+  },
+  "verification": {
+    "astro_check_errors": 0,
+    "release_validation": "passed",
+    "database_static_check": "passed",
+    "postgresql_17_integration": "passed",
+    "cloudflare_dry_run": "passed",
+    "production_build": "passed",
+    "npm_production_audit_vulnerabilities": 0
+  },
+  "boundaries": [
+    "An active unlisted card link is bearer-like and can be forwarded by anyone who receives it.",
+    "The private reusable contact vault, received contacts, meeting notes, and raw token are never included in the public snapshot.",
+    "No production test card or connection was created during release verification."
+  ]
+}
