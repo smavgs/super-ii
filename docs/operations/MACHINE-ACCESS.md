@@ -41,6 +41,11 @@ Verify with `python3 tools/check_machine_access.py` after each website release.
 This reads discovery, performs public MCP/A2A reads and confirms a protected Work
 read is denied without a token. It creates no repository or content fixture.
 
+Agent connection metadata advertises `/api/oauth/` endpoints. Its guide and
+downloadable connector use `/api/agent-connections/guide.md` and
+`/api/agent-connections/connect.mjs`, within the existing API exception. The
+human approval page remains `/account/connect` and uses the person's browser.
+
 Rollback: disable this named rule in Cloudflare **Rules → Overview**. This
 restores the zone's browser check on these paths and may block ordinary clients
 again. The expression grants no repository or publication authority.

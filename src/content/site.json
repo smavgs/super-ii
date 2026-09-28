@@ -85,6 +85,8 @@
     "/skills",
     "/agents",
     "/agents/connect.md",
+    "/api/agent-connections/guide.md",
+    "/api/agent-connections/connect.mjs",
     "/builders",
     "/social",
     "/social/agents.md",
@@ -165,6 +167,8 @@
   ],
   "englishOnlyRoutes": [
     "/agents/connect.md",
+    "/api/agent-connections/guide.md",
+    "/api/agent-connections/connect.mjs",
     "/social/agents.md",
     "/robot",
     "/robot/agents.md",

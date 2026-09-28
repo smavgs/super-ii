@@ -55,7 +55,8 @@ def main() -> None:
         "/llms-full.txt", "/robots.txt", "/sitemap.xml", "/openapi.json", "/docs.json",
         "/system-state.json", "/system-state.md", "/agent-connectors.json",
         "/agents.md", "/siiwebskill.md", "/runtime-registry.json",
-        "/transparent/agents.md", "/agents/connect.md", "/social/agents.md",
+        "/transparent/agents.md", "/api/agent-connections/guide.md", "/social/agents.md",
+        "/api/agent-connections/connect.mjs",
         "/.well-known/oauth-authorization-server",
         "/.well-known/oauth-protected-resource/mcp/work",
         "/.well-known/oauth-protected-resource/mcp/social",
@@ -90,6 +91,18 @@ def main() -> None:
             assert "resource_metadata=" in error.headers.get("www-authenticate", "")
             assert json.loads(error.read())["error"] == "invalid_token"
             results.append({"path": path, "method": "POST", "status": 401, "oauth_challenge": True})
+    try:
+        request("/api/oauth/token", {
+            "client_id": "33333333-3333-4333-8333-333333333333",
+            "resource": origin + "/mcp/work",
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            "device_code": "0" * 64,
+        })
+        raise AssertionError("OAuth accepted an invalid grant")
+    except HTTPError as error:
+        assert error.code == 400, error.code
+        assert json.loads(error.read())["error"] == "invalid_grant"
+        results.append({"path": "/api/oauth/token", "method": "POST", "status": 400, "invalid_grant_denied": True})
     keys = request("/api/publication-keys")
     assert keys["algorithm"] == "Ed25519" and any(key["enabled"] for key in keys["keys"])
     for schema in (

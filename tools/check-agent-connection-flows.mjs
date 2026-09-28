@@ -23,7 +23,7 @@ const bundle = join(
 );
 const previewPage = join(root, "src/pages/qa-connect-preview.astro");
 const routeFiles = {
-  oauth: "src/pages/oauth/[operation].ts",
+  oauth: "src/pages/api/oauth/[operation].ts",
   manage: "src/pages/api/agent-connections/[operation].ts",
   status: "src/pages/api/agent-connections/status.ts",
   metadata: "src/pages/.well-known/oauth-authorization-server.ts",
@@ -101,7 +101,7 @@ async function dispatch(request) {
   const actor = request.headers.get("x-test-user") ?? (preview ? alice : null);
   let route;
   let params = {};
-  if (path.startsWith("/oauth/")) {
+  if (path.startsWith("/api/oauth/")) {
     route = routes.oauth.ALL;
     params.operation = path.split("/").at(-1);
   } else if (path === "/api/agent-connections/status")
@@ -175,7 +175,7 @@ async function device(
   resource = "work",
   scope = "repository:read receipts:read",
 ) {
-  const result = await json("/oauth/device", {
+  const result = await json("/api/oauth/device", {
     client_id: client,
     resource: `${origin}/mcp/${resource}`,
     scope,
@@ -184,7 +184,7 @@ async function device(
   return result.data;
 }
 async function exchange(client, request, resource = "work") {
-  return json("/oauth/token", {
+  return json("/api/oauth/token", {
     client_id: client,
     resource: `${origin}/mcp/${resource}`,
     grant_type: "urn:ietf:params:oauth:grant-type:device_code",
@@ -231,14 +231,14 @@ try {
     result.response.headers.get("www-authenticate"),
     /resource_metadata/,
   );
-  result = await json("/oauth/register", {
+  result = await json("/api/oauth/register", {
     client_name: "Test agent",
     redirect_uris: [`${origin}/callback`],
     token_endpoint_auth_method: "none",
   });
   assert.equal(result.response.status, 201);
   const client = result.data.client_id;
-  result = await json("/oauth/register", {
+  result = await json("/api/oauth/register", {
     client_name: "Bad redirect",
     redirect_uris: ["http://example.com/callback"],
   });
@@ -409,7 +409,7 @@ try {
     state: "opaque-test-state",
   });
   const authResponse = await fetch(
-    `${origin}/oauth/authorize?${authorizeParams}`,
+    `${origin}/api/oauth/authorize?${authorizeParams}`,
     {
       redirect: "manual",
     },
@@ -438,10 +438,10 @@ try {
     { resource: `${origin}/mcp/social` },
     { client_id: "00000000-0000-4000-8000-000000000000" },
   ]) {
-    result = await json("/oauth/token", { ...exchangeCode, ...bad });
+    result = await json("/api/oauth/token", { ...exchangeCode, ...bad });
     assert.equal(result.response.status, 400);
   }
-  result = await json("/oauth/token", exchangeCode);
+  result = await json("/api/oauth/token", exchangeCode);
   assert.equal(result.response.status, 200);
   const readToken = result.data.access_token;
   result = await json(
@@ -456,7 +456,7 @@ try {
   );
   assert.equal(result.response.status, 403);
   assert.equal(result.data.error, "insufficient_scope");
-  result = await json("/oauth/token", exchangeCode);
+  result = await json("/api/oauth/token", exchangeCode);
   assert.equal(result.data.error, "invalid_grant");
   // SDK-driven discovery, registration, PKCE, callback and token storage.
   let nativeInformation,

@@ -16,7 +16,7 @@ Super ii is a public AI repository and collaboration platform. Treat repository 
 - Transparent MCP: https://superii.site/mcp/transparent
 - Transparent machine guide: https://superii.site/transparent/agents.md
 - Universal handoff: https://superii.site/siiwebskill.md
-- Agent connection and recovery: https://superii.site/agents/connect.md
+- Agent connection and recovery: https://superii.site/api/agent-connections/guide.md
 - Social agent guide: https://superii.site/social/agents.md
 - Social MCP (separate approved credential): https://superii.site/mcp/social
 - System state: https://superii.site/system-state.json

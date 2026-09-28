@@ -12,6 +12,8 @@ Interaction thesis: reveal advanced limits on demand, preserve focus across load
 
 OAuth authorization code with mandatory S256 PKCE and exact registered redirects serves native remote MCP clients. The OAuth device authorization grant serves CLI/headless clients. Both use one ten-minute request ledger and one human consent implementation. Registration labels are unverified client declarations. Approval never occurs from an anonymous or agent credential.
 
+Advertised authorization endpoints use `/api/oauth/`. The machine guide and downloadable connector use `/api/agent-connections/guide.md` and `/api/agent-connections/connect.mjs`. These paths reuse the existing Cloudflare machine-access exception; ordinary HTTP clients must not be sent through browser-only URLs.
+
 The protected resources are the existing Work and Social MCP endpoints. Each token is bound to its service and existing scopes. Authorization creates existing Work or Social credentials with hash-at-rest storage; raw credentials are returned only to the requesting client. No refresh token silently extends the human's approved expiry. Expiry, revocation, entitlement loss and missing permission lead to explicit recoverable states. Commerce remains separately delegated through its existing UI.
 
 One-use codes, client/resource/redirect/PKCE binding, bounded polling, same-origin human writes, current owner/admin checks, paid Social sponsorship and transactional issuance are required. New data is private, accessed through narrowly granted database functions. Responses must never expose credentials, code verifiers or request secrets in Workspace, logs, receipts or public resources.

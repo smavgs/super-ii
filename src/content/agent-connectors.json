@@ -74,7 +74,7 @@
       "verify_command": "claude mcp get superii",
       "config_path": "Managed by Claude Code",
       "config_example": null,
-      "notes": "The public endpoint needs no token. Claude Code can use OAuth for authenticated remote servers for approved Work or Social access; see /agents/connect.md.",
+      "notes": "The public endpoint needs no token. Claude Code can use OAuth for authenticated remote servers for approved Work or Social access; see /api/agent-connections/guide.md.",
       "source_url": "https://docs.anthropic.com/en/docs/claude-code/mcp",
       "source_label": "Anthropic Claude Code MCP documentation"
     },
@@ -147,7 +147,7 @@
       "source_label": null
     }
   ],
-  "connection_guide_url": "https://superii.site/agents/connect.md",
+  "connection_guide_url": "https://superii.site/api/agent-connections/guide.md",
   "social_mcp_url": "https://superii.site/mcp/social",
   "authorization": {
     "authorization_server_metadata": "https://superii.site/.well-known/oauth-authorization-server",
@@ -155,7 +155,7 @@
       "authorization-code-pkce-s256",
       "device-code"
     ],
-    "headless_connector": "https://superii.site/agents/connect.mjs",
+    "headless_connector": "https://superii.site/api/agent-connections/connect.mjs",
     "human_approval_required": true,
     "refresh_tokens": false,
     "client_verification": "Protocol interoperability is tested separately from each named client profile. Use the generic stdio connector where native OAuth is unavailable."

@@ -161,7 +161,7 @@ export async function run(argv = process.argv.slice(2)) {
       pending.scope !== scope ||
       pending.expires_at <= Date.now()
     ) {
-      const registered = await request('/oauth/register', {
+      const registered = await request('/api/oauth/register', {
         body: {
           client_name: options.name ?? 'Super ii agent connector',
           redirect_uris: [],
@@ -170,7 +170,7 @@ export async function run(argv = process.argv.slice(2)) {
       });
       if (!registered.response.ok)
         throw new Error(`Client registration failed: ${registered.data.error}`);
-      const start = await request('/oauth/device', {
+      const start = await request('/api/oauth/device', {
         body: { client_id: registered.data.client_id, resource: endpoint, scope },
       });
       if (!start.response.ok) throw new Error(`Connection request failed: ${start.data.error}`);
@@ -189,7 +189,7 @@ export async function run(argv = process.argv.slice(2)) {
     let interval = pending.interval * 1000;
     while (Date.now() < pending.expires_at) {
       await wait(interval);
-      const result = await request('/oauth/token', {
+      const result = await request('/api/oauth/token', {
         body: {
           grant_type: grant,
           client_id: pending.client_id,

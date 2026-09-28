@@ -8,6 +8,8 @@ Date: 2026-09-28. Release source: `codex/agent-connection-flow`.
 
 The connection suite bundles the actual OAuth, consent, status and MCP callbacks. Clerk identities are test fixtures; database requests use signed contexts and the restricted web login. Only fixture setup uses the disposable database owner. The transport harness uses the real MCP SDK rather than mocking tool results.
 
+Protocol clients use the advertised `/api/oauth/` routes. The machine smoke check includes the guide and connector under `/api/agent-connections/` plus rejection of an invalid device grant. These routes reuse the existing Cloudflare API exception. The human approval page is checked in a browser.
+
 Verified paths:
 
 - Device request, pending status, slower polling, human approval, one-use exchange, automatic private local credential storage and reuse.

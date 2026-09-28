@@ -83,10 +83,10 @@ export function validRedirectUri(value: unknown): value is string {
 export function oauthMetadata(origin: string) {
   return {
     issuer: origin,
-    authorization_endpoint: `${origin}/oauth/authorize`,
-    token_endpoint: `${origin}/oauth/token`,
-    registration_endpoint: `${origin}/oauth/register`,
-    device_authorization_endpoint: `${origin}/oauth/device`,
+    authorization_endpoint: `${origin}/api/oauth/authorize`,
+    token_endpoint: `${origin}/api/oauth/token`,
+    registration_endpoint: `${origin}/api/oauth/register`,
+    device_authorization_endpoint: `${origin}/api/oauth/device`,
     response_types_supported: ['code'],
     response_modes_supported: ['query'],
     authorization_response_iss_parameter_supported: true,

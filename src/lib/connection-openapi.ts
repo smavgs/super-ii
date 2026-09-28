@@ -57,7 +57,7 @@ export const connectionApiPaths = {
       },
     },
   },
-  '/oauth/register': {
+  '/api/oauth/register': {
     post: {
       tags,
       operationId: 'registerAgentClient',
@@ -78,7 +78,7 @@ export const connectionApiPaths = {
       },
     },
   },
-  '/oauth/authorize': {
+  '/api/oauth/authorize': {
     get: {
       tags,
       operationId: 'authorizeAgentClient',
@@ -108,7 +108,7 @@ export const connectionApiPaths = {
       },
     },
   },
-  '/oauth/device': {
+  '/api/oauth/device': {
     post: {
       tags,
       operationId: 'requestAgentDeviceConnection',
@@ -128,7 +128,7 @@ export const connectionApiPaths = {
       },
     },
   },
-  '/oauth/token': {
+  '/api/oauth/token': {
     post: {
       tags,
       operationId: 'exchangeAgentAuthorization',
