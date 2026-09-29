@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { waitUntil } from 'cloudflare:workers';
 import { sqlClient } from '@/lib/db';
 import { showcaseBucket } from '@/lib/showcase-media';
 
@@ -10,6 +11,17 @@ const baseHeaders = {
   'x-content-type-options': 'nosniff',
 };
 
+function clientResponse(response: Response, request: Request): Response {
+  const headers = new Headers(response.headers);
+  headers.set('cache-control', baseHeaders['cache-control']);
+  const etag = headers.get('etag');
+  const validators = request.headers.get('if-none-match')?.split(',').map((value) => value.trim()) ?? [];
+  if (etag && (validators.includes(etag) || validators.includes('*'))) {
+    return new Response(null, { status: 304, headers });
+  }
+  return new Response(response.body, { status: response.status, headers });
+}
+
 export const GET: APIRoute = async ({ locals, params, request }) => {
   const mediaId = params.mediaId ?? '';
   if (!uuidPattern.test(mediaId)) return new Response('Not found', { status: 404, headers: baseHeaders });
@@ -20,14 +32,40 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
     const rows = await sql`select * from app.resolve_public_showcase_media(${mediaId}::uuid)`;
     const media = rows[0] as { object_key: string; content_hash: string; mime_type: string } | undefined;
     if (!media) return new Response('Not found', { status: 404, headers: baseHeaders });
-    const object = await bucket.get(media.object_key, { onlyIf: request.headers });
+    const cacheStorage = typeof caches === 'undefined'
+      ? null
+      : caches as CacheStorage & { default: Cache };
+    const cache = cacheStorage?.default ?? null;
+    const cacheKey = new Request(
+      new URL(`/__superii-showcase-cache/${media.content_hash}.jpg`, request.url),
+      { method: 'GET' },
+    );
+    if (cache) {
+      try {
+        const cached = await cache.match(cacheKey);
+        if (cached) return clientResponse(cached, request);
+      } catch (error) {
+        console.warn('Showcase edge cache read failed', {
+          kind: error instanceof Error ? error.name : 'UnknownError',
+        });
+      }
+    }
+    const object = await bucket.get(media.object_key);
     if (!object) return new Response('Not found', { status: 404, headers: baseHeaders });
     const responseHeaders = new Headers(baseHeaders);
     object.writeHttpMetadata(responseHeaders);
     responseHeaders.set('content-type', media.mime_type);
     responseHeaders.set('etag', object.httpEtag);
-    if (!('body' in object)) return new Response(null, { status: 304, headers: responseHeaders });
-    return new Response(object.body, { headers: responseHeaders });
+    responseHeaders.set('cache-control', 'public, max-age=2592000, immutable');
+    const response = new Response(object.body, { headers: responseHeaders });
+    if (cache) {
+      waitUntil(cache.put(cacheKey, response.clone()).catch((error: unknown) => {
+        console.warn('Showcase edge cache write failed', {
+          kind: error instanceof Error ? error.name : 'UnknownError',
+        });
+      }));
+    }
+    return clientResponse(response, request);
   } catch {
     return new Response('Unavailable', { status: 503, headers: baseHeaders });
   }

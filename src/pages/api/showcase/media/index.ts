@@ -25,6 +25,13 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
   let objectKey = '';
   try {
     const prepared = await prepareShowcaseBytes(request);
+    const capacity = await sql`select app.showcase_storage_available(${prepared.bytes.byteLength}) as allowed`;
+    if (capacity[0]?.allowed !== true) {
+      return Response.json(
+        { error: 'Showcase uploads are paused at the included storage ceiling' },
+        { status: 507, headers },
+      );
+    }
     const ownerKind = organizationId ? 'organization' : 'profile';
     const ownerId = organizationId ?? profile.profileId;
     objectKey = `showcase/${ownerKind}/${ownerId}/${crypto.randomUUID()}.jpg`;
@@ -57,6 +64,7 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
       return Response.json({ error: message }, { status: 422, headers });
     }
     if (message.includes('limit_reached')) return Response.json({ error: 'This Showcase already has three images' }, { status: 409, headers });
+    if (message.includes('free_storage')) return Response.json({ error: 'Showcase uploads are paused at the included storage ceiling' }, { status: 507, headers });
     if (message.includes('permission_denied')) return Response.json({ error: 'You cannot add images to this owner' }, { status: 403, headers });
     return Response.json({ error: 'Showcase image could not be saved' }, { status: 503, headers });
   }

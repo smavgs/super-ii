@@ -29,17 +29,28 @@ positions. Uploads follow this sequence:
 2. the Worker enforces origin, account, rate and 600 KB body limits;
 3. the Worker strips JPEG metadata again, validates dimensions and hashes the
    final bytes;
-4. the immutable UUID object is written to the private `SHOWCASE_MEDIA` R2
+4. a database preflight pauses new uploads before active Showcase storage can
+   approach the included R2 allowance;
+5. the immutable UUID object is written to the private `SHOWCASE_MEDIA` R2
    binding; and
-5. a narrow Postgres function verifies the owner and atomically allocates one
+6. a narrow Postgres function rechecks the global ceiling, verifies the owner and atomically allocates one
    of three positions.
 
 If metadata persistence fails, the Worker deletes the just-written object.
-Deleting a showcase first removes the authorized database reference and then
-best-effort deletes the R2 object. Public reads never accept a raw R2 key: the
+Deleting a showcase first resolves an owner-authorized target, requires the R2
+deletion to succeed and only then removes the database reference. Public reads never accept a raw R2 key: the
 image route asks `resolve_public_showcase_media`, which returns a key only while
 the owning profile/organization is public or the owning Robot is both public
 and published.
+
+The application ceiling is 7.5 GB of active Showcase objects, leaving 25% of
+the included 10 GB-month Standard-storage allowance as operational headroom.
+After every public-visibility check, object bodies use a content-hash-normalized
+edge-cache key for 30 days while browsers receive a five-minute cache window.
+Repeated URLs and query strings therefore do not force repeated R2 reads, and a
+profile or Robot made private remains fail-closed because the database check is
+never bypassed. Cloudflare billing alerts remain monitoring controls rather
+than hard caps, so uploads pause inside Super ii before the provider allowance.
 
 ## Security and abuse boundaries
 

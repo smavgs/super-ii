@@ -2,7 +2,11 @@
 
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { optionalShowcaseUrl, showcaseMaximumBytes } from '../src/lib/showcase-input.ts';
+import {
+  optionalShowcaseUrl,
+  showcaseMaximumBytes,
+  showcaseStorageCeilingBytes,
+} from '../src/lib/showcase-input.ts';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
@@ -34,6 +38,7 @@ const combined = Object.values(sources).join('\n');
 const requireText = (path, marker) => assert.ok(sources[path].includes(marker), `${path} is missing ${marker}`);
 
 assert.equal(showcaseMaximumBytes, 600_000);
+assert.equal(showcaseStorageCeilingBytes, 7_500_000_000);
 assert.equal(optionalShowcaseUrl('https://example.com/work')?.startsWith('https://example.com/'), true);
 for (const unsafe of ['http://example.com', 'javascript:alert(1)', 'https://user:pass@example.com']) {
   assert.throws(() => optionalShowcaseUrl(unsafe));
@@ -42,6 +47,7 @@ for (const unsafe of ['http://example.com', 'javascript:alert(1)', 'https://user
 for (const marker of [
   'linked_namespace_not_verified', 'linked_organization_not_verified', 'linked_work_limit_reached',
   'showcase_media_limit_reached', 'resolve_public_showcase_media', 'update_robot_showcase',
+  'showcase_free_storage_limit_reached', 'showcase_storage_available', 'showcase_media_delete_target',
   'revoke all on function', 'grant execute on function',
 ]) assert.ok(combined.includes(marker), `database contract is missing ${marker}`);
 
@@ -58,7 +64,11 @@ requireText('src/pages/api/bridge/links.ts', 'inspectHuggingFaceRepository');
 requireText('src/pages/api/bridge/links.ts', "visibility !== 'public'");
 requireText('src/pages/api/showcase/media/index.ts', 'prepareShowcaseBytes');
 requireText('src/pages/api/showcase/media/index.ts', "storageClass: 'Standard'");
+requireText('src/pages/api/showcase/media/index.ts', 'showcase_storage_available');
 requireText('src/pages/showcase-images/[mediaId].jpg.ts', 'resolve_public_showcase_media');
+requireText('src/pages/showcase-images/[mediaId].jpg.ts', 'cache.put(cacheKey');
+requireText('src/pages/showcase-images/[mediaId].jpg.ts', '/__superii-showcase-cache/');
+requireText('src/pages/api/showcase/media/[mediaId].ts', 'showcase_media_delete_target');
 requireText('src/lib/linked-work.ts', 'item.owner_profile_id is not null and profile.id is not null');
 requireText('database/migrations/0032_linked_work_showcase_robot_discovery.sql', "p_object_key not like expected_key_prefix || '%'");
 requireText('database/migrations/0032_linked_work_showcase_robot_discovery.sql', 'showcase_media_ratio_check');

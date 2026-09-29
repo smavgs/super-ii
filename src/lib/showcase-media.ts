@@ -2,7 +2,12 @@ import { env } from 'cloudflare:workers';
 import { cardPhotoSha256, jpegDimensions, stripJpegMetadata } from './card-photo';
 import { showcaseMaximumBytes } from './showcase-input';
 
-export { optionalShowcaseUrl, showcaseMaximumBytes, showcaseMaximumSourceBytes } from './showcase-input';
+export {
+  optionalShowcaseUrl,
+  showcaseMaximumBytes,
+  showcaseMaximumSourceBytes,
+  showcaseStorageCeilingBytes,
+} from './showcase-input';
 
 export function showcaseBucket(): R2Bucket | null {
   const bucket = (env as unknown as { SHOWCASE_MEDIA?: R2Bucket }).SHOWCASE_MEDIA;

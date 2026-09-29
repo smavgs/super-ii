@@ -35,6 +35,17 @@ update app.profiles
 set is_public = true, profile_kind = 'studio'
 where id = :'profile_id'::uuid;
 
+do $free_storage_guard$
+begin
+  if not app.showcase_storage_available(2048) then
+    raise exception 'valid Showcase upload was rejected by the free storage guard';
+  end if;
+  if app.showcase_storage_available(600001) then
+    raise exception 'oversized Showcase upload passed the free storage guard';
+  end if;
+end
+$free_storage_guard$;
+
 insert into app.external_identities (
   profile_id, provider, provider_subject, provider_username, display_name,
   scopes, organizations, metadata
@@ -162,12 +173,17 @@ select * from app.create_showcase_media(
 ) \gset robot_media_
 
 do $cleanup_contract$
+declare delete_target text;
 begin
   if not app.unlink_external_catalog_item(current_setting('linked_showcase.linked_id')::uuid) then
     raise exception 'linked work unlink returned false';
   end if;
   if (select status from app.external_catalog_items where id = current_setting('linked_showcase.linked_id')::uuid) <> 'removed' then
     raise exception 'linked work was not soft removed';
+  end if;
+  delete_target := app.showcase_media_delete_target(current_setting('linked_showcase.media_three_id')::uuid);
+  if delete_target is null then
+    raise exception 'showcase deletion target was not authorized';
   end if;
   if app.delete_showcase_media(current_setting('linked_showcase.media_three_id')::uuid) is null then
     raise exception 'showcase delete did not return its R2 key';

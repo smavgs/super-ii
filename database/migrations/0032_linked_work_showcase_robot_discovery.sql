@@ -196,6 +196,21 @@ for select to superii_web_backend using (
 
 grant select on app.external_catalog_items, app.showcase_media, app.robot_links to superii_web_backend;
 
+create or replace function app.showcase_storage_available(p_byte_size integer)
+returns boolean
+language sql stable security definer
+set search_path = app, pg_catalog
+as $showcase_storage$
+  select app.context_is_verified()
+    and app.current_profile_id() is not null
+    and p_byte_size between 512 and 600000
+    and coalesce((
+      select sum(media.byte_size)
+      from app.showcase_media media
+      where media.status = 'active'
+    ), 0) + p_byte_size <= 7500000000
+$showcase_storage$;
+
 create or replace function app.link_external_catalog_item(
   p_external_identity_id uuid,
   p_owner_organization_id uuid,
@@ -381,6 +396,7 @@ declare
   created_id uuid;
   scope_key text;
   expected_key_prefix text;
+  current_storage bigint;
 begin
   if not app.context_is_verified() or actor_profile is null then
     raise exception 'authentication_required' using errcode = '42501';
@@ -411,6 +427,13 @@ begin
     end if;
   elsif p_owner_organization_id is not null and not app.can_access_organization(p_owner_organization_id, true) then
     raise exception 'showcase_organization_permission_denied' using errcode = '42501';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('showcase:global-storage', 0));
+  select coalesce(sum(media.byte_size), 0) into current_storage
+  from app.showcase_media media where media.status = 'active';
+  if current_storage + p_byte_size > 7500000000 then
+    raise exception 'showcase_free_storage_limit_reached' using errcode = '53100';
   end if;
 
   scope_key := coalesce(p_robot_id::text, coalesce(p_owner_organization_id::text, actor_profile::text) || ':profile');
@@ -528,6 +551,24 @@ begin
 end
 $showcase_delete$;
 
+create or replace function app.showcase_media_delete_target(p_media_id uuid)
+returns text
+language sql stable security definer
+set search_path = app, pg_catalog
+as $showcase_delete_target$
+  select media.object_key
+  from app.showcase_media media
+  where app.context_is_verified()
+    and app.current_profile_id() is not null
+    and media.id = p_media_id
+    and media.status = 'active'
+    and (
+      media.owner_profile_id = app.current_profile_id()
+      or app.can_access_organization(media.owner_organization_id, true)
+    )
+  limit 1
+$showcase_delete_target$;
+
 create or replace function app.resolve_public_showcase_media(p_media_id uuid)
 returns table(object_key text, content_hash text, mime_type text, byte_size integer, width integer, height integer)
 language sql stable security definer
@@ -608,10 +649,12 @@ do $function_security$
 declare signature text;
 begin
   foreach signature in array array[
+    'app.showcase_storage_available(integer)',
     'app.link_external_catalog_item(uuid,uuid,repository_kind,text,text,text,text,text,text,integer,bigint,jsonb)',
     'app.unlink_external_catalog_item(uuid)',
     'app.create_showcase_media(uuid,uuid,text,text,integer,integer,integer,text,text,text,text)',
     'app.update_showcase_media(uuid,text,text,text,text,smallint)',
+    'app.showcase_media_delete_target(uuid)',
     'app.delete_showcase_media(uuid)',
     'app.resolve_public_showcase_media(uuid)',
     'app.update_robot_showcase(uuid,text,text[],text,jsonb)'
