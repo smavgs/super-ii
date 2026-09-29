@@ -1,0 +1,43 @@
+---
+import CreatorLink from '@/components/CreatorLink.astro';
+import type { LinkedWorkItem } from '@/lib/linked-work';
+
+interface Props {
+  items: LinkedWorkItem[];
+  heading?: string;
+  showOwner?: boolean;
+}
+const { items, heading, showOwner = false } = Astro.props;
+const value = (item: LinkedWorkItem, key: string) => {
+  const candidate = item.source_metadata?.[key];
+  return typeof candidate === 'string' && candidate ? candidate : null;
+};
+---
+
+{items.length > 0 && <section class="linked-work-section">
+  {heading && <div class="repository-section__heading"><div><p class="eyebrow">External · Hugging Face</p><h2>{heading}</h2></div><span>{items.length}</span></div>}
+  <div class="catalog-results linked-work-grid">
+    {items.map((item) => <article class="catalog-card catalog-card--external">
+      <div class="catalog-card__topline">
+        {showOwner
+          ? <CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} />
+          : <span data-no-translate>{item.provider_repo_id}</span>}
+        <span class="origin-badge origin-badge--external">External · Hugging Face</span>
+      </div>
+      <h3 data-no-translate>{item.title}</h3>
+      <p data-no-translate>{item.summary || `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`}</p>
+      <div class="catalog-card__metadata">
+        <span>{item.kind}</span>
+        {item.license && <span data-no-translate>{item.license}</span>}
+        {value(item, 'task') && <span data-no-translate>{value(item, 'task')}</span>}
+        {value(item, 'library') && <span data-no-translate>{value(item, 'library')}</span>}
+        {value(item, 'sdk') && <span data-no-translate>{value(item, 'sdk')}</span>}
+        {item.provider_downloads !== null && <span title="Downloads reported by Hugging Face">HF ⬇️ {Number(item.provider_downloads).toLocaleString()}</span>}
+        {item.provider_likes !== null && <span title="Likes reported by Hugging Face">HF ❤️ {Number(item.provider_likes).toLocaleString()}</span>}
+      </div>
+      <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}>
+        <span>Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+      </a>
+    </article>)}
+  </div>
+</section>}

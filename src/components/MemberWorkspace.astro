@@ -12,13 +12,16 @@ interface Props {
   repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }>;
   notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }>;
   bridgeSources: Array<{ repository_id: string; provider_repo_id: string; source_revision: string; source_visibility: string; imported_at: string; sync_enabled: boolean }>;
+  linkedWork: Array<{ id: string; kind: string; provider: string; provider_repo_id: string; source_url: string; source_revision: string; title: string; summary: string; license: string | null; updated_at: string }>;
+  showcaseMedia: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
+  showcaseUploadsRemaining: number;
   subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }>;
   payments: Array<{ id: string; plan_id: string; billing_term: string; price_amount_cents: number; status: string }>;
   memberProfile: (EditableMemberProfile & { id: string; handle: string; display_name: string; avatar_url: string | null }) | null;
   unavailable?: boolean;
 }
 
-const { repositories, notifications, bridgeSources, subscriptions, payments, memberProfile, unavailable = false } = Astro.props;
+const { repositories, notifications, bridgeSources, linkedWork, showcaseMedia, showcaseUploadsRemaining, subscriptions, payments, memberProfile, unavailable = false } = Astro.props;
 const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
 const sections = [
   { id: 'work', label: 'Your work', icon: 'ph-folder-open' },
@@ -88,6 +91,20 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
           </div>
         </details>}
 
+        {linkedWork.length > 0 && <details class="workspace-disclosure" id="linked-work" open>
+          <summary>Linked work<small>Free external cards. Files remain with their provider.</small></summary>
+          <div class="workspace-disclosure__body">
+            <div class="account-list account-list--static linked-work-list">
+              {linkedWork.map((item) => <div data-linked-work-item={item.id}>
+                <span><strong>{item.title}</strong><small>{item.kind} · External · Hugging Face · {item.provider_repo_id}</small></span>
+                <span class="linked-work-list__actions"><a class="button button--secondary button--small" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open</a><button class="text-button" type="button" data-unlink-work={item.id}>Remove</button></span>
+              </div>)}
+            </div>
+            <p class="form-status" data-linked-work-status aria-live="polite"></p>
+            <a href="/bring-my-work">Add more linked work</a>
+          </div>
+        </details>}
+
         <section class="workspace-activity" id="activity" aria-labelledby="activity-title">
           <h3 id="activity-title">Recent activity</h3>
           {notifications.length ? <>
@@ -122,7 +139,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
         <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="account-title" tabindex="-1">Account</h2><p>Open the settings you want to change.</p></div></div>
         <details class="workspace-disclosure" name="workspace-account">
           <summary>Profile<small>Your introduction, interests and public links.</small></summary>
-          {memberProfile ? <MemberProfileWorkspace profile={memberProfile} /> : <p class="workspace-disclosure__body">Your public profile could not be loaded. Please refresh to try again.</p>}
+          {memberProfile ? <MemberProfileWorkspace profile={memberProfile} showcase={showcaseMedia} uploadsRemaining={showcaseUploadsRemaining} /> : <p class="workspace-disclosure__body">Your public profile could not be loaded. Please refresh to try again.</p>}
         </details>
         <details class="workspace-disclosure" id="identity" name="workspace-account">
           <summary>Identity and security<small>Login, name and photo.</small></summary>

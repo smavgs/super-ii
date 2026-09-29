@@ -18,6 +18,7 @@ type MemberProfile = {
   linkedin_url: string | null;
   website_url: string | null;
   youtube_url: string | null;
+  profile_kind: 'person' | 'studio' | 'company';
 };
 
 const authConfigured = authIsConfigured(Astro.locals);
@@ -37,6 +38,16 @@ let bridgeSources: Array<{
   sync_enabled: boolean;
 }> = [];
 let memberProfile: MemberProfile | null = null;
+let linkedWork: Array<{
+  id: string; kind: 'model' | 'dataset' | 'space'; provider: 'huggingface';
+  provider_repo_id: string; source_url: string; source_revision: string;
+  title: string; summary: string; license: string | null; updated_at: string;
+}> = [];
+let showcaseMedia: Array<{
+  id: string; title: string; caption: string; alt_text: string; link_url: string | null;
+  position: number; width: number; height: number;
+}> = [];
+let showcaseUploadsRemaining = 0;
 let unavailable = !sql;
 if (sql) {
   try {
@@ -44,7 +55,8 @@ if (sql) {
     if (profile) {
       const profileRows = await sql`
         select id, handle, display_name, bio, avatar_url, interests,
-               x_username, github_username, linkedin_url, website_url, youtube_url
+               x_username, github_username, linkedin_url, website_url, youtube_url,
+               profile_kind
         from app.profiles
         where id = ${profile.profileId}::uuid
         limit 1
@@ -107,6 +119,30 @@ if (sql) {
           and repository.owner_profile_id = ${profile.profileId}::uuid
         order by source.repository_id, source.imported_at desc
       ` as typeof bridgeSources;
+      linkedWork = await sql`
+        select item.id, item.kind, item.provider, item.provider_repo_id,
+               item.source_url, item.source_revision, item.title, item.summary,
+               item.license, item.updated_at
+        from app.external_catalog_items item
+        where item.status = 'active' and (
+          item.owner_profile_id = ${profile.profileId}::uuid
+          or exists (
+            select 1 from app.organization_members member
+            where member.organization_id = item.owner_organization_id
+              and member.profile_id = ${profile.profileId}::uuid
+              and member.role in ('owner','admin','maintainer')
+          )
+        ) order by item.updated_at desc limit 100
+      ` as typeof linkedWork;
+      showcaseMedia = await sql`
+        select id, title, caption, alt_text, link_url, position, width, height
+        from app.showcase_media
+        where owner_profile_id = ${profile.profileId}::uuid
+          and robot_id is null and status = 'active'
+        order by position
+      ` as typeof showcaseMedia;
+      const showcaseAllowance = await sql`select app.showcase_uploads_remaining() as remaining`;
+      showcaseUploadsRemaining = Number(showcaseAllowance[0]?.remaining ?? 0);
     }
   } catch {
     unavailable = true;
@@ -120,7 +156,7 @@ if (sql) {
       <section class="shell member-workspace"><h1>Workspace</h1><div class="account-card"><h2>Log in to continue</h2><p>Your work and account settings are available after authentication.</p><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in</button></SignInButton></div></section>
     </Show>
     <Show when="signed-in">
-      <MemberWorkspace {repositories} {notifications} {bridgeSources} {subscriptions} {payments} {memberProfile} {unavailable}>
+      <MemberWorkspace {repositories} {notifications} {bridgeSources} {linkedWork} {showcaseMedia} {showcaseUploadsRemaining} {subscriptions} {payments} {memberProfile} {unavailable}>
         <UserProfile slot="identity" routing="hash" appearance={{
           elements: { rootBox: 'sii-clerk-profile-root', cardBox: 'sii-clerk-profile-card' },
           variables: { colorPrimary: '#071a2f', borderRadius: '12px' },

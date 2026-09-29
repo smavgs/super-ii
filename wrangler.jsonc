@@ -11,6 +11,12 @@
     "directory": "./dist",
     "html_handling": "drop-trailing-slash"
   },
+  "r2_buckets": [
+    {
+      "binding": "SHOWCASE_MEDIA",
+      "bucket_name": "superii-showcase-media"
+    }
+  ],
   "routes": [
     {
       "pattern": "superii.site",

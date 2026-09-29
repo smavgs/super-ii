@@ -277,6 +277,16 @@ export function publicRobotDocument(row: Record<string, unknown>, origin: string
     audience: row.audience,
     status: row.status,
     visibility: row.visibility,
+    showcase: {
+      project_stage: row.project_stage,
+      capabilities: Array.isArray(row.capabilities) ? row.capabilities : [],
+      software_summary: row.software_summary ?? '',
+      links: Array.isArray(row.showcase_links) ? row.showcase_links : [],
+      images: Array.isArray(row.showcase_media) ? row.showcase_media.map((media) => ({
+        ...(media as Record<string, unknown>),
+        image_url: new URL(`/showcase-images/${encodeURIComponent(String((media as Record<string, unknown>).id ?? ''))}.jpg`, origin).toString(),
+      })) : [],
+    },
     version: {
       id: row.version_id,
       number: Number(row.version_number ?? 1),

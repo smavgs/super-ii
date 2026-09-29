@@ -14,15 +14,45 @@ const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.au
 const signedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
 if (signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 let publicRobots: Awaited<ReturnType<typeof listPublicRobots>> = [];
+let robotBuilders: Array<{ handle: string; display_name: string; avatar_url: string | null; profile_kind: string; robot_count: number }> = [];
+let robotOrganizations: Array<{ handle: string; display_name: string; logo_url: string | null; organization_type: string; robot_count: number }> = [];
+let robotResources: Array<{ robot_owner: string; robot_slug: string; robot_title: string; link_kind: string; label: string; url: string }> = [];
 let myRobots: Awaited<ReturnType<typeof listOwnedRobots>> = [];
 let hardware: Awaited<ReturnType<typeof listHardware>> = [];
 let myOrganizations: Array<{ id: string; handle: string; full_name: string; role: string }> = [];
 let robotPlan: RobotPlanTier = 'free';
+let showcaseUploadsRemaining = 0;
 let personalWorkUnavailable = true;
 let organizationOwners: Array<{ id: string; handle: string; name: string }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
-  try { publicRobots = await listPublicRobots(sql, { limit: 12 }); } catch { publicRobots = []; }
+  try {
+    [publicRobots, robotBuilders, robotOrganizations, robotResources] = await Promise.all([
+      listPublicRobots(sql, { limit: 12 }),
+      sql`select profile.handle, profile.display_name, profile.avatar_url, profile.profile_kind,
+                 count(robot.id)::integer as robot_count
+          from app.profiles profile join app.robots robot on robot.owner_profile_id = profile.id
+          where profile.is_public and robot.visibility = 'public' and robot.status = 'published'
+          group by profile.id order by count(robot.id) desc, max(robot.updated_at) desc limit 12`
+        .then((rows) => rows as typeof robotBuilders),
+      sql`select organization.handle, coalesce(organization.full_name, organization.name) as display_name,
+                 organization.logo_url, organization.organization_type,
+                 count(robot.id)::integer as robot_count
+          from app.organizations organization join app.robots robot on robot.owner_organization_id = organization.id
+          where organization.is_public and robot.visibility = 'public' and robot.status = 'published'
+          group by organization.id order by count(robot.id) desc, max(robot.updated_at) desc limit 12`
+        .then((rows) => rows as typeof robotOrganizations),
+      sql`select coalesce(profile.handle, organization.handle) as robot_owner,
+                 robot.slug as robot_slug, robot.title as robot_title,
+                 link.link_kind, link.label, link.url
+          from app.robot_links link join app.robots robot on robot.id = link.robot_id
+          left join app.profiles profile on profile.id = robot.owner_profile_id
+          left join app.organizations organization on organization.id = robot.owner_organization_id
+          where robot.visibility = 'public' and robot.status = 'published'
+          order by robot.updated_at desc, link.position limit 24`
+        .then((rows) => rows as typeof robotResources),
+    ]);
+  } catch { publicRobots = []; robotBuilders = []; robotOrganizations = []; robotResources = []; }
   if (signedIn) {
     try {
       const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
@@ -42,6 +72,8 @@ if (sql) {
           where m.profile_id = ${profile.profileId}::uuid order by o.handle
         ` as typeof myOrganizations;
         robotPlan = await activeRobotPlan(sql, profile);
+        const showcaseAllowance = await sql`select app.showcase_uploads_remaining() as remaining`;
+        showcaseUploadsRemaining = Number(showcaseAllowance[0]?.remaining ?? 0);
         myRobots = await listOwnedRobots(sql, profile.profileId);
         if (robotPlan !== 'free') hardware = await listHardware(sql, profile.profileId);
         personalWorkUnavailable = false;
@@ -66,7 +98,7 @@ const reference = robotCatalog.referenceRobots[0];
           <p class="robot-hero__lead">Start with what you want it to do. Super ii turns source-backed components, interfaces and open questions into a Robot you can inspect, version and share.</p>
           <div class="button-row">
             <a class="button button--dark" href="#make">Make Robot <i class="ph ph-arrow-down" aria-hidden="true"></i></a>
-            <a class="button button--secondary" href="#components">Explore components</a>
+            <a class="button button--secondary" href="#explore-robots">Explore Robots</a>
           </div>
           <p class="robot-hero__rule"><span>Evidence stays attached.</span> Unknown is a real result. Compatibility ranking is never pay-to-win.</p>
         </div>
@@ -85,7 +117,7 @@ const reference = robotCatalog.referenceRobots[0];
     {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-robots">
       <summary>My robots and hardware<small>Your saved plans, versions and private inventory.</small></summary>
       <div class="workspace-disclosure__body">
-        {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} />}
+        {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} {showcaseUploadsRemaining} />}
       </div>
     </details></div>}
 
@@ -97,6 +129,10 @@ const reference = robotCatalog.referenceRobots[0];
         <span><b>04</b> Human + agent access</span>
       </div>
     </section>
+
+    <nav class="robot-discovery-nav shell" aria-label="Robot discovery">
+      <a href="#explore-robots">🤖 Robots</a><a href="#robot-builders">🧑‍🔧 Builders</a><a href="#robot-companies">🏢 Companies</a><a href="#robot-software">💻 Software</a><a href="#components">🧩 Components</a>
+    </nav>
 
     <section class="robot-maker" id="make">
       <div class="shell robot-maker__grid">
@@ -215,7 +251,7 @@ const reference = robotCatalog.referenceRobots[0];
       </div>
     </section>
 
-    <section class="robot-public">
+    <section class="robot-public" id="explore-robots">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Public Robots</p><h2>Versions other people—and agents—can inspect.</h2></div><a class="button button--secondary" href="/mcp/robot">Connect an agent</a></div>
         {publicRobots.length ? (
@@ -225,6 +261,33 @@ const reference = robotCatalog.referenceRobots[0];
         ) : (
           <div class="robot-empty"><strong>No public community Robot has been published yet.</strong><p>Rover One above is a labelled reference—not invented community activity. Your first public Robot can begin here.</p><a href="#make">Make the first one <i class="ph ph-arrow-up" aria-hidden="true"></i></a></div>
         )}
+      </div>
+    </section>
+
+    <section class="robot-community" id="robot-builders">
+      <div class="shell">
+        <div class="robot-section-heading"><div><p class="eyebrow">Robotics community 🧑‍🔧</p><h2>Builders and studios making real Robots.</h2></div><p>Public profiles are free. Studio and company labels describe a single-owner profile; Organizations provide shared team roles.</p></div>
+        {robotBuilders.length > 0 ? <div class="robot-owner-grid">{robotBuilders.map((builder) => <a href={`/people/${encodeURIComponent(builder.handle)}`}>
+          {builder.avatar_url ? <img src={builder.avatar_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span aria-hidden="true">{builder.display_name.slice(0, 1)}</span>}
+          <div><small>{builder.profile_kind === 'person' ? 'Builder' : `${builder.profile_kind} · single owner`}</small><strong>{builder.display_name}</strong><p>@{builder.handle} · {builder.robot_count} {builder.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+        </a>)}</div> : <div class="robot-empty"><strong>The first public builder directory entry can be yours.</strong><p>Publish a public Robot to appear here automatically.</p></div>}
+      </div>
+    </section>
+
+    <section class="robot-community robot-community--soft" id="robot-companies">
+      <div class="shell">
+        <div class="robot-section-heading"><div><p class="eyebrow">Teams and companies 🏢</p><h2>Organization Robot catalogues.</h2></div><a class="button button--secondary" href="/organizations">Explore all organizations</a></div>
+        {robotOrganizations.length > 0 ? <div class="robot-owner-grid">{robotOrganizations.map((organization) => <a href={`/organizations/${encodeURIComponent(organization.handle)}`}>
+          {organization.logo_url ? <img src={organization.logo_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span aria-hidden="true">{organization.display_name.slice(0, 1)}</span>}
+          <div><small>{organization.organization_type} organization</small><strong>{organization.display_name}</strong><p>@{organization.handle} · {organization.robot_count} {organization.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+        </a>)}</div> : <div class="robot-empty"><strong>No organization Robot catalogue is public yet.</strong><p>Team organizations can publish a shared Robot when they are ready.</p></div>}
+      </div>
+    </section>
+
+    <section class="robot-community" id="robot-software">
+      <div class="shell">
+        <div class="robot-section-heading"><div><p class="eyebrow">Software and open resources 💻</p><h2>Follow the tools behind public Robots.</h2></div><p>Links are supplied by Robot builders and open on the original project site.</p></div>
+        {robotResources.length > 0 ? <div class="robot-resource-catalog">{robotResources.map((resource) => <article><span>{resource.link_kind}</span><h3>{resource.label}</h3><p>Used by <a href={`/robot/${encodeURIComponent(resource.robot_owner)}/${encodeURIComponent(resource.robot_slug)}`}>{resource.robot_title}</a></p><a href={resource.url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open resource <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="robot-empty"><strong>No public Robot software links yet.</strong><p>Robot owners can add source, software, docs, CAD, model, dataset, app, and video links.</p></div>}
       </div>
     </section>
 

@@ -475,6 +475,8 @@ const pricingRussian: Record<string, string> = {
   'Pay with USDC': 'Оплатить в USDC',
   'Request a proposal': 'Запросить предложение',
   'Public profile and organizations': 'Публичный профиль и организации',
+  '3-image public work showcase': 'Публичная витрина работ из 3 изображений',
+  'Link public Hugging Face work': 'Ссылки на публичные работы Hugging Face',
   'Unlimited public repositories': 'Неограниченное число публичных репозиториев',
   'Create as many public repositories as you need. Included hosted storage is limited to 5 GB.':
     'Создавайте сколько угодно публичных репозиториев. Включённое облачное хранилище ограничено 5 ГБ.',
@@ -2695,6 +2697,82 @@ const assistantContinuityRussian: Record<string, string> = {
 
 const numericTokens = (value: string): string[] => value.match(/\d+/g) ?? [];
 
+const linkedShowcaseRussian: Record<string, string> = {
+  'Source': 'Источник',
+  'Origin': 'Происхождение',
+  'All public work': 'Все публичные проекты',
+  'Reviewed on Super ii': 'Проверено в Super ii',
+  'Linked externally': 'Внешние ссылки',
+  'External cards send you to the provider. Their files are not hosted or reviewed by Super ii.':
+    'Внешние карточки ведут на сайт поставщика. Их файлы не размещаются и не проверяются Super ii.',
+  'External · Hugging Face': 'Внешний источник · Hugging Face',
+  'Open on Hugging Face': 'Открыть на Hugging Face',
+  'Downloads reported by Hugging Face': 'Загрузки по данным Hugging Face',
+  'Likes reported by Hugging Face': 'Отметки «Нравится» по данным Hugging Face',
+  'Choose what happens': 'Выберите действие',
+  'Show on': 'Показывать в',
+  'My profile': 'Мой профиль',
+  'Add to profile': 'Добавить в профиль',
+  'Add to profile creates a free external card and keeps every file on Hugging Face. Import selected copies an exact revision into Super ii for checks and reviewed publishing.':
+    '«Добавить в профиль» создаёт бесплатную внешнюю карточку, а все файлы остаются на Hugging Face. «Импортировать выбранное» копирует точную версию в Super ii для проверки и последующей публикации.',
+  'Linked work': 'Связанные проекты',
+  'Free external cards. Files remain with their provider.': 'Бесплатные внешние карточки. Файлы остаются у поставщика.',
+  'Add more linked work': 'Добавить связанные проекты',
+  'Profile type': 'Тип профиля',
+  'Person': 'Человек',
+  'Independent studio': 'Независимая студия',
+  'Single-owner company': 'Компания с одним владельцем',
+  'Studio and company profiles remain single-owner member profiles. Use an Organization when you need shared roles or verified team governance.':
+    'Профили студии и компании остаются личными профилями одного владельца. Создайте организацию, если нужны общие роли или подтверждённое управление командой.',
+  'Public Showcase ✨': 'Публичная витрина ✨',
+  'Three pieces of work': 'Три избранные работы',
+  'Choose a small set of images that quickly show what you or your company builds. This is a curated portfolio, not a social feed.':
+    'Выберите небольшую подборку изображений, которая быстро покажет, что создаёте вы или ваша компания. Это отобранное портфолио, а не социальная лента.',
+  'Title': 'Название',
+  'Caption': 'Подпись',
+  'Image description': 'Описание изображения',
+  'Optional link': 'Необязательная ссылка',
+  'Position': 'Позиция',
+  'Open showcase slot': 'Свободное место витрины',
+  'Describe the image for people using screen readers': 'Опишите изображение для пользователей программ чтения с экрана',
+  'Choose an image': 'Выберите изображение',
+  'Add to Showcase': 'Добавить на витрину',
+  'JPG, PNG, WebP and phone photos are cropped to 8:5, re-encoded, and stripped of camera metadata before public storage.':
+    'Файлы JPG, PNG, WebP и фотографии с телефона обрезаются до 8:5, перекодируются и очищаются от метаданных камеры перед публичным размещением.',
+  'Image uploads are complete. Existing titles, descriptions, links, and ordering remain editable.':
+    'Загрузка изображений завершена. Названия, описания, ссылки и порядок уже добавленных изображений можно редактировать.',
+  'Showcase ✨': 'Витрина ✨',
+  'Selected work': 'Избранные работы',
+  'What we build': 'Что мы создаём',
+  'Single-owner company profile': 'Профиль компании с одним владельцем',
+  'Independent studio profile': 'Профиль независимой студии',
+  'Company · single owner': 'Компания · один владелец',
+  'Studio · single owner': 'Студия · один владелец',
+  '3-image public work showcase': 'Публичная витрина из 3 изображений',
+  'Link public Hugging Face work': 'Ссылки на публичные проекты Hugging Face',
+  'Profile and work showcases:': 'Профиль и витрины работ:',
+  'your person, studio, or single-owner company profile type and public work-showcase images with their descriptions, ordering, and optional links.':
+    'тип личного профиля, независимой студии или компании с одним владельцем, а также публичные изображения работ с описанием, порядком и необязательными ссылками.',
+  'If you add linked external work instead of importing it, Super ii stores bounded public metadata and an outbound provider link; the provider keeps and serves the files.':
+    'Если вместо импорта вы добавляете ссылку на внешний проект, Super ii хранит ограниченный набор публичных метаданных и исходящую ссылку; файлы хранит и отдаёт поставщик.',
+  'Verify ownership of public provider namespaces, display metadata-only external-work cards, and publish curated profile, organization, and Robot showcases that you choose.':
+    'Проверять владение публичными пространствами имён поставщиков, показывать внешние карточки только с метаданными и публиковать выбранные вами витрины профиля, организации и Robot.',
+  'Public profile types, work-showcase images, linked external-work cards, Robots, and linked provider metadata are also public by design. Other people and services may index, copy, quote, retain, or follow that information to the third-party provider.':
+    'Типы публичных профилей, изображения витрины работ, внешние карточки, Robots и связанные метаданные поставщика также являются публичными по замыслу. Другие люди и сервисы могут индексировать, копировать, цитировать, сохранять эти данные или переходить по ним на сайт стороннего поставщика.',
+  'Linked external-work cards and public showcase images remain until you remove them, close the account, or they are removed under safety or legal retention rules. Removal stops Super ii from presenting the active card or resolving the active image, but cannot erase copies already made by other people, caches, or the third-party source.':
+    'Внешние карточки и публичные изображения витрины сохраняются, пока вы их не удалите, не закроете аккаунт или пока они не будут удалены по правилам безопасности или хранения. После удаления Super ii перестаёт показывать активную карточку или изображение, но не может удалить уже сделанные другими людьми копии, кэш или данные у стороннего источника.',
+  'Use Workspace to edit or remove public showcase images and linked external-work cards.':
+    'Используйте рабочее пространство, чтобы редактировать или удалять публичные изображения витрины и внешние карточки.',
+  'Public showcase image bytes are stored in private object storage and served through an owner-aware public image resolver. Showcase images are intentionally public and are not encrypted from viewers.':
+    'Файлы изображений витрины хранятся в закрытом объектном хранилище и выдаются через публичный маршрут с проверкой владельца. Изображения витрины намеренно публичны и не шифруются от посетителей.',
+  'External Hugging Face cards require a verified provider namespace and server-side exact-revision reinspection. They remain distinctly labelled external links and never inherit Super ii review or hosting claims.':
+    'Для внешних карточек Hugging Face требуется подтверждённое пространство имён поставщика и повторная серверная проверка точной версии. Они всегда явно обозначаются как внешние ссылки и не получают отметку проверки или размещения Super ii.',
+  'Public Showcase uploads are browser-reencoded, server-side metadata stripped, dimension/size/hash validated, limited to three successful uploads for the lifetime of each member account, and stored in a private R2 bucket. Removal never restores an upload. A fixed application ceiling bounds active storage. The public route resolves an object only while its profile, organization, or Robot owner remains public, then uses a content-hash-normalized edge cache to avoid repeat object reads.':
+    'Загрузки для публичной витрины перекодируются в браузере, очищаются от метаданных на сервере, проверяются по размеру, разрешению и хэшу и ограничиваются тремя успешными загрузками за всё время жизни аккаунта участника. Удаление изображения не возвращает загрузку. Фиксированный прикладной предел ограничивает активное хранилище. Публичный маршрут выдаёт объект только пока его профиль, организация или Robot остаются публичными, а пограничный кэш по хэшу содержимого сокращает повторные чтения.',
+  'Linked-work records contain ownership-verified public provider metadata and outbound URLs, not provider files. Showcase image bytes are held in Cloudflare R2 and are served only through a database-authorized Super ii route; image ownership, descriptions, ordering and optional outbound links are held in Postgres.':
+    'Записи связанных проектов содержат подтверждённые владельцем публичные метаданные поставщика и исходящие URL, но не его файлы. Изображения витрины хранятся в Cloudflare R2 и выдаются только через маршрут Super ii с авторизацией по базе данных; владелец, описания, порядок и необязательные внешние ссылки хранятся в Postgres.',
+};
+
 /**
  * Machine translation must never invent, remove, change, or reorder digits.
  * This deliberately treats even formatting-only changes conservatively: an
@@ -2734,6 +2812,7 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
   ...buildShipRussian,
   ...assistantContinuityRussian,
   ...connectionRussian,
+  ...linkedShowcaseRussian,
 });
 export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedRussian,

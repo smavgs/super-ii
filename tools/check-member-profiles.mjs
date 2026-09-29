@@ -7,6 +7,7 @@ import { parseEditableMemberProfile } from '../src/lib/member-profile.ts';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const validInput = {
+  profile_kind: 'studio',
   bio: 'Building open, local AI tools.',
   interests: ['Local AI', 'Agents', 'local ai'],
   x_username: '@superiisite',
@@ -18,6 +19,7 @@ const validInput = {
 const valid = parseEditableMemberProfile(validInput);
 assert.equal(valid.ok, true);
 if (valid.ok) {
+  assert.equal(valid.value.profile_kind, 'studio');
   assert.equal(valid.value.x_username, 'superiisite');
   assert.deepEqual(valid.value.interests, ['Local AI', 'Agents']);
   assert.equal(valid.value.website_url, 'https://superii.site/');
@@ -25,6 +27,7 @@ if (valid.ok) {
 
 for (const input of [
   { ...validInput, unexpected: true },
+  { ...validInput, profile_kind: 'laboratory' },
   { ...validInput, interests: Array.from({ length: 13 }, (_, index) => `Interest ${index}`) },
   { ...validInput, bio: 'x'.repeat(501) },
   { ...validInput, x_username: 'not a handle!' },

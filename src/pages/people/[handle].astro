@@ -3,11 +3,16 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { repositoryPath, type PublicRepository } from '@/lib/catalog';
+import LinkedWorkGrid from '@/components/LinkedWorkGrid.astro';
+import ShowcaseGallery, { type ShowcaseItem } from '@/components/ShowcaseGallery.astro';
+import { listOwnerLinkedWork, type LinkedWorkItem } from '@/lib/linked-work';
+import { listPublicShowcase } from '@/lib/showcase-media';
 
 type PublicProfile = {
   id: string;
   handle: string;
   display_name: string;
+  profile_kind: 'person' | 'studio' | 'company';
   bio: string | null;
   avatar_url: string | null;
   interests: string[];
@@ -36,11 +41,13 @@ let proposals: ProfileProposal[] = [];
 let awards: ProfileAward[] = [];
 let fameNumber: number | null = null;
 let viewerProfileId: string | null = null;
+let linkedWork: LinkedWorkItem[] = [];
+let showcase: ShowcaseItem[] = [];
 if (sql) {
   try {
     viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
     const profiles = await sql`
-      select profile.id, profile.handle, profile.display_name, profile.bio,
+      select profile.id, profile.handle, profile.display_name, profile.profile_kind, profile.bio,
              profile.avatar_url, profile.interests, profile.x_username,
              profile.github_username, profile.linkedin_url, profile.website_url,
              profile.youtube_url, profile.created_at,
@@ -100,6 +107,10 @@ if (sql) {
         where profile_id = ${profile.id}::uuid and status = 'active' limit 1
       `;
       fameNumber = fame[0]?.slot_number ? Number(fame[0].slot_number) : null;
+      [linkedWork, showcase] = await Promise.all([
+        listOwnerLinkedWork(sql, 'person', profile.id),
+        listPublicShowcase(sql, 'person', profile.id),
+      ]);
     }
   } catch {
     profile = null;
@@ -123,12 +134,13 @@ const socialLinks: SocialLink[] = profile ? [
       <header class="person-header">
         {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar" aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
         <div class="person-header__identity">
-          <p class="eyebrow">Public member profile</p>
+          <p class="eyebrow">{profile.profile_kind === 'company' ? 'Single-owner company profile' : profile.profile_kind === 'studio' ? 'Independent studio profile' : 'Public member profile'}</p>
           <h1>{profile.display_name}</h1>
           <p class="person-handle">@{profile.handle}</p>
           {profile.bio && <p class="person-bio">{profile.bio}</p>}
           {profile.interests.length > 0 && <ul class="person-interests" aria-label="Interests">{profile.interests.map((interest) => <li>{interest}</li>)}</ul>}
           <div class="profile-badges">
+            {profile.profile_kind !== 'person' && <span class="profile-kind-badge">{profile.profile_kind === 'company' ? 'Company · single owner' : 'Studio · single owner'}</span>}
             {fameNumber && <a class="fame-badge" href="/fame">FAME ✦ · #{String(fameNumber).padStart(3, '0')}</a>}
             {awards.map((award) => <a class="leader-badge" href={`/proposals/${award.proposal_slug}`} title={`${award.proposal_title} · ${award.valid_human_votes} valid votes`}>{medal(award.rank)} Community #{award.rank} · {new Date(award.award_month).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric', timeZone: 'UTC' })}</a>)}
           </div>
@@ -152,6 +164,10 @@ const socialLinks: SocialLink[] = profile ? [
           <p class="person-action-status" data-profile-action-status aria-live="polite"></p>
         </div>
       </header>
+
+      <ShowcaseGallery items={showcase} title={profile.profile_kind === 'person' ? 'Selected work' : 'What we build'} />
+
+      <LinkedWorkGrid items={linkedWork} heading="Linked work" />
 
       <div class="person-layout">
         <section class="repository-section">
