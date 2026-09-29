@@ -1344,6 +1344,7 @@ export const showcaseMedia = app.table(
   'showcase_media',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    uploadedByProfileId: uuid('uploaded_by_profile_id').notNull().references(() => profiles.id, { onDelete: 'cascade' }),
     ownerProfileId: uuid('owner_profile_id').references(() => profiles.id, { onDelete: 'cascade' }),
     ownerOrganizationId: uuid('owner_organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
     robotId: uuid('robot_id'),
@@ -1365,6 +1366,7 @@ export const showcaseMedia = app.table(
   (table) => [
     index('showcase_media_profile_idx').on(table.ownerProfileId, table.robotId, table.position),
     index('showcase_media_organization_idx').on(table.ownerOrganizationId, table.robotId, table.position),
+    index('showcase_media_uploader_idx').on(table.uploadedByProfileId, table.createdAt),
   ],
 );
 

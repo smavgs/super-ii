@@ -58,11 +58,13 @@ capabilities, a software summary and up to 12 labelled HTTPS links. These are
 owner-supplied descriptions, not Super ii verification or compatibility
 evidence.
 
-Profiles, organizations and Robots may each expose at most three curated work
-images. The browser center-crops and re-encodes an image; the Worker strips
+Members can distribute their three lifetime Showcase uploads across profiles,
+organizations, and Robots they may edit. Removing an image does not restore an
+upload. The browser center-crops and re-encodes an image; the Worker strips
 JPEG metadata again, verifies dimensions and a 600 KB ceiling, hashes the
 bytes, and stores them through a private Cloudflare R2 binding. PostgreSQL
-stores only the owner, image metadata, optional HTTPS destination and order.
+stores the uploader ledger, owner, image metadata, optional HTTPS destination,
+and order.
 The public image gateway resolves an object only while its owning profile,
 organization or Robot remains public. The R2 bucket is not a public origin.
 

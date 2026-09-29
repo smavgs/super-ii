@@ -2726,8 +2726,8 @@ const linkedShowcaseRussian: Record<string, string> = {
     'Профили студии и компании остаются личными профилями одного владельца. Создайте организацию, если нужны общие роли или подтверждённое управление командой.',
   'Public Showcase ✨': 'Публичная витрина ✨',
   'Three pieces of work': 'Три избранные работы',
-  'Choose up to three images that quickly show what you or your company builds. This is a curated portfolio, not a social feed.':
-    'Выберите до трёх изображений, которые быстро покажут, что создаёте вы или ваша компания. Это отобранное портфолио, а не социальная лента.',
+  'Choose a small set of images that quickly show what you or your company builds. This is a curated portfolio, not a social feed.':
+    'Выберите небольшую подборку изображений, которая быстро покажет, что создаёте вы или ваша компания. Это отобранное портфолио, а не социальная лента.',
   'Title': 'Название',
   'Caption': 'Подпись',
   'Image description': 'Описание изображения',
@@ -2739,6 +2739,8 @@ const linkedShowcaseRussian: Record<string, string> = {
   'Add to Showcase': 'Добавить на витрину',
   'JPG, PNG, WebP and phone photos are cropped to 8:5, re-encoded, and stripped of camera metadata before public storage.':
     'Файлы JPG, PNG, WebP и фотографии с телефона обрезаются до 8:5, перекодируются и очищаются от метаданных камеры перед публичным размещением.',
+  'Image uploads are complete. Existing titles, descriptions, links, and ordering remain editable.':
+    'Загрузка изображений завершена. Названия, описания, ссылки и порядок уже добавленных изображений можно редактировать.',
   'Showcase ✨': 'Витрина ✨',
   'Selected work': 'Избранные работы',
   'What we build': 'Что мы создаём',
@@ -2749,8 +2751,8 @@ const linkedShowcaseRussian: Record<string, string> = {
   '3-image public work showcase': 'Публичная витрина из 3 изображений',
   'Link public Hugging Face work': 'Ссылки на публичные проекты Hugging Face',
   'Profile and work showcases:': 'Профиль и витрины работ:',
-  'your person, studio, or single-owner company profile type and up to three public work-showcase images with their descriptions, ordering, and optional links.':
-    'тип личного профиля, независимой студии или компании с одним владельцем, а также до трёх публичных изображений работ с описанием, порядком и необязательными ссылками.',
+  'your person, studio, or single-owner company profile type and public work-showcase images with their descriptions, ordering, and optional links.':
+    'тип личного профиля, независимой студии или компании с одним владельцем, а также публичные изображения работ с описанием, порядком и необязательными ссылками.',
   'If you add linked external work instead of importing it, Super ii stores bounded public metadata and an outbound provider link; the provider keeps and serves the files.':
     'Если вместо импорта вы добавляете ссылку на внешний проект, Super ii хранит ограниченный набор публичных метаданных и исходящую ссылку; файлы хранит и отдаёт поставщик.',
   'Verify ownership of public provider namespaces, display metadata-only external-work cards, and publish curated profile, organization, and Robot showcases that you choose.':
@@ -2765,8 +2767,8 @@ const linkedShowcaseRussian: Record<string, string> = {
     'Файлы изображений витрины хранятся в закрытом объектном хранилище и выдаются через публичный маршрут с проверкой владельца. Изображения витрины намеренно публичны и не шифруются от посетителей.',
   'External Hugging Face cards require a verified provider namespace and server-side exact-revision reinspection. They remain distinctly labelled external links and never inherit Super ii review or hosting claims.':
     'Для внешних карточек Hugging Face требуется подтверждённое пространство имён поставщика и повторная серверная проверка точной версии. Они всегда явно обозначаются как внешние ссылки и не получают отметку проверки или размещения Super ii.',
-  'Public Showcase uploads are browser-reencoded, server-side metadata stripped, dimension/size/hash validated, capped at three per owner scope, and stored in a private R2 bucket. The public route resolves an object only while its profile, organization, or Robot owner remains public.':
-    'Загрузки для публичной витрины перекодируются в браузере, очищаются от метаданных на сервере, проверяются по размеру, разрешению и хэшу, ограничиваются тремя изображениями на владельца и хранятся в закрытом бакете R2. Публичный маршрут выдаёт объект только пока профиль, организация или владелец Robot остаётся публичным.',
+  'Public Showcase uploads are browser-reencoded, server-side metadata stripped, dimension/size/hash validated, limited to three successful uploads for the lifetime of each member account, and stored in a private R2 bucket. Removal never restores an upload. A fixed application ceiling bounds active storage. The public route resolves an object only while its profile, organization, or Robot owner remains public, then uses a content-hash-normalized edge cache to avoid repeat object reads.':
+    'Загрузки для публичной витрины перекодируются в браузере, очищаются от метаданных на сервере, проверяются по размеру, разрешению и хэшу и ограничиваются тремя успешными загрузками за всё время жизни аккаунта участника. Удаление изображения не возвращает загрузку. Фиксированный прикладной предел ограничивает активное хранилище. Публичный маршрут выдаёт объект только пока его профиль, организация или Robot остаются публичными, а пограничный кэш по хэшу содержимого сокращает повторные чтения.',
   'Linked-work records contain ownership-verified public provider metadata and outbound URLs, not provider files. Showcase image bytes are held in Cloudflare R2 and are served only through a database-authorized Super ii route; image ownership, descriptions, ordering and optional outbound links are held in Postgres.':
     'Записи связанных проектов содержат подтверждённые владельцем публичные метаданные поставщика и исходящие URL, но не его файлы. Изображения витрины хранятся в Cloudflare R2 и выдаются только через маршрут Super ii с авторизацией по базе данных; владелец, описания, порядок и необязательные внешние ссылки хранятся в Postgres.',
 };

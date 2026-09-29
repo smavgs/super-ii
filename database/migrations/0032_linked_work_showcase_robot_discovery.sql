@@ -51,6 +51,7 @@ create index if not exists external_catalog_items_public_idx
 
 create table if not exists app.showcase_media (
   id uuid primary key default gen_random_uuid(),
+  uploaded_by_profile_id uuid not null references app.profiles(id) on delete cascade,
   owner_profile_id uuid references app.profiles(id) on delete cascade,
   owner_organization_id uuid references app.organizations(id) on delete cascade,
   robot_id uuid references app.robots(id) on delete cascade,
@@ -88,6 +89,8 @@ create index if not exists showcase_media_profile_idx
   on app.showcase_media (owner_profile_id, robot_id, position) where status = 'active';
 create index if not exists showcase_media_organization_idx
   on app.showcase_media (owner_organization_id, robot_id, position) where status = 'active';
+create index if not exists showcase_media_uploader_idx
+  on app.showcase_media (uploaded_by_profile_id, created_at);
 
 alter table app.robots add column if not exists project_stage text not null default 'concept';
 alter table app.robots add column if not exists capabilities text[] not null default '{}';
@@ -210,6 +213,21 @@ as $showcase_storage$
       where media.status = 'active'
     ), 0) + p_byte_size <= 7500000000
 $showcase_storage$;
+
+create or replace function app.showcase_uploads_remaining()
+returns smallint
+language sql stable security definer
+set search_path = app, pg_catalog
+as $showcase_remaining$
+  select case
+    when not app.context_is_verified() or app.current_profile_id() is null then 0::smallint
+    else greatest(0, 3 - (
+      select count(*)::integer
+      from app.showcase_media media
+      where media.uploaded_by_profile_id = app.current_profile_id()
+    ))::smallint
+  end
+$showcase_remaining$;
 
 create or replace function app.link_external_catalog_item(
   p_external_identity_id uuid,
@@ -397,6 +415,7 @@ declare
   scope_key text;
   expected_key_prefix text;
   current_storage bigint;
+  uploads_used integer;
 begin
   if not app.context_is_verified() or actor_profile is null then
     raise exception 'authentication_required' using errcode = '42501';
@@ -433,7 +452,15 @@ begin
   select coalesce(sum(media.byte_size), 0) into current_storage
   from app.showcase_media media where media.status = 'active';
   if current_storage + p_byte_size > 7500000000 then
-    raise exception 'showcase_free_storage_limit_reached' using errcode = '53100';
+    raise exception 'showcase_storage_limit_reached' using errcode = '53100';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('showcase:uploader:' || actor_profile::text, 0));
+  select count(*)::integer into uploads_used
+  from app.showcase_media media
+  where media.uploaded_by_profile_id = actor_profile;
+  if uploads_used >= 3 then
+    raise exception 'showcase_upload_limit_reached' using errcode = '23514';
   end if;
 
   scope_key := coalesce(p_robot_id::text, coalesce(p_owner_organization_id::text, actor_profile::text) || ':profile');
@@ -456,9 +483,10 @@ begin
     raise exception 'showcase_media_limit_reached' using errcode = '23514';
   end if;
   insert into app.showcase_media (
-    owner_profile_id, owner_organization_id, robot_id, object_key, content_hash,
+    uploaded_by_profile_id, owner_profile_id, owner_organization_id, robot_id, object_key, content_hash,
     mime_type, byte_size, width, height, title, caption, alt_text, link_url, position
   ) values (
+    actor_profile,
     case when p_owner_organization_id is null then actor_profile end,
     p_owner_organization_id, p_robot_id, p_object_key, p_content_hash,
     'image/jpeg', p_byte_size, p_width, p_height, coalesce(p_title, ''),
@@ -542,8 +570,10 @@ as $showcase_delete$
 declare actor_profile uuid := app.current_profile_id(); deleted_key text;
 begin
   if not app.context_is_verified() or actor_profile is null then return null; end if;
-  delete from app.showcase_media media
-  where media.id = p_media_id and (
+  update app.showcase_media media
+  set status = 'removed', title = '', caption = '', alt_text = 'Removed image',
+      link_url = null, updated_at = now()
+  where media.id = p_media_id and media.status = 'active' and (
     media.owner_profile_id = actor_profile
     or app.can_access_organization(media.owner_organization_id, true)
   ) returning media.object_key into deleted_key;
@@ -650,6 +680,7 @@ declare signature text;
 begin
   foreach signature in array array[
     'app.showcase_storage_available(integer)',
+    'app.showcase_uploads_remaining()',
     'app.link_external_catalog_item(uuid,uuid,repository_kind,text,text,text,text,text,text,integer,bigint,jsonb)',
     'app.unlink_external_catalog_item(uuid)',
     'app.create_showcase_media(uuid,uuid,text,text,integer,integer,integer,text,text,text,text)',
@@ -668,7 +699,7 @@ $function_security$;
 comment on table app.external_catalog_items is
   'Ownership-verified provider metadata and outbound links; never a Super ii repository or file mirror';
 comment on table app.showcase_media is
-  'Metadata for at most three public R2 images per profile, organization, or Robot scope';
+  'Public R2 image metadata with a lifetime limit of three uploads per member across profile, organization, and Robot scopes';
 comment on function app.resolve_public_showcase_media(uuid) is
   'Resolves an R2 object key only while its owning profile, organization, or Robot remains public';
 

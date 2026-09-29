@@ -47,6 +47,7 @@ let showcaseMedia: Array<{
   id: string; title: string; caption: string; alt_text: string; link_url: string | null;
   position: number; width: number; height: number;
 }> = [];
+let showcaseUploadsRemaining = 0;
 let unavailable = !sql;
 if (sql) {
   try {
@@ -140,6 +141,8 @@ if (sql) {
           and robot_id is null and status = 'active'
         order by position
       ` as typeof showcaseMedia;
+      const showcaseAllowance = await sql`select app.showcase_uploads_remaining() as remaining`;
+      showcaseUploadsRemaining = Number(showcaseAllowance[0]?.remaining ?? 0);
     }
   } catch {
     unavailable = true;
@@ -153,7 +156,7 @@ if (sql) {
       <section class="shell member-workspace"><h1>Workspace</h1><div class="account-card"><h2>Log in to continue</h2><p>Your work and account settings are available after authentication.</p><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in</button></SignInButton></div></section>
     </Show>
     <Show when="signed-in">
-      <MemberWorkspace {repositories} {notifications} {bridgeSources} {linkedWork} {showcaseMedia} {subscriptions} {payments} {memberProfile} {unavailable}>
+      <MemberWorkspace {repositories} {notifications} {bridgeSources} {linkedWork} {showcaseMedia} {showcaseUploadsRemaining} {subscriptions} {payments} {memberProfile} {unavailable}>
         <UserProfile slot="identity" routing="hash" appearance={{
           elements: { rootBox: 'sii-clerk-profile-root', cardBox: 'sii-clerk-profile-card' },
           variables: { colorPrimary: '#071a2f', borderRadius: '12px' },

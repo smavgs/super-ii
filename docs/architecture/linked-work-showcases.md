@@ -1,6 +1,6 @@
 # Linked work and public showcase architecture
 
-This release adds two free public-profile benefits without weakening the
+This release adds two public-profile capabilities without weakening the
 reviewed repository path.
 
 ## Two truthful origins
@@ -29,28 +29,29 @@ positions. Uploads follow this sequence:
 2. the Worker enforces origin, account, rate and 600 KB body limits;
 3. the Worker strips JPEG metadata again, validates dimensions and hashes the
    final bytes;
-4. a database preflight pauses new uploads before active Showcase storage can
-   approach the included R2 allowance;
+4. database preflights enforce the member's remaining upload count and pause
+   writes at the operational storage ceiling;
 5. the immutable UUID object is written to the private `SHOWCASE_MEDIA` R2
    binding; and
-6. a narrow Postgres function rechecks the global ceiling, verifies the owner and atomically allocates one
-   of three positions.
+6. a narrow Postgres function rechecks the global ceiling, verifies the owner,
+   enforces three successful uploads for the lifetime of the member account,
+   and atomically allocates a display position.
 
 If metadata persistence fails, the Worker deletes the just-written object.
-Deleting a showcase first resolves an owner-authorized target, requires the R2
-deletion to succeed and only then removes the database reference. Public reads never accept a raw R2 key: the
+Removing a showcase first resolves an owner-authorized target, requires the R2
+deletion to succeed and then marks its scrubbed database record removed. The
+record keeps only the accounting evidence needed to ensure removal never
+restores an upload. Public reads never accept a raw R2 key: the
 image route asks `resolve_public_showcase_media`, which returns a key only while
 the owning profile/organization is public or the owning Robot is both public
 and published.
 
-The application ceiling is 7.5 GB of active Showcase objects, leaving 25% of
-the included 10 GB-month Standard-storage allowance as operational headroom.
+The application ceiling is 7.5 GB of active Showcase objects.
 After every public-visibility check, object bodies use a content-hash-normalized
 edge-cache key for 30 days while browsers receive a five-minute cache window.
 Repeated URLs and query strings therefore do not force repeated R2 reads, and a
 profile or Robot made private remains fail-closed because the database check is
-never bypassed. Cloudflare billing alerts remain monitoring controls rather
-than hard caps, so uploads pause inside Super ii before the provider allowance.
+never bypassed.
 
 ## Security and abuse boundaries
 
@@ -68,7 +69,8 @@ than hard caps, so uploads pause inside Super ii before the provider allowance.
   through the public image gateway.
 
 The migration smoke test exercises verified and rejected namespaces, the
-three-image ceiling, collision-safe reordering, fail-closed public resolution,
-Robot metadata/links, unlinking and deletion under the least-privilege web
-role. Static contracts, TypeScript/Astro checks and the production build are
-also release requirements.
+three-upload lifetime member ceiling across profile and Robot scopes, refusal
+to restore an upload after removal, collision-safe reordering, fail-closed
+public resolution, Robot metadata/links, unlinking and deletion under the
+least-privilege web role. Static contracts, TypeScript/Astro checks and the
+production build are also release requirements.

@@ -35,16 +35,19 @@ update app.profiles
 set is_public = true, profile_kind = 'studio'
 where id = :'profile_id'::uuid;
 
-do $free_storage_guard$
+do $storage_guard$
 begin
   if not app.showcase_storage_available(2048) then
-    raise exception 'valid Showcase upload was rejected by the free storage guard';
+    raise exception 'valid Showcase upload was rejected by the storage guard';
   end if;
   if app.showcase_storage_available(600001) then
-    raise exception 'oversized Showcase upload passed the free storage guard';
+    raise exception 'oversized Showcase upload passed the storage guard';
+  end if;
+  if app.showcase_uploads_remaining() <> 3 then
+    raise exception 'new member did not receive exactly three lifetime Showcase uploads';
   end if;
 end
-$free_storage_guard$;
+$storage_guard$;
 
 insert into app.external_identities (
   profile_id, provider, provider_subject, provider_username, display_name,
@@ -99,47 +102,9 @@ select * from app.create_showcase_media(
   'showcase/profile/' || :'profile_id' || '/10000000-0000-4000-8000-000000000002.jpg',
   repeat('2', 64), 2048, 1280, 800, 'Two', '', 'Second work image', 'https://example.test/two'
 ) \gset media_two_
-select * from app.create_showcase_media(
-  null, null,
-  'showcase/profile/' || :'profile_id' || '/10000000-0000-4000-8000-000000000003.jpg',
-  repeat('3', 64), 2048, 1280, 800, 'Three', '', 'Third work image', null
-) \gset media_three_
 
 select set_config('linked_showcase.media_one_id', :'media_one_media_id', true);
 select set_config('linked_showcase.media_two_id', :'media_two_media_id', true);
-select set_config('linked_showcase.media_three_id', :'media_three_media_id', true);
-
-do $showcase_limit$
-declare rejected boolean := false;
-begin
-  begin
-    perform * from app.create_showcase_media(
-      null, null,
-      'showcase/profile/' || current_setting('linked_showcase.profile_id', true) || '/10000000-0000-4000-8000-000000000004.jpg',
-      repeat('4', 64), 2048, 1280, 800, 'Four', '', 'Fourth work image', null
-    );
-  exception when check_violation then rejected := true;
-  end;
-  if not rejected then raise exception 'fourth profile showcase image was accepted'; end if;
-end
-$showcase_limit$;
-
-do $showcase_checks$
-declare resolved record;
-begin
-  if not app.update_showcase_media(
-    current_setting('linked_showcase.media_one_id')::uuid,
-    'One updated', 'Caption', 'Updated first image',
-    'https://example.test/one', 2::smallint
-  ) then raise exception 'showcase reorder returned false'; end if;
-  if (select position from app.showcase_media where id = current_setting('linked_showcase.media_one_id')::uuid) <> 2
-    or (select position from app.showcase_media where id = current_setting('linked_showcase.media_two_id')::uuid) <> 1 then
-    raise exception 'showcase positions were not swapped safely';
-  end if;
-  select * into resolved from app.resolve_public_showcase_media(current_setting('linked_showcase.media_one_id')::uuid);
-  if resolved.object_key is null then raise exception 'public showcase resolver returned no object'; end if;
-end
-$showcase_checks$;
 
 select * from app.create_robot_with_version(
   :'profile_id'::uuid, null, 'showcase-rover', 'Showcase Rover',
@@ -169,11 +134,46 @@ $robot_showcase$;
 select * from app.create_showcase_media(
   null, :'robot_robot_id'::uuid,
   'showcase/profile/' || :'profile_id' || '/20000000-0000-4000-8000-000000000001.jpg',
-  repeat('5', 64), 2048, 1280, 800, 'Robot view', '', 'Public Robot prototype', null
+  repeat('3', 64), 2048, 1280, 800, 'Robot view', '', 'Public Robot prototype', null
 ) \gset robot_media_
 
+do $showcase_limit$
+declare rejected boolean := false;
+begin
+  begin
+    perform * from app.create_showcase_media(
+      null, null,
+      'showcase/profile/' || current_setting('linked_showcase.profile_id', true) || '/10000000-0000-4000-8000-000000000004.jpg',
+      repeat('4', 64), 2048, 1280, 800, 'Four', '', 'Fourth work image', null
+    );
+  exception when check_violation then rejected := true;
+  end;
+  if not rejected then raise exception 'fourth lifetime Showcase upload was accepted'; end if;
+  if app.showcase_uploads_remaining() <> 0 then
+    raise exception 'three successful uploads did not exhaust the lifetime allowance';
+  end if;
+end
+$showcase_limit$;
+
+do $showcase_checks$
+declare resolved record;
+begin
+  if not app.update_showcase_media(
+    current_setting('linked_showcase.media_one_id')::uuid,
+    'One updated', 'Caption', 'Updated first image',
+    'https://example.test/one', 2::smallint
+  ) then raise exception 'showcase reorder returned false'; end if;
+  if (select position from app.showcase_media where id = current_setting('linked_showcase.media_one_id')::uuid) <> 2
+    or (select position from app.showcase_media where id = current_setting('linked_showcase.media_two_id')::uuid) <> 1 then
+    raise exception 'showcase positions were not swapped safely';
+  end if;
+  select * into resolved from app.resolve_public_showcase_media(current_setting('linked_showcase.media_one_id')::uuid);
+  if resolved.object_key is null then raise exception 'public showcase resolver returned no object'; end if;
+end
+$showcase_checks$;
+
 do $cleanup_contract$
-declare delete_target text;
+declare delete_target text; replacement_rejected boolean := false;
 begin
   if not app.unlink_external_catalog_item(current_setting('linked_showcase.linked_id')::uuid) then
     raise exception 'linked work unlink returned false';
@@ -181,13 +181,29 @@ begin
   if (select status from app.external_catalog_items where id = current_setting('linked_showcase.linked_id')::uuid) <> 'removed' then
     raise exception 'linked work was not soft removed';
   end if;
-  delete_target := app.showcase_media_delete_target(current_setting('linked_showcase.media_three_id')::uuid);
+  delete_target := app.showcase_media_delete_target(current_setting('linked_showcase.media_two_id')::uuid);
   if delete_target is null then
     raise exception 'showcase deletion target was not authorized';
   end if;
-  if app.delete_showcase_media(current_setting('linked_showcase.media_three_id')::uuid) is null then
+  if app.delete_showcase_media(current_setting('linked_showcase.media_two_id')::uuid) is null then
     raise exception 'showcase delete did not return its R2 key';
   end if;
+  if (select status from app.showcase_media where id = current_setting('linked_showcase.media_two_id')::uuid) <> 'removed'
+    or (select alt_text from app.showcase_media where id = current_setting('linked_showcase.media_two_id')::uuid) <> 'Removed image' then
+    raise exception 'removed Showcase metadata was not safely retained and scrubbed';
+  end if;
+  if app.showcase_uploads_remaining() <> 0 then
+    raise exception 'removing an image restored a lifetime upload';
+  end if;
+  begin
+    perform * from app.create_showcase_media(
+      null, null,
+      'showcase/profile/' || current_setting('linked_showcase.profile_id', true) || '/10000000-0000-4000-8000-000000000005.jpg',
+      repeat('5', 64), 2048, 1280, 800, 'Replacement', '', 'Replacement image', null
+    );
+  exception when check_violation then replacement_rejected := true;
+  end;
+  if not replacement_rejected then raise exception 'removed Showcase image was replaced'; end if;
 end
 $cleanup_contract$;
 

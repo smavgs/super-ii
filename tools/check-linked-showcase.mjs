@@ -46,8 +46,9 @@ for (const unsafe of ['http://example.com', 'javascript:alert(1)', 'https://user
 
 for (const marker of [
   'linked_namespace_not_verified', 'linked_organization_not_verified', 'linked_work_limit_reached',
-  'showcase_media_limit_reached', 'resolve_public_showcase_media', 'update_robot_showcase',
-  'showcase_free_storage_limit_reached', 'showcase_storage_available', 'showcase_media_delete_target',
+  'showcase_upload_limit_reached', 'resolve_public_showcase_media', 'update_robot_showcase',
+  'showcase_storage_limit_reached', 'showcase_storage_available', 'showcase_uploads_remaining',
+  'uploaded_by_profile_id', 'showcase_media_delete_target',
   'revoke all on function', 'grant execute on function',
 ]) assert.ok(combined.includes(marker), `database contract is missing ${marker}`);
 
@@ -65,6 +66,7 @@ requireText('src/pages/api/bridge/links.ts', "visibility !== 'public'");
 requireText('src/pages/api/showcase/media/index.ts', 'prepareShowcaseBytes');
 requireText('src/pages/api/showcase/media/index.ts', "storageClass: 'Standard'");
 requireText('src/pages/api/showcase/media/index.ts', 'showcase_storage_available');
+requireText('src/pages/api/showcase/media/index.ts', 'showcase_uploads_remaining');
 requireText('src/pages/showcase-images/[mediaId].jpg.ts', 'resolve_public_showcase_media');
 requireText('src/pages/showcase-images/[mediaId].jpg.ts', 'cache.put(cacheKey');
 requireText('src/pages/showcase-images/[mediaId].jpg.ts', '/__superii-showcase-cache/');
@@ -78,7 +80,7 @@ requireText('scripts/test-postgres.sh', 'linked_showcase_smoke.sql');
 for (const marker of ['Add to profile', 'External · Hugging Face', 'keeps every file on Hugging Face']) {
   assert.ok(combined.includes(marker), `linked-work UI is missing ${marker}`);
 }
-for (const marker of ['Selected work', 'up to three images', 'profile_kind', 'showcase-editor__grid']) {
+for (const marker of ['Selected work', 'Image uploads are complete', 'profile_kind', 'showcase-editor__grid']) {
   assert.ok(combined.includes(marker), `profile showcase UI is missing ${marker}`);
 }
 for (const marker of ['Robot builders', 'Robot catalogues', 'Software and open resources', 'robot-showcase-editor']) {
@@ -91,4 +93,4 @@ for (const marker of ['Все публичные проекты', 'Внешни�
   requireText('src/lib/i18n.ts', marker);
 }
 
-console.log('Linked work and showcase check passed: verified provider links, public R2 media, three-image limits, profile portfolios, and Robot discovery are securely wired.');
+console.log('Linked work and showcase check passed: verified provider links, public R2 media, three lifetime member uploads, profile portfolios, and Robot discovery are securely wired.');

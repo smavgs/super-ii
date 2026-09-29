@@ -47,7 +47,7 @@ export const DELETE: APIRoute = async ({ locals, request, params }) => {
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return Response.json({ error: 'Authentication required' }, { status: 401, headers });
   const rate = await consumeRateLimit(locals, request, sql, 'showcase.delete', 60, 86_400);
-  if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Daily Showcase removal limit reached' : 'Safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers });
+  if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Please wait before removing another image' : 'Safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers });
   const target = await sql`select app.showcase_media_delete_target(${mediaId}::uuid) as object_key`;
   const targetKey = target[0]?.object_key ? String(target[0].object_key) : '';
   if (!targetKey) return Response.json({ error: 'Showcase image not found' }, { status: 404, headers });

@@ -12,8 +12,9 @@ interface Props {
   hardware: Array<{ id: string; component_slug: string | null; custom_name: string | null; quantity: number; notes: string; status: string; owner_handle: string; owner_type: string }>;
   organizations: Array<{ id: string; handle: string; full_name: string; role: string }>;
   plan: 'free' | 'pro' | 'team' | 'enterprise';
+  showcaseUploadsRemaining: number;
 }
-const { robots, hardware, organizations, plan } = Astro.props;
+const { robots, hardware, organizations, plan, showcaseUploadsRemaining } = Astro.props;
 const canUsePrivate = plan !== 'free';
 const canUseTeam = plan === 'team' || plan === 'enterprise';
 ---
@@ -79,11 +80,11 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
                     </form>
                   </article>)}
                 </div>
-                {(robot.showcase_media?.length ?? 0) < 3 && <form data-robot-media-upload={robot.id} data-owner-organization={robot.owner_organization_id ?? ''}>
+                {(robot.showcase_media?.length ?? 0) < 3 && showcaseUploadsRemaining > 0 && <form data-robot-media-upload={robot.id} data-owner-organization={robot.owner_organization_id ?? ''}>
                   <label>Image description <input name="alt_text" maxlength="240" required placeholder="Rover prototype testing indoors" /></label>
                   <label>Photo <input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required /></label>
                   <button class="button button--secondary button--small" type="submit">Add Robot photo</button>
-                  <small>Up to three public images. Camera metadata is removed before storage.</small>
+                  <small>Camera metadata is removed before storage.</small>
                   <p role="status" aria-live="polite"></p>
                 </form>}
               </div>
@@ -246,7 +247,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
     const payload = await response.json() as { error?: string }; if (status) status.textContent = response.ok ? 'Image details saved.' : payload.error ?? 'Image details could not be saved.';
   }));
   workspace?.querySelectorAll<HTMLButtonElement>('[data-remove-robot-media]').forEach((button) => button.addEventListener('click', async () => {
-    const article = button.closest<HTMLElement>('[data-robot-media-id]'); if (!article || !confirm('Remove this public Robot image?')) return; button.disabled = true;
+    const article = button.closest<HTMLElement>('[data-robot-media-id]'); if (!article || !confirm('Remove this public Robot image? Removing it does not restore an upload.')) return; button.disabled = true;
     const response = await fetch(`/api/showcase/media/${article.dataset.robotMediaId}`, { method: 'DELETE' }); if (response.ok) location.reload(); else button.disabled = false;
   }));
 </script>

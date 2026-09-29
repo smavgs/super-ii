@@ -1,6 +1,6 @@
 export const showcaseMaximumBytes = 600_000;
 export const showcaseMaximumSourceBytes = 16 * 1024 * 1024;
-// Leave 25% of R2's included 10 GB-month allowance as operational headroom.
+// Keep a fixed operational reserve below the provider storage boundary.
 export const showcaseStorageCeilingBytes = 7_500_000_000;
 
 export function optionalShowcaseUrl(value: unknown): string | null {

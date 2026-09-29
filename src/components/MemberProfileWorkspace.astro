@@ -11,10 +11,11 @@ type WorkspaceProfile = EditableMemberProfile & {
 interface Props {
   profile: WorkspaceProfile;
   showcase: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
+  uploadsRemaining: number;
 }
 
-const { profile, showcase } = Astro.props;
-const emptySlots = Math.max(0, 3 - showcase.length);
+const { profile, showcase, uploadsRemaining } = Astro.props;
+const emptySlots = Math.max(0, Math.min(3 - showcase.length, uploadsRemaining));
 ---
 
 <section class="account-card member-profile-workspace" id="profile" data-member-profile-workspace>
@@ -84,10 +85,9 @@ const emptySlots = Math.max(0, 3 - showcase.length);
 
   <section class="showcase-editor" data-showcase-editor>
     <div class="showcase-editor__heading">
-      <div><p class="eyebrow">Public Showcase ✨</p><h3>Three pieces of work</h3></div>
-      <span>{showcase.length}/3</span>
+      <div><p class="eyebrow">Public Showcase ✨</p><h3>Selected work</h3></div>
     </div>
-    <p>Choose up to three images that quickly show what you or your company builds. This is a curated portfolio, not a social feed.</p>
+    <p>Choose a small set of images that quickly show what you or your company builds. This is a curated portfolio, not a social feed.</p>
     <div class="showcase-editor__grid">
       {showcase.map((item) => <article class="showcase-editor__item" data-showcase-id={item.id}>
         <img src={`/showcase-images/${item.id}.jpg`} alt={item.alt_text} width={item.width} height={item.height} />
@@ -103,13 +103,14 @@ const emptySlots = Math.max(0, 3 - showcase.length);
       </article>)}
       {Array.from({ length: emptySlots }, (_, index) => <div class="showcase-editor__empty" aria-hidden="true"><span>0{showcase.length + index + 1}</span><i class="ph ph-image" aria-hidden="true"></i><small>Open showcase slot</small></div>)}
     </div>
-    {showcase.length < 3 && <form class="showcase-upload" data-showcase-upload>
+    {showcase.length < 3 && uploadsRemaining > 0 && <form class="showcase-upload" data-showcase-upload>
       <label>Describe the image for people using screen readers <input name="alt_text" maxlength="240" required placeholder="Robot prototype on a workbench" /></label>
       <label>Choose an image <input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required /></label>
       <button class="button button--dark button--small" type="submit"><i class="ph ph-upload-simple" aria-hidden="true"></i> Add to Showcase</button>
       <small>JPG, PNG, WebP and phone photos are cropped to 8:5, re-encoded, and stripped of camera metadata before public storage.</small>
       <p class="form-status" role="status" aria-live="polite"></p>
     </form>}
+    {uploadsRemaining === 0 && <p class="form-status">Image uploads are complete. Existing titles, descriptions, links, and ordering remain editable.</p>}
   </section>
 </section>
 
@@ -213,7 +214,7 @@ const emptySlots = Math.max(0, 3 - showcase.length);
 
   showcaseEditor?.querySelectorAll<HTMLButtonElement>('[data-remove-showcase]').forEach((button) => button.addEventListener('click', async () => {
     const article = button.closest<HTMLElement>('[data-showcase-id]'); const itemStatus = article?.querySelector<HTMLElement>('[role=status]');
-    if (!article || !confirm('Remove this public Showcase image?')) return;
+    if (!article || !confirm('Remove this public Showcase image? Removing it does not restore an upload.')) return;
     button.disabled = true; if (itemStatus) itemStatus.textContent = 'Removing image…';
     const response = await fetch(`/api/showcase/media/${article.dataset.showcaseId}`, { method: 'DELETE' });
     if (response.ok) location.reload(); else { if (itemStatus) itemStatus.textContent = 'Image could not be removed.'; button.disabled = false; }

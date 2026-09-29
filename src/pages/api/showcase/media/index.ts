@@ -14,8 +14,10 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
   if (!sql || !bucket) return Response.json({ error: 'Showcase upload is unavailable' }, { status: 503, headers });
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return Response.json({ error: 'Authentication required' }, { status: 401, headers });
-  const rate = await consumeRateLimit(locals, request, sql, 'showcase.upload', 24, 86_400);
-  if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Daily Showcase upload limit reached' : 'Safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers });
+  const remaining = await sql`select app.showcase_uploads_remaining() as remaining`;
+  if (Number(remaining[0]?.remaining ?? 0) < 1) {
+    return Response.json({ error: 'All three Showcase uploads have been used' }, { status: 409, headers });
+  }
   const organizationId = url.searchParams.get('organization_id');
   const robotId = url.searchParams.get('robot_id');
   const altText = (url.searchParams.get('alt_text') ?? '').trim();
@@ -25,10 +27,14 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
   let objectKey = '';
   try {
     const prepared = await prepareShowcaseBytes(request);
+    const rate = await consumeRateLimit(locals, request, sql, 'showcase.upload', 3, 86_400);
+    if (rate !== 'allowed') {
+      return Response.json({ error: rate === 'limited' ? 'Please wait before trying another image' : 'Safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers });
+    }
     const capacity = await sql`select app.showcase_storage_available(${prepared.bytes.byteLength}) as allowed`;
     if (capacity[0]?.allowed !== true) {
       return Response.json(
-        { error: 'Showcase uploads are paused at the included storage ceiling' },
+        { error: 'Showcase uploads are temporarily paused' },
         { status: 507, headers },
       );
     }
@@ -63,8 +69,8 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
     if (/^(Choose|The image|The processed|The metadata|Showcase images)/u.test(message)) {
       return Response.json({ error: message }, { status: 422, headers });
     }
-    if (message.includes('limit_reached')) return Response.json({ error: 'This Showcase already has three images' }, { status: 409, headers });
-    if (message.includes('free_storage')) return Response.json({ error: 'Showcase uploads are paused at the included storage ceiling' }, { status: 507, headers });
+    if (message.includes('limit_reached')) return Response.json({ error: 'All three Showcase uploads have been used' }, { status: 409, headers });
+    if (message.includes('storage_limit')) return Response.json({ error: 'Showcase uploads are temporarily paused' }, { status: 507, headers });
     if (message.includes('permission_denied')) return Response.json({ error: 'You cannot add images to this owner' }, { status: 403, headers });
     return Response.json({ error: 'Showcase image could not be saved' }, { status: 503, headers });
   }

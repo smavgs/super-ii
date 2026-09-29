@@ -21,6 +21,7 @@ let myRobots: Awaited<ReturnType<typeof listOwnedRobots>> = [];
 let hardware: Awaited<ReturnType<typeof listHardware>> = [];
 let myOrganizations: Array<{ id: string; handle: string; full_name: string; role: string }> = [];
 let robotPlan: RobotPlanTier = 'free';
+let showcaseUploadsRemaining = 0;
 let personalWorkUnavailable = true;
 let organizationOwners: Array<{ id: string; handle: string; name: string }> = [];
 const sql = sqlClient(Astro.locals);
@@ -71,6 +72,8 @@ if (sql) {
           where m.profile_id = ${profile.profileId}::uuid order by o.handle
         ` as typeof myOrganizations;
         robotPlan = await activeRobotPlan(sql, profile);
+        const showcaseAllowance = await sql`select app.showcase_uploads_remaining() as remaining`;
+        showcaseUploadsRemaining = Number(showcaseAllowance[0]?.remaining ?? 0);
         myRobots = await listOwnedRobots(sql, profile.profileId);
         if (robotPlan !== 'free') hardware = await listHardware(sql, profile.profileId);
         personalWorkUnavailable = false;
@@ -114,7 +117,7 @@ const reference = robotCatalog.referenceRobots[0];
     {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-robots">
       <summary>My robots and hardware<small>Your saved plans, versions and private inventory.</small></summary>
       <div class="workspace-disclosure__body">
-        {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} />}
+        {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} {showcaseUploadsRemaining} />}
       </div>
     </details></div>}
 
