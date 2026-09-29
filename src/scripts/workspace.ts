@@ -161,4 +161,24 @@ if (root) {
       if (syncStatus) syncStatus.textContent = copy('This source could not be changed. Please try again.', 'Не удалось изменить источник. Повторите попытку.');
     } finally { button.disabled = false; }
   }));
+
+  const linkedStatus = root.querySelector<HTMLElement>('[data-linked-work-status]');
+  root.querySelectorAll<HTMLButtonElement>('[data-unlink-work]').forEach((button) => button.addEventListener('click', async () => {
+    const row = button.closest<HTMLElement>('[data-linked-work-item]');
+    if (!row) return;
+    button.disabled = true;
+    if (linkedStatus) linkedStatus.textContent = copy('Removing external card…', 'Удаление внешней карточки…');
+    try {
+      const response = await fetch('/api/bridge/links', {
+        method: 'DELETE', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ item_id: button.dataset.unlinkWork }),
+      });
+      if (!response.ok) throw new Error('Linked work removal failed');
+      row.remove();
+      if (linkedStatus) linkedStatus.textContent = copy('External card removed. Provider files were not changed.', 'Внешняя карточка удалена. Файлы поставщика не изменились.');
+    } catch {
+      button.disabled = false;
+      if (linkedStatus) linkedStatus.textContent = copy('This external card could not be removed. Please try again.', 'Не удалось удалить внешнюю карточку. Повторите попытку.');
+    }
+  }));
 }

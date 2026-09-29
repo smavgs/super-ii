@@ -1,4 +1,5 @@
 export type EditableMemberProfile = {
+  profile_kind: 'person' | 'studio' | 'company';
   bio: string | null;
   interests: string[];
   x_username: string | null;
@@ -13,6 +14,7 @@ export type MemberProfileParseResult =
   | { ok: false; error: string };
 
 const allowedKeys = new Set([
+  'profile_kind',
   'bio',
   'interests',
   'x_username',
@@ -97,9 +99,16 @@ export function parseEditableMemberProfile(payload: Record<string, unknown>): Me
   const unknownKey = Object.keys(payload).find((key) => !allowedKeys.has(key));
   if (unknownKey) return { ok: false, error: `Unknown profile field: ${unknownKey}` };
   try {
+    const profileKind = payload.profile_kind === undefined
+      ? 'person'
+      : typeof payload.profile_kind === 'string' && ['person', 'studio', 'company'].includes(payload.profile_kind)
+        ? payload.profile_kind as EditableMemberProfile['profile_kind']
+        : null;
+    if (!profileKind) throw new Error('Profile type must be person, studio or company');
     return {
       ok: true,
       value: {
+        profile_kind: profileKind,
         bio: optionalText(payload.bio, 'Bio', 500),
         interests: parseInterests(payload.interests),
         x_username: optionalUsername(payload.x_username, 'X username', xUsernamePattern),

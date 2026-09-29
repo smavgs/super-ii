@@ -48,6 +48,24 @@ The output includes:
 Saved Robots have immutable plan versions. Updating a Robot appends a version;
 it cannot rewrite or delete the prior engineering record.
 
+## Public discovery and showcases
+
+The public `/robot` page keeps Make Robot in place and adds discovery for
+published Robots, individual builders, single-owner studios/companies,
+organizations, and the software or open resources builders attach to their
+work. A public Robot can declare a bounded project stage, up to 12 short
+capabilities, a software summary and up to 12 labelled HTTPS links. These are
+owner-supplied descriptions, not Super ii verification or compatibility
+evidence.
+
+Profiles, organizations and Robots may each expose at most three curated work
+images. The browser center-crops and re-encodes an image; the Worker strips
+JPEG metadata again, verifies dimensions and a 600 KB ceiling, hashes the
+bytes, and stores them through a private Cloudflare R2 binding. PostgreSQL
+stores only the owner, image metadata, optional HTTPS destination and order.
+The public image gateway resolves an object only while its owning profile,
+organization or Robot remains public. The R2 bucket is not a public origin.
+
 ## Human and agent interfaces
 
 Anonymous public reads are available through:
@@ -91,11 +109,11 @@ agent prompts, private plans, credentials or user-level tracking.
 ## Storage and enforcement
 
 PostgreSQL enforces owner shape, plan requirements, organization roles,
-immutable versions, bounded discovery aggregates and agent receipt
-idempotency. Row-level security exposes only published public Robots and their
-versions. Application routes separately authenticate private reads and writes,
-validate request bodies, enforce same-origin browser mutations and apply rate
-limits.
+immutable versions, bounded discovery aggregates, showcase cardinality and
+agent receipt idempotency. Row-level security exposes only published public
+Robots, their versions and deliberately public showcase records. Application
+routes separately authenticate private reads and writes, validate request
+bodies, enforce same-origin browser mutations and apply rate limits.
 
 The public catalogue remains source controlled so a release can be reviewed,
 reproduced and rolled back independently of user-created Robot data.
@@ -108,4 +126,6 @@ rolled-back PostgreSQL 17 database and covers Free, Pro and Team gates,
 immutable versions, personal/shared inventory foundations, manufacturer
 proposals, discovery aggregation, scoped agent authorization, governed agent
 creation and exact idempotent replay. The normal type, route, build and browser
-checks remain release requirements.
+checks remain release requirements. `tools/check-linked-showcase.mjs` and
+`database/tests/linked_showcase_smoke.sql` additionally prove public discovery,
+Robot links, three-image limits, safe reordering and public image resolution.

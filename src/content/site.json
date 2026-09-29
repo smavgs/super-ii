@@ -28,7 +28,7 @@
       "unit": "forever",
       "status": "available",
       "summary": "For exploring, publishing and building in public.",
-      "features": ["Public profile and organizations", "Unlimited public repositories", "Public models, datasets and apps", "5 GB public storage", "Public notebooks", "Watch Social web", "Browser WebGPU and WASM execution", "Local AI with Ollama, llama.cpp, MLX and compatible runtimes", "Basic hardware compatibility", "Basic Verified Use", "Public MCP and API access", "Agent-readable repositories", "Provenance and lineage", "Community discussions", "Proposals and voting", "Super ii AI", "Expert on Super ii · always on", "3 web searches per day", "Bring My Work", "Standard processing priority"]
+      "features": ["Public profile and organizations", "3-image public work showcase", "Link public Hugging Face work", "Unlimited public repositories", "Public models, datasets and apps", "5 GB public storage", "Public notebooks", "Watch Social web", "Browser WebGPU and WASM execution", "Local AI with Ollama, llama.cpp, MLX and compatible runtimes", "Basic hardware compatibility", "Basic Verified Use", "Public MCP and API access", "Agent-readable repositories", "Provenance and lineage", "Community discussions", "Proposals and voting", "Super ii AI", "Expert on Super ii · always on", "3 web searches per day", "Bring My Work", "Standard processing priority"]
     },
     {
       "id": "pro",

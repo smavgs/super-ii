@@ -163,7 +163,7 @@ def main() -> int:
                 has_transparency_evidence,
                 has_transparency_analytics,
             ) = cursor.fetchone()
-            if relation_count < 112:
+            if relation_count < 115:
                 raise RuntimeError(
                     f"too few app relations after migration: {relation_count}"
                 )

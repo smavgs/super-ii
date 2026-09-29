@@ -122,6 +122,9 @@ REQUIRED_TABLES = {
     "card_public_snapshots",
     "card_connections",
     "card_photos",
+    "external_catalog_items",
+    "showcase_media",
+    "robot_links",
 }
 
 RLS_TABLES = REQUIRED_TABLES - {"subscriptions"} | {"subscriptions", "plans"}
@@ -254,6 +257,16 @@ def main() -> int:
         errors.append("Bridge organization claims must require verified provider administrator evidence")
     if "request_bridge_import_cancel" not in lower or "set_bridge_sync" not in lower:
         errors.append("Bridge jobs require cancellation and opt-in immutable synchronization")
+    if "link_external_catalog_item" not in lower or "linked_namespace_not_verified" not in lower:
+        errors.append("external catalog cards must require a verified provider namespace")
+    if "external_catalog_items_exactly_one_owner" not in lower or "linked_work_limit_reached" not in lower:
+        errors.append("external catalog cards need an exact owner and bounded per-owner count")
+    if "showcase_media_exactly_one_owner" not in lower or "showcase_media_limit_reached" not in lower:
+        errors.append("public showcase media needs an exact owner and three-image ceiling")
+    if "resolve_public_showcase_media" not in lower or "showcase_media_robot_position_idx" not in lower:
+        errors.append("public showcase media requires fail-closed resolution and per-Robot ordering")
+    if "update_robot_showcase" not in lower or "jsonb_array_length(p_links) > 12" not in lower:
+        errors.append("Robot showcase metadata and links must be transactionally bounded")
     if "spend_limit_cents integer not null default 0 check (spend_limit_cents = 0)" not in lower:
         errors.append("agent access tokens must enforce a zero-spend database boundary")
     if "consume_agent_access_token" not in lower or "and p_scope = any(token.scopes)" not in lower:

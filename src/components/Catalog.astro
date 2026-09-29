@@ -8,6 +8,7 @@ import {
   type CatalogFilters,
   type RepositoryKind,
 } from '@/lib/catalog';
+import { searchLinkedWork } from '@/lib/linked-work';
 
 interface Props {
   kind: CatalogKind;
@@ -17,6 +18,9 @@ const { kind } = Astro.props;
 const meta = catalogMeta[kind];
 const repositoryKind: RepositoryKind = kind === 'models' ? 'model' : kind === 'datasets' ? 'dataset' : 'space';
 const query = Astro.url.searchParams;
+const origin = ['all', 'superii', 'external'].includes(query.get('origin') ?? '')
+  ? query.get('origin') as 'all' | 'superii' | 'external'
+  : 'all';
 const filters: CatalogFilters = {
   query: query.get('q') ?? undefined,
   task: query.get('task') ?? undefined,
@@ -36,8 +40,18 @@ const filters: CatalogFilters = {
   maxVramBytes: query.has('max_vram_gb') ? Number(query.get('max_vram_gb')) * 1024 ** 3 : undefined,
   sort: (query.get('sort') ?? undefined) as CatalogFilters['sort'],
 };
-const result = await searchCatalog(Astro.locals, repositoryKind, filters);
-const hasFilters = Object.values(filters).some((value) => value !== undefined && value !== '');
+const result = origin === 'external'
+  ? { state: 'ok' as const, items: [] }
+  : await searchCatalog(Astro.locals, repositoryKind, filters);
+const linkedResult = origin === 'superii'
+  ? { state: 'ok' as const, items: [] }
+  : await searchLinkedWork(Astro.locals, repositoryKind, filters);
+const totalCount = result.items.length + linkedResult.items.length;
+const hasFilters = origin !== 'all' || Object.values(filters).some((value) => value !== undefined && value !== '');
+const linkedValue = (item: (typeof linkedResult.items)[number], key: string) => {
+  const value = item.source_metadata?.[key];
+  return typeof value === 'string' && value ? value : null;
+};
 const emptyState = {
   models: {
     title: 'No reviewed public models yet.',
@@ -58,8 +72,19 @@ const emptyState = {
   <aside class="catalog-sidebar">
     <div class="catalog-filter-title">
       <span>Filter</span>
-      <span class="count-badge">{result.items.length}</span>
+      <span class="count-badge">{totalCount}</span>
     </div>
+    <fieldset>
+      <legend>Source</legend>
+      <label class="catalog-field">Origin
+        <select name="origin">
+          <option value="all" selected={origin === 'all'}>All public work</option>
+          <option value="superii" selected={origin === 'superii'}>Reviewed on Super ii</option>
+          <option value="external" selected={origin === 'external'}>Linked externally</option>
+        </select>
+      </label>
+      <p class="catalog-filter-note">External cards send you to the provider. Their files are not hosted or reviewed by Super ii.</p>
+    </fieldset>
     <fieldset>
       <legend>Repository <InfoTip term="repository" /></legend>
       <label class="catalog-field">Task <input name="task" value={filters.task} /></label>
@@ -127,7 +152,7 @@ const emptyState = {
       </select></label>
     </div>
 
-    {result.items.length ? (
+    {totalCount ? (
       <div class="catalog-results" aria-live="polite">
         {result.items.map((item) => (
           <article class="catalog-card">
@@ -137,11 +162,12 @@ const emptyState = {
               ) : item.owner_organization_handle ? (
                 <CreatorLink compact kind="organization" handle={item.owner_organization_handle} displayName={item.owner_organization_name} avatarUrl={item.owner_organization_logo_url} />
               ) : <span>{item.owner_handle}</span>}
-              {item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}
+              <span class="origin-badge">Reviewed on Super ii</span>
             </div>
             <h2><a class="catalog-card__title-link" href={repositoryPath(item)}><span data-no-translate>{item.title}</span></a></h2>
             <p data-no-translate>{item.summary}</p>
             <div class="catalog-card__metadata">
+              {item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}
               {item.task && <span data-no-translate>{item.task}</span>}
               {item.library && <span data-no-translate>{item.library}</span>}
               {item.modality && <span data-no-translate>{item.modality}</span>}
@@ -158,6 +184,26 @@ const emptyState = {
             <a class="catalog-card__open" href={repositoryPath(item)} aria-label={`Open ${item.title}`}><span>Open {repositoryKind === 'space' ? 'app' : repositoryKind}</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
         ))}
+        {linkedResult.items.map((item) => (
+          <article class="catalog-card catalog-card--external">
+            <div class="catalog-card__topline">
+              <CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} />
+              <span class="origin-badge origin-badge--external">External · Hugging Face</span>
+            </div>
+            <h2 data-no-translate>{item.title}</h2>
+            <p data-no-translate>{item.summary || `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`}</p>
+            <div class="catalog-card__metadata">
+              {item.license && <span data-no-translate>{item.license}</span>}
+              {linkedValue(item, 'task') && <span data-no-translate>{linkedValue(item, 'task')}</span>}
+              {linkedValue(item, 'library') && <span data-no-translate>{linkedValue(item, 'library')}</span>}
+              {linkedValue(item, 'sdk') && <span data-no-translate>{linkedValue(item, 'sdk')}</span>}
+              <span>{Number(item.total_size_bytes).toLocaleString()} bytes</span>
+              {item.provider_downloads !== null && <span title="Downloads reported by Hugging Face">HF ⬇️ {Number(item.provider_downloads).toLocaleString()}</span>}
+              {item.provider_likes !== null && <span title="Likes reported by Hugging Face">HF ❤️ {Number(item.provider_likes).toLocaleString()}</span>}
+            </div>
+            <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}><span>Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          </article>
+        ))}
       </div>
     ) : (
       <div class="empty-state" aria-live="polite">
@@ -168,7 +214,7 @@ const emptyState = {
           {!hasFilters && result.state !== 'error' && <InfoTip term="reviewFirst" />}
         </div>
         <p data-empty-copy>
-          {result.state === 'error'
+          {result.state === 'error' || linkedResult.state === 'error'
             ? 'Search is temporarily unavailable. Please try again shortly.'
             : hasFilters
               ? 'No reviewed public repository matches every selected filter.'

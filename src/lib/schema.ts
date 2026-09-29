@@ -10,6 +10,7 @@ import {
   pgEnum,
   pgSchema,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -63,6 +64,7 @@ export const profiles = app.table(
     displayName: text('display_name').notNull(),
     bio: text('bio'),
     avatarUrl: text('avatar_url'),
+    profileKind: text('profile_kind').notNull().default('person'),
     interests: jsonb('interests').$type<string[]>().notNull().default([]),
     xUsername: text('x_username'),
     githubUsername: text('github_username'),
@@ -1306,6 +1308,79 @@ export const externalIdentities = app.table(
     uniqueIndex('external_identities_provider_subject_idx').on(table.provider, table.providerSubject),
     index('external_identities_profile_idx').on(table.profileId, table.provider, table.revokedAt),
   ],
+);
+
+export const externalCatalogItems = app.table(
+  'external_catalog_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerProfileId: uuid('owner_profile_id').references(() => profiles.id, { onDelete: 'cascade' }),
+    ownerOrganizationId: uuid('owner_organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    externalIdentityId: uuid('external_identity_id').notNull().references(() => externalIdentities.id, { onDelete: 'restrict' }),
+    provider: text('provider').notNull().default('huggingface'),
+    kind: repositoryKind('kind').notNull(),
+    providerRepoId: text('provider_repo_id').notNull(),
+    providerNamespace: text('provider_namespace').notNull(),
+    providerSlug: text('provider_slug').notNull(),
+    sourceUrl: text('source_url').notNull(),
+    sourceRevision: text('source_revision').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull().default(''),
+    license: text('license'),
+    fileCount: integer('file_count').notNull(),
+    totalSizeBytes: bigint('total_size_bytes', { mode: 'bigint' }).notNull(),
+    providerDownloads: bigint('provider_downloads', { mode: 'bigint' }),
+    providerLikes: bigint('provider_likes', { mode: 'bigint' }),
+    sourceMetadata: jsonb('source_metadata').$type<Record<string, unknown>>().notNull().default({}),
+    status: text('status').notNull().default('active'),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('external_catalog_items_public_idx').on(table.kind, table.updatedAt)],
+);
+
+export const showcaseMedia = app.table(
+  'showcase_media',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ownerProfileId: uuid('owner_profile_id').references(() => profiles.id, { onDelete: 'cascade' }),
+    ownerOrganizationId: uuid('owner_organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+    robotId: uuid('robot_id'),
+    objectKey: text('object_key').notNull().unique(),
+    contentHash: text('content_hash').notNull(),
+    mimeType: text('mime_type').notNull().default('image/jpeg'),
+    byteSize: integer('byte_size').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    title: text('title').notNull().default(''),
+    caption: text('caption').notNull().default(''),
+    altText: text('alt_text').notNull(),
+    linkUrl: text('link_url'),
+    position: smallint('position').notNull(),
+    status: text('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('showcase_media_profile_idx').on(table.ownerProfileId, table.robotId, table.position),
+    index('showcase_media_organization_idx').on(table.ownerOrganizationId, table.robotId, table.position),
+  ],
+);
+
+export const robotLinks = app.table(
+  'robot_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    robotId: uuid('robot_id').notNull(),
+    linkKind: text('link_kind').notNull(),
+    label: text('label').notNull(),
+    url: text('url').notNull(),
+    position: smallint('position').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('robot_links_robot_idx').on(table.robotId, table.position)],
 );
 
 export const bridgeOauthStates = app.table(

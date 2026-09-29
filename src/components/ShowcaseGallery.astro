@@ -1,0 +1,27 @@
+---
+export type ShowcaseItem = {
+  id: string;
+  title: string;
+  caption: string;
+  alt_text: string;
+  link_url: string | null;
+  position: number;
+  width: number;
+  height: number;
+};
+interface Props { items: ShowcaseItem[]; title?: string; }
+const { items, title = 'Selected work' } = Astro.props;
+const ordered = [...items].sort((left, right) => Number(left.position) - Number(right.position));
+---
+
+{ordered.length > 0 && <section class="showcase-gallery" aria-labelledby="showcase-gallery-title">
+  <div class="showcase-gallery__heading"><p class="eyebrow">Showcase ✨</p><h2 id="showcase-gallery-title">{title}</h2></div>
+  <div class="showcase-gallery__grid">
+    {ordered.map((item) => <figure class="showcase-card">
+      {item.link_url ? <a href={item.link_url} target="_blank" rel="ugc nofollow noopener noreferrer external">
+        <img src={`/showcase-images/${item.id}.jpg`} alt={item.alt_text} width={item.width} height={item.height} loading="lazy" />
+      </a> : <img src={`/showcase-images/${item.id}.jpg`} alt={item.alt_text} width={item.width} height={item.height} loading="lazy" />}
+      {(item.title || item.caption) && <figcaption>{item.title && <strong>{item.title}</strong>}{item.caption && <p>{item.caption}</p>}</figcaption>}
+    </figure>)}
+  </div>
+</section>}

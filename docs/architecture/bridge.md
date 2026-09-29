@@ -71,6 +71,28 @@ browser -> Cloudflare Worker -> Postgres job
 - Completion means `review`, never `published`. Existing PL/pgSQL review and
   release-manifest gates remain authoritative.
 
+## Linked-work contract
+
+Bridge also offers a free metadata-only path for public Hugging Face models,
+datasets and Spaces. This is deliberately different from an import:
+
+- the Worker re-reads the selected public repository and exact provider
+  revision instead of trusting browser-supplied metadata;
+- the connected Hugging Face username must own the namespace, or a verified
+  organization namespace claim must match the selected organization;
+- Super ii stores the provider repository ID, exact revision, bounded card
+  metadata and outbound HTTPS link, but does not copy or host its files;
+- cards say `External · Hugging Face`, open the original provider URL, and keep
+  provider downloads and likes labelled as provider metrics;
+- linked cards do not inherit Super ii review, scan, publication, download or
+  execution claims; and
+- unlinking removes the Super ii card without changing the provider project.
+
+Postgres permits at most 100 active linked cards per personal or organization
+owner. Mutations use the signed least-privilege request context, row-level
+security, narrow security-definer functions, same-origin checks, bounded
+bodies and application rate limits.
+
 ## Recovery and synchronization
 
 Jobs are idempotent by profile and normalized source manifest. A heartbeat

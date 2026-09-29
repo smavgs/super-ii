@@ -2,7 +2,13 @@
 import { robotCatalog } from '@/lib/robot';
 
 interface Props {
-  robots: Array<{ id: string; owner_handle: string; slug: string; title: string; summary: string; visibility: string; version_number: number; updated_at: string }>;
+  robots: Array<{
+    id: string; owner_handle: string; owner_organization_id: string | null; slug: string;
+    title: string; summary: string; visibility: string; version_number: number; updated_at: string;
+    project_stage: string; capabilities: string[]; software_summary: string;
+    showcase_links: Array<{ id: string; kind: string; label: string; url: string; position: number }>;
+    showcase_media: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
+  }>;
   hardware: Array<{ id: string; component_slug: string | null; custom_name: string | null; quantity: number; notes: string; status: string; owner_handle: string; owner_type: string }>;
   organizations: Array<{ id: string; handle: string; full_name: string; role: string }>;
   plan: 'free' | 'pro' | 'team' | 'enterprise';
@@ -35,6 +41,53 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
               <button class="button button--secondary button--small" type="submit">Save next version</button>
               <p role="status" aria-live="polite"></p>
             </form>
+          </details>
+          <details class="robot-showcase-editor">
+            <summary>Public gallery, capabilities and software</summary>
+            <div class="robot-showcase-editor__body">
+              <p>This editable Showcase sits beside the immutable engineering versions. It helps people understand the Robot without rewriting its evidence history.</p>
+              <form data-robot-showcase={robot.id}>
+                <label>Project stage <select name="project_stage">
+                  {['concept','prototype','testing','production','research'].map((stage) => <option value={stage} selected={robot.project_stage === stage}>{stage}</option>)}
+                </select></label>
+                <label>Capabilities <input name="capabilities" maxlength="1200" value={(robot.capabilities ?? []).join(', ')} placeholder="navigation, vision, manipulation" /></label>
+                <label>Software summary <textarea name="software_summary" maxlength="2000" rows="3" placeholder="Frameworks, control software, and important boundaries">{robot.software_summary ?? ''}</textarea></label>
+                <fieldset class="robot-link-editor"><legend>Software and project links</legend><div data-robot-link-rows>
+                  {(robot.showcase_links?.length ? robot.showcase_links : [{ id: '', kind: 'software', label: '', url: '', position: 1 }]).map((link) => <div class="robot-link-row" data-robot-link-row>
+                    <select name="link_kind" aria-label="Link type">{['software','source','docs','video','cad','model','dataset','app'].map((kind) => <option value={kind} selected={link.kind === kind}>{kind}</option>)}</select>
+                    <input name="link_label" maxlength="80" value={link.label} placeholder="ROS package" aria-label="Link label" />
+                    <input name="link_url" type="url" maxlength="2048" value={link.url} placeholder="https://…" aria-label="HTTPS link" />
+                    <button class="text-button" type="button" data-remove-robot-link aria-label="Remove link">Remove</button>
+                  </div>)}
+                </div><button class="text-button" type="button" data-add-robot-link>Add another link</button></fieldset>
+                <button class="button button--secondary button--small" type="submit">Save public details</button>
+                <p role="status" aria-live="polite"></p>
+              </form>
+
+              <div class="robot-media-editor">
+                <div class="robot-media-editor__grid">
+                  {(robot.showcase_media ?? []).map((media) => <article data-robot-media-id={media.id}>
+                    <img src={`/showcase-images/${media.id}.jpg`} alt={media.alt_text} width={media.width} height={media.height} />
+                    <form data-robot-media-details={media.id}>
+                      <input name="title" maxlength="100" value={media.title} placeholder="Image title" aria-label="Image title" />
+                      <input name="caption" maxlength="400" value={media.caption} placeholder="Short caption" aria-label="Image caption" />
+                      <input name="alt_text" maxlength="240" value={media.alt_text} required aria-label="Image description" />
+                      <input name="link_url" type="url" maxlength="2048" value={media.link_url ?? ''} placeholder="Optional HTTPS link" aria-label="Optional image link" />
+                      <input name="position" type="number" min="1" max="3" value={media.position} aria-label="Image position" />
+                      <div><button class="text-button" type="submit">Save</button><button class="text-button" type="button" data-remove-robot-media>Remove</button></div>
+                      <p role="status" aria-live="polite"></p>
+                    </form>
+                  </article>)}
+                </div>
+                {(robot.showcase_media?.length ?? 0) < 3 && <form data-robot-media-upload={robot.id} data-owner-organization={robot.owner_organization_id ?? ''}>
+                  <label>Image description <input name="alt_text" maxlength="240" required placeholder="Rover prototype testing indoors" /></label>
+                  <label>Photo <input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" required /></label>
+                  <button class="button button--secondary button--small" type="submit">Add Robot photo</button>
+                  <small>Up to three public images. Camera metadata is removed before storage.</small>
+                  <p role="status" aria-live="polite"></p>
+                </form>}
+              </div>
+            </div>
           </details>
         </div>
       ))}
@@ -116,4 +169,84 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
     const payload = await response.json() as { error?: string };
     if (status) status.textContent = response.ok ? 'Proposal recorded as pending. It has not changed the public profile.' : payload.error ?? 'Proposal could not be recorded.';
   });
+
+  workspace?.querySelectorAll<HTMLButtonElement>('[data-add-robot-link]').forEach((button) => button.addEventListener('click', () => {
+    const rows = button.parentElement?.querySelector<HTMLElement>('[data-robot-link-rows]');
+    const first = rows?.querySelector<HTMLElement>('[data-robot-link-row]');
+    if (!rows || !first || rows.children.length >= 12) return;
+    const clone = first.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.value = ''; });
+    rows.appendChild(clone);
+  }));
+  workspace?.addEventListener('click', (event) => {
+    const button = (event.target as Element).closest<HTMLButtonElement>('[data-remove-robot-link]');
+    if (!button) return; const row = button.closest<HTMLElement>('[data-robot-link-row]'); const rows = row?.parentElement;
+    if (!row || !rows) return;
+    if (rows.children.length === 1) row.querySelectorAll<HTMLInputElement>('input').forEach((input) => { input.value = ''; });
+    else row.remove();
+  });
+
+  workspace?.querySelectorAll<HTMLFormElement>('[data-robot-showcase]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault(); const status = form.querySelector<HTMLElement>('[role=status]'); const data = new FormData(form);
+    const links = Array.from(form.querySelectorAll<HTMLElement>('[data-robot-link-row]')).map((row) => ({
+      kind: (row.querySelector('[name=link_kind]') as HTMLSelectElement | null)?.value ?? 'software',
+      label: (row.querySelector('[name=link_label]') as HTMLInputElement | null)?.value.trim() ?? '',
+      url: (row.querySelector('[name=link_url]') as HTMLInputElement | null)?.value.trim() ?? '',
+    })).filter((link) => link.label || link.url);
+    if (links.some((link) => !link.label || !link.url)) { if (status) status.textContent = 'Each link needs both a label and an HTTPS URL.'; return; }
+    if (status) status.textContent = 'Saving public Robot details…';
+    const response = await fetch(`/api/robot/robots/${form.dataset.robotShowcase}/showcase`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project_stage: data.get('project_stage'), capabilities: String(data.get('capabilities') ?? '').split(',').map((value) => value.trim()).filter(Boolean), software_summary: data.get('software_summary'), links }) });
+    const payload = await response.json() as { error?: string }; if (status) status.textContent = response.ok ? 'Public Robot details saved.' : payload.error ?? 'Details could not be saved.';
+  }));
+
+  async function loadRobotImage(file: File): Promise<{ source: CanvasImageSource; width: number; height: number; close: () => void }> {
+    if ('createImageBitmap' in window) {
+      try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        return { source: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close() };
+      } catch { /* Safari can use its native image decoder below. */ }
+    }
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image(); image.decoding = 'async'; image.src = objectUrl; await image.decode();
+    return { source: image, width: image.naturalWidth, height: image.naturalHeight, close: () => URL.revokeObjectURL(objectUrl) };
+  }
+  const robotCanvasJpeg = (canvas: HTMLCanvasElement, quality: number) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+  async function prepareRobotPhoto(file: File): Promise<Blob> {
+    if (!file.type.startsWith('image/') && !/\.(heic|heif)$/iu.test(file.name)) throw new Error('Choose an image file');
+    if (file.size > 16 * 1024 * 1024) throw new Error('Choose an image smaller than 16 MB');
+    const loaded = await loadRobotImage(file);
+    try {
+      if (loaded.width < 384 || loaded.height < 240) throw new Error('Choose an image at least 384 by 240 pixels');
+      const ratio = 8 / 5; let cropWidth = loaded.width; let cropHeight = loaded.height;
+      if (cropWidth / cropHeight > ratio) cropWidth = Math.round(cropHeight * ratio); else cropHeight = Math.round(cropWidth / ratio);
+      const canvas = document.createElement('canvas'); canvas.width = Math.min(1400, cropWidth); canvas.height = Math.round(canvas.width / ratio);
+      const context = canvas.getContext('2d', { alpha: false }); if (!context) throw new Error('This browser could not prepare the image');
+      context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(loaded.source, (loaded.width - cropWidth) / 2, (loaded.height - cropHeight) / 2, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+      for (const quality of [0.88, 0.8, 0.72, 0.64, 0.56]) {
+        const blob = await robotCanvasJpeg(canvas, quality);
+        if (blob && blob.size <= 600_000) return blob;
+      }
+      throw new Error('This image could not be reduced safely.');
+    } finally { loaded.close(); }
+  }
+  workspace?.querySelectorAll<HTMLFormElement>('[data-robot-media-upload]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault(); const status = form.querySelector<HTMLElement>('[role=status]'); const submit = form.querySelector<HTMLButtonElement>('button[type=submit]'); const data = new FormData(form); const file = data.get('image');
+    if (!(file instanceof File) || !file.size) return; if (submit) submit.disabled = true; if (status) status.textContent = 'Preparing public Robot image…';
+    try {
+      const photo = await prepareRobotPhoto(file); const params = new URLSearchParams({ robot_id: form.dataset.robotMediaUpload ?? '', alt_text: String(data.get('alt_text') ?? '') });
+      if (form.dataset.ownerOrganization) params.set('organization_id', form.dataset.ownerOrganization);
+      const response = await fetch(`/api/showcase/media?${params}`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: photo }); const payload = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(payload.error || 'Robot image could not be saved.'); location.reload();
+    } catch (error) { if (status) status.textContent = error instanceof Error ? error.message : 'Robot image could not be saved.'; if (submit) submit.disabled = false; }
+  }));
+  workspace?.querySelectorAll<HTMLFormElement>('[data-robot-media-details]').forEach((form) => form.addEventListener('submit', async (event) => {
+    event.preventDefault(); const status = form.querySelector<HTMLElement>('[role=status]'); const data = new FormData(form); if (status) status.textContent = 'Saving image details…';
+    const response = await fetch(`/api/showcase/media/${form.dataset.robotMediaDetails}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: data.get('title'), caption: data.get('caption'), alt_text: data.get('alt_text'), link_url: data.get('link_url'), position: Number(data.get('position')) }) });
+    const payload = await response.json() as { error?: string }; if (status) status.textContent = response.ok ? 'Image details saved.' : payload.error ?? 'Image details could not be saved.';
+  }));
+  workspace?.querySelectorAll<HTMLButtonElement>('[data-remove-robot-media]').forEach((button) => button.addEventListener('click', async () => {
+    const article = button.closest<HTMLElement>('[data-robot-media-id]'); if (!article || !confirm('Remove this public Robot image?')) return; button.disabled = true;
+    const response = await fetch(`/api/showcase/media/${article.dataset.robotMediaId}`, { method: 'DELETE' }); if (response.ok) location.reload(); else button.disabled = false;
+  }));
 </script>

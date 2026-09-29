@@ -24,6 +24,7 @@ let connections: Array<{
   token_expires_at: string | null;
 }> = [];
 let claimedOrganizationSubjects = new Set<string>();
+let linkOrganizations: Array<{ id: string; handle: string; name: string }> = [];
 let jobs: Array<{
   id: string;
   status: string;
@@ -62,6 +63,20 @@ if (sql) {
           )
       `;
       claimedOrganizationSubjects = new Set(claims.map((claim) => String(claim.provider_subject ?? '')).filter(Boolean));
+      linkOrganizations = await sql`
+        select distinct organization.id, organization.handle,
+               coalesce(organization.full_name, organization.name) as name
+        from app.namespace_claims claim
+        join app.external_identities identity on identity.id = claim.external_identity_id
+        join app.organizations organization on organization.id = claim.organization_id
+        join app.organization_members member on member.organization_id = organization.id
+        where claim.namespace_kind = 'organization' and claim.status = 'verified'
+          and identity.profile_id = ${authenticated.profileId}::uuid
+          and identity.revoked_at is null
+          and member.profile_id = ${authenticated.profileId}::uuid
+          and member.role in ('owner','admin','maintainer')
+        order by organization.handle
+      ` as typeof linkOrganizations;
     }
   } catch {
     profile = null;
@@ -166,7 +181,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
               <section class="bridge-step" data-bridge-results hidden aria-labelledby="bridge-results-heading">
                 <div class="bridge-step__number">02</div>
                 <div class="bridge-step__content">
-                  <p class="eyebrow">Review before copying</p>
+                  <p class="eyebrow">Choose what happens</p>
                   <div class="bridge-results-heading">
                     <div>
                       <h2 id="bridge-results-heading">Your work</h2>
@@ -181,8 +196,18 @@ const claimableOrganizations = connections.flatMap((connection) => {
                   </label>
                   <div class="bridge-import-bar">
                     <div><strong data-bridge-selected-count>0 selected</strong><span data-bridge-selected-size>0 B</span></div>
-                    <button class="button button--dark" type="button" data-bridge-import disabled>Import selected</button>
+                    <div class="bridge-result-actions">
+                      {linkOrganizations.length > 0 && <label>Show on
+                        <select data-bridge-link-owner>
+                          <option value="">My profile</option>
+                          {linkOrganizations.map((organization) => <option value={organization.id}>{organization.name} · @{organization.handle}</option>)}
+                        </select>
+                      </label>}
+                      <button class="button button--secondary" type="button" data-bridge-link disabled>Add to profile</button>
+                      <button class="button button--dark" type="button" data-bridge-import disabled>Import selected</button>
+                    </div>
                   </div>
+                  <p class="bridge-link-note"><strong>Add to profile</strong> creates a free external card and keeps every file on Hugging Face. <strong>Import selected</strong> copies an exact revision into Super ii for checks and reviewed publishing.</p>
                   <p class="form-status" data-bridge-import-status aria-live="polite"></p>
                 </div>
               </section>
@@ -290,6 +315,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
     total_size_bytes: number;
     largest_file_bytes: number;
     blocked_reason: string | null;
+    source_visibility: 'public' | 'private' | 'gated';
   };
 
   const workspace = document.querySelector('[data-bridge-workspace]');
@@ -299,6 +325,8 @@ const claimableOrganizations = connections.flatMap((connection) => {
   const repositoryList = document.querySelector('[data-bridge-repository-list]');
   const counts = document.querySelector('[data-bridge-counts]');
   const importButton = document.querySelector('[data-bridge-import]');
+  const linkButton = document.querySelector('[data-bridge-link]');
+  const linkOwner = document.querySelector('[data-bridge-link-owner]');
   const importStatus = document.querySelector('[data-bridge-import-status]');
   const attestation = document.querySelector('[data-bridge-attestation]');
   const selectedCount = document.querySelector('[data-bridge-selected-count]');
@@ -312,6 +340,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
     && typeof value.source_url === 'string'
     && ['model', 'dataset', 'space'].includes(String(value.kind))
     && typeof value.title === 'string'
+    && ['public', 'private', 'gated'].includes(String(value.source_visibility))
     && typeof value.file_count === 'number'
     && typeof value.total_size_bytes === 'number';
 
@@ -348,7 +377,13 @@ const claimableOrganizations = connections.flatMap((connection) => {
     if (selectedCount) selectedCount.textContent = `${selected.length} selected`;
     if (selectedSize) selectedSize.textContent = formatBytes(selected.reduce((sum, repository) => sum + repository.total_size_bytes, 0));
     if (importButton instanceof HTMLButtonElement) {
-      importButton.disabled = !selected.length || !(attestation instanceof HTMLInputElement && attestation.checked);
+      importButton.disabled = !selected.length
+        || selected.some((repository) => Boolean(repository.blocked_reason))
+        || !(attestation instanceof HTMLInputElement && attestation.checked);
+    }
+    if (linkButton instanceof HTMLButtonElement) {
+      linkButton.disabled = !activeIdentityId || !selected.length
+        || selected.some((repository) => repository.source_visibility !== 'public');
     }
   };
 
@@ -362,7 +397,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
       input.type = 'checkbox';
       input.dataset.bridgeRepository = '';
       input.dataset.index = String(index);
-      input.disabled = Boolean(repository.blocked_reason);
+      input.disabled = Boolean(repository.blocked_reason && repository.source_visibility !== 'public');
       input.addEventListener('change', updateSelection);
       const main = document.createElement('span');
       main.className = 'bridge-repository__main';
@@ -374,7 +409,9 @@ const claimableOrganizations = connections.flatMap((connection) => {
       main.appendChild(meta);
       const state = document.createElement('span');
       state.className = repository.blocked_reason ? 'bridge-repository__blocked' : 'bridge-repository__ready';
-      state.textContent = reason(repository.blocked_reason);
+      state.textContent = repository.blocked_reason && repository.source_visibility === 'public'
+        ? `${reason(repository.blocked_reason)} · external link available`
+        : reason(repository.blocked_reason);
       row.appendChild(input);
       row.appendChild(main);
       row.appendChild(state);
@@ -437,6 +474,29 @@ const claimableOrganizations = connections.flatMap((connection) => {
     updateSelection();
   });
   attestation?.addEventListener('change', updateSelection);
+
+  linkButton?.addEventListener('click', async () => {
+    if (!(linkButton instanceof HTMLButtonElement)) return;
+    const selected = selectedRepositories();
+    linkButton.disabled = true;
+    setStatus(importStatus, 'Re-checking public ownership and the current source revision…');
+    try {
+      const response = await fetch('/api/bridge/links', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          identity_id: activeIdentityId,
+          organization_id: linkOwner instanceof HTMLSelectElement ? linkOwner.value || null : null,
+          repositories: selected.map((repository) => ({ source_url: repository.source_url, source_revision: repository.source_revision })),
+        }),
+      });
+      const payload = await response.json() as Record<string, unknown>;
+      if (!response.ok || !Array.isArray(payload.linked)) throw new Error(typeof payload.error === 'string' ? payload.error : 'Work could not be linked.');
+      setStatus(importStatus, `${payload.linked.length} ${payload.linked.length === 1 ? 'card' : 'cards'} added. Files remain on Hugging Face.`, 'success');
+    } catch (error) {
+      setStatus(importStatus, error instanceof Error ? error.message : 'Work could not be linked.', 'error');
+    } finally { updateSelection(); }
+  });
 
   importButton?.addEventListener('click', async () => {
     if (!(sourceForm instanceof HTMLFormElement) || !(importButton instanceof HTMLButtonElement)) return;

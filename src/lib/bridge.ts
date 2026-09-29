@@ -73,10 +73,17 @@ type HfRepositoryPayload = Record<string, unknown> & {
   library_name?: unknown;
   sdk?: unknown;
   description?: unknown;
+  downloads?: unknown;
+  likes?: unknown;
 };
 
 function stringValue(value: unknown, max = 2_048): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
+function nonNegativeInteger(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function base64Url(bytes: Uint8Array): string {
@@ -597,6 +604,8 @@ export async function inspectHuggingFaceRepository(
       task: stringValue(payload.pipeline_tag, 120) || null,
       library: stringValue(payload.library_name, 120) || null,
       sdk: sdk || null,
+      provider_downloads: nonNegativeInteger(payload.downloads),
+      provider_likes: nonNegativeInteger(payload.likes),
       provider_security_status: providerSecurityStatus(payload),
     },
     source_manifest: manifest,

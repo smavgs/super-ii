@@ -28,7 +28,8 @@ export const PUT: APIRoute = async ({ locals, request }) => {
   try {
     const rows = await sql`
       update app.profiles
-      set bio = ${value.bio},
+      set profile_kind = ${value.profile_kind},
+          bio = ${value.bio},
           interests = ${JSON.stringify(value.interests)}::jsonb,
           x_username = ${value.x_username},
           github_username = ${value.github_username},
@@ -37,7 +38,7 @@ export const PUT: APIRoute = async ({ locals, request }) => {
           youtube_url = ${value.youtube_url},
           updated_at = now()
       where id = ${profile.profileId}::uuid
-      returning id, handle, display_name, bio, avatar_url, interests,
+      returning id, handle, display_name, profile_kind, bio, avatar_url, interests,
                 x_username, github_username, linkedin_url, website_url, youtube_url
     `;
     if (!rows.length) return Response.json({ error: 'profile not found' }, { status: 404, headers: privateHeaders });

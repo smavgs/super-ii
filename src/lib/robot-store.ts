@@ -22,6 +22,13 @@ export type RobotRow = Record<string, unknown> & {
   created_at: string;
   updated_at: string;
   version_created_at: string;
+  owner_profile_id: string | null;
+  owner_organization_id: string | null;
+  project_stage: 'concept' | 'prototype' | 'testing' | 'production' | 'research';
+  capabilities: string[];
+  software_summary: string;
+  showcase_links: Array<{ id: string; kind: string; label: string; url: string; position: number }>;
+  showcase_media: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
 };
 
 export type RobotHardwareRow = {
@@ -70,11 +77,29 @@ export async function activeRobotPlan(
 const robotProjection = `
   robot.id, robot.slug, robot.title, robot.summary, robot.audience,
   robot.visibility, robot.status, robot.created_at, robot.updated_at,
+  robot.owner_profile_id, robot.owner_organization_id, robot.project_stage,
+  robot.capabilities, robot.software_summary,
   coalesce(profile.handle, organization.handle) as owner_handle,
   coalesce(profile.display_name, organization.name) as owner_display_name,
   case when robot.owner_profile_id is not null then 'person' else 'organization' end as owner_type,
   version.id as version_id, version.version_number, version.change_summary,
-  version.plan_snapshot, version.created_at as version_created_at
+  version.plan_snapshot, version.created_at as version_created_at,
+  coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', link.id, 'kind', link.link_kind, 'label', link.label,
+      'url', link.url, 'position', link.position
+    ) order by link.position)
+    from app.robot_links link where link.robot_id = robot.id
+  ), '[]'::jsonb) as showcase_links,
+  coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', media.id, 'title', media.title, 'caption', media.caption,
+      'alt_text', media.alt_text, 'link_url', media.link_url,
+      'position', media.position, 'width', media.width, 'height', media.height
+    ) order by media.position)
+    from app.showcase_media media
+    where media.robot_id = robot.id and media.status = 'active'
+  ), '[]'::jsonb) as showcase_media
 `;
 
 export async function listPublicRobots(

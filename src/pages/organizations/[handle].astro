@@ -2,6 +2,10 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { repositoryPath, type PublicRepository } from '@/lib/catalog';
+import LinkedWorkGrid from '@/components/LinkedWorkGrid.astro';
+import ShowcaseGallery, { type ShowcaseItem } from '@/components/ShowcaseGallery.astro';
+import { listOwnerLinkedWork, type LinkedWorkItem } from '@/lib/linked-work';
+import { listPublicShowcase } from '@/lib/showcase-media';
 
 type OrganizationView = {
   id: string;
@@ -23,6 +27,8 @@ const handle = Astro.params.handle ?? '';
 const sql = sqlClient(Astro.locals);
 let organization: OrganizationView | null = null;
 let repositories: PublicRepository[] = [];
+let linkedWork: LinkedWorkItem[] = [];
+let showcase: ShowcaseItem[] = [];
 if (sql) {
   try {
     const rows = await sql`
@@ -47,6 +53,10 @@ if (sql) {
         order by r.updated_at desc
         limit 100
       ` as PublicRepository[];
+      [linkedWork, showcase] = await Promise.all([
+        listOwnerLinkedWork(sql, 'organization', organization.id),
+        listPublicShowcase(sql, 'organization', organization.id),
+      ]);
     }
   } catch {
     organization = null;
@@ -76,6 +86,8 @@ if (!organization) Astro.response.status = 404;
           {organization.linkedin_url && <a class="button button--secondary button--small" href={organization.linkedin_url} rel="me external">LinkedIn</a>}
         </div>
       </header>
+      <ShowcaseGallery items={showcase} title="Selected work" />
+      <LinkedWorkGrid items={linkedWork} heading="Linked work" />
       <section class="repository-section">
         <div class="repository-section__heading"><div><p class="eyebrow">Public work</p><h2>Repositories</h2></div><a class="button button--dark button--small" href="/new">New repository</a></div>
         {repositories.length ? (
