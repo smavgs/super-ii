@@ -38,7 +38,7 @@
     "@clerk/localizations": "4.20.0",
     "@fontsource-variable/source-sans-3": "5.3.0",
     "@fontsource/ibm-plex-mono": "5.3.0",
-    "@huggingface/transformers": "4.2.0",
+    "@huggingface/transformers": "4.3.0",
     "@modelcontextprotocol/server": "2.0.0",
     "@neondatabase/serverless": "1.1.0",
     "@noble/hashes": "2.4.0",
