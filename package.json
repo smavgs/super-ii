@@ -62,7 +62,7 @@
     "ajv-formats": "3.0.1",
     "esbuild": "0.28.2",
     "typescript": "6.0.3",
-    "wrangler": "4.141.0"
+    "wrangler": "4.142.0"
   },
   "overrides": {
     "adm-zip": "https://codeload.github.com/cthackers/adm-zip/tar.gz/7d90dea2bfd35bc4761d6c8cf822f26b59aeef77",
