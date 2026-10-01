@@ -29,9 +29,9 @@ serve_mcp(LocalModel())
                 tools = await session.list_tools()
                 assert [tool.name for tool in tools.tools] == ["generate"]
                 result = await session.call_tool("generate", {"prompt": "hello", "max_tokens": 3})
-                assert not result.isError
+                assert not getattr(result, "is_error", getattr(result, "isError", False))
                 assert result.content[0].text == "local:hel"
                 invalid = await session.call_tool("generate", {"max_tokens": 3})
-                assert invalid.isError
+                assert getattr(invalid, "is_error", getattr(invalid, "isError", False))
 
     asyncio.run(asyncio.wait_for(exercise(), timeout=15))

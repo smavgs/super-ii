@@ -189,9 +189,12 @@ def serve(model: Model, *, port: int, token: str) -> None:
 
 
 def serve_mcp(model: Model) -> None:
-    from mcp.server.fastmcp import FastMCP
+    try:
+        from mcp.server.mcpserver import MCPServer
+    except ImportError:  # MCP Python SDK 1.x compatibility.
+        from mcp.server.fastmcp import FastMCP as MCPServer
 
-    server = FastMCP("Super ii local inference")
+    server = MCPServer("Super ii local inference")
 
     @server.tool()
     def generate(prompt: str, max_tokens: int = 256) -> str:
