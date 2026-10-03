@@ -232,9 +232,9 @@ if (selected && requestedModel === `${selected.owner_handle}/${selected.slug}` &
       if (status) status.textContent = 'Finding verified tokenizer models…';
       try {
         const response = await fetch(`/api/tokenizers/models?q=${encodeURIComponent(query)}&limit=8`, { headers: { accept: 'application/json' } });
-        const value = await response.json() as { items?: ModelOption[]; error?: string };
+        const value = await response.json() as { items?: ModelOption[] };
         if (sequence !== requestSequence) return;
-        if (!response.ok) throw new Error(value.error ?? 'Model search is unavailable.');
+        if (!response.ok) throw new Error('Model search is unavailable.');
         const models = Array.isArray(value.items) ? value.items : [];
         results.replaceChildren(...models.map((model) => modelButton(model)));
         activeIndex = -1;
