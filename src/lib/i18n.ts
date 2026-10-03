@@ -3082,6 +3082,10 @@ function translateChineseDynamic(normalized: string): string | null {
   if (match) return `已选择 ${match[1]} 项`;
   match = normalized.match(/^([\d.,\s\u00a0]+) bytes$/);
   if (match) return `${match[1].trim()} 字节`;
+  match = normalized.match(/^(\d+) verified models? ready\.$/);
+  if (match) return `${match[1]} 个已验证模型可用。`;
+  match = normalized.match(/^(\d+) verified models? found\.$/);
+  if (match) return `找到 ${match[1]} 个已验证模型。`;
   match = normalized.match(/^Open (model|dataset|app)$/);
   if (match) return `打开${exact(match[1])}`;
   match = normalized.match(/^Results for [“"](.+)[”"]$/);

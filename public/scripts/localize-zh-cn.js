@@ -37,6 +37,10 @@
     if (match) return `已选择 ${match[1]} 项`;
     match = value.match(/^([\d.,\s\u00a0]+) bytes$/);
     if (match) return `${match[1].trim()} 字节`;
+    match = value.match(/^(\d+) verified models? ready\.$/);
+    if (match) return `${match[1]} 个已验证模型可用。`;
+    match = value.match(/^(\d+) verified models? found\.$/);
+    if (match) return `找到 ${match[1]} 个已验证模型。`;
     match = value.match(/^Open (model|dataset|app)$/);
     if (match) return `打开${exact(match[1])}`;
     match = value.match(/^Results for [“"](.+)[”"]$/);
@@ -238,7 +242,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/zh-cn.json?v=20261002-2', { credentials: 'same-origin' })
+  fetch('/locales/zh-cn.json?v=20261003-1', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Simplified Chinese catalogue unavailable');
       return response.json();

@@ -21,8 +21,9 @@ const files = await Promise.all([
   read('src/lib/system-state-localization.ts'),
   read('src/components/NotebookDocument.astro'),
   read('src/lib/official-notebook-localization.ts'),
+  read('src/pages/tokenizer.astro'),
 ]);
-const [ruSource, zhSource, siteSource, middleware, layout, header, footer, ruClient, zhClient, clerkLocale, sitemap, systemState, i18n, systemStateLocalization, notebookDocument, officialNotebookLocalization] = files;
+const [ruSource, zhSource, siteSource, middleware, layout, header, footer, ruClient, zhClient, clerkLocale, sitemap, systemState, i18n, systemStateLocalization, notebookDocument, officialNotebookLocalization, tokenizerPage] = files;
 
 const errors = [];
 const parse = (source, label) => {
@@ -105,11 +106,16 @@ const contracts = [
   [ruClient, 'MutationObserver', 'Russian dynamic content localization'],
   [zhClient, 'MutationObserver', 'Chinese dynamic content localization'],
   [zhClient, "headers.set('x-superii-locale', 'zh-CN')", 'Chinese localized client requests'],
-  [zhClient, '/locales/zh-cn.json?v=20261002-2', 'current Chinese catalogue cache key'],
+  [layout, '/scripts/localize-zh-cn.js?v=20261003-1', 'current Chinese localizer cache key'],
+  [zhClient, '/locales/zh-cn.json?v=20261003-1', 'current Chinese catalogue cache key'],
+  [zhClient, "value.match(/^(\\d+) verified models? ready\\.$/)", 'Chinese live tokenizer ready-count localization'],
+  [zhClient, "value.match(/^(\\d+) verified models? found\\.$/)", 'Chinese live tokenizer result-count localization'],
   [i18n, "export type SiteLocale = 'en' | 'ru' | 'zh-CN'", 'three-locale type'],
   [i18n, "'robot',", 'localized Robot route'],
   [i18n, "'transparent',", 'localized Transparent route'],
   [i18n, 'translateChineseDynamic', 'Chinese dynamic-value localization'],
+  [i18n, "normalized.match(/^(\\d+) verified models? ready\\.$/)", 'server-rendered Chinese tokenizer ready count'],
+  [i18n, "normalized.match(/^(\\d+) verified models? found\\.$/)", 'server-rendered Chinese tokenizer result count'],
   [clerkLocale, 'ruRU, zhCN', 'Russian and Chinese Clerk localization'],
   [sitemap, '<loc>https://superii.site/ru/robot</loc>', 'Russian Robot sitemap route'],
   [sitemap, '<loc>https://superii.site/zh-cn</loc>', 'Chinese sitemap root'],
@@ -121,6 +127,8 @@ const contracts = [
   [notebookDocument, 'localizeOfficialNotebookMarkdown', 'official notebook localization boundary'],
   [notebookDocument, 'data-no-translate', 'publisher notebook source-language boundary'],
   [officialNotebookLocalization, "if (locale === 'zh-CN')", 'Simplified Chinese official notebook prose'],
+  [tokenizerPage, "verified model${initial.items.length === 1 ? '' : 's'} ready.", 'tokenizer initial verified-model count source'],
+  [tokenizerPage, "verified model${models.length === 1 ? '' : 's'} found.", 'tokenizer searched verified-model count source'],
 ];
 for (const [source, marker, label] of contracts) if (!source.includes(marker)) errors.push(`Localization contract is missing ${label}`);
 
