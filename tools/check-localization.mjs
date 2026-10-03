@@ -75,6 +75,9 @@ const exactChinese = {
   Models: '模型', Datasets: '数据集', Apps: '应用', Skills: '技能', Builders: '创作者', Pricing: '定价',
   Workspace: '工作区', 'Join free': '免费加入', 'Checking the web…': '正在搜索网络…',
   'Close navigation': '关闭导航',
+  'Finding verified tokenizer models…': '正在查找已验证的分词器模型…',
+  'No verified tokenizer model matched that search.': '没有与该搜索匹配的已验证分词器模型。',
+  'Model search is unavailable.': '模型搜索当前不可用。',
 };
 for (const [english, translation] of Object.entries(exactChinese)) {
   const reviewedMarker = `'${english.replaceAll("'", "\\'")}': '${translation.replaceAll("'", "\\'")}'`;
@@ -106,8 +109,8 @@ const contracts = [
   [ruClient, 'MutationObserver', 'Russian dynamic content localization'],
   [zhClient, 'MutationObserver', 'Chinese dynamic content localization'],
   [zhClient, "headers.set('x-superii-locale', 'zh-CN')", 'Chinese localized client requests'],
-  [layout, '/scripts/localize-zh-cn.js?v=20261003-1', 'current Chinese localizer cache key'],
-  [zhClient, '/locales/zh-cn.json?v=20261003-1', 'current Chinese catalogue cache key'],
+  [layout, '/scripts/localize-zh-cn.js?v=20261003-2', 'current Chinese localizer cache key'],
+  [zhClient, '/locales/zh-cn.json?v=20261003-2', 'current Chinese catalogue cache key'],
   [zhClient, "value.match(/^(\\d+) verified models? ready\\.$/)", 'Chinese live tokenizer ready-count localization'],
   [zhClient, "value.match(/^(\\d+) verified models? found\\.$/)", 'Chinese live tokenizer result-count localization'],
   [i18n, "export type SiteLocale = 'en' | 'ru' | 'zh-CN'", 'three-locale type'],
@@ -129,6 +132,7 @@ const contracts = [
   [officialNotebookLocalization, "if (locale === 'zh-CN')", 'Simplified Chinese official notebook prose'],
   [tokenizerPage, "verified model${initial.items.length === 1 ? '' : 's'} ready.", 'tokenizer initial verified-model count source'],
   [tokenizerPage, "verified model${models.length === 1 ? '' : 's'} found.", 'tokenizer searched verified-model count source'],
+  [tokenizerPage, "throw new Error('Model search is unavailable.')", 'tokenizer UI does not expose machine-error details'],
 ];
 for (const [source, marker, label] of contracts) if (!source.includes(marker)) errors.push(`Localization contract is missing ${label}`);
 
