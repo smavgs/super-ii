@@ -6,6 +6,7 @@ import CommerceWorkspace from './CommerceWorkspace.astro';
 import MemberProfileWorkspace from './MemberProfileWorkspace.astro';
 import CardWorkspace from './CardWorkspace.astro';
 import type { EditableMemberProfile } from '@/lib/member-profile';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import '@/styles/workspace.css';
 
 interface Props {
@@ -22,7 +23,7 @@ interface Props {
 }
 
 const { repositories, notifications, bridgeSources, linkedWork, showcaseMedia, showcaseUploadsRemaining, subscriptions, payments, memberProfile, unavailable = false } = Astro.props;
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sections = [
   { id: 'work', label: 'Your work', icon: 'ph-folder-open' },
   { id: 'cards', label: 'My cards', icon: 'ph-identification-card' },

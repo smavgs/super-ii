@@ -13,7 +13,8 @@
   },
   "languages": [
     { "code": "en", "name": "English", "prefix": "", "status": "production", "default": true },
-    { "code": "ru", "name": "Русский", "prefix": "/ru", "status": "production", "default": false }
+    { "code": "ru", "name": "Русский", "prefix": "/ru", "status": "production", "default": false },
+    { "code": "zh-CN", "name": "简体中文", "prefix": "/zh-cn", "status": "production", "default": false }
   ],
   "catalog": {
     "models": [],
@@ -170,9 +171,26 @@
     "/api/agent-connections/guide.md",
     "/api/agent-connections/connect.mjs",
     "/social/agents.md",
-    "/robot",
     "/robot/agents.md",
-    "/transparent",
-    "/transparent/agents.md"
+    "/transparent/agents.md",
+    "/system-state.json",
+    "/system-state.md",
+    "/runtime-registry.json",
+    "/agent-connectors.json",
+    "/agents.md",
+    "/siiwebskill.md",
+    "/llms-full.txt",
+    "/openapi.json",
+    "/docs.json",
+    "/.well-known/agent-card.json",
+    "/.well-known/commerce.json",
+    "/.well-known/commerce-agent-card.json",
+    "/.well-known/robot-agent-card.json",
+    "/mcp",
+    "/mcp/work",
+    "/mcp/social",
+    "/mcp/commerce",
+    "/mcp/robot",
+    "/mcp/transparent"
   ]
 }

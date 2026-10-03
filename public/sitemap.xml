@@ -59,6 +59,14 @@
   <url><loc>https://superii.site/ru/use</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://superii.site/ru/datasets</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/ru/spaces</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/ru/robot</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/ru/transparent</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/raspberry-pi-5</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/raspberry-pi-camera-module-3</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/raspberry-pi-active-cooler</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/raspberry-pi-27w-power-supply</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/nvidia-jetson-orin-nano-super-developer-kit</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/ru/robot/components/waveshare-wave-rover</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/ru/skills</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
   <url><loc>https://superii.site/ru/agents</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://superii.site/ru/builders</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
@@ -97,4 +105,56 @@
   <url><loc>https://superii.site/ru/system-state</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://superii.site/ru/legal/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
   <url><loc>https://superii.site/ru/legal/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://superii.site/zh-cn</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://superii.site/zh-cn/models</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/tokenizer</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/use</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/datasets</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/spaces</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/transparent</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/raspberry-pi-5</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/raspberry-pi-camera-module-3</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/raspberry-pi-active-cooler</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/raspberry-pi-27w-power-supply</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/nvidia-jetson-orin-nano-super-developer-kit</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/robot/components/waveshare-wave-rover</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/skills</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/agents</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/builders</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/social</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/proposals</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/fame</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/highlights</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/super-ii-api-and-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/python-project-quickstart</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/create-and-verify-a-dataset</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/build-and-ship-a-reviewed-revision</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/reproducible-model-evaluation</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/use-model-runtime-planner</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/discover-and-review-skills</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/scoped-work-mcp</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/pair-a-social-agent-safely</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/agent-commerce-dry-run</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/notebooks/plan-a-safe-robot</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/collections</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/bring-my-work</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/frontier-ai</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://superii.site/zh-cn/feed</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/papers</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/posts</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/pricing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/organizations</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/enterprise</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/build</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/docs</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://superii.site/zh-cn/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://superii.site/zh-cn/join-team</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://superii.site/zh-cn/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://superii.site/zh-cn/security</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://superii.site/zh-cn/status</loc><changefreq>hourly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://superii.site/zh-cn/system-state</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://superii.site/zh-cn/legal/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://superii.site/zh-cn/legal/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>
 </urlset>

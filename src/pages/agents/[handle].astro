@@ -2,9 +2,10 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { getPublicAgentProfile, type PublicAgentProfile } from '@/lib/agent-profile';
 import { sqlClient } from '@/lib/db';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const handle = Astro.params.handle ?? '';
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sql = sqlClient(Astro.locals);
 let profile: PublicAgentProfile | null = null;
 if (sql) {
@@ -23,6 +24,8 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
 <BaseLayout
   title={profile ? `${profile.display_name} · Agent` : 'Agent not found'}
   description={profile?.description || 'Public Super ii agent identity.'}
+  titleNoTranslate={Boolean(profile)}
+  descriptionNoTranslate={Boolean(profile?.description)}
   noindex={!profile}
   className="agent-profile-page"
 >
@@ -33,9 +36,9 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
           <div class="agent-profile-mark" aria-hidden="true"><i class="ph ph-robot"></i></div>
           <div>
             <p class="eyebrow">Public agent identity</p>
-            <h1>{profile.display_name}</h1>
-            <p class="agent-profile-handle">@{profile.handle} · {profile.framework}</p>
-            <p class="agent-profile-description">{profile.description || 'No public description supplied.'}</p>
+            <h1 data-no-translate>{profile.display_name}</h1>
+            <p class="agent-profile-handle" data-no-translate>@{profile.handle} · {profile.framework}</p>
+            {profile.description ? <p class="agent-profile-description" data-no-translate>{profile.description}</p> : <p class="agent-profile-description">No public description supplied.</p>}
             <div class="button-row">
               {profile.agent_card_url && <a class="button button--yellow" href={profile.agent_card_url} rel="noreferrer">Agent Card <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>}
               <a class="button agents-button--ghost" href={`/agents/${encodeURIComponent(profile.handle)}/profile.json`}>profile.json</a>
@@ -43,7 +46,7 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
             </div>
           </div>
           <dl class="agent-profile-operator">
-            <div><dt>Operator</dt><dd><a href={`/organizations/${encodeURIComponent(profile.organization_handle)}`}>{profile.organization_name}</a></dd></div>
+            <div><dt>Operator</dt><dd><a href={`/organizations/${encodeURIComponent(profile.organization_handle)}`}><span data-no-translate>{profile.organization_name}</span></a></dd></div>
             <div><dt>Status</dt><dd><span class="agents-status">Active</span></dd></div>
             <div><dt>Verified</dt><dd>{profile.verified_at ? new Date(profile.verified_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Operator-declared'}</dd></div>
             <div><dt>Last seen</dt><dd>{profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'No recorded work yet'}</dd></div>
@@ -71,8 +74,8 @@ function repositoryHref(contribution: PublicAgentProfile['contributions'][number
               const href = repositoryHref(contribution);
               return <article>
                 <div><span>{contribution.job_type}</span><time datetime={contribution.reviewed_at ?? undefined}>{contribution.reviewed_at ? new Date(contribution.reviewed_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Accepted'}</time></div>
-                <h3>{href ? <a href={href}>{contribution.title}</a> : contribution.title}</h3>
-                <p>{contribution.reward_label}</p>
+                <h3 data-no-translate>{href ? <a href={href}>{contribution.title}</a> : contribution.title}</h3>
+                <p data-no-translate>{contribution.reward_label}</p>
                 <code>sha256:{contribution.result_sha256}</code>
               </article>;
             }) : <div class="agent-profile-empty"><i class="ph ph-seal-check" aria-hidden="true"></i><p>No accepted contributions yet.</p></div>}

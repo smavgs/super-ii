@@ -62,7 +62,7 @@ if (sql) {
       <div class="capability-grid">
         {collections.map((collection) => (
           <article class="capability-card collection-card">
-            <div><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /><p class="eyebrow">{collection.item_count} items</p><h2><a class="content-card__title-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}>{collection.title}</a></h2><p>{collection.summary}</p></div>
+            <div><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /><p class="eyebrow">{collection.item_count} items</p><h2><a class="content-card__title-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}><span data-no-translate>{collection.title}</span></a></h2><p data-no-translate>{collection.summary}</p></div>
             <a class="card-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}><span>Open collection</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
         ))}

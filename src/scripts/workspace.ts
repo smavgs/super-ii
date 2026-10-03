@@ -6,6 +6,7 @@ if (root) {
   const links = Array.from(root.querySelectorAll<HTMLAnchorElement>('[data-workspace-nav]'));
   const picker = root.querySelector('[data-workspace-select]') as unknown as HTMLSelectElement | null;
   const russian = document.documentElement.lang === 'ru';
+  const languagePrefix = russian ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
   const copy = (english: string, translated: string) => russian ? translated : english;
 
   function reveal(target: HTMLElement) {
@@ -20,8 +21,8 @@ if (root) {
     const url = new URL(location.href);
     const destination = workspaceDestination(url.hash, url.searchParams.get('welcome'));
     if (destination.redirect) {
-      const path = russian && destination.redirect.startsWith('/organizations')
-        ? `/ru${destination.redirect}` : destination.redirect;
+      const path = languagePrefix && destination.redirect.startsWith('/organizations')
+        ? `${languagePrefix}${destination.redirect}` : destination.redirect;
       location.replace(path);
       return;
     }

@@ -76,7 +76,7 @@ if (sql) {
     <summary>My organizations<small>Your memberships and team work.</small></summary>
     <div class="workspace-disclosure__body">
       {membershipsUnavailable ? <p role="status">Your memberships could not be loaded. Please refresh to try again.</p> : myOrganizations.length ? <div class="account-list">
-        {myOrganizations.map((organization) => <a href={`/organizations/${organization.handle}`}><span><strong>{organization.full_name}</strong><small>@{organization.handle} · {organization.role}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
+        {myOrganizations.map((organization) => <a href={`/organizations/${organization.handle}`}><span><strong data-no-translate>{organization.full_name}</strong><small>@<span data-no-translate>{organization.handle}</span> · {organization.role}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
       </div> : <p>You do not belong to an organization yet.</p>}
       <p><a href="/organizations/new">Create organization</a></p>
     </div>
@@ -116,8 +116,8 @@ if (sql) {
               <div>
                 {organization.logo_url && <img class="organization-logo organization-logo--small" src={organization.logo_url} alt="" loading="lazy" referrerpolicy="no-referrer" />}
                 <p class="eyebrow">{organization.organization_type}</p>
-                <h3>{organization.full_name ?? organization.name}</h3>
-                <p>{organization.description ?? `@${organization.handle} on Super ii`}</p>
+                <h3 data-no-translate>{organization.full_name ?? organization.name}</h3>
+                {organization.description ? <p data-no-translate>{organization.description}</p> : <p>@<span data-no-translate>{organization.handle}</span> on Super ii</p>}
               </div>
               <span class="card-link"><span>{organization.repository_count} repositories · {organization.member_count} members</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></span>
             </a>

@@ -9,6 +9,7 @@ import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 interface Props {
   kind: RepositoryKind;
@@ -17,7 +18,7 @@ interface Props {
 }
 
 const { kind, owner, slug } = Astro.props;
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const result = await getPublicRepository(Astro.locals, kind, owner, slug);
 const repository = result.repository;
 if (!repository) Astro.response.status = result.state === 'error' ? 503 : 404;
@@ -85,6 +86,8 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
 <BaseLayout
   title={repository?.title ?? 'Repository unavailable'}
   description={repository?.summary ?? 'This public Super ii repository is unavailable.'}
+  titleNoTranslate={Boolean(repository)}
+  descriptionNoTranslate={Boolean(repository)}
   noindex={!repository}
 >
   {repository ? (
@@ -96,16 +99,16 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             <CreatorLink compact handle={repository.creator_handle} displayName={repository.creator_display_name} avatarUrl={repository.creator_avatar_url} />
           ) : repository.owner_organization_handle ? (
             <CreatorLink compact kind="organization" handle={repository.owner_organization_handle} displayName={repository.owner_organization_name} avatarUrl={repository.owner_organization_logo_url} />
-          ) : <span>{repository.owner_handle}</span>}
-          <span aria-hidden="true">/</span><span>{repository.slug}</span>
+          ) : <span data-no-translate>{repository.owner_handle}</span>}
+          <span aria-hidden="true">/</span><span data-no-translate>{repository.slug}</span>
         </div>
-        <h1>{repository.title}</h1>
-        <p>{repository.summary}</p>
+        <h1 data-no-translate>{repository.title}</h1>
+        <p data-no-translate>{repository.summary}</p>
         <div class="repository-badges">
-          <span>{repository.license ?? 'License pending'}</span>
-          {repository.task && <span>{repository.task}</span>}
-          {repository.library && <span>{repository.library}</span>}
-          {repository.modality && <span>{repository.modality}</span>}
+          {repository.license ? <span data-no-translate>{repository.license}</span> : <span>License pending</span>}
+          {repository.task && <span data-no-translate>{repository.task}</span>}
+          {repository.library && <span data-no-translate>{repository.library}</span>}
+          {repository.modality && <span data-no-translate>{repository.modality}</span>}
           <span>revision {repository.revision_sequence}</span>
           <span>{repository.likes_count} likes</span>
           <span>{repository.watchers_count} watching</span>
@@ -457,10 +460,10 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                   <div class="catalog-card__topline">
                     {related.creator_handle ? <CreatorLink compact handle={related.creator_handle} displayName={related.creator_display_name} avatarUrl={related.creator_avatar_url} />
                       : related.owner_organization_handle ? <CreatorLink compact kind="organization" handle={related.owner_organization_handle} displayName={related.owner_organization_name} avatarUrl={related.owner_organization_logo_url} />
-                      : <span>{related.owner_handle}</span>}
+                      : <span data-no-translate>{related.owner_handle}</span>}
                     <span>{related.kind} · match {related.match_score}</span>
                   </div>
-                  <h3><a class="catalog-card__title-link" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>{related.title}</a></h3><p>{related.summary}</p>
+                  <h3><a class="catalog-card__title-link" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`} data-no-translate>{related.title}</a></h3><p data-no-translate>{related.summary}</p>
                   <a class="catalog-card__open" href={`/${kindPath(related.kind)}/${encodeURIComponent(related.owner_handle)}/${encodeURIComponent(related.slug)}`}>Open repository <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
                 </article>
               ))}
@@ -483,9 +486,9 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             {repository.discussions.map((discussion) => (
               <article data-discussion-id={discussion.id}>
                 <div><span>{discussion.status}</span><span>{discussion.comment_count} comments</span></div>
-                <h3>{discussion.title}</h3>
-                <p>{discussion.body}</p>
-                <small>Started by <a href={`/people/${encodeURIComponent(discussion.author)}`}>@{discussion.author}</a></small>
+                <h3 data-no-translate>{discussion.title}</h3>
+                <p data-no-translate>{discussion.body}</p>
+                <small>Started by <a href={`/people/${encodeURIComponent(discussion.author)}`} data-no-translate>@{discussion.author}</a></small>
                 <div class="reaction-row" aria-label="React to discussion">
                   {(['helpful', 'celebrate', 'heart', 'eyes'] as const).map((reaction) => (
                     <button type="button" data-reaction data-target-type="discussion" data-target-id={discussion.id} data-reaction-name={reaction} data-active="false">
@@ -497,8 +500,8 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                   <div class="comment-list">
                     {discussion.comments.map((comment) => (
                       <div class="comment-card">
-                        <p>{comment.body}</p>
-                        <small><a href={`/people/${encodeURIComponent(comment.author)}`}>@{comment.author}</a></small>
+                        <p data-no-translate>{comment.body}</p>
+                        <small><a href={`/people/${encodeURIComponent(comment.author)}`} data-no-translate>@{comment.author}</a></small>
                         <div class="reaction-row" aria-label="React to comment">
                           {(['helpful', 'heart'] as const).map((reaction) => (
                             <button type="button" data-reaction data-target-type="comment" data-target-id={comment.id} data-reaction-name={reaction} data-active="false">

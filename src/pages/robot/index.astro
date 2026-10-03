@@ -89,7 +89,7 @@ const reference = robotCatalog.referenceRobots[0];
   description="Plan a source-backed Raspberry Pi or Jetson Robot, keep unknowns visible, publish versions, and let any agent use the same public interface."
   className="robot-site"
 >
-  <div data-robot-page data-signed-in={String(signedIn)} data-no-translate>
+  <div data-robot-page data-signed-in={String(signedIn)}>
     <section class="robot-hero">
       <div class="shell robot-hero__grid">
         <div class="robot-hero__copy">
@@ -204,7 +204,7 @@ const reference = robotCatalog.referenceRobots[0];
         <details class="robot-save">
           <summary>Save and share this Robot</summary>
           <form data-robot-save>
-            {organizationOwners.length > 0 && <label>Owner <select name="organization_id"><option value="" data-handle="you">Personal</option>{organizationOwners.map((organization) => <option value={organization.id} data-handle={organization.handle}>{organization.name} · Team</option>)}</select></label>}
+            {organizationOwners.length > 0 && <label>Owner <select name="organization_id"><option value="" data-handle="you">Personal</option>{organizationOwners.map((organization) => <option value={organization.id} data-handle={organization.handle} data-no-translate>{organization.name}</option>)}</select></label>}
             <label>Robot title <input name="title" minlength="2" maxlength="160" required /></label>
             <label>Public URL name <span class="robot-field-prefix" data-robot-owner-prefix>superii.site/robot/you/</span><input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="96" required /></label>
             <label>Short summary <textarea name="summary" minlength="10" maxlength="2000" rows="3" required></textarea></label>
@@ -256,7 +256,7 @@ const reference = robotCatalog.referenceRobots[0];
         <div class="robot-section-heading"><div><p class="eyebrow">Public Robots</p><h2>Versions other people—and agents—can inspect.</h2></div><a class="button button--secondary" href="/mcp/robot">Connect an agent</a></div>
         {publicRobots.length ? (
           <div class="robot-public__list">
-            {publicRobots.map((robot) => <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span>{robot.owner_display_name} / v{robot.version_number}</span><strong>{robot.title}</strong><p>{robot.summary}</p><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
+            {publicRobots.map((robot) => <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><span data-no-translate>{robot.owner_display_name}</span> / v{robot.version_number}</span><strong data-no-translate>{robot.title}</strong><p data-no-translate>{robot.summary}</p><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
           </div>
         ) : (
           <div class="robot-empty"><strong>No public community Robot has been published yet.</strong><p>Rover One above is a labelled reference—not invented community activity. Your first public Robot can begin here.</p><a href="#make">Make the first one <i class="ph ph-arrow-up" aria-hidden="true"></i></a></div>
@@ -269,7 +269,7 @@ const reference = robotCatalog.referenceRobots[0];
         <div class="robot-section-heading"><div><p class="eyebrow">Robotics community 🧑‍🔧</p><h2>Builders and studios making real Robots.</h2></div><p>Public profiles are free. Studio and company labels describe a single-owner profile; Organizations provide shared team roles.</p></div>
         {robotBuilders.length > 0 ? <div class="robot-owner-grid">{robotBuilders.map((builder) => <a href={`/people/${encodeURIComponent(builder.handle)}`}>
           {builder.avatar_url ? <img src={builder.avatar_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span aria-hidden="true">{builder.display_name.slice(0, 1)}</span>}
-          <div><small>{builder.profile_kind === 'person' ? 'Builder' : `${builder.profile_kind} · single owner`}</small><strong>{builder.display_name}</strong><p>@{builder.handle} · {builder.robot_count} {builder.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          <div><small>{builder.profile_kind === 'person' ? 'Builder' : `${builder.profile_kind} · single owner`}</small><strong data-no-translate>{builder.display_name}</strong><p>@<span data-no-translate>{builder.handle}</span> · {builder.robot_count} {builder.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
         </a>)}</div> : <div class="robot-empty"><strong>The first public builder directory entry can be yours.</strong><p>Publish a public Robot to appear here automatically.</p></div>}
       </div>
     </section>
@@ -279,7 +279,7 @@ const reference = robotCatalog.referenceRobots[0];
         <div class="robot-section-heading"><div><p class="eyebrow">Teams and companies 🏢</p><h2>Organization Robot catalogues.</h2></div><a class="button button--secondary" href="/organizations">Explore all organizations</a></div>
         {robotOrganizations.length > 0 ? <div class="robot-owner-grid">{robotOrganizations.map((organization) => <a href={`/organizations/${encodeURIComponent(organization.handle)}`}>
           {organization.logo_url ? <img src={organization.logo_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span aria-hidden="true">{organization.display_name.slice(0, 1)}</span>}
-          <div><small>{organization.organization_type} organization</small><strong>{organization.display_name}</strong><p>@{organization.handle} · {organization.robot_count} {organization.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          <div><small>{organization.organization_type} organization</small><strong data-no-translate>{organization.display_name}</strong><p>@<span data-no-translate>{organization.handle}</span> · {organization.robot_count} {organization.robot_count === 1 ? 'Robot' : 'Robots'}</p></div><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
         </a>)}</div> : <div class="robot-empty"><strong>No organization Robot catalogue is public yet.</strong><p>Team organizations can publish a shared Robot when they are ready.</p></div>}
       </div>
     </section>
@@ -287,7 +287,7 @@ const reference = robotCatalog.referenceRobots[0];
     <section class="robot-community" id="robot-software">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Software and open resources 💻</p><h2>Follow the tools behind public Robots.</h2></div><p>Links are supplied by Robot builders and open on the original project site.</p></div>
-        {robotResources.length > 0 ? <div class="robot-resource-catalog">{robotResources.map((resource) => <article><span>{resource.link_kind}</span><h3>{resource.label}</h3><p>Used by <a href={`/robot/${encodeURIComponent(resource.robot_owner)}/${encodeURIComponent(resource.robot_slug)}`}>{resource.robot_title}</a></p><a href={resource.url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open resource <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="robot-empty"><strong>No public Robot software links yet.</strong><p>Robot owners can add source, software, docs, CAD, model, dataset, app, and video links.</p></div>}
+        {robotResources.length > 0 ? <div class="robot-resource-catalog">{robotResources.map((resource) => <article><span>{resource.link_kind}</span><h3 data-no-translate>{resource.label}</h3><p>Used by <a href={`/robot/${encodeURIComponent(resource.robot_owner)}/${encodeURIComponent(resource.robot_slug)}`}><span data-no-translate>{resource.robot_title}</span></a></p><a href={resource.url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open resource <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="robot-empty"><strong>No public Robot software links yet.</strong><p>Robot owners can add source, software, docs, CAD, model, dataset, app, and video links.</p></div>}
       </div>
     </section>
 

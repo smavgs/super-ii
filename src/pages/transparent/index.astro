@@ -4,6 +4,7 @@ import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import TransparencyWorkspace from '@/components/TransparencyWorkspace.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import { listProfileTransparency, searchTransparencyReports } from '@/lib/transparent-store';
 import '@/styles/transparent.css';
 import '@/styles/workspace.css';
@@ -17,6 +18,7 @@ if (signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 let personalReports: Awaited<ReturnType<typeof listProfileTransparency>> = [];
 let personalReportsUnavailable = true;
 const query = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 120);
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 let reports: Awaited<ReturnType<typeof searchTransparencyReports>> = [];
 if (sql) {
   try { reports = await searchTransparencyReports(sql, { query, limit: 24 }); } catch { reports = []; }
@@ -77,9 +79,9 @@ if (sql) {
           <div class="transparent-report-grid">
             {reports.map((report) => <a href={`/transparent/${report.report_key}`}>
                 <span>{report.repository_kind}</span>
-                <h3>{report.repository_id}</h3>
+                <h3 data-no-translate>{report.repository_id}</h3>
                 <p><strong>{String(report.coverage.established ?? 0)}</strong> / {String(report.coverage.total ?? 0)} fields established</p>
-                <small>revision {report.source_revision.slice(0, 10)} · {new Date(report.checked_at).toLocaleDateString('en', { dateStyle: 'medium' })}</small>
+                <small>revision {report.source_revision.slice(0, 10)} · {new Date(report.checked_at).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</small>
                 <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
               </a>)}
           </div>

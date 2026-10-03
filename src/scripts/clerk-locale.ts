@@ -1,15 +1,21 @@
 import { updateClerkOptions } from '@clerk/astro/client';
-import { ruRU } from '@clerk/localizations';
+import { ruRU, zhCN } from '@clerk/localizations';
 
-if (document.documentElement.lang === 'ru') {
+const localization = document.documentElement.lang === 'ru'
+  ? ruRU
+  : document.documentElement.lang === 'zh-CN'
+    ? zhCN
+    : null;
+
+if (localization) {
   let attempts = 0;
-  const applyRussian = () => {
+  const applyLocalization = () => {
     attempts += 1;
     try {
-      updateClerkOptions({ localization: ruRU });
+      updateClerkOptions({ localization });
     } catch {
-      if (attempts < 120) window.setTimeout(applyRussian, 50);
+      if (attempts < 120) window.setTimeout(applyLocalization, 50);
     }
   };
-  applyRussian();
+  applyLocalization();
 }

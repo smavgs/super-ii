@@ -7,10 +7,12 @@ import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { activeAssistantPlan, assistantPlanEntitlements, type AssistantPlan } from '@/lib/assistant-plan';
 import { assistantMemoryState, listAssistantThreads, type AssistantMemoryItem, type AssistantThreadSummary } from '@/lib/assistant-store';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 export const prerender = false;
 
 const authConfigured = authIsConfigured(Astro.locals);
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sql = sqlClient(Astro.locals);
 const requestedQuery = Astro.url.searchParams.get('q')?.trim().slice(0, 200) ?? '';
 const requestedStatus = Astro.url.searchParams.get('status') === 'archived' ? 'archived' : 'recent';
@@ -104,10 +106,10 @@ const formatBytes = (bytes: number) => {
                       <div class="chat-thread-row__copy">
                         <div class="chat-thread-row__topline">
                           <span>{thread.projectLabel ? `📁 ${thread.projectLabel}` : '💬 Conversation'}</span>
-                          <time datetime={thread.updatedAt}>{new Date(thread.updatedAt).toLocaleDateString(Astro.locals.locale === 'ru' ? 'ru-RU' : 'en', { dateStyle: 'medium' })}</time>
+                          <time datetime={thread.updatedAt}>{new Date(thread.updatedAt).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</time>
                         </div>
-                        <h2>{thread.title}</h2>
-                        <p>{thread.preview || `${thread.messageCount} saved messages`}</p>
+                        <h2 data-no-translate>{thread.title}</h2>
+                        {thread.preview ? <p data-no-translate>{thread.preview}</p> : <p>{thread.messageCount} saved messages</p>}
                         <small>{thread.messageCount} messages{thread.pagePath ? ` · started on ${thread.pagePath}` : ''}</small>
                       </div>
                       <div class="chat-thread-row__actions">

@@ -80,15 +80,15 @@ if (sql) {
 if (!collection) Astro.response.status = 404;
 ---
 
-<BaseLayout title={collection?.title ?? 'Collection not found'} description={collection?.summary ?? 'This collection is unavailable.'} noindex={!collection}>
+<BaseLayout title={collection?.title ?? 'Collection not found'} description={collection?.summary ?? 'This collection is unavailable.'} titleNoTranslate={Boolean(collection)} descriptionNoTranslate={Boolean(collection)} noindex={!collection}>
   <section class="shell repository-page">
     {collection ? (
       <>
         <header class="repository-header">
           <p class="eyebrow">Public collection</p>
           <div class="repository-path repository-path--creator"><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /></div>
-          <h1>{collection.title}</h1>
-          <p>{collection.summary}</p>
+          <h1 data-no-translate>{collection.title}</h1>
+          <p data-no-translate>{collection.summary}</p>
         </header>
         <div class="catalog-results">
           {collection.items.map((item) => (
@@ -96,10 +96,10 @@ if (!collection) Astro.response.status = 404;
               <div class="catalog-card__topline">
                 {item.creator_handle ? <CreatorLink compact handle={item.creator_handle} displayName={item.creator_display_name} avatarUrl={item.creator_avatar_url} />
                   : item.owner_organization_handle ? <CreatorLink compact kind="organization" handle={item.owner_organization_handle} displayName={item.owner_organization_name} avatarUrl={item.owner_organization_logo_url} />
-                  : <span>{item.owner_handle}</span>}
+                  : <span data-no-translate>{item.owner_handle}</span>}
                 <span>{item.kind}</span>
               </div>
-              <h2><a class="catalog-card__title-link" href={`/${kindPath(item.kind)}/${encodeURIComponent(item.owner_handle)}/${encodeURIComponent(item.slug)}`}>{item.title}</a></h2><p>{item.note || item.summary}</p>
+              <h2><a class="catalog-card__title-link" href={`/${kindPath(item.kind)}/${encodeURIComponent(item.owner_handle)}/${encodeURIComponent(item.slug)}`}><span data-no-translate>{item.title}</span></a></h2><p data-no-translate>{item.note || item.summary}</p>
               <a class="catalog-card__open" href={`/${kindPath(item.kind)}/${encodeURIComponent(item.owner_handle)}/${encodeURIComponent(item.slug)}`}>Open repository <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
             </article>
           ))}

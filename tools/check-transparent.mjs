@@ -118,7 +118,8 @@ expect(sourceFiles['src/pages/bring-my-work.astro'].indexOf('<TransparencyChecke
 expect(!/fetch\((?:input\.source|source|url)\)/.test(sourceFiles['src/lib/transparent.ts']), 'checker may fetch arbitrary user URL');
 expect(/max-width:\s*680px/.test(await readFile(resolve(root, 'src/styles/transparent.css'), 'utf8')), 'Transparent narrow viewport layout missing');
 expect(sourceFiles['public/sitemap.xml'].includes('<loc>https://superii.site/transparent</loc>'), 'Transparent public route is missing from sitemap');
-expect(!sourceFiles['public/sitemap.xml'].includes('<loc>https://superii.site/ru/transparent'), 'Transparent must remain English-only in this release');
+expect(sourceFiles['public/sitemap.xml'].includes('<loc>https://superii.site/ru/transparent</loc>'), 'Russian Transparent route is missing from sitemap');
+expect(sourceFiles['public/sitemap.xml'].includes('<loc>https://superii.site/zh-cn/transparent</loc>'), 'Simplified Chinese Transparent route is missing from sitemap');
 expect(sourceFiles['src/content/site.json'].includes('"/transparent"') && sourceFiles['src/content/site.json'].includes('"/mcp/transparent"'), 'Transparent routes are missing from the site contract');
 expect(sourceFiles['SYSTEM-STATE.md'].includes('| Super ii Transparent |'), 'Transparent is missing from the capability register');
 expect(sourceFiles['src/pages/docs.astro'].includes('id="transparent"') && sourceFiles['src/pages/docs.json.ts'].includes("id: 'transparent-mcp'"), 'Transparent human or machine documentation is incomplete');

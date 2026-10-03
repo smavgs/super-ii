@@ -4,6 +4,7 @@ import PageHero from '@/components/PageHero.astro';
 import { UUID_PATTERN } from '@/lib/agent-management';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { paymentSqlClient, sqlClient } from '@/lib/db';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 type ParticipationOrder = {
   id: string;
@@ -25,7 +26,7 @@ type ParticipationOrder = {
 };
 
 const orderId = Astro.params.orderId ?? '';
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sql = paymentSqlClient(Astro.locals);
 const identitySql = sqlClient(Astro.locals);
 let order: ParticipationOrder | null = null;

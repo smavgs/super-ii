@@ -56,7 +56,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-agent-connectio
           part(
             status,
             new Date(c.last_used_at).toLocaleString(
-              document.documentElement.lang === 'ru' ? 'ru-RU' : undefined,
+              document.documentElement.lang === 'ru' ? 'ru-RU' : document.documentElement.lang === 'zh-CN' ? 'zh-CN' : undefined,
             ),
           );
         } else part(status, 'Waiting for the first authorized action');
@@ -72,7 +72,7 @@ for (const root of document.querySelectorAll<HTMLElement>('[data-agent-connectio
         part(
           limits,
           new Date(c.expires_at).toLocaleString(
-            document.documentElement.lang === 'ru' ? 'ru-RU' : undefined,
+            document.documentElement.lang === 'ru' ? 'ru-RU' : document.documentElement.lang === 'zh-CN' ? 'zh-CN' : undefined,
           ),
         );
         if (c.actions_remaining != null) {

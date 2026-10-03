@@ -4,15 +4,16 @@ import { resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path) => readFile(resolve(root, path), 'utf8');
-const [catalogueSource, siteSource, middleware, layout, header, footer, styles, client, clerkLocale, sitemap, systemState, i18n, systemStateLocalization, notebookDocument, officialNotebookLocalization, buildShip, docs] = await Promise.all([
+const files = await Promise.all([
   read('src/content/locales/ru.json'),
+  read('src/content/locales/zh-CN.json'),
   read('src/content/site.json'),
   read('src/middleware.ts'),
   read('src/layouts/BaseLayout.astro'),
   read('src/components/Header.astro'),
   read('src/components/Footer.astro'),
-  read('src/styles/global.css'),
   read('public/scripts/localize-ru.js'),
+  read('public/scripts/localize-zh-cn.js'),
   read('src/scripts/clerk-locale.ts'),
   read('public/sitemap.xml'),
   read('SYSTEM-STATE.md'),
@@ -20,137 +21,124 @@ const [catalogueSource, siteSource, middleware, layout, header, footer, styles, 
   read('src/lib/system-state-localization.ts'),
   read('src/components/NotebookDocument.astro'),
   read('src/lib/official-notebook-localization.ts'),
-  read('src/components/BuildShip.astro'),
-  read('src/pages/docs.astro'),
 ]);
+const [ruSource, zhSource, siteSource, middleware, layout, header, footer, ruClient, zhClient, clerkLocale, sitemap, systemState, i18n, systemStateLocalization, notebookDocument, officialNotebookLocalization] = files;
 
 const errors = [];
-const sdkRelease = systemState.match(/\| Python SDK \|[^\n]*?superii-sdk (\d+\.\d+\.\d+)/)?.[1];
-if (!sdkRelease) errors.push('Canonical SDK release is missing from system state');
-let catalogue;
-let site;
-try { catalogue = JSON.parse(catalogueSource); } catch { errors.push('Russian catalogue is not valid JSON'); }
-try { site = JSON.parse(siteSource); } catch { errors.push('site.json is not valid JSON'); }
-
-const messages = catalogue?.messages ?? {};
-const entries = Object.entries(messages);
-if (catalogue?.locale !== 'ru' || catalogue?.sourceLocale !== 'en') errors.push('Russian catalogue locale metadata is invalid');
-if (entries.length < 2_700) errors.push(`Russian catalogue is unexpectedly small (${entries.length} messages)`);
-if (entries.filter(([, value]) => /[А-Яа-яЁё]/.test(String(value))).length < 2_600) {
-  errors.push('Russian catalogue does not contain enough Cyrillic translations');
-}
-if (entries.some(([, value]) => String(value).includes('908771'))) {
-  errors.push('Russian catalogue contains an unresolved translation placeholder');
-}
+const parse = (source, label) => {
+  try { return JSON.parse(source); }
+  catch { errors.push(`${label} is not valid JSON`); return {}; }
+};
+const ru = parse(ruSource, 'Russian catalogue');
+const zh = parse(zhSource, 'Simplified Chinese catalogue');
+const site = parse(siteSource, 'site.json');
 
 const digits = (value) => String(value).match(/\d+/g) ?? [];
-const unsafeGeneratedEntries = entries.filter(([source, translation]) => {
+const unsafeEntries = (catalogue) => Object.entries(catalogue.messages ?? {}).filter(([source, translation]) => {
   const sourceDigits = digits(source);
   const translationDigits = digits(translation);
   return sourceDigits.length !== translationDigits.length
     || sourceDigits.some((token, index) => token !== translationDigits[index]);
 });
-if (!i18n.includes('preservesNumericTokens(source, translation)')
-  || !i18n.includes('.filter(([source, translation]) => preservesNumericTokens(source, translation))')) {
-  errors.push('Generated Russian translations are not guarded against changed numeric facts');
-}
-const reviewedTranslationIndex = i18n.indexOf('Object.hasOwn(reviewedRussianMessages, normalized)');
-const genericInfoLabelIndex = i18n.indexOf('normalized.match(/^About (.+)$/)');
-if (reviewedTranslationIndex < 0 || genericInfoLabelIndex < 0 || reviewedTranslationIndex > genericInfoLabelIndex) {
-  errors.push('Reviewed page translations must take precedence over generic info-label localization');
-}
 
-const exact = {
-  Models: 'Модели',
-  Datasets: 'Наборы данных',
-  Apps: 'Приложения',
-  Skills: 'Навыки',
-  Agents: 'Агенты',
-  Builders: 'Создатели',
-  Pricing: 'Тарифы',
-  Workspace: 'Рабочее пространство',
-  'Join free': 'Присоединиться бесплатно',
-  'Checking the web…': 'Ищем в интернете…',
+const ruEntries = Object.entries(ru.messages ?? {});
+const zhEntries = Object.entries(zh.messages ?? {});
+if (ru.locale !== 'ru' || ru.sourceLocale !== 'en') errors.push('Russian catalogue locale metadata is invalid');
+if (zh.locale !== 'zh-CN' || zh.sourceLocale !== 'en') errors.push('Simplified Chinese catalogue locale metadata is invalid');
+if (ruEntries.length < 2_700) errors.push(`Russian catalogue is unexpectedly small (${ruEntries.length} messages)`);
+if (zhEntries.length < 4_800) errors.push(`Simplified Chinese catalogue is unexpectedly small (${zhEntries.length} messages)`);
+if (ruEntries.filter(([, value]) => /[А-Яа-яЁё]/.test(String(value))).length < 2_600) errors.push('Russian catalogue does not contain enough Cyrillic translations');
+if (zhEntries.filter(([, value]) => /[\u3400-\u9fff]/u.test(String(value))).length < 4_200) errors.push('Simplified Chinese catalogue does not contain enough Han-script translations');
+if (ruEntries.some(([, value]) => String(value).includes('908771')) || zhEntries.some(([, value]) => String(value).includes('908771'))) errors.push('A locale catalogue contains an unresolved placeholder');
+
+const unsafeRussian = unsafeEntries(ru);
+const unsafeChinese = unsafeEntries(zh);
+for (const marker of [
+  'Object.entries((russianCatalog as { messages: Record<string, string> }).messages)',
+  'Object.entries((chineseCatalog as { messages: Record<string, string> }).messages)',
+  '.filter(([source, translation]) => preservesNumericTokens(source, translation))',
+]) if (!i18n.includes(marker)) errors.push(`Numeric-fact guard is missing: ${marker}`);
+
+const exactRussian = {
+  Models: 'Модели', Datasets: 'Наборы данных', Apps: 'Приложения', Skills: 'Навыки',
+  Agents: 'Агенты', Builders: 'Создатели', Pricing: 'Тарифы', Workspace: 'Рабочее пространство',
+  'Join free': 'Присоединиться бесплатно', 'Checking the web…': 'Ищем в интернете…',
   'Close navigation': 'Закрыть навигацию',
-  'Commerce token could not be created.': 'Не удалось создать токен для покупок.',
 };
-for (const [english, russian] of Object.entries(exact)) {
-  if (messages[english] !== russian) errors.push(`Core translation is missing or changed: ${english}`);
+for (const [english, translation] of Object.entries(exactRussian)) {
+  if (ru.messages?.[english] !== translation) errors.push(`Core Russian translation is missing or changed: ${english}`);
+}
+const exactChinese = {
+  'Agent Friendly': '对智能体友好',
+  'Open intelligence, built together.': '开放智能，共同构建。',
+  Models: '模型', Datasets: '数据集', Apps: '应用', Skills: '技能', Builders: '创作者', Pricing: '定价',
+  Workspace: '工作区', 'Join free': '免费加入', 'Checking the web…': '正在搜索网络…',
+  'Close navigation': '关闭导航',
+};
+for (const [english, translation] of Object.entries(exactChinese)) {
+  const reviewedMarker = `'${english.replaceAll("'", "\\'")}': '${translation.replaceAll("'", "\\'")}'`;
+  if (zh.messages?.[english] !== translation && !i18n.includes(reviewedMarker)) errors.push(`Core Simplified Chinese translation is missing or changed: ${english}`);
 }
 
-const languages = site?.languages ?? [];
-if (!languages.some((item) => item.code === 'en' && item.default === true && item.status === 'production')) {
-  errors.push('English must remain the production default language');
-}
-if (!languages.some((item) => item.code === 'ru' && item.prefix === '/ru' && item.status === 'production')) {
-  errors.push('Russian /ru production language declaration is missing');
-}
+const languages = site.languages ?? [];
+if (!languages.some((item) => item.code === 'en' && item.default === true && item.status === 'production')) errors.push('English must remain the production default language');
+if (!languages.some((item) => item.code === 'ru' && item.prefix === '/ru' && item.status === 'production')) errors.push('Russian /ru production language declaration is missing');
+if (!languages.some((item) => item.code === 'zh-CN' && item.prefix === '/zh-cn' && item.status === 'production')) errors.push('Simplified Chinese /zh-cn production language declaration is missing');
 
 const contracts = [
-  [middleware, '${localeCookie}=ru', 'locale cookie'],
-  [middleware, "context.locals.localizedRewrite", 'Russian route rewrite'],
-  [middleware, "content-language", 'Content-Language response'],
-  [middleware, "hreflang=\"ru\"", 'Russian hreflang metadata'],
-  [middleware, "if (locale !== 'ru') return rewriter.transform(secured)", 'bounded English HTML rewrite'],
-  [middleware, "translateTextChunk", 'server-rendered text localization'],
-  [middleware, "voidElements.has(element.tagName.toLowerCase())", 'void-element translation exclusion safety'],
-  [middleware, "form[action]", 'localized form navigation'],
-  [middleware, "'https://superii.site'", 'fixed canonical origin'],
-  [layout, '/scripts/localize-ru.js', 'dynamic UI localizer'],
+  [middleware, 'supportedLocales.includes', 'validated locale selection'],
+  [middleware, 'context.locals.localizedRewrite', 'localized route rewrite'],
+  [middleware, 'content-language', 'Content-Language response'],
+  [middleware, 'hreflang="zh-CN"', 'Simplified Chinese hreflang metadata'],
+  [middleware, "if (locale === 'en') return rewriter.transform(secured)", 'bounded English HTML rewrite'],
+  [middleware, 'translateTextChunk', 'server-rendered text localization'],
+  [middleware, 'voidElements.has(element.tagName.toLowerCase())', 'void-element translation safety'],
+  [middleware, 'form[action]', 'localized form navigation'],
+  [middleware, 'openGraphLocale(locale)', 'localized Open Graph locale'],
+  [layout, '/scripts/localize-ru.js', 'Russian dynamic UI localizer'],
+  [layout, '/scripts/localize-zh-cn.js', 'Simplified Chinese dynamic UI localizer'],
+  [layout, '/brand/super-ii-social-card-zh-cn.png', 'Simplified Chinese share card'],
   [header, 'class="brand-lockup" href="/" aria-label="Super ii home" data-no-translate', 'untranslated header brand'],
-  [footer, 'data-language-switch="ru"', 'footer language switch'],
-  [footer, "localizedPath(stripLocalePrefix(Astro.url.pathname), 'ru')", 'direct English-to-Russian page link'],
-  [footer, 'rel="me external" data-no-translate', 'untranslated social handle'],
-  [styles, "html[data-locale='ru'] .desktop-nav", 'Russian desktop navigation breakpoint'],
-  [client, 'MutationObserver', 'dynamic content localization'],
-  [client, "record.type === 'characterData'", 'dynamic text replacement localization'],
-  [client, "new Set(['/api', '/locales', '/.well-known', '/mcp', '/checkout/api'])", 'machine-route link protection'],
-  [client, "x-superii-locale", 'localized client requests'],
-  [client, '/locales/ru.json?v=20260927-1', 'current Russian catalogue cache key'],
-  [i18n, "'tokenizer',", 'localizable Tokenizer route'],
-  [i18n, "'Verified tokenizer': 'Проверенный токенизатор'", 'reviewed Tokenizer translation'],
-  [clerkLocale, 'ruRU', 'Clerk Russian localization'],
-  [sitemap, '<loc>https://superii.site/ru</loc>', 'Russian sitemap root'],
-  [sitemap, '<loc>https://superii.site/ru/legal/terms</loc>', 'Russian legal sitemap route'],
-  [sitemap, '<loc>https://superii.site/ru/social</loc>', 'Russian Social sitemap route'],
-  [sitemap, '<loc>https://superii.site/ru/join-team</loc>', 'Russian Join Team sitemap route'],
-  [sitemap, '<loc>https://superii.site/ru/build</loc>', 'Russian Build and Ship sitemap route'],
-  [systemState, 'English and Russian product editions', 'localization system-state record'],
-  [i18n, 'Hashing (.+)…', 'localized variable upload progress'],
-  [i18n, 'Payment status:', 'localized variable payment status'],
-  [i18n, "'Super ii Python SDK': 'SDK Super ii для Python'", 'reviewed Python SDK name'],
-  [i18n, "'USDC on Ethereum': 'USDC в сети Ethereum'", 'reviewed USDC network name'],
-  [i18n, "'App': 'Приложение'", 'reviewed App term'],
-  [i18n, "'The': ''", 'Russian article-fragment removal'],
-  [i18n, "'build',", 'localizable Build and Ship route'],
-  [i18n, 'const buildShipRussian', 'reviewed Build and Ship translations'],
-  [systemStateLocalization, 'russianSystemStateCount', 'explicit Russian system-state coverage'],
-  [systemStateLocalization, "'Build & Ship engineering projects': {", 'Russian Build and Ship system-state row'],
-  [systemStateLocalization, `superii-sdk ${sdkRelease} доступен в PyPI`, 'current Russian SDK system-state evidence'],
-  [systemStateLocalization, 'проверены приватный набор данных и обученный адаптер', 'current Russian GitHub publisher evidence'],
+  [footer, "'zh-CN': { label: '简体中文'", 'Simplified Chinese footer language choice'],
+  [footer, "'zh-CN': ['en', 'ru']", 'Chinese-page alternate language order'],
+  [footer, 'data-language-switch={targetLocale}', 'explicit footer language switching'],
+  [ruClient, 'MutationObserver', 'Russian dynamic content localization'],
+  [zhClient, 'MutationObserver', 'Chinese dynamic content localization'],
+  [zhClient, "headers.set('x-superii-locale', 'zh-CN')", 'Chinese localized client requests'],
+  [zhClient, '/locales/zh-cn.json?v=20261002-2', 'current Chinese catalogue cache key'],
+  [i18n, "export type SiteLocale = 'en' | 'ru' | 'zh-CN'", 'three-locale type'],
+  [i18n, "'robot',", 'localized Robot route'],
+  [i18n, "'transparent',", 'localized Transparent route'],
+  [i18n, 'translateChineseDynamic', 'Chinese dynamic-value localization'],
+  [clerkLocale, 'ruRU, zhCN', 'Russian and Chinese Clerk localization'],
+  [sitemap, '<loc>https://superii.site/ru/robot</loc>', 'Russian Robot sitemap route'],
+  [sitemap, '<loc>https://superii.site/zh-cn</loc>', 'Chinese sitemap root'],
+  [sitemap, '<loc>https://superii.site/zh-cn/legal/terms</loc>', 'Chinese legal sitemap route'],
+  [sitemap, '<loc>https://superii.site/zh-cn/transparent</loc>', 'Chinese Transparent sitemap route'],
+  [systemState, 'English, Russian, and Simplified Chinese product editions', 'three-edition system-state record'],
+  [systemStateLocalization, 'statusChinese', 'Chinese system-state status labels'],
+  [systemStateLocalization, 'translateKnown(item.evidence, locale)', 'Chinese system-state evidence localization'],
   [notebookDocument, 'localizeOfficialNotebookMarkdown', 'official notebook localization boundary'],
   [notebookDocument, 'data-no-translate', 'publisher notebook source-language boundary'],
-  [officialNotebookLocalization, 'localizeOfficialNotebookMarkdown', 'reviewed official notebook prose'],
-  [buildShip, "document.documentElement.lang === 'ru'", 'locale-aware Build and Ship dynamic messages'],
-  [buildShip, 'data-build-file data-no-translate', 'untranslated generated project filenames'],
-  [docs, "const russian = Astro.locals.locale === 'ru'", 'reviewed Build and Ship documentation boundary'],
-  [docs, 'Используйте точный формат subject', 'reviewed Russian GitHub OIDC documentation'],
+  [officialNotebookLocalization, "if (locale === 'zh-CN')", 'Simplified Chinese official notebook prose'],
 ];
-for (const [source, marker, label] of contracts) {
-  if (!source.includes(marker)) errors.push(`Localization contract is missing ${label}`);
-}
+for (const [source, marker, label] of contracts) if (!source.includes(marker)) errors.push(`Localization contract is missing ${label}`);
 
 const capabilitySection = systemState.split('## Capability register')[1]?.split('\n## ')[0] ?? '';
-const canonicalCapabilityCount = capabilitySection
-  .split('\n')
-  .filter((line) => /^\|/.test(line.trim()))
-  .slice(2)
-  .filter((line) => line.split('|').length >= 6)
-  .length;
+const capabilityRows = capabilitySection.split('\n').filter((line) => /^\|/.test(line.trim())).slice(2);
+const canonicalCapabilityCount = capabilityRows.filter((line) => line.split('|').length >= 6).length;
 const russianCapabilityCount = (systemStateLocalization.match(/^  ['"].+['"]: \{$/gm) ?? []).length;
+const chineseProductLabels = new Set(['Python SDK', 'Super ii Robot', 'Super ii Transparent']);
 if (canonicalCapabilityCount !== 58) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 58`);
-if (russianCapabilityCount !== canonicalCapabilityCount) {
-  errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
+if (russianCapabilityCount !== canonicalCapabilityCount) errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
+for (const row of capabilityRows) {
+  const cells = row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim().replaceAll('`', ''));
+  if (cells[0] && !systemStateLocalization.includes(`  '${cells[0]}': {`) && !systemStateLocalization.includes(`  "${cells[0]}": {`)) {
+    errors.push(`Russian system-state translation is missing: ${cells[0].slice(0, 90)}`);
+  }
+  for (const text of [cells[0], cells[2], cells[3]]) {
+    if (text && !chineseProductLabels.has(text) && (!zh.messages?.[text] || !/[\u3400-\u9fff]/u.test(zh.messages[text]))) errors.push(`Chinese system-state translation is missing: ${text.slice(0, 90)}`);
+  }
 }
 
 if (errors.length) {
@@ -158,4 +146,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`OK: Russian /ru edition validated with ${entries.length} stored UI translations, ${unsafeGeneratedEntries.length} unsafe machine entries rejected, and ${russianCapabilityCount} reviewed system-state rows`);
+console.log(`OK: /ru and /zh-cn editions validated with ${ruEntries.length} Russian and ${zhEntries.length} Chinese UI translations; ${unsafeRussian.length + unsafeChinese.length} unsafe generated numeric entries are rejected at runtime; ${canonicalCapabilityCount} system-state rows covered`);

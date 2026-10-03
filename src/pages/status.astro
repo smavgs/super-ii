@@ -4,7 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { authIsConfigured } from '@/lib/site';
 import { pingDatabase, sqlClient } from '@/lib/db';
 import { pingRuntime } from '@/lib/runtime';
-import { translateKnown } from '@/lib/i18n';
+import { dateLocale as dateLocaleFor, translateKnown } from '@/lib/i18n';
 
 const locale = Astro.locals.locale ?? 'en';
 const display = (value: string) => translateKnown(value, locale);
@@ -36,7 +36,7 @@ if (sql) {
 const allOperational = authStatus === 'Operational'
   && databaseStatus === 'Operational'
   && runtimeHealth.state === 'ready';
-const checkedAt = new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', {
+const checkedAt = new Intl.DateTimeFormat(dateLocaleFor(locale), {
   dateStyle: 'long',
   timeStyle: 'medium',
   timeZone: 'UTC',
@@ -60,7 +60,7 @@ const checkedAt = new Intl.DateTimeFormat(locale === 'ru' ? 'ru-RU' : 'en-US', {
       <div class="status-row"><span>Public website</span><span class="status-value">Operational</span></div>
       <div class="status-row"><span>Account authentication</span><span class="status-value">{display(authStatus)}</span></div>
       <div class="status-row"><span>Application database</span><span class="status-value">{display(databaseStatus)}</span></div>
-      <div class="status-row"><span>Public catalog</span><span class="status-value">{display('Operational')} · {publicItems.toLocaleString(locale === 'ru' ? 'ru-RU' : 'en-US')} {locale === 'ru' ? 'объектов' : 'items'}</span></div>
+      <div class="status-row"><span>Public catalog</span><span class="status-value">{display('Operational')} · {publicItems.toLocaleString(dateLocaleFor(locale))} {display('items')}</span></div>
       <div class="status-row"><span>Self-hosted runtime</span><span class="status-value">{display(runtimeStatus)}</span></div>
       <div class="status-row"><span>Artifact publishing</span><span class="status-value">{display(publishingStatus)}</span></div>
       <p>Publishing stays closed if any required storage or security check is unavailable. Passing releases publish automatically; failed or unknown checks return actionable reasons.</p>

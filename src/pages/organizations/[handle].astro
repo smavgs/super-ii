@@ -65,19 +65,19 @@ if (sql) {
 if (!organization) Astro.response.status = 404;
 ---
 
-<BaseLayout title={organization?.full_name ?? 'Organization unavailable'} description={organization?.description ?? 'Public Super ii organization profile.'} noindex={!organization}>
+<BaseLayout title={organization?.full_name ?? 'Organization unavailable'} description={organization?.description ?? 'Public Super ii organization profile.'} titleNoTranslate={Boolean(organization)} descriptionNoTranslate={Boolean(organization?.description)} noindex={!organization}>
   {organization ? (
     <main class="shell repository-page organization-page">
       <header class="repository-header">
-        {organization.logo_url && <img class="organization-logo" src={organization.logo_url} alt={`${organization.full_name ?? organization.name} logo`} loading="eager" referrerpolicy="no-referrer" />}
+        {organization.logo_url && <img class="organization-logo" src={organization.logo_url} alt={`${organization.full_name ?? organization.name} logo`} loading="eager" referrerpolicy="no-referrer" data-no-translate />}
         <p class="eyebrow">{organization.organization_type} organization 🏢</p>
-        <p class="repository-path">@{organization.handle}</p>
-        <h1>{organization.full_name ?? organization.name}</h1>
-        <p>{organization.description ?? 'Building open intelligence together on Super ii.'}</p>
+        <p class="repository-path" data-no-translate>@{organization.handle}</p>
+        <h1 data-no-translate>{organization.full_name ?? organization.name}</h1>
+        {organization.description ? <p data-no-translate>{organization.description}</p> : <p>Building open intelligence together on Super ii.</p>}
         <div class="repository-badges">
           <span>{organization.member_count} members</span>
           <span>{repositories.length} public repositories</span>
-          {organization.ai_ml_interests.map((interest) => <span>{interest}</span>)}
+          {organization.ai_ml_interests.map((interest) => <span data-no-translate>{interest}</span>)}
         </div>
         <div class="button-row">
           {organization.homepage_url && <a class="button button--secondary button--small" href={organization.homepage_url} rel="me external">Website</a>}
@@ -94,8 +94,8 @@ if (!organization) Astro.response.status = 404;
           <div class="catalog-results">
             {repositories.map((item) => (
               <a class="catalog-card" href={repositoryPath(item)}>
-                <div class="catalog-card__topline"><span>{item.kind}</span><span>{item.license ?? 'License pending'}</span></div>
-                <h3>{item.title}</h3><p>{item.summary}</p>
+                <div class="catalog-card__topline"><span>{item.kind}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div>
+                <h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p>
               </a>
             ))}
           </div>

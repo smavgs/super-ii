@@ -201,11 +201,9 @@ const frontierCtaUrl = isSignedIn
     </div>
   </section>
 
-  {Astro.locals.locale !== 'ru' && (
-    <div class="shell transparency-home-strip">
-      <TransparencyChecker variant="home" />
-    </div>
-  )}
+  <div class="shell transparency-home-strip">
+    <TransparencyChecker variant="home" />
+  </div>
 
   <section class="social-home-hook">
     <div class="shell social-home-hook__inner">

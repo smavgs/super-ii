@@ -5,6 +5,7 @@ import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { getProposalBySlug, type ProposalDetail } from '@/lib/participation';
 import { authIsConfigured } from '@/lib/site';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const slug = Astro.params.slug ?? '';
 const sql = sqlClient(Astro.locals);
@@ -20,22 +21,22 @@ if (sql) {
 }
 if (!proposal) Astro.response.status = 404;
 const authConfigured = authIsConfigured(Astro.locals);
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const stages = ['voting', 'accepted', 'building', 'shipped'];
 const stageIndex = proposal ? stages.indexOf(proposal.status) : -1;
 const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
 
-<BaseLayout title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} noindex={!proposal} className="proposal-detail-page">
+<BaseLayout title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} titleNoTranslate={Boolean(proposal)} descriptionNoTranslate={Boolean(proposal)} noindex={!proposal} className="proposal-detail-page">
   {proposal ? (
     <main class="shell proposal-detail" data-proposal={proposal.id}>
-      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/proposals">Proposals</a><i class="ph ph-caret-right" aria-hidden="true"></i><span>{proposal.title}</span></nav>
+      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/proposals">Proposals</a><i class="ph ph-caret-right" aria-hidden="true"></i><span data-no-translate>{proposal.title}</span></nav>
       <header class="proposal-detail__header">
         <div>
           <p class="eyebrow">Public proposal · {proposal.status}</p>
-          <h1>{proposal.title}</h1>
-          <p class="proposal-detail__summary">{proposal.summary}</p>
-          <p>Proposed by <a href={`/people/${proposal.proposer_handle}`}>@{proposal.proposer_handle}</a> · <time datetime={proposal.created_at}>{dateLabel(proposal.created_at)} UTC</time></p>
+          <h1 data-no-translate>{proposal.title}</h1>
+          <p class="proposal-detail__summary" data-no-translate>{proposal.summary}</p>
+          <p>Proposed by <a href={`/people/${proposal.proposer_handle}`}><span data-no-translate>@{proposal.proposer_handle}</span></a> · <time datetime={proposal.created_at}>{dateLabel(proposal.created_at)} UTC</time></p>
         </div>
         <button class="proposal-vote proposal-vote--large" type="button" data-proposal-vote disabled={!viewerProfileId || proposal.viewer_voted}>
           <i class="ph ph-caret-up" aria-hidden="true"></i><strong data-human-count>{proposal.human_votes}</strong><small>{proposal.viewer_voted ? 'Voted' : 'Vote'}</small>
@@ -53,10 +54,10 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
       <div class="proposal-detail__grid">
         <article class="proposal-detail__body">
           <p class="eyebrow">The proposal</p>
-          <div class="proposal-body-copy">{proposal.body ? proposal.body.split('\n').filter(Boolean).map((paragraph) => <p>{paragraph}</p>) : <p>No further details were added.</p>}</div>
+          <div class="proposal-body-copy">{proposal.body ? proposal.body.split('\n').filter(Boolean).map((paragraph) => <p data-no-translate>{paragraph}</p>) : <p>No further details were added.</p>}</div>
           <h2>Public history</h2>
           <ol class="proposal-history">
-            {proposal.history.map((event) => <li><span></span><div><strong>{event.to_status[0].toUpperCase() + event.to_status.slice(1)}</strong><p>{event.reason}</p><time datetime={event.created_at}>{dateLabel(event.created_at)} UTC</time></div></li>)}
+            {proposal.history.map((event) => <li><span></span><div><strong>{event.to_status[0].toUpperCase() + event.to_status.slice(1)}</strong><p data-no-translate>{event.reason}</p><time datetime={event.created_at}>{dateLabel(event.created_at)} UTC</time></div></li>)}
           </ol>
         </article>
         <aside class="proposal-detail__aside">
