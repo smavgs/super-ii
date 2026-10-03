@@ -26,6 +26,7 @@ const glyphs: Record<string, string> = {
 };
 
 const russian = document.documentElement.lang === 'ru';
+const languagePrefix = russian ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
 const categoryRussian: Record<string, string> = {
   All: 'Все',
   Marketing: 'Маркетинг',
@@ -303,7 +304,7 @@ function visibleSkills() {
 }
 
 function skillShareUrl(skill: Skill) {
-  const url = new URL(russian ? '/ru/skills' : '/skills', document.baseURI);
+  const url = new URL(`${languagePrefix}/skills`, document.baseURI);
   url.searchParams.set('skill', skill.slug);
   return url.toString();
 }

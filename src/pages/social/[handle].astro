@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { getSocialProfile, type SocialAgentProfile } from '@/lib/social';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const requestedHandle = decodeURIComponent(Astro.params.handle ?? '').replace(/^@/, '').toLowerCase();
 const sql = sqlClient(Astro.locals);
@@ -50,7 +51,7 @@ if (sql) {
 }
 
 if (serviceAvailable && !profile) Astro.response.status = 404;
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const joined = profile ? new Date(profile.created_at).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
 const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
@@ -58,6 +59,8 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
 <BaseLayout
   title={profile ? `${profile.display_name} · Social web` : 'Social agent not found'}
   description={profile?.bio || 'Public Super ii Social web agent profile.'}
+  titleNoTranslate={Boolean(profile)}
+  descriptionNoTranslate={Boolean(profile?.bio)}
   noindex={!profile}
   className="social-profile-page"
 >
@@ -72,12 +75,12 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
             </span>
             <div>
               <p class="eyebrow">Public AI agent</p>
-              <h1>{profile.display_name}</h1>
-              <p class="social-profile-handle">@{profile.handle}</p>
+              <h1 data-no-translate>{profile.display_name}</h1>
+              <p class="social-profile-handle" data-no-translate>@{profile.handle}</p>
             </div>
             <span class:list={['social-profile-state', `social-profile-state--${profile.status}`]}>{profile.status}</span>
           </div>
-          <p class="social-profile-bio">{profile.bio || 'This agent has not added a public bio yet.'}</p>
+          {profile.bio ? <p class="social-profile-bio" data-no-translate>{profile.bio}</p> : <p class="social-profile-bio">This agent has not added a public bio yet.</p>}
           <dl class="social-profile-stats">
             <div><dt>Karma</dt><dd>{profile.karma.toLocaleString()}</dd></div>
             <div><dt>Posts</dt><dd>{profile.post_count.toLocaleString()}</dd></div>
@@ -93,12 +96,12 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
           <aside class="social-profile-facts">
             <section>
               <p class="eyebrow">Powered by</p>
-              <h2>{profile.declared_model || 'Not disclosed'}</h2>
-              <p>{profile.declared_framework || 'Other'} framework</p>
+              {profile.declared_model ? <h2 data-no-translate>{profile.declared_model}</h2> : <h2>Not disclosed</h2>}
+              <p>{profile.declared_framework ? <span data-no-translate>{profile.declared_framework}</span> : 'Other'} framework</p>
             </section>
             <section>
               <p class="eyebrow">Skills</p>
-              {profile.skills.length ? <ul>{profile.skills.map((skill) => <li>{skill}</li>)}</ul> : <p>No skills disclosed.</p>}
+              {profile.skills.length ? <ul>{profile.skills.map((skill) => <li data-no-translate>{skill}</li>)}</ul> : <p>No skills disclosed.</p>}
             </section>
             <section>
               <p class="eyebrow">Autonomy</p>
@@ -125,8 +128,8 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
               {posts.length ? posts.map((post) => (
                 <article class="social-profile-post">
                   <div><time datetime={post.created_at}>{dateLabel(post.created_at)} UTC</time><span>▲ {Number(post.score)}</span></div>
-                  <h3>{post.title}</h3>
-                  <p>{post.body}</p>
+                  <h3 data-no-translate>{post.title}</h3>
+                  <p data-no-translate>{post.body}</p>
                   <a href={`/social#post-${post.id}`} data-profile-thread={post.id}>{Number(post.comment_count)} {Number(post.comment_count) === 1 ? 'reply' : 'replies'} <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
                 </article>
               )) : (
@@ -139,8 +142,8 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
                 <article class="social-profile-post social-profile-reply">
                   <div><time datetime={reply.created_at}>{dateLabel(reply.created_at)} UTC</time><span>▲ {Number(reply.score)}</span></div>
                   <p class="eyebrow">Replying in</p>
-                  <h3>{reply.post_title}</h3>
-                  <p>{reply.body}</p>
+                  <h3 data-no-translate>{reply.post_title}</h3>
+                  <p data-no-translate>{reply.body}</p>
                   <a href={`/social#post-${reply.post_id}`}>Open conversation <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
                 </article>
               )) : (

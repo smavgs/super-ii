@@ -29,7 +29,7 @@ const postSignInRedirect = localizedHref(plainPostSignInRedirect, locale);
 const plainSignUpUrl = plainPostSignInRedirect === '/account'
   ? '/sign-up'
   : `/sign-up?redirect_url=${encodeURIComponent(plainPostSignInRedirect)}`;
-const signUpUrl = locale === 'ru' ? `/ru${plainSignUpUrl}` : plainSignUpUrl;
+const signUpUrl = localizedHref(plainSignUpUrl, locale);
 ---
 
 <BaseLayout title="Log in" description="Log in to Super ii with email, Google, or GitHub." noindex className="auth-body">

@@ -7,6 +7,7 @@ import LinkedWorkGrid from '@/components/LinkedWorkGrid.astro';
 import ShowcaseGallery, { type ShowcaseItem } from '@/components/ShowcaseGallery.astro';
 import { listOwnerLinkedWork, type LinkedWorkItem } from '@/lib/linked-work';
 import { listPublicShowcase } from '@/lib/showcase-media';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 type PublicProfile = {
   id: string;
@@ -33,7 +34,7 @@ type ProfileAward = { rank: number; award_month: string; valid_human_votes: numb
 type SocialLink = { label: string; href: string; icon: string };
 
 const handle = (Astro.params.handle ?? '').toLowerCase();
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sql = sqlClient(Astro.locals);
 let profile: PublicProfile | null = null;
 let repositories: PublicRepository[] = [];
@@ -128,17 +129,17 @@ const socialLinks: SocialLink[] = profile ? [
 ].filter((link): link is SocialLink => Boolean(link)) : [];
 ---
 
-<BaseLayout title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} noindex={!profile}>
+<BaseLayout title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} titleNoTranslate={Boolean(profile)} descriptionNoTranslate={Boolean(profile?.bio)} noindex={!profile}>
   {profile ? (
     <main class="shell person-page" data-profile-id={profile.id} data-highlight-campaign={highlightedBy}>
       <header class="person-header">
         {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar" aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
         <div class="person-header__identity">
           <p class="eyebrow">{profile.profile_kind === 'company' ? 'Single-owner company profile' : profile.profile_kind === 'studio' ? 'Independent studio profile' : 'Public member profile'}</p>
-          <h1>{profile.display_name}</h1>
-          <p class="person-handle">@{profile.handle}</p>
-          {profile.bio && <p class="person-bio">{profile.bio}</p>}
-          {profile.interests.length > 0 && <ul class="person-interests" aria-label="Interests">{profile.interests.map((interest) => <li>{interest}</li>)}</ul>}
+          <h1 data-no-translate>{profile.display_name}</h1>
+          <p class="person-handle" data-no-translate>@{profile.handle}</p>
+          {profile.bio && <p class="person-bio" data-no-translate>{profile.bio}</p>}
+          {profile.interests.length > 0 && <ul class="person-interests" aria-label="Interests">{profile.interests.map((interest) => <li data-no-translate>{interest}</li>)}</ul>}
           <div class="profile-badges">
             {profile.profile_kind !== 'person' && <span class="profile-kind-badge">{profile.profile_kind === 'company' ? 'Company · single owner' : 'Studio · single owner'}</span>}
             {fameNumber && <a class="fame-badge" href="/fame">FAME ✦ · #{String(fameNumber).padStart(3, '0')}</a>}
@@ -172,11 +173,11 @@ const socialLinks: SocialLink[] = profile ? [
       <div class="person-layout">
         <section class="repository-section">
           <div class="repository-section__heading"><div><p class="eyebrow">Reviewed public work</p><h2>Repositories</h2></div><span>{repositories.length}</span></div>
-          {repositories.length ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" href={repositoryPath(item)}><div class="catalog-card__topline"><span>{item.kind}</span><span>{item.license ?? 'License pending'}</span></div><h3>{item.title}</h3><p>{item.summary}</p><div class="catalog-card__metadata"><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}</div> : <p>No reviewed public repositories yet.</p>}
+          {repositories.length ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" href={repositoryPath(item)}><div class="catalog-card__topline"><span>{item.kind}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}</div> : <p>No reviewed public repositories yet.</p>}
         </section>
         <aside class="person-proposals">
           <p class="eyebrow">Ideas and reputation 🗳️</p><h2>Proposals</h2>
-          {proposals.length ? <div>{proposals.map((proposal) => <a href={`/proposals/${proposal.slug}`}><span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{proposal.status}</span><strong>{proposal.title}</strong><small>👤 {proposal.human_votes} · 🤖 {proposal.agent_votes}</small></a>)}</div> : <p>No public proposals yet.</p>}
+          {proposals.length ? <div>{proposals.map((proposal) => <a href={`/proposals/${proposal.slug}`}><span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{proposal.status}</span><strong data-no-translate>{proposal.title}</strong><small>👤 {proposal.human_votes} · 🤖 {proposal.agent_votes}</small></a>)}</div> : <p>No public proposals yet.</p>}
           <a class="button button--secondary button--small" href="/proposals">Open proposal board</a>
         </aside>
       </div>

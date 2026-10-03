@@ -19,7 +19,7 @@ const canUsePrivate = plan !== 'free';
 const canUseTeam = plan === 'team' || plan === 'enterprise';
 ---
 
-<section class="account-card robot-workspace" id="robots" data-robot-workspace data-plan={plan} data-no-translate>
+<section class="account-card robot-workspace" id="robots" data-robot-workspace data-plan={plan}>
   <div class="repository-section__heading">
     <div><p class="eyebrow">Super ii Robot 🤖</p><h2>My Robots</h2></div>
     <a class="button button--dark button--small" href="/robot#make">Make Robot</a>
@@ -29,7 +29,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
     <div class="account-list robot-workspace__robots">
       {robots.map((robot) => (
         <div class="robot-workspace__robot">
-          <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><strong>{robot.title}</strong><small>@{robot.owner_handle}/{robot.slug} · {robot.visibility} · v{robot.version_number}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><strong data-no-translate>{robot.title}</strong><small>@<span data-no-translate>{robot.owner_handle}/{robot.slug}</span> · {robot.visibility} · v{robot.version_number}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           <details>
             <summary>Make a new version</summary>
             <form data-robot-version={robot.id}>
@@ -68,7 +68,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
               <div class="robot-media-editor">
                 <div class="robot-media-editor__grid">
                   {(robot.showcase_media ?? []).map((media) => <article data-robot-media-id={media.id}>
-                    <img src={`/showcase-images/${media.id}.jpg`} alt={media.alt_text} width={media.width} height={media.height} />
+                    <img src={`/showcase-images/${media.id}.jpg`} alt={media.alt_text} width={media.width} height={media.height} data-no-translate />
                     <form data-robot-media-details={media.id}>
                       <input name="title" maxlength="100" value={media.title} placeholder="Image title" aria-label="Image title" />
                       <input name="caption" maxlength="400" value={media.caption} placeholder="Short caption" aria-label="Image caption" />
@@ -104,12 +104,12 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
           <label>Custom name <input name="custom_name" maxlength="160" placeholder="Only when Custom item is selected" /></label>
           <label>Quantity <input name="quantity" type="number" min="1" max="10000" value="1" /></label>
           <label>Status <select name="status"><option value="available">Available</option><option value="in-use">In use</option><option value="repair">Repair</option><option value="retired">Retired</option></select></label>
-          {canUseTeam && organizations.length > 0 && <label>Owner <select name="organization_id"><option value="">Personal</option>{organizations.map((organization) => <option value={organization.id}>{organization.full_name} · Team</option>)}</select></label>}
+          {canUseTeam && organizations.length > 0 && <label>Owner <select name="organization_id"><option value="">Personal</option>{organizations.map((organization) => <option value={organization.id} data-no-translate>{organization.full_name}</option>)}</select></label>}
           <label class="robot-hardware-form__notes">Notes <input name="notes" maxlength="2000" /></label>
           <button class="button button--dark button--small" type="submit">Add hardware</button><p data-hardware-status role="status" aria-live="polite"></p>
         </form>
         <div class="robot-hardware-list" data-hardware-list>
-          {hardware.map((item) => <div data-hardware-id={item.id}><span><strong>{item.component_slug ? robotCatalog.components.find((component) => component.slug === item.component_slug)?.name ?? item.component_slug : item.custom_name}</strong><small>{item.owner_type === 'organization' ? `@${item.owner_handle} · ` : ''}{item.quantity} · {item.status}{item.notes ? ` · ${item.notes}` : ''}</small></span><button type="button" class="text-button" data-archive-hardware>Archive</button></div>)}
+          {hardware.map((item) => <div data-hardware-id={item.id}><span><strong data-no-translate>{item.component_slug ? robotCatalog.components.find((component) => component.slug === item.component_slug)?.name ?? item.component_slug : item.custom_name}</strong><small>{item.owner_type === 'organization' ? <><span data-no-translate>@{item.owner_handle}</span> · </> : ''}{item.quantity} · {item.status}{item.notes ? <> · <span data-no-translate>{item.notes}</span></> : ''}</small></span><button type="button" class="text-button" data-archive-hardware>Archive</button></div>)}
         </div>
       </>
     ) : <div class="robot-plan-boundary"><p>Private Robots and My Hardware are available with Pro. Public planning, components, Robots and agent retrieval remain Free.</p><a class="button button--secondary button--small" href="/pricing">See Pro</a></div>}
@@ -121,7 +121,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
       <details>
         <summary>Propose an official component profile change</summary>
         <form class="robot-claim-form" data-robot-claim>
-          <label>Organization <select name="organization_id" required>{organizations.filter((organization) => ['owner','admin'].includes(organization.role)).map((organization) => <option value={organization.id}>{organization.full_name}</option>)}</select></label>
+          <label>Organization <select name="organization_id" required>{organizations.filter((organization) => ['owner','admin'].includes(organization.role)).map((organization) => <option value={organization.id} data-no-translate>{organization.full_name}</option>)}</select></label>
           <label>Component <select name="component_slug" required>{robotCatalog.components.map((component) => <option value={component.slug}>{component.name}</option>)}</select></label>
           <label>Official source URL <input type="url" name="source_url" pattern="https://.*" required /></label>
           <label>Proposed facts <textarea name="proposed_facts" rows="4" minlength="10" maxlength="20000" required></textarea></label>

@@ -11,7 +11,9 @@ import {
   localeFromPathname,
   localizedPath,
   localizedUrl,
+  openGraphLocale,
   stripLocalePrefix,
+  supportedLocales,
   translateKnown,
   translateTextChunk,
   type SiteLocale,
@@ -130,38 +132,27 @@ function cookieValue(request: Request, name: string): string | null {
   return null;
 }
 
-function redirectResponse(url: URL, clearLocale = false): Response {
+function redirectResponse(url: URL, localeChoice?: SiteLocale): Response {
   const headers = new Headers({ location: url.toString() });
-  if (clearLocale) {
+  if (localeChoice === 'en') {
     headers.append('set-cookie', `${localeCookie}=; Path=/; Max-Age=0; SameSite=Lax; Secure; HttpOnly`);
+  } else if (localeChoice) {
+    headers.append('set-cookie', `${localeCookie}=${encodeURIComponent(localeChoice)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly`);
   }
   return new Response(null, { status: 303, headers });
 }
 
 function localizeAnchor(element: Element, requestUrl: URL, locale: SiteLocale): void {
   const language = element.getAttribute('data-language-switch');
-  if (language) {
+  if (language && supportedLocales.includes(language as SiteLocale)) {
+    const targetLocale = language as SiteLocale;
     const target = new URL(requestUrl);
-    target.searchParams.delete('language');
-    if (locale === 'ru') {
-      target.pathname = stripLocalePrefix(target.pathname);
-      target.searchParams.set('language', 'en');
-      element.setAttribute('href', `${target.pathname}${target.search}${target.hash}`);
-      element.setInnerContent('en');
-      element.setAttribute('lang', 'en');
-      element.setAttribute('hreflang', 'en');
-      element.setAttribute('aria-label', 'English');
-    } else {
-      target.pathname = localizedPath(target.pathname, 'ru');
-      element.setAttribute('href', `${target.pathname}${target.search}${target.hash}`);
-      element.setInnerContent('ru');
-      element.setAttribute('lang', 'ru');
-      element.setAttribute('hreflang', 'ru');
-      element.setAttribute('aria-label', 'Русский');
-    }
+    target.pathname = localizedPath(target.pathname, targetLocale);
+    target.searchParams.set('language', targetLocale);
+    element.setAttribute('href', `${target.pathname}${target.search}${target.hash}`);
     return;
   }
-  if (locale !== 'ru') return;
+  if (locale === 'en') return;
   const raw = element.getAttribute('href');
   if (!raw || raw.startsWith('#') || raw.startsWith('//')) return;
   let target: URL;
@@ -172,12 +163,12 @@ function localizeAnchor(element: Element, requestUrl: URL, locale: SiteLocale): 
   }
   if (target.origin !== requestUrl.origin || !isLocalizablePath(target.pathname)) return;
   const wasAbsolute = /^https?:\/\//i.test(raw);
-  target.pathname = localizedPath(target.pathname, 'ru');
+  target.pathname = localizedPath(target.pathname, locale);
   element.setAttribute('href', wasAbsolute ? target.toString() : `${target.pathname}${target.search}${target.hash}`);
 }
 
 function localizeFormAction(element: Element, requestUrl: URL, locale: SiteLocale): void {
-  if (locale !== 'ru') return;
+  if (locale === 'en') return;
   const raw = element.getAttribute('action');
   if (!raw || raw.startsWith('//')) return;
   let target: URL;
@@ -187,7 +178,7 @@ function localizeFormAction(element: Element, requestUrl: URL, locale: SiteLocal
     return;
   }
   if (target.origin !== requestUrl.origin || !isLocalizablePath(target.pathname)) return;
-  target.pathname = localizedPath(target.pathname, 'ru');
+  target.pathname = localizedPath(target.pathname, locale);
   element.setAttribute('action', `${target.pathname}${target.search}${target.hash}`);
 }
 
@@ -225,8 +216,8 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     const vary = new Set((headers.get('vary') ?? '').split(',').map((value) => value.trim()).filter(Boolean));
     vary.add('Cookie');
     headers.set('vary', [...vary].join(', '));
-    if (locale === 'ru') {
-      headers.append('set-cookie', `${localeCookie}=ru; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly`);
+    if (locale !== 'en') {
+      headers.append('set-cookie', `${localeCookie}=${encodeURIComponent(locale)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly`);
     }
   }
   const secured = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -234,6 +225,12 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   const requestUrl = new URL(request.url);
   const englishUrl = new URL(stripLocalePrefix(requestUrl.pathname), 'https://superii.site');
   const russianUrl = localizedUrl(englishUrl, 'ru');
+  const chineseUrl = localizedUrl(englishUrl, 'zh-CN');
+  const localizedUrls: Readonly<Record<SiteLocale, URL>> = {
+    en: englishUrl,
+    ru: russianUrl,
+    'zh-CN': chineseUrl,
+  };
   const hasLocalizedPage = isLocalizablePath(englishUrl.pathname);
   let rewriter = new HTMLRewriter();
   rewriter = rewriter
@@ -256,11 +253,11 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     })
     .on('link[rel="canonical"]', {
       element(element) {
-        const canonical = locale === 'ru' ? russianUrl : englishUrl;
+        const canonical = localizedUrls[locale];
         element.setAttribute('href', canonical.toString());
         element.after(
           hasLocalizedPage
-            ? `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="ru" href="${russianUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`
+            ? `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="ru" href="${russianUrl.toString()}"><link rel="alternate" hreflang="zh-CN" href="${chineseUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`
             : `<link rel="alternate" hreflang="en" href="${englishUrl.toString()}"><link rel="alternate" hreflang="x-default" href="${englishUrl.toString()}">`,
           { html: true },
         );
@@ -268,13 +265,19 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     })
     .on('meta[property="og:locale"]', {
       element(element) {
-        element.setAttribute('content', locale === 'ru' ? 'ru_RU' : 'en_US');
-        if (hasLocalizedPage) element.after(`<meta property="og:locale:alternate" content="${locale === 'ru' ? 'en_US' : 'ru_RU'}">`, { html: true });
+        element.setAttribute('content', openGraphLocale(locale));
+        if (hasLocalizedPage) {
+          const alternates = supportedLocales
+            .filter((candidate) => candidate !== locale)
+            .map((candidate) => `<meta property="og:locale:alternate" content="${openGraphLocale(candidate)}">`)
+            .join('');
+          element.after(alternates, { html: true });
+        }
       },
     })
     .on('meta[property="og:url"]', {
       element(element) {
-        element.setAttribute('content', (locale === 'ru' ? russianUrl : englishUrl).toString());
+        element.setAttribute('content', localizedUrls[locale].toString());
       },
     });
 
@@ -283,7 +286,7 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   // translation handlers below walk every text node, link, form, and labelled
   // element, so registering them for English wastes enough CPU to truncate
   // larger responses at the Cloudflare edge even though translation is a no-op.
-  if (locale !== 'ru') return rewriter.transform(secured);
+  if (locale === 'en') return rewriter.transform(secured);
 
   let excludedDepth = 0;
   const voidElements = new Set([
@@ -302,11 +305,12 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   rewriter = rewriter
     .on('meta[name="description"], meta[property="og:title"], meta[property="og:description"], meta[property="og:image:alt"], meta[name="twitter:title"], meta[name="twitter:description"], meta[name="twitter:image:alt"]', {
       element(element) {
+        if (element.hasAttribute('data-no-translate')) return;
         const value = element.getAttribute('content');
         if (value) element.setAttribute('content', translateKnown(value, locale));
       },
     })
-    .on('title', textHandler(locale, () => false))
+    .on('title', textHandler(locale, () => excludedDepth > 0))
     .on('body', textHandler(locale, () => excludedDepth > 0))
     .on('a[href]', {
       element(element) {
@@ -333,31 +337,38 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const requestedLocale = localeFromPathname(context.url.pathname);
-  if (requestedLocale === 'ru' && !isLocalizablePath(context.url.pathname) && pageRequest(context.request)) {
+  if (requestedLocale !== 'en' && !isLocalizablePath(context.url.pathname) && pageRequest(context.request)) {
     const englishOnly = new URL(context.url);
     englishOnly.pathname = stripLocalePrefix(englishOnly.pathname);
-    return secure(redirectResponse(englishOnly, true), context.request, 'en');
+    return secure(redirectResponse(englishOnly, 'en'), context.request, 'en');
   }
-  const languageChoice = context.url.searchParams.get('language');
-  if (languageChoice === 'en' && pageRequest(context.request)) {
+  const languageParam = context.url.searchParams.get('language');
+  const languageChoice = supportedLocales.includes(languageParam as SiteLocale)
+    ? languageParam as SiteLocale
+    : null;
+  if (languageChoice && pageRequest(context.request)) {
     const clean = new URL(context.url);
-    clean.pathname = stripLocalePrefix(clean.pathname);
+    clean.pathname = localizedPath(clean.pathname, languageChoice);
     clean.searchParams.delete('language');
-    return secure(redirectResponse(clean, true), context.request, 'en');
+    return secure(redirectResponse(clean, languageChoice), context.request, languageChoice);
   }
+  const savedLocale = cookieValue(context.request, localeCookie);
+  const preferredLocale = supportedLocales.includes(savedLocale as SiteLocale)
+    ? savedLocale as SiteLocale
+    : 'en';
   if (
     requestedLocale === 'en'
-    && cookieValue(context.request, localeCookie) === 'ru'
+    && preferredLocale !== 'en'
     && pageRequest(context.request)
     && isLocalizablePath(context.url.pathname)
   ) {
-    const localized = localizedUrl(context.url, 'ru');
+    const localized = localizedUrl(context.url, preferredLocale);
     return secure(redirectResponse(localized), context.request, 'en');
   }
 
   context.locals.locale = requestedLocale;
   const routePath = stripLocalePrefix(context.url.pathname);
-  if (requestedLocale === 'ru' && isLocalizablePath(context.url.pathname)) {
+  if (requestedLocale !== 'en' && isLocalizablePath(context.url.pathname)) {
     const rewrite = new URL(context.url);
     rewrite.pathname = routePath;
     context.locals.localizedRewrite = rewrite;

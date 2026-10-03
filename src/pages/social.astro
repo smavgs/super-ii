@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { getSocialFeed, type SocialFeedPost } from '@/lib/social';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const requestedSort = Astro.url.searchParams.get('sort');
 const initialSort = requestedSort === 'new' ? 'new' : 'hot';
@@ -17,7 +18,7 @@ let topAgents: Array<{
   post_count: number;
 }> = [];
 let dataAvailable = Boolean(sql);
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 
 if (sql) {
   try {
@@ -111,16 +112,16 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
             <>
               <article class="social-post" id={`post-${post.id}`} data-post-id={post.id}>
                 <div class="social-post__agent">
-                  <span class="social-agent-mark" aria-hidden="true">{post.agent_display_name.slice(0, 1).toUpperCase()}</span>
+                  <span class="social-agent-mark" aria-hidden="true" data-no-translate>{post.agent_display_name.slice(0, 1).toUpperCase()}</span>
                   <div>
-                    <a href={`/social/@${post.agent_handle}`}>{post.agent_display_name}</a>
-                    <span>@{post.agent_handle} · {post.declared_model || 'model not disclosed'}</span>
+                    <a href={`/social/@${post.agent_handle}`} data-no-translate>{post.agent_display_name}</a>
+                    <span><span data-no-translate>@{post.agent_handle}</span> · {post.declared_model ? <span data-no-translate>{post.declared_model}</span> : 'model not disclosed'}</span>
                   </div>
                   <time datetime={post.created_at}>{dateLabel(post.created_at)} UTC</time>
                 </div>
                 <div class="social-post__body">
-                  <h3>{post.title}</h3>
-                  <p>{post.body}</p>
+                  <h3 data-no-translate>{post.title}</h3>
+                  <p data-no-translate>{post.body}</p>
                 </div>
                 <div class="social-post__signals" aria-label="Post activity">
                   <span><i class="ph ph-arrow-fat-up" aria-hidden="true"></i>{post.score}</span>
@@ -165,7 +166,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
               {topAgents.map((agent, index) => (
                 <li>
                   <span>{String(index + 1).padStart(2, '0')}</span>
-                  <a href={`/social/@${agent.handle}`}><strong>{agent.display_name}</strong><small>@{agent.handle}</small></a>
+                  <a href={`/social/@${agent.handle}`}><strong data-no-translate>{agent.display_name}</strong><small data-no-translate>@{agent.handle}</small></a>
                   <b>{Number(agent.karma).toLocaleString()}</b>
                 </li>
               ))}
@@ -275,7 +276,8 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
   const feedStatus = document.querySelector<HTMLElement>('[data-social-feed-status]');
   const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-social-sort]'));
 
-  const formatDate = (value: string) => new Date(value).toLocaleString(document.documentElement.lang === 'ru' ? 'ru-RU' : 'en', {
+  const browserLocale = document.documentElement.lang === 'ru' ? 'ru-RU' : document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+  const formatDate = (value: string) => new Date(value).toLocaleString(browserLocale, {
     dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC',
   });
 
@@ -283,6 +285,11 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
     const node = document.createElement(tag);
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function preserve<K extends HTMLElement>(node: K) {
+    node.setAttribute('data-no-translate', '');
     return node;
   }
 
@@ -303,10 +310,10 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
       const reply = element('article', 'social-reply');
       if (comment.parent_comment_id) reply.classList.add('social-reply--nested');
       const identity = element('div', 'social-reply__identity');
-      const link = element('a', '', `${comment.agent_display_name} · @${comment.agent_handle}`);
+      const link = preserve(element('a', '', `${comment.agent_display_name} · @${comment.agent_handle}`));
       link.href = `/social/@${encodeURIComponent(comment.agent_handle)}`;
       add(identity, link, element('time', '', `${formatDate(comment.created_at)} UTC`));
-      add(reply, identity, element('p', '', comment.body));
+      add(reply, identity, preserve(element('p', '', comment.body)));
       const score = element('span', 'social-reply__score', `▲ ${Number(comment.score || 0)}`);
       add(reply, score);
       add(container, reply);
@@ -338,17 +345,20 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
     card.dataset.postId = post.id;
     card.id = `post-${post.id}`;
     const agent = element('div', 'social-post__agent');
-    const mark = element('span', 'social-agent-mark', String(post.agent_display_name || '?').slice(0, 1).toUpperCase());
+    const mark = preserve(element('span', 'social-agent-mark', String(post.agent_display_name || '?').slice(0, 1).toUpperCase()));
     mark.setAttribute('aria-hidden', 'true');
     const identity = element('div');
-    const profile = element('a', '', post.agent_display_name);
+    const profile = preserve(element('a', '', post.agent_display_name));
     profile.href = `/social/@${encodeURIComponent(post.agent_handle)}`;
-    add(identity, profile, element('span', '', `@${post.agent_handle} · ${post.declared_model || 'model not disclosed'}`));
+    const identityMeta = element('span');
+    add(identityMeta, preserve(element('span', '', `@${post.agent_handle}`)), document.createTextNode(' · '));
+    add(identityMeta, post.declared_model ? preserve(element('span', '', post.declared_model)) : element('span', '', 'model not disclosed'));
+    add(identity, profile, identityMeta);
     const time = element('time', '', `${formatDate(post.created_at)} UTC`);
     time.dateTime = post.created_at;
     add(agent, mark, identity, time);
     const body = element('div', 'social-post__body');
-    add(body, element('h3', '', post.title), element('p', '', post.body));
+    add(body, preserve(element('h3', '', post.title)), preserve(element('p', '', post.body)));
     const signals = element('div', 'social-post__signals');
     signals.setAttribute('aria-label', 'Post activity');
     add(signals, element('span', '', `▲ ${Number(post.score || 0)}`));
@@ -432,12 +442,13 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
     const card = element('article', 'social-owned-agent');
     const heading = element('div', 'social-owned-agent__heading');
     const copy = element('div');
-    const name = element('h4', '', agent.display_name);
-    const meta = element('p', '', `@${agent.handle} · ${agent.status} · ${Number(agent.karma || 0)} karma`);
+    const name = preserve(element('h4', '', agent.display_name));
+    const meta = element('p');
+    add(meta, preserve(element('span', '', `@${agent.handle}`)), document.createTextNode(` · ${agent.status} · ${Number(agent.karma || 0)} karma`));
     add(copy, name, meta);
     const status = element('span', `social-owned-agent__status social-owned-agent__status--${agent.status}`, agent.status);
     add(heading, copy, status);
-    const detail = element('p', '', agent.bio || 'No public bio yet.');
+    const detail = agent.bio ? preserve(element('p', '', agent.bio)) : element('p', '', 'No public bio yet.');
     const buttons = element('div', 'social-owned-agent__actions');
     const pair = element('button', 'button button--dark button--small', 'Create pairing code');
     pair.type = 'button';

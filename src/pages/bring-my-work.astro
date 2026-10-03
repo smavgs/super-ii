@@ -7,11 +7,12 @@ import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { bridgeIsConfigured } from '@/lib/bridge';
 import { sqlClient } from '@/lib/db';
 import { authIsConfigured } from '@/lib/site';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const authConfigured = authIsConfigured(Astro.locals);
 const configured = bridgeIsConfigured(Astro.locals);
 const sql = sqlClient(Astro.locals);
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 let profile: { id: string; handle: string } | null = null;
 let connections: Array<{
   id: string;
@@ -235,11 +236,9 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 </div>
               </section>
 
-              {Astro.locals.locale !== 'ru' && (
-                <div class="bridge-transparent-lane">
-                  <TransparencyChecker variant="bridge" initialSource={requestedTransparentSource} />
-                </div>
-              )}
+              <div class="bridge-transparent-lane">
+                <TransparencyChecker variant="bridge" initialSource={requestedTransparentSource} />
+              </div>
             </div>
 
             <aside class="bridge-sidebar" aria-label="Bridge account and safeguards">

@@ -1,4 +1,5 @@
 import type { CapabilityStatus, SystemCapability } from '@/lib/system-state';
+import { translateKnown, type SiteLocale } from '@/lib/i18n';
 
 type RussianCapability = Pick<SystemCapability, 'capability' | 'availability' | 'evidence'>;
 
@@ -12,16 +13,26 @@ const statusRussian: Record<CapabilityStatus, string> = {
   GA: 'общедоступно (GA)',
 };
 
+const statusChinese: Record<CapabilityStatus, string> = {
+  designed: '已设计',
+  implemented: '已实现',
+  tested: '已测试',
+  integrated: '已集成',
+  staging: '预发布环境',
+  production: '生产环境',
+  GA: '正式可用（GA）',
+};
+
 const capabilitiesRussian: Record<string, RussianCapability> = {
   'Astro and Cloudflare public control plane': {
     capability: 'Публичная плоскость управления Astro и Cloudflare',
     availability: 'работает',
     evidence: 'Развёрнуты серверные маршруты, заголовки безопасности, проверки состояния и канонические домены.',
   },
-  'English and Russian product editions': {
-    capability: 'Английская и русская версии продукта',
-    availability: 'работают',
-    evidence: 'Английский остаётся каноническим языком по умолчанию. Для каждого маршрута, предназначенного людям, есть русская версия /ru с переведённым серверным и динамическим интерфейсом, локализацией Clerk и дат, внутренней навигацией с учётом языка, сохранением явного выбора, метаданными canonical и hreflang и соответствующим покрытием sitemap. Контракты API, MCP, A2A, well-known, файлов и кода сохраняют стабильное английское машинное представление. Опубликованные пользователями материалы остаются на языке источника. Пройдены проверки покрытия каталога строк, типов, адаптивной вёрстки, production-сборки, неизменности английской версии и живых запросов /ru.',
+  'English, Russian, and Simplified Chinese product editions': {
+    capability: 'Английская, русская и китайская версии продукта',
+    availability: 'английская и русская версии работают; китайская — кандидат на выпуск',
+    evidence: 'Английский остаётся каноническим языком по умолчанию. Кандидат на выпуск добавляет к существующим английской и русской версиям представление /zh-cn на упрощённом китайском с переведённым серверным и динамическим интерфейсом, локализацией Clerk и дат, внутренней навигацией с учётом языка, сохранением явного выбора, метаданными canonical и hreflang, локализованными social-метаданными и соответствующим покрытием sitemap. Контракты API, MCP, A2A, well-known, файлов и кода сохраняют стабильное английское машинное представление. Опубликованные пользователями материалы остаются на языке источника. Проверки каталогов строк и числовых фактов, типов, адаптивной вёрстки, production-сборки, неизменности английской версии и живых запросов всех трёх редакций должны пройти до объявления китайской версии работающей.',
   },
   'Email, Google, and GitHub authentication': {
     capability: 'Вход по электронной почте, Google и GitHub',
@@ -150,13 +161,13 @@ const capabilitiesRussian: Record<string, RussianCapability> = {
   },
   'Super ii Robot': {
     capability: 'Super ii Robot',
-    availability: 'работает на английском; публичный список роботов сообщества намеренно пуст',
-    evidence: '/robot предлагает путь Make Robot прежде всего для Raspberry Pi и расширенный путь Jetson с записями компонентов на основе источников, явными состояниями подтверждений, видимыми неизвестными, детерминированными планами Robot Check, неизменяемыми версиями сборок, управляемым приватным учётом оборудования и предложениями производителей. Границы Free, Pro, Team и коммерческого доступа применяются в PostgreSQL и приложении; закупки отложены, а рейтинг совместимости никогда не зависит от оплаты. Production-запросы подтвердили адаптивный пользовательский маршрут, каноническое перенаправление /ru/robot, настоящий пустой список сообщества, HTML и JSON компонентов, CORS планировщика и safety_approval: false, выполнение шести навыков через A2A и MCP, отказ неаутентифицированного Work, sitemap только с английской версией, минимальный ответ проверки состояния и машинные руководства. Полный workflow проверки GitHub прошёл до направления 100% production-трафика на точную проверенную версию Worker.',
+    availability: 'английская версия работает; русская и китайская — кандидаты на выпуск; публичный список роботов сообщества намеренно пуст',
+    evidence: '/robot предлагает путь Make Robot прежде всего для Raspberry Pi и расширенный путь Jetson с записями компонентов на основе источников, явными состояниями подтверждений, видимыми неизвестными, детерминированными планами Robot Check, неизменяемыми версиями сборок, управляемым приватным учётом оборудования и предложениями производителей. Кандидат на выпуск добавляет равнозначные пользовательские представления /ru/robot и /zh-cn/robot, а стабильные машинные руководства остаются на английском. Границы Free, Pro, Team и коммерческого доступа применяются в PostgreSQL и приложении; закупки отложены, а рейтинг совместимости никогда не зависит от оплаты. Многоязычные браузерные проверки, sitemap, полный workflow GitHub и живые локализованные запросы должны пройти до объявления дополнительных версий работающими.',
   },
   'Super ii Transparent': {
     capability: 'Super ii Transparent',
-    availability: 'работает на английском',
-    evidence: 'Англоязычный маршрут /transparent принимает публичные ссылки на модели, наборы данных и Spaces Hugging Face, разрешает точную ревизию поставщика, читает ограниченные метаданные и небольшие файлы подтверждений только с одобренных адресов Hugging Face, не выполняет код и не загружает веса и создаёт детерминированные неизменяемые отчёты с состояниями verified, declared, derived и unknown. Главная страница и Bring My Work, постоянные страницы отчётов, поиск, сравнение, повторная проверка, управление сохранением, наблюдением, подтверждением авторства, предложениями источников и ответами автора, REST и MCP с пятью инструментами используют один движок и схему. Тесты PostgreSQL 17 подтверждают неизменяемость отчётов и ответов, проверяемое авторство, аналитику, квитанции агентов с ограниченной областью и настоящее обновление наблюдений с уведомлениями. Production-миграция 0021 применена. Живые проверки создали и прочитали постоянный отчёт для openai-community/gpt2 на точной ревизии 607a30d783dfa663caf39e06633721c8d4cfcd7e и подтвердили публичный каталог, API отчёта, отрисованную страницу и social card 1200×630. Статические контракты, живые проверки модели, набора данных и Space на точной ревизии, типы, адаптивные браузерные проверки, production-сборка и release-валидация проходят.',
+    availability: 'английская версия работает; русская и китайская — кандидаты на выпуск',
+    evidence: 'Англоязычный маршрут /transparent принимает публичные ссылки на модели, наборы данных и Spaces Hugging Face, разрешает точную ревизию поставщика, читает ограниченные метаданные и небольшие файлы подтверждений только с одобренных адресов Hugging Face, не выполняет код и не загружает веса и создаёт детерминированные неизменяемые отчёты с состояниями verified, declared, derived и unknown. Кандидат на выпуск добавляет равнозначные пользовательские представления /ru/transparent и /zh-cn/transparent, а REST и MCP остаются на английском. Многоязычные браузерные проверки, статические контракты, проверки поставщика, типы, production-сборка, release-валидация и живые локализованные запросы должны пройти до объявления дополнительных версий работающими.',
   },
   'Public member profiles': {
     capability: 'Публичные профили участников',
@@ -307,12 +318,22 @@ const capabilitiesRussian: Record<string, RussianCapability> = {
 
 export const russianSystemStateCount = Object.keys(capabilitiesRussian).length;
 
-export function localizeCapability(item: SystemCapability, locale: 'en' | 'ru'): SystemCapability {
-  if (locale !== 'ru') return item;
-  const translated = capabilitiesRussian[item.capability];
-  return translated ? { ...item, ...translated } : item;
+export function localizeCapability(item: SystemCapability, locale: SiteLocale): SystemCapability {
+  if (locale === 'en') return item;
+  if (locale === 'ru') {
+    const translated = capabilitiesRussian[item.capability];
+    return translated ? { ...item, ...translated } : item;
+  }
+  return {
+    ...item,
+    capability: translateKnown(item.capability, locale),
+    availability: translateKnown(item.availability, locale),
+    evidence: translateKnown(item.evidence, locale),
+  };
 }
 
-export function localizeCapabilityStatus(status: CapabilityStatus, locale: 'en' | 'ru'): string {
-  return locale === 'ru' ? statusRussian[status] : status;
+export function localizeCapabilityStatus(status: CapabilityStatus, locale: SiteLocale): string {
+  if (locale === 'ru') return statusRussian[status];
+  if (locale === 'zh-CN') return statusChinese[status];
+  return status;
 }

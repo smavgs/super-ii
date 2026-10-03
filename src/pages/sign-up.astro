@@ -30,7 +30,7 @@ const postSignUpRedirect = localizedHref(plainPostSignUpRedirect, locale);
 const plainSignInUrl = plainPostSignUpRedirect === agentStarterRedirect
   ? '/sign-in'
   : `/sign-in?redirect_url=${encodeURIComponent(plainPostSignUpRedirect)}`;
-const signInUrl = locale === 'ru' ? `/ru${plainSignInUrl}` : plainSignInUrl;
+const signInUrl = localizedHref(plainSignInUrl, locale);
 ---
 
 <BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">

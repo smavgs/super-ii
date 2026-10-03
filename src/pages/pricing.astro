@@ -357,7 +357,8 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
         });
         const data = await response.json() as Record<string, unknown>;
         if (response.status === 401) {
-          const signInPath = document.documentElement.lang === 'ru' ? '/ru/sign-in' : '/sign-in';
+          const languagePrefix = document.documentElement.lang === 'ru' ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
+          const signInPath = `${languagePrefix}/sign-in`;
           location.assign(`${signInPath}?redirect_url=${encodeURIComponent(location.pathname)}`);
           return;
         }

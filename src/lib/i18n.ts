@@ -1,11 +1,37 @@
 import russianCatalog from '@/content/locales/ru.json';
+import chineseCatalog from '@/content/locales/zh-CN.json';
 import { connectionRussian } from './connection-localization';
 
-export type SiteLocale = 'en' | 'ru';
+export type SiteLocale = 'en' | 'ru' | 'zh-CN';
 
 export const defaultLocale: SiteLocale = 'en';
 export const russianPrefix = '/ru';
+export const simplifiedChinesePrefix = '/zh-cn';
 export const localeCookie = 'superii_locale';
+
+export const supportedLocales: ReadonlyArray<SiteLocale> = ['en', 'ru', 'zh-CN'];
+
+const localePrefixes: Readonly<Record<SiteLocale, string>> = Object.freeze({
+  en: '',
+  ru: russianPrefix,
+  'zh-CN': simplifiedChinesePrefix,
+});
+
+export function localePrefix(locale: SiteLocale): string {
+  return localePrefixes[locale];
+}
+
+export function dateLocale(locale: SiteLocale): string {
+  if (locale === 'ru') return 'ru-RU';
+  if (locale === 'zh-CN') return 'zh-CN';
+  return 'en-US';
+}
+
+export function openGraphLocale(locale: SiteLocale): string {
+  if (locale === 'ru') return 'ru_RU';
+  if (locale === 'zh-CN') return 'zh_CN';
+  return 'en_US';
+}
 
 const localizableRoots = new Set([
   '',
@@ -39,6 +65,7 @@ const localizableRoots = new Set([
   'proposals',
   'repositories',
   'review',
+  'robot',
   'security',
   'sign-in',
   'sign-up',
@@ -48,6 +75,7 @@ const localizableRoots = new Set([
   'status',
   'system-state',
   'tokenizer',
+  'transparent',
   'use',
 ]);
 
@@ -81,6 +109,15 @@ const coreRussian: Record<string, string> = {
   'Create organization': 'Создать организацию',
   'Create repository': 'Создать репозиторий',
   'Current': 'Текущее',
+  'created a repository': 'создал(а) репозиторий',
+  'published a revision': 'опубликовал(а) версию',
+  'started a discussion': 'начал(а) обсуждение',
+  'left a comment': 'оставил(а) комментарий',
+  'liked a repository': 'отметил(а) репозиторий',
+  'followed a builder': 'подписался(-ась) на создателя',
+  'created an organization': 'создал(а) организацию',
+  'published the paper': 'опубликовал(а) статью',
+  'published': 'опубликовал(а)',
   'Public beta': 'Публичная бета-версия',
   'Social MCP': 'MCP для Social web',
   'Switch to dark theme': 'Переключиться на тёмную тему',
@@ -2791,6 +2828,77 @@ const generatedRussian = Object.fromEntries(
   Object.entries((russianCatalog as { messages: Record<string, string> }).messages)
     .filter(([source, translation]) => preservesNumericTokens(source, translation)),
 );
+const generatedChinese = Object.fromEntries(
+  Object.entries((chineseCatalog as { messages: Record<string, string> }).messages)
+    .filter(([source, translation]) => preservesNumericTokens(source, translation)),
+);
+
+export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.freeze({
+  'Agent Friendly': '对智能体友好',
+  'Agent friendly': '对智能体友好',
+  'Open intelligence, built together.': '开放智能，共同构建。',
+  'Super ii is an open home for AI models, datasets, apps, agents, research and the people building them.':
+    'Super ii 是面向 AI 模型、数据集、应用、智能体、研究及其创造者的开放家园。',
+  'Discover existing work. Understand how it was made. Build on it. Share what you create.':
+    '发现已有成果，了解其构建过程，在此基础上继续创造，并分享您的作品。',
+  'Join Super ii': '加入 Super ii',
+  'Bring my work': '带来我的作品',
+  'Create account': '创建账户',
+  'Create free account': '免费创建账户',
+  'Create': '创建',
+  'Workspace': '工作区',
+  'Explore': '探索',
+  'Join free': '免费加入',
+  'Sign in': '登录',
+  'Sign up': '注册',
+  'Log in': '登录',
+  'Search': '搜索',
+  'Menu': '菜单',
+  'Open navigation': '打开导航',
+  'Close navigation': '关闭导航',
+  'Switch to dark theme': '切换到深色主题',
+  'Switch to light theme': '切换到浅色主题',
+  'Search web': '搜索网络',
+  'Web search': '网络搜索',
+  'Checking the web…': '正在搜索网络…',
+  'Turn web search on': '开启网络搜索',
+  'Turn web search off': '关闭网络搜索',
+  'Type your message': '输入消息',
+  'Type your message…': '输入消息…',
+  'Send': '发送',
+  'Stop': '停止',
+  'Retry': '重试',
+  'New chat': '新建聊天',
+  'Close Super ii': '关闭 Super ii',
+  'Models': '模型',
+  'Datasets': '数据集',
+  'Apps': '应用',
+  'Skills': '技能',
+  'Builders': '创作者',
+  'Pricing': '定价',
+  'Documentation': '文档',
+  'Tokenizer': '分词器',
+  'Use this model': '使用此模型',
+  'Run on my hardware': '在我的硬件上运行',
+  'Learn more': '了解更多',
+  'System status': '系统状态',
+  'About': '关于',
+  'Contact': '联系',
+  'Security': '安全',
+  'Privacy': '隐私',
+  'Terms': '条款',
+  'Chinese': '简体中文',
+  'created a repository': '创建了一个仓库',
+  'published a revision': '发布了一个版本',
+  'started a discussion': '发起了一个讨论',
+  'left a comment': '留下了评论',
+  'liked a repository': '赞了一个仓库',
+  'followed a builder': '关注了一位创作者',
+  'created an organization': '创建了一个组织',
+  'published the paper': '发布了论文',
+  'published': '发布了',
+  'model not disclosed': '未披露模型',
+});
 export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...coreRussian,
   ...pricingRussian,
@@ -2817,6 +2925,11 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
 export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedRussian,
   ...reviewedRussianMessages,
+});
+
+export const chineseMessages: Readonly<Record<string, string>> = Object.freeze({
+  ...generatedChinese,
+  ...reviewedChineseMessages,
 });
 
 const helpRussian: Readonly<Record<string, string>> = Object.freeze({
@@ -2868,12 +2981,18 @@ const helpRussian: Readonly<Record<string, string>> = Object.freeze({
 });
 
 export function localeFromPathname(pathname: string): SiteLocale {
-  return pathname === russianPrefix || pathname.startsWith(`${russianPrefix}/`) ? 'ru' : 'en';
+  if (pathname === simplifiedChinesePrefix || pathname.startsWith(`${simplifiedChinesePrefix}/`)) return 'zh-CN';
+  if (pathname === russianPrefix || pathname.startsWith(`${russianPrefix}/`)) return 'ru';
+  return 'en';
 }
 
 export function stripLocalePrefix(pathname: string): string {
-  if (pathname === russianPrefix) return '/';
-  if (pathname.startsWith(`${russianPrefix}/`)) return pathname.slice(russianPrefix.length) || '/';
+  for (const locale of supportedLocales) {
+    const prefix = localePrefix(locale);
+    if (!prefix) continue;
+    if (pathname === prefix) return '/';
+    if (pathname.startsWith(`${prefix}/`)) return pathname.slice(prefix.length) || '/';
+  }
   return pathname || '/';
 }
 
@@ -2888,7 +3007,8 @@ export function isLocalizablePath(pathname: string): boolean {
 export function localizedPath(pathname: string, locale: SiteLocale): string {
   const plain = stripLocalePrefix(pathname);
   if (locale === 'en' || !isLocalizablePath(plain)) return plain;
-  return plain === '/' ? russianPrefix : `${russianPrefix}${plain}`;
+  const prefix = localePrefix(locale);
+  return plain === '/' ? prefix : `${prefix}${plain}`;
 }
 
 export function localizedHref(href: string, locale: SiteLocale): string {
@@ -2904,6 +3024,15 @@ function decodeGeneratedEntities(value: string): string {
     .replaceAll('&#39;', '’')
     .replaceAll('&lt;', '«')
     .replaceAll('&gt;', '»')
+    .replaceAll('&amp;', '&');
+}
+
+function decodeChineseEntities(value: string): string {
+  return value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
     .replaceAll('&amp;', '&');
 }
 
@@ -2931,10 +3060,158 @@ function russianCount(value: number, one: string, few: string, many: string): st
   return many;
 }
 
+function translateChineseDynamic(normalized: string): string | null {
+  const exact = (text: string) => decodeChineseEntities(chineseMessages[text] ?? text);
+  let match = normalized.match(/^About (.+)$/);
+  if (match) return `关于${exact(match[1])}`;
+  match = normalized.match(/^Close (.+) information$/);
+  if (match) return `关闭${exact(match[1])}说明`;
+  match = normalized.match(/^(.+) information$/);
+  if (match) return `${exact(match[1])}说明`;
+  match = normalized.match(/^(.+) · Super ii$/);
+  if (match) return `${exact(match[1])} · Super ii`;
+  match = normalized.match(/^(.+) transparency report$/);
+  if (match) return `${match[1]} 透明度报告`;
+  match = normalized.match(/^(.+): (\d+) of (\d+) transparency fields established at revision (.+)\.$/);
+  if (match) return `${match[1]}：在版本 ${match[4]} 已确认 ${match[2]}/${match[3]} 个透明度字段。`;
+  match = normalized.match(/^(\d+) evidence (?:field|fields) changed$/);
+  if (match) return `有 ${match[1]} 个证据字段发生变化`;
+  match = normalized.match(/^(\d+) of (\d+) complete$/);
+  if (match) return `已完成 ${match[1]}/${match[2]} 项`;
+  match = normalized.match(/^(\d+) selected$/);
+  if (match) return `已选择 ${match[1]} 项`;
+  match = normalized.match(/^([\d.,\s\u00a0]+) bytes$/);
+  if (match) return `${match[1].trim()} 字节`;
+  match = normalized.match(/^Open (model|dataset|app)$/);
+  if (match) return `打开${exact(match[1])}`;
+  match = normalized.match(/^Results for [“"](.+)[”"]$/);
+  if (match) return `“${match[1]}”的搜索结果`;
+  match = normalized.match(/^Page (\d+) of (\d+)$/);
+  if (match) return `第 ${match[1]} 页，共 ${match[2]} 页`;
+  match = normalized.match(/^View (.+?)[’']s public profile$/);
+  if (match) return `查看 ${match[1]} 的公开资料`;
+  match = normalized.match(/^(.+?)[’']s interests$/);
+  if (match) return `${match[1]} 的兴趣`;
+  match = normalized.match(/^(.+?)[’']s public activity$/);
+  if (match) return `${match[1]} 的公开动态`;
+  match = normalized.match(/^See all promoted (models|datasets|apps)$/);
+  if (match) return `查看所有推广${exact(match[1])}`;
+  match = normalized.match(/^No active (models|datasets|apps) promotions yet\. Reviewed public work can reserve equal rotation here\.$/);
+  if (match) return `目前还没有正在推广的${exact(match[1])}。通过审核的公开作品可以在此获得平等轮播机会。`;
+  match = normalized.match(/^(\d+) (file|files|row|rows|builder|builders|repository|repositories|skill|skills|item|items|post|posts|reply|replies|place|places|comment|comments|vote|votes|download|downloads|cell|cells)$/);
+  if (match) {
+    const nouns: Record<string, string> = {
+      file: '个文件', files: '个文件', row: '行', rows: '行', builder: '位创作者', builders: '位创作者',
+      repository: '个仓库', repositories: '个仓库', skill: '项技能', skills: '项技能', item: '项', items: '项',
+      post: '篇帖子', posts: '篇帖子', reply: '条回复', replies: '条回复', place: '个名额', places: '个名额',
+      comment: '条评论', comments: '条评论', vote: '票', votes: '票', download: '次下载', downloads: '次下载',
+      cell: '个单元格', cells: '个单元格',
+    };
+    return `${match[1]} ${nouns[match[2]]}`;
+  }
+  match = normalized.match(/^(\d+) (?:skill|skills)(?: in (.+))?$/);
+  if (match) return `${match[1]} 项技能${match[2] ? `，分类：${exact(match[2])}` : ''}`;
+  match = normalized.match(/^Verified (server|browser) result · ([\d.,\s\u00a0]+) tokens(?: · first ([\d.,\s\u00a0]+) shown; JSON contains all)?\.$/);
+  if (match) return `已验证的${exact(match[1])}结果 · ${match[2].trim()} 个词元${match[3] ? ` · 当前显示前 ${match[3].trim()} 个；JSON 包含全部结果` : ''}。`;
+  match = normalized.match(/^Sort (.+)$/);
+  if (match) return `排序：${exact(match[1])}`;
+  match = normalized.match(/^Open (.+) skill$/);
+  if (match) return `打开技能“${match[1]}”`;
+  match = normalized.match(/^Open (.+) organization$/);
+  if (match) return `打开组织“${match[1]}”`;
+  match = normalized.match(/^Open (.+)$/);
+  if (match) return `打开“${match[1]}”`;
+  match = normalized.match(/^Dataset preview: (.+)$/);
+  if (match) return `数据集预览：${match[1]}`;
+  match = normalized.match(/^PDF preview: (.+)$/);
+  if (match) return `PDF 预览：${match[1]}`;
+  match = normalized.match(/^Link to cell (\d+)$/);
+  if (match) return `链接到单元格 ${match[1]}`;
+  match = normalized.match(/^Outputs for cell (\d+)$/);
+  if (match) return `单元格 ${match[1]} 的输出`;
+  match = normalized.match(/^Static output from cell (\d+)$/);
+  if (match) return `单元格 ${match[1]} 的静态输出`;
+  match = normalized.match(/^Provenance relationships for (.+)$/);
+  if (match) return `${match[1]} 的来源关系`;
+  match = normalized.match(/^Disconnect @(.+)$/);
+  if (match) return `断开 @${match[1]}`;
+  match = normalized.match(/^Organization type for (.+)$/);
+  if (match) return `${match[1]} 的组织类型`;
+  match = normalized.match(/^Founding place #(\d+) is (.+)$/);
+  if (match) return `创始名额 #${match[1]}：${exact(match[2])}`;
+  match = normalized.match(/^(.+) · Founding Supporter #(\d+)$/);
+  if (match) return `${match[1]} · 创始支持者 #${match[2]}`;
+  match = normalized.match(/^(.+) checkout$/);
+  if (match) return `${exact(match[1])}结账`;
+  match = normalized.match(/^Edit (.+)$/);
+  if (match) return `编辑 ${match[1]}`;
+  match = normalized.match(/^Safe static notebook reader for (.+)\.$/);
+  if (match) return `用于 ${match[1]} 的安全静态笔记本阅读器。`;
+  match = normalized.match(/^No matching (.+)$/);
+  if (match) return `没有匹配的${exact(match[1])}`;
+  match = normalized.match(/^No (.+) match “(.+)”\. Only reviewed public releases are searchable\.$/);
+  if (match) return `${exact(match[1])}中没有与“${match[2]}”匹配的内容。只有通过审核的公开版本可供搜索。`;
+  match = normalized.match(/^(.+) instructions selected\.$/);
+  if (match) return `已选择 ${exact(match[1])} 说明。`;
+  match = normalized.match(/^Hashing (.+)… (\d+)%$/);
+  if (match) return `正在计算 ${match[1]} 的哈希… ${match[2]}%`;
+  match = normalized.match(/^Uploading (.+)… (\d+)%$/);
+  if (match) return `正在上传 ${match[1]}… ${match[2]}%`;
+  match = normalized.match(/^Scanning (.+) in quarantine…$/);
+  if (match) return `正在隔离区扫描 ${match[1]}…`;
+  match = normalized.match(/^Completed locally with (.+)\.$/);
+  if (match) return `已使用 ${match[1]} 在本地完成。`;
+  match = normalized.match(/^Completed offline · seed (.+)$/);
+  if (match) return `已离线完成 · seed ${match[1]}`;
+  match = normalized.match(/^Build ready · (\d+) files · locked image\.$/);
+  if (match) return `构建已就绪 · ${match[1]} 个文件 · 镜像已锁定。`;
+  match = normalized.match(/^Watching (.+)\.$/);
+  if (match) return `正在关注${exact(match[1])}。`;
+  match = normalized.match(/^(\d+) found · (\d+) ready now$/);
+  if (match) return `找到 ${match[1]} 项 · 目前有 ${match[2]} 项就绪`;
+  match = normalized.match(/^(model|dataset|space|app) · (\d+) files · (.+) · (.+)$/);
+  if (match) return `${exact(match[1])} · ${match[2]} 个文件 · ${match[3]} · ${exact(match[4])}`;
+  match = normalized.match(/^(\d+)\/(\d+) orders · \$(.+) of \$(.+) authorized · (.+) · expires (.+)$/);
+  if (match) return `${match[1]}/${match[2]} 个订单 · 已授权 $${match[3]}/$${match[4]} · ${match[5]} · ${match[6]} 到期`;
+  match = normalized.match(/^(\d+)\/(\d+) actions · (.+) · expires (.+)$/);
+  if (match) return `${match[1]}/${match[2]} 次操作 · ${match[3]} · ${match[4]} 到期`;
+  match = normalized.match(/^(.+) · (\d+)\/(\d+) slots used$/);
+  if (match) return `${match[1]} · 已使用 ${match[2]}/${match[3]} 个名额`;
+  match = normalized.match(/^Loading (.+) posts…$/);
+  if (match) return `正在加载${exact(match[1])}帖子…`;
+  match = normalized.match(/^(\d+) public (?:post|posts) shown\.$/);
+  if (match) return `已显示 ${match[1]} 篇公开帖子。`;
+  match = normalized.match(/^Pairing code ready for @(.+)\.$/);
+  if (match) return `@${match[1]} 的配对码已就绪。`;
+  match = normalized.match(/^(Pause|Resume|Revoke) in progress…$/);
+  if (match) return `正在${exact(match[1])}…`;
+  match = normalized.match(/^Agent (pause|resume|revoke) completed\.$/);
+  if (match) return `智能体${exact(match[1])}操作已完成。`;
+  match = normalized.match(/^(.+) created\. Create a pairing code in the next panel\.$/);
+  if (match) return `${match[1]}已创建。请在下一个面板中创建配对码。`;
+  match = normalized.match(/^(Follow|Like) saved\.$/);
+  if (match) return `${exact(match[1])}已保存。`;
+  match = normalized.match(/^Payment status: (.+)\.$/);
+  if (match) return `付款状态：${exact(match[1])}。`;
+  match = normalized.match(/^USDC · Ethereum · (\$[\d,.]+) total(?: for (\d+) seats)? · (30 days|12 months)$/);
+  if (match) return `USDC · Ethereum · 总计 ${match[1]}${match[2] ? `，${match[2]} 个席位` : ''} · ${match[3] === '12 months' ? '12 个月' : '30 天'}`;
+  match = normalized.match(/^(\d+) places available now\.$/);
+  if (match) return `目前有 ${match[1]} 个名额。`;
+  match = normalized.match(/^Request failed \((\d+)\)$/);
+  if (match) return `请求失败（${match[1]}）`;
+  return null;
+}
+
 export function translateKnown(value: string, locale: SiteLocale = 'ru'): string {
-  if (locale !== 'ru') return value;
+  if (locale === 'en') return value;
   const normalized = decodeSourceEntities(value).replace(/\s+/g, ' ').trim();
   if (!normalized) return value;
+  if (locale === 'zh-CN') {
+    if (Object.hasOwn(chineseMessages, normalized)) {
+      return decodeChineseEntities(chineseMessages[normalized] ?? '');
+    }
+    return translateChineseDynamic(normalized) ?? value;
+  }
   if (Object.hasOwn(reviewedRussianMessages, normalized)) {
     return decodeGeneratedEntities(reviewedRussianMessages[normalized] ?? '');
   }
@@ -3109,7 +3386,7 @@ export function translateKnown(value: string, locale: SiteLocale = 'ru'): string
 }
 
 export function translateTextChunk(value: string, locale: SiteLocale = 'ru'): string {
-  if (locale !== 'ru' || !value.trim()) return value;
+  if (locale === 'en' || !value.trim()) return value;
   const leading = value.match(/^\s*/)?.[0] ?? '';
   const trailing = value.match(/\s*$/)?.[0] ?? '';
   const translated = translateKnown(value, locale);

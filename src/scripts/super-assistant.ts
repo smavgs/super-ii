@@ -317,6 +317,7 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     label.className = 'sr-only';
     label.textContent = role === 'user' ? 'You:' : 'Super ii:';
     const paragraph = document.createElement('p');
+    paragraph.setAttribute('data-no-translate', '');
     paragraph.textContent = copy;
     article.appendChild(label);
     article.appendChild(paragraph);
@@ -358,13 +359,17 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
       link.rel = 'noopener noreferrer';
       link.textContent = `${index + 1} · ${source.source}`;
       link.title = source.title;
+      link.setAttribute('data-no-translate', '');
       sourceList.appendChild(link);
     });
     article.appendChild(sourceList);
   }
 
   function finishAssistantMessage(reply: AssistantReply) {
-    if (currentCopy) currentCopy.textContent = reply.answer;
+    if (currentCopy) {
+      currentCopy.setAttribute('data-no-translate', '');
+      currentCopy.textContent = reply.answer;
+    }
     if (currentMessage) appendSources(currentMessage, reply.sources);
     currentMessage = null;
     currentCopy = null;

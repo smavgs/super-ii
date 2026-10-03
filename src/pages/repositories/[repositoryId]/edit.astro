@@ -5,8 +5,9 @@ import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { managedRepository } from '@/lib/creator';
 import { sqlClient } from '@/lib/db';
 import { pingRuntime } from '@/lib/runtime';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 
 type DraftFile = {
   id: string;

@@ -1,3 +1,5 @@
+import { translateKnown, type SiteLocale } from '@/lib/i18n';
+
 const russianMarkdownByHeading: Record<string, string> = {
   '# Create and verify a small dataset': `# Создайте и проверьте небольшой набор данных
 
@@ -115,8 +117,21 @@ const russianMarkdownByHeading: Record<string, string> = {
 До покупки или подачи питания вместе с квалифицированными людьми проверьте документы производителя, напряжение и ток, разъёмы, охлаждение, крепления, полезную нагрузку и центр тяжести, защиту аккумулятора, аварийную остановку, среду, надзор и местные правила.`,
 };
 
-export function localizeOfficialNotebookMarkdown(source: string, locale: 'en' | 'ru'): string {
-  if (locale !== 'ru') return source;
-  const heading = source.split('\n', 1)[0]?.trim();
-  return russianMarkdownByHeading[heading] ?? source;
+export function localizeOfficialNotebookMarkdown(source: string, locale: SiteLocale): string {
+  if (locale === 'en') return source;
+  if (locale === 'ru') {
+    const heading = source.split('\n', 1)[0]?.trim();
+    return russianMarkdownByHeading[heading] ?? source;
+  }
+  if (locale === 'zh-CN') {
+    return source
+      .split('\n')
+      .map((line) => {
+        const match = line.match(/^(\s*(?:(?:#{1,6}|[-*]|\d+\.)\s+)?)(.*?)(\s*)$/);
+        if (!match?.[2]) return line;
+        return `${match[1]}${translateKnown(match[2], locale)}${match[3]}`;
+      })
+      .join('\n');
+  }
+  return source;
 }

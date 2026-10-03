@@ -138,7 +138,8 @@ import AgentConnections from './AgentConnections.astro';
       prerequisite.hidden = eligible.length > 0;
       if (!eligible.length) {
         const link = element('a', 'Create an organization') as HTMLAnchorElement;
-        link.href = document.documentElement.lang === 'ru' ? '/ru/organizations/new' : '/organizations/new';
+        const languagePrefix = document.documentElement.lang === 'ru' ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
+        link.href = `${languagePrefix}/organizations/new`;
         prerequisite.replaceChildren(element('p', 'Creating an agent or a contribution job requires an organization you own or administer.'), link);
       }
     }
@@ -250,7 +251,8 @@ import AgentConnections from './AgentConnections.astro';
         const copy = element('span');
         const bound = token.repository_id ? repositories.find((repository) => repository.id === token.repository_id) : null;
         const boundary = bound ? `${bound.owner_handle}/${bound.slug}` : token.repository_id ? 'one repository' : 'organization-wide';
-        add(copy, element('strong', token.token_prefix), element('small', `${token.actions_used}/${token.max_actions} actions · ${boundary} · expires ${new Date(token.expires_at).toLocaleDateString(document.documentElement.lang === 'ru' ? 'ru-RU' : 'en')}`));
+        const browserLocale = document.documentElement.lang === 'ru' ? 'ru-RU' : document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+        add(copy, element('strong', token.token_prefix), element('small', `${token.actions_used}/${token.max_actions} actions · ${boundary} · expires ${new Date(token.expires_at).toLocaleDateString(browserLocale)}`));
         add(row, copy);
         if (token.revoked_at) add(row, element('span', 'revoked', 'status-badge'));
         else {

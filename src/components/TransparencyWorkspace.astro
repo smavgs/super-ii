@@ -1,5 +1,6 @@
 ---
 import '@/styles/transparent.css';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 type Item = {
   report_key: string;
@@ -15,7 +16,7 @@ type Item = {
 
 interface Props { items: Item[] }
 const { items } = Astro.props;
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 ---
 
 <section class="account-card transparency-workspace" id="transparent" data-transparency-workspace>

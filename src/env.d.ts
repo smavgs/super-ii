@@ -29,7 +29,7 @@ interface ImportMeta {
 
 declare namespace App {
   interface Locals {
-    locale?: 'en' | 'ru';
+    locale?: 'en' | 'ru' | 'zh-CN';
     localizedRewrite?: URL;
   }
 }

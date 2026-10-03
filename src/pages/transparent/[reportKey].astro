@@ -2,12 +2,14 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { compareStoredTransparencyReports, getTransparencyReport, searchTransparencyReports } from '@/lib/transparent-store';
 import { sqlClient } from '@/lib/db';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import type { TransparencyEvidenceState } from '@/lib/transparent';
 import '@/styles/transparent.css';
 
 export const prerender = false;
 
 const reportKey = Astro.params.reportKey ?? '';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sql = sqlClient(Astro.locals);
 let report = sql ? await getTransparencyReport(sql, reportKey).catch(() => null) : null;
 let serviceUnavailable = !sql;
@@ -53,7 +55,7 @@ const description = report
             <div class="transparent-report-hero__top">
               <div>
                 <p class="eyebrow">Super ii Transparent 🔎 · {report.repository.kind}</p>
-                <h1>{report.repository.id}</h1>
+                <h1 data-no-translate>{report.repository.id}</h1>
                 <p>Public evidence report pinned to one exact Hugging Face commit.</p>
               </div>
               <div class="transparent-report-hero__actions">
@@ -64,7 +66,7 @@ const description = report
             </div>
             <div class="transparent-report-identity">
               <div><span>Exact revision</span><code>{report.repository.resolved_revision}</code></div>
-              <div><span>Checked</span><strong>{new Date(report.checked_at).toLocaleString('en', { dateStyle: 'long', timeStyle: 'short' })}</strong></div>
+              <div><span>Checked</span><strong>{new Date(report.checked_at).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' })}</strong></div>
               <div><span>Criteria</span><strong>{report.criteria_version}</strong></div>
               <div><span>Coverage</span><strong>{report.coverage.established} / {report.coverage.total}</strong></div>
             </div>
@@ -106,12 +108,12 @@ const description = report
 
             <section class="transparent-sources" id="sources">
               <p class="eyebrow">Direct evidence</p><h2>Sources read for this report</h2>
-              <div>{report.sources.map((source, index) => <a href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, '0')}</span><strong>{source.label}</strong><small>{new Date(source.observed_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}</small><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div>
+              <div>{report.sources.map((source, index) => <a href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, '0')}</span><strong>{source.label}</strong><small>{new Date(source.observed_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</small><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div>
             </section>
 
             {report.community.creator_responses.length > 0 && <section class="transparent-creator-responses">
               <p class="eyebrow">Verified creator response</p><h2>The project owner added context.</h2>
-              {report.community.creator_responses.map((response) => <article><div><strong>@{response.handle}</strong><span>{response.response_type}</span><time datetime={response.created_at}>{new Date(response.created_at).toLocaleDateString('en', { dateStyle: 'long' })}</time></div><p>{response.body}</p>{response.evidence_urls.map((url) => <a href={url} target="_blank" rel="noreferrer">Evidence source <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</article>)}
+              {report.community.creator_responses.map((response) => <article><div><strong data-no-translate>@{response.handle}</strong><span>{response.response_type}</span><time datetime={response.created_at}>{new Date(response.created_at).toLocaleDateString(dateLocale, { dateStyle: 'long' })}</time></div><p data-no-translate>{response.body}</p>{response.evidence_urls.map((url) => <a href={url} target="_blank" rel="noreferrer">Evidence source <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</article>)}
             </section>}
 
             <section class="transparent-limitations">
@@ -123,20 +125,20 @@ const description = report
           <aside class="transparent-report-sidebar">
             <section>
               <p class="eyebrow">Source project</p>
-              <a class="transparent-source-link" href={report.repository.revision_url} target="_blank" rel="noreferrer"><strong>{report.repository.id}</strong><span>Open exact revision</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-              <dl><div><dt>Provider</dt><dd>Hugging Face</dd></div><div><dt>Visibility</dt><dd>{report.repository.visibility}</dd></div><div><dt>Requested</dt><dd>{report.repository.requested_revision}</dd></div>{report.repository.last_modified && <div><dt>Provider modified</dt><dd>{new Date(report.repository.last_modified).toLocaleDateString('en', { dateStyle: 'medium' })}</dd></div>}</dl>
+              <a class="transparent-source-link" href={report.repository.revision_url} target="_blank" rel="noreferrer"><strong data-no-translate>{report.repository.id}</strong><span>Open exact revision</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+              <dl><div><dt>Provider</dt><dd data-no-translate>Hugging Face</dd></div><div><dt>Visibility</dt><dd>{report.repository.visibility}</dd></div><div><dt>Requested</dt><dd data-no-translate>{report.repository.requested_revision}</dd></div>{report.repository.last_modified && <div><dt>Provider modified</dt><dd>{new Date(report.repository.last_modified).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</dd></div>}</dl>
               <small>Hugging Face identifies the source. No affiliation or endorsement is implied.</small>
             </section>
 
             <section>
               <p class="eyebrow">Compare exact revisions</p>
-              {revisions.length > 1 ? <form method="get" action={`/transparent/${report.report_key}`}><label for="compare-report">Earlier report</label><select id="compare-report" name="compare" required><option value="">Choose a revision</option>{revisions.filter((item) => item.report_key !== report!.report_key).map((item) => <option value={item.report_key}>{item.source_revision.slice(0, 10)} · {new Date(item.checked_at).toLocaleDateString('en')}</option>)}</select><button class="button button--secondary button--small" type="submit">Compare</button></form> : <p>Recheck after the repository changes to unlock an exact field-by-field comparison.</p>}
+              {revisions.length > 1 ? <form method="get" action={`/transparent/${report.report_key}`}><label for="compare-report">Earlier report</label><select id="compare-report" name="compare" required><option value="">Choose a revision</option>{revisions.filter((item) => item.report_key !== report!.report_key).map((item) => <option value={item.report_key}>{item.source_revision.slice(0, 10)} · {new Date(item.checked_at).toLocaleDateString(dateLocale)}</option>)}</select><button class="button button--secondary button--small" type="submit">Compare</button></form> : <p>Recheck after the repository changes to unlock an exact field-by-field comparison.</p>}
               <button class="text-button" type="button" data-recheck-report>Recheck current revision</button>
             </section>
 
             <section>
               <p class="eyebrow">Creator path</p>
-              {report.community.claim ? <div class="transparent-claim"><span class="transparent-claim__avatar">{report.community.claim.avatar_url ? <img src={report.community.claim.avatar_url} alt="" width="42" height="42" /> : <i class="ph ph-user" aria-hidden="true"></i>}</span><div><strong>{report.community.claim.display_name}</strong><a href={`/people/${report.community.claim.handle}`}>@{report.community.claim.handle}</a></div><span>verified owner</span></div> : <><p>Own this Hugging Face namespace? Connect the matching identity, then claim the project.</p><button class="button button--secondary button--small" type="button" data-claim-report>Claim this project</button></>}
+              {report.community.claim ? <div class="transparent-claim"><span class="transparent-claim__avatar">{report.community.claim.avatar_url ? <img src={report.community.claim.avatar_url} alt="" width="42" height="42" /> : <i class="ph ph-user" aria-hidden="true"></i>}</span><div><strong data-no-translate>{report.community.claim.display_name}</strong><a href={`/people/${report.community.claim.handle}`} data-no-translate>@{report.community.claim.handle}</a></div><span>verified owner</span></div> : <><p>Own this Hugging Face namespace? Connect the matching identity, then claim the project.</p><button class="button button--secondary button--small" type="button" data-claim-report>Claim this project</button></>}
               <a href={`/bring-my-work?source=${encodeURIComponent(report.repository.canonical_url)}`}>Bring this work to Super ii <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
             </section>
 

@@ -14,9 +14,10 @@ import {
   type ProposalSummary,
 } from '@/lib/participation';
 import { authIsConfigured } from '@/lib/site';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const sql = sqlClient(Astro.locals);
-const dateLocale = Astro.locals.locale === 'ru' ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const requestedStatus = Astro.url.searchParams.get('status');
 const statusFilter = ['voting', 'accepted', 'building', 'shipped'].includes(requestedStatus ?? '')
   ? requestedStatus as ProposalStatus

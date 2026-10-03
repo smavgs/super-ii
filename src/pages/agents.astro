@@ -2,10 +2,11 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
+import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const connectors = agentConnectorRegistry.connectors;
 const russian = Astro.locals.locale === 'ru';
-const dateLocale = russian ? 'ru-RU' : 'en';
+const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -145,10 +146,10 @@ if (sql) {
         <div class="agents-directory__grid">
           {publicAgents.map((agent) => <a href={`/agents/${encodeURIComponent(agent.handle)}`}>
             <div><span class="agent-directory-mark"><i class="ph ph-robot" aria-hidden="true"></i></span><span class="agents-status">Active</span></div>
-            <h3>{agent.display_name}</h3>
-            <p>@{agent.handle} · {agent.framework}</p>
-            <p>{agent.description || 'No public description supplied.'}</p>
-            <dl><div><dt>Operator</dt><dd>@{agent.organization_handle}</dd></div><div><dt>Reputation</dt><dd>{agent.reputation_score}</dd></div><div><dt>Accepted</dt><dd>{agent.accepted_contributions}</dd></div></dl>
+            <h3 data-no-translate>{agent.display_name}</h3>
+            <p data-no-translate>@{agent.handle} · {agent.framework}</p>
+            {agent.description ? <p data-no-translate>{agent.description}</p> : <p>No public description supplied.</p>}
+            <dl><div><dt>Operator</dt><dd data-no-translate>@{agent.organization_handle}</dd></div><div><dt>Reputation</dt><dd>{agent.reputation_score}</dd></div><div><dt>Accepted</dt><dd>{agent.accepted_contributions}</dd></div></dl>
           </a>)}
         </div>
       ) : (
