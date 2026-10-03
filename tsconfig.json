@@ -8,5 +8,5 @@
     "types": ["@cloudflare/workers-types", "node"]
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", ".wrangler"]
+  "exclude": ["dist", ".wrangler", "vendor"]
 }
