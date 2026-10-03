@@ -125,6 +125,8 @@ const contracts = [
   [sitemap, '<loc>https://superii.site/zh-cn/legal/terms</loc>', 'Chinese legal sitemap route'],
   [sitemap, '<loc>https://superii.site/zh-cn/transparent</loc>', 'Chinese Transparent sitemap route'],
   [systemState, 'English, Russian, and Simplified Chinese product editions', 'three-edition system-state record'],
+  [systemState, '| English, Russian, and Simplified Chinese product editions | production | English, Russian, and Simplified Chinese live |', 'live three-edition system-state record'],
+  [systemStateLocalization, 'английская, русская и китайская версии работают', 'live three-edition Russian system-state record'],
   [systemStateLocalization, 'statusChinese', 'Chinese system-state status labels'],
   [systemStateLocalization, 'translateKnown(item.evidence, locale)', 'Chinese system-state evidence localization'],
   [notebookDocument, 'localizeOfficialNotebookMarkdown', 'official notebook localization boundary'],
@@ -135,6 +137,14 @@ const contracts = [
   [tokenizerPage, "throw new Error('Model search is unavailable.')", 'tokenizer UI does not expose machine-error details'],
 ];
 for (const [source, marker, label] of contracts) if (!source.includes(marker)) errors.push(`Localization contract is missing ${label}`);
+
+for (const stale of [
+  'English and Russian live; Simplified Chinese release candidate',
+  'English live; Russian and Simplified Chinese release candidates',
+]) {
+  if (systemState.includes(stale)) errors.push(`Canonical System State still contains stale Chinese release-candidate language: ${stale}`);
+  if (Object.hasOwn(zh.messages ?? {}, stale)) errors.push(`Simplified Chinese catalogue still contains stale release-candidate language: ${stale}`);
+}
 
 const capabilitySection = systemState.split('## Capability register')[1]?.split('\n## ')[0] ?? '';
 const capabilityRows = capabilitySection.split('\n').filter((line) => /^\|/.test(line.trim())).slice(2);
