@@ -47,6 +47,11 @@ try {
   assert.equal((await getFile(bob)).status,404);
   assert.equal((await getFile(null)).status,404);
   assert.equal((await routes.files.GET({locals:locals(null),params:{repositoryId,fileId},request:request('GET',null,filePath.replace('draft=1&',''))})).status,404);
+  const removed=await routes.files.DELETE({locals:locals(alice),params:{repositoryId,fileId},request:request('DELETE',{},filePath)});
+  assert.equal(removed.status,200,await removed.clone().text());
+  const cleared=await queryDatabase(`select presentation from app.repository_revisions where id='${data.revision_id}'`,null,true);
+  assert.equal(cleared[0].presentation.card_markdown,'');
+  assert.equal(cleared[0].presentation.readme_sha256,undefined);
   console.log('OK: fresh personal creator, scanned README binding, stale/wrong revision rejection, draft metadata isolation, private preview authorization');
 } finally {
   if(repositoryId)await queryDatabase(`delete from app.repositories where id='${repositoryId}' returning id`,null,true);

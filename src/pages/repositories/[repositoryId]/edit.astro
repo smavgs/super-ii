@@ -244,9 +244,20 @@ const published = repository?.revision_status === 'published';
   workspace?.querySelectorAll('[data-delete-file]').forEach((button) => {
     button.addEventListener('click', async () => {
       if (!(button instanceof HTMLButtonElement) || !repositoryId) return;
+      const status = workspace?.querySelector('[data-creator-status]');
+      if (workspace?.querySelector('[data-creator-editor][data-dirty], [data-creator-editor][data-saving]')) {
+        if (status) status.textContent = 'Save your page edits before removing existing files.';
+        return;
+      }
       button.disabled = true;
-      const response = await fetch(workspacePath(`/api/repositories/${repositoryId}/files/${button.dataset.deleteFile}`), { method: 'DELETE' });
-      if (response.ok) location.reload(); else button.disabled = false;
+      try {
+        const response = await fetch(workspacePath(`/api/repositories/${repositoryId}/files/${button.dataset.deleteFile}`), { method: 'DELETE' });
+        if (!response.ok) throw new Error('File could not be removed. Please retry.');
+        location.reload();
+      } catch (error) {
+        if (status) status.textContent = error instanceof Error ? error.message : 'File could not be removed. Please retry.';
+        button.disabled = false;
+      }
     });
   });
 

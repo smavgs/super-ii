@@ -113,12 +113,14 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
       where id = ${params.fileId ?? ''}::uuid
         and repository_id = ${repository.id}::uuid
         and revision_id = ${repository.revision_id}::uuid
-      returning size_bytes
+      returning size_bytes, path
     `;
     if (!rows.length) return Response.json({ error: 'file not found' }, { status: 404 });
     await sql`
       update app.repository_revisions
-      set file_count = (select count(*) from app.repository_files where revision_id = ${repository.revision_id}::uuid),
+      set presentation = case when ${rows[0].path === 'README.md'}
+            then (presentation - 'readme_sha256') || '{"card_markdown":""}'::jsonb else presentation end,
+          file_count = (select count(*) from app.repository_files where revision_id = ${repository.revision_id}::uuid),
           total_size_bytes = coalesce((select sum(size_bytes) from app.repository_files where revision_id = ${repository.revision_id}::uuid), 0),
           status = case when exists (
             select 1 from app.repository_files where revision_id = ${repository.revision_id}::uuid

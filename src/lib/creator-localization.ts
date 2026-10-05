@@ -1,5 +1,7 @@
 // Product controls only. Author-supplied titles, cards, code and paths stay unchanged.
 const messages: Array<[string, string, string]> = [
+  ['Save your page edits before removing existing files.', 'Сохраните изменения страницы перед удалением файлов.', '移除现有文件前，请先保存页面修改。'],
+  ['File could not be removed. Please retry.', 'Не удалось удалить файл. Повторите попытку.', '无法移除文件。请重试。'],
   ['{count} files', 'Файлов: {count}', '{count} 个文件'],
   ['Releases and tags', 'Релизы и теги', '版本与标签'],
   ['Import progress', 'Ход импорта', '导入进度'],
