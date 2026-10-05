@@ -126,6 +126,7 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
             select 1 from app.repository_files where revision_id = ${repository.revision_id}::uuid
           ) then 'quarantined'::repository_revision_status else 'draft'::repository_revision_status end
       where id = ${repository.revision_id}::uuid
+      returning id
     `;
     return Response.json({ ok: true });
   } catch {
