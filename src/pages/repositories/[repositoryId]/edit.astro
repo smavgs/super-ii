@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorEditor from '@/components/CreatorEditor.astro';
 import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { managedRepository } from '@/lib/creator';
@@ -105,6 +106,38 @@ const published = repository?.revision_status === 'published';
           <article class="workspace-status-card"><span>Visibility</span><strong>{repository.visibility}</strong><small>Automatic publication policy</small></article>
         </section>
 
+        <CreatorEditor repository={repository} files={files} />
+        <section class="creator-current-checks" aria-label="Draft readiness">
+          <h2>Ready to publish?</h2>
+          <ul>
+            <li>{files.length ? `${files.length} files in this revision` : 'Add at least one repository file.'}</li>
+            <li>{repository.card_markdown ? 'README / model card supplied.' : 'Add a README so visitors can understand and use your work.'}</li>
+            <li>{repository.license ? `License: ${repository.license}` : 'Choose a license in the publication details below.'}</li>
+            <li>{runtime?.state === 'ready' ? 'File checks are available.' : 'File checks are temporarily unavailable. Your draft is preserved.'}</li>
+          </ul>
+        </section>
+        <section class="repository-section" id="publication">
+          <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Automatic publication</h2></div></div>
+          <p>Super ii checks files, license and provenance against an independent publication policy. Passing releases publish automatically. Missing or failed evidence keeps the release closed and explains what to fix.</p>
+          {editable && <form class="mini-form" data-publication-metadata>
+            <h3>License and provenance</h3>
+            <label>License identifier <input name="license" required maxlength="120" placeholder="apache-2.0" value={repository.license} /></label>
+            <p class="form-hint">Use a standard identifier or a clear identifier for your own terms. Custom terms are supported when the revision includes the complete license as a root LICENSE file; add a root NOTICE when those terms require it. Super ii records your declaration but does not certify legal sufficiency.</p>
+            <label>Right to publish <select name="basis"><option value="original" selected={!repository.provenance?.rights_declaration?.basis || repository.provenance?.rights_declaration?.basis === 'original'}>My original work</option><option value="permission" selected={repository.provenance?.rights_declaration?.basis === 'permission'}>Permission from the rights holder</option><option value="licensed-redistribution" selected={repository.provenance?.rights_declaration?.basis === 'licensed-redistribution'}>Redistribution under the source license</option></select></label>
+            <label>Source URL <input name="source_url" type="url" placeholder="https://..." value={repository.provenance?.rights_declaration?.source_url ?? ''} /></label>
+            <label><input name="confirmed" type="checkbox" required /> I confirm this declaration and my right to publish these files under the stated license.</label>
+            <button class="button button--secondary" type="submit">Save publication details</button>
+            <p data-form-status aria-live="polite"></p>
+          </form>}
+          <button class="button button--dark" type="button" data-submit-review disabled={!submittable || files.length === 0 || runtime?.state !== 'ready'}>{repository.revision_status === 'review' ? 'Retry automatic publication' : 'Run checks and submit'}</button>
+          {runtime?.state !== 'ready' && <p class="form-hint">File checks are temporarily unavailable, so this revision cannot be submitted yet.</p>}
+          <p data-submit-status aria-live="polite"></p>
+          {decisions[0] && <div class="review-history"><h3>Latest checks: {decisions[0].outcome}</h3><p>{new Date(decisions[0].created_at).toLocaleString(dateLocale)}</p><ul>{decisions[0].reasons.map(reason => <li>{reason.message}</li>)}</ul></div>}
+          {decisions.length > 1 && <details class="creator-advanced"><summary>Earlier checks</summary>{decisions.slice(1).map(decision => <div class="review-history"><h3>{decision.outcome}</h3><p>{decision.policy_version} · {decision.created_at}</p>{decision.reasons.map(reason => <p>{reason.message}</p>)}</div>)}</details>}
+          {reviews.length > 0 && <div class="review-history"><h3>Historical review records</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
+        </section>
+
+        <details class="creator-advanced" name="workspace-tools"><summary>Branches and automation</summary>
         <section class="repository-section">
           <div class="repository-section__heading"><div><p class="eyebrow">Git-style history</p><h2>Branches and commits</h2></div></div>
           <div class="branch-list">
@@ -171,65 +204,16 @@ const published = repository?.revision_status === 'published';
           </details>
         </section>
 
-        <section class="repository-section">
-          <div class="repository-section__heading"><div><p class="eyebrow">Quarantine first 🔒</p><h2>Files and folders</h2></div><span>{files.length} files</span></div>
-          {editable ? (
-            <form class="upload-dropzone" data-upload-form>
-              <i class="ph ph-upload-simple" aria-hidden="true"></i>
-              <h3>Upload repository files</h3>
-              <p>Choose one or more files, up to 10 GiB each. Interrupted uploads can resume, and every completed file is checked before release.</p>
-              <label class="button button--secondary">Choose files <input name="files" type="file" multiple required /></label>
-              <button class="button button--dark" type="submit">Upload and scan</button>
-              <progress max="100" value="0" hidden data-upload-progress></progress>
-              <p data-form-status aria-live="polite"></p>
-            </form>
-          ) : <p>This revision is sealed for publication.</p>}
-          <div class="file-table-wrap">
-            <table class="file-table">
-              <thead><tr><th>Path</th><th>Size</th><th>SHA-256</th><th>Gate</th><th></th></tr></thead>
-              <tbody>
-                {files.map((file) => (
-                  <tr>
-                    <td><code>{file.path}</code></td>
-                    <td>{Number(file.size_bytes).toLocaleString()} B</td>
-                    <td><code title={file.sha256}>{file.sha256.slice(0, 12)}…</code></td>
-                    <td>{file.storage_state} · {file.scan_status}</td>
-                    <td>{editable && <button class="text-button" type="button" data-delete-file={file.id}>Remove</button>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="repository-section">
-          <div class="repository-section__heading"><div><p class="eyebrow">Publication gate ✅</p><h2>Automatic publication</h2></div></div>
-          <p>Super ii checks files, license and provenance against an independent publication policy. Passing releases publish automatically. Missing or failed evidence keeps the release closed and explains what to fix.</p>
-          {editable && <form class="mini-form" data-publication-metadata>
-            <h3>License and provenance</h3>
-            <label>License identifier <input name="license" required maxlength="120" placeholder="apache-2.0" value={repository.license} /></label>
-            <p class="form-hint">Use a standard identifier or a clear identifier for your own terms. Custom terms are supported when the revision includes the complete license as a root LICENSE file; add a root NOTICE when those terms require it. Super ii records your declaration but does not certify legal sufficiency.</p>
-            <label>Right to publish <select name="basis"><option value="original" selected={!repository.provenance?.rights_declaration?.basis || repository.provenance?.rights_declaration?.basis === 'original'}>My original work</option><option value="permission" selected={repository.provenance?.rights_declaration?.basis === 'permission'}>Permission from the rights holder</option><option value="licensed-redistribution" selected={repository.provenance?.rights_declaration?.basis === 'licensed-redistribution'}>Redistribution under the source license</option></select></label>
-            <label>Source URL <input name="source_url" type="url" placeholder="https://..." value={repository.provenance?.rights_declaration?.source_url ?? ''} /></label>
-            <label><input name="confirmed" type="checkbox" required /> I confirm this declaration and my right to publish these files under the stated license.</label>
-            <button class="button button--secondary" type="submit">Save publication details</button>
-            <p data-form-status aria-live="polite"></p>
-          </form>}
-          <button class="button button--dark" type="button" data-submit-review disabled={!submittable || files.length === 0 || runtime?.state !== 'ready'}>{repository.revision_status === 'review' ? 'Retry automatic publication' : 'Run checks and submit'}</button>
-          {runtime?.state !== 'ready' && <p class="form-hint">File checks are temporarily unavailable, so this revision cannot be submitted yet.</p>}
-          <p data-submit-status aria-live="polite"></p>
-          {decisions.map((decision) => <div class="review-history"><h3>Automatic policy: {decision.outcome}</h3><p>{decision.policy_version} · {decision.created_at}</p>{decision.reasons.map((reason) => <p>{reason.message}</p>)}</div>)}
-          {reviews.length > 0 && <div class="review-history"><h3>Historical review records</h3>{reviews.map((review) => <p><strong>{review.decision}</strong> {review.notes}</p>)}</div>}
-        </section>
+        </details>
 
         {published && (
-          <section class="repository-section">
+          <details class="creator-advanced" name="workspace-tools"><summary>Tags and releases</summary><section class="repository-section">
             <div class="repository-section__heading"><div><p class="eyebrow">Release management</p><h2>Tags and releases</h2></div></div>
             <div class="workspace-form-grid">
               <form class="mini-form" data-tag-form><h3>Create tag</h3><label>Tag <input name="name" required maxlength="128" placeholder="v1.0.0" /></label><button class="button button--secondary button--small" type="submit">Create tag</button><p data-form-status aria-live="polite"></p></form>
               <form class="mini-form" data-release-form><h3>Create release</h3><label>Name <input name="name" required maxlength="120" placeholder="Version 1.0" /></label><label>Slug <input name="slug" required maxlength="128" placeholder="v1.0.0" /></label><label>Notes <textarea name="notes" maxlength="100000"></textarea></label><button class="button button--secondary button--small" type="submit">Create release</button><p data-form-status aria-live="polite"></p></form>
             </div>
-          </section>
+          </section></details>
         )}
       </main>
     </>
@@ -239,12 +223,6 @@ const published = repository?.revision_status === 'published';
 </BaseLayout>
 
 {repository && <script>
-  import { sha256 } from '@noble/hashes/sha2.js';
-  import { bytesToHex } from '@noble/hashes/utils.js';
-
-  const TRANSFER_CHUNK_BYTES = 8 * 1024 * 1024;
-  const TRANSFER_SCAN_TIMEOUT_MS = 45 * 60 * 1000;
-  const TRANSFER_SCAN_POLL_MS = 5 * 1000;
   const workspace = document.querySelector('[data-repository-workspace]');
   const repositoryId = workspace instanceof HTMLElement ? workspace.dataset.repositoryId : null;
   const branchId = workspace instanceof HTMLElement ? workspace.dataset.branchId : null;
@@ -262,302 +240,6 @@ const published = repository?.revision_status === 'published';
     if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Request failed.');
     return data;
   }
-
-  function base64(bytes: Uint8Array) {
-    let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }
-
-  function transferStateKey(file: File, path: string) {
-    return [
-      'superii-transfer-v1',
-      repositoryId,
-      branchId || 'default',
-      path,
-      file.name,
-      file.size,
-      file.lastModified,
-    ].join(':');
-  }
-
-  async function hashFile(file: File, status: Element | null, progress: Element | null) {
-    const digest = sha256.create();
-    let offset = 0;
-    while (offset < file.size) {
-      const end = Math.min(file.size, offset + TRANSFER_CHUNK_BYTES);
-      digest.update(new Uint8Array(await file.slice(offset, end).arrayBuffer()));
-      offset = end;
-      if (status instanceof HTMLElement) {
-        status.textContent = `Hashing ${file.name}… ${Math.round(offset / file.size * 100)}%`;
-      }
-      if (progress instanceof HTMLProgressElement) progress.value = offset / file.size * 40;
-    }
-    return bytesToHex(digest.digest());
-  }
-
-  type BrowserTransfer = {
-    transfer_id: string;
-    upload_url: string;
-    transfer_token: string;
-    source_sha256: string;
-    source_size: number;
-    repository_path: string;
-  };
-
-  class TransferResumeError extends Error {
-    status: number;
-
-    constructor(status: number) {
-      super(`Transfer resume failed with ${status}.`);
-      this.name = 'TransferResumeError';
-      this.status = status;
-    }
-  }
-
-  function readTransferState(key: string, file: File, path: string, sourceSha256: string) {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
-    try {
-      const value = JSON.parse(raw) as BrowserTransfer;
-      const upload = new URL(value.upload_url, location.origin);
-      if (
-        upload.origin !== location.origin
-        || value.source_sha256 !== sourceSha256
-        || value.source_size !== file.size
-        || value.repository_path !== path
-        || typeof value.transfer_token !== 'string'
-      ) {
-        sessionStorage.removeItem(key);
-        return null;
-      }
-      return value;
-    } catch {
-      sessionStorage.removeItem(key);
-      return null;
-    }
-  }
-
-  async function createTransfer(file: File, path: string, sourceSha256: string) {
-    const response = await fetch(
-      workspacePath(`/api/repositories/${repositoryId}/transfers`),
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          path,
-          filename: file.name,
-          mime_type: file.type || 'application/octet-stream',
-          length: file.size,
-          sha256: sourceSha256,
-        }),
-      },
-    );
-    const value = await response.json() as Record<string, unknown>;
-    if (!response.ok) {
-      throw new Error(typeof value.error === 'string' ? value.error : 'Transfer could not be created.');
-    }
-    return {
-      transfer_id: String(value.transfer_id),
-      upload_url: String(value.upload_url),
-      transfer_token: String(value.transfer_token),
-      source_sha256: sourceSha256,
-      source_size: file.size,
-      repository_path: path,
-    } satisfies BrowserTransfer;
-  }
-
-  async function confirmedOffset(transfer: BrowserTransfer) {
-    const response = await fetch(transfer.upload_url, {
-      method: 'HEAD',
-      headers: {
-        'tus-resumable': '1.0.0',
-        'x-superii-transfer-token': transfer.transfer_token,
-      },
-    });
-    if (!response.ok) throw new TransferResumeError(response.status);
-    const offset = Number(response.headers.get('upload-offset'));
-    if (!Number.isSafeInteger(offset) || offset < 0 || offset > transfer.source_size) {
-      throw new Error('Transfer returned an invalid offset.');
-    }
-    return offset;
-  }
-
-  async function scanStatus(transfer: BrowserTransfer) {
-    const response = await fetch(`${transfer.upload_url}/status`, {
-      headers: { 'x-superii-transfer-token': transfer.transfer_token },
-    });
-    const value = await response.json().catch(() => ({})) as Record<string, unknown>;
-    if (!response.ok) {
-      throw new Error(
-        typeof value.error === 'string'
-          ? value.error
-          : `Transfer status failed with ${response.status}.`,
-      );
-    }
-    return value;
-  }
-
-  async function waitForScan(
-    transfer: BrowserTransfer,
-    file: File,
-    status: Element | null,
-  ) {
-    const deadline = Date.now() + TRANSFER_SCAN_TIMEOUT_MS;
-    while (Date.now() < deadline) {
-      const value = await scanStatus(transfer);
-      const state = typeof value.state === 'string' ? value.state : '';
-      const errorCode = typeof value.error_code === 'string' ? value.error_code : '';
-      if (state === 'ready') return value.receipt ?? value;
-      if (state === 'rejected' || state === 'aborted') {
-        throw new Error(`Security scanning ended with ${state}.`);
-      }
-      if (errorCode) {
-        throw new Error(`Security scanning is safely paused (${errorCode}). Retry after resolving the scanner.`);
-      }
-      if (state === 'uploaded') {
-        throw new Error('Security scanning did not start. Retry this upload to resume the preserved transfer.');
-      }
-      if (state !== 'scanning') {
-        throw new Error('Transfer returned an unexpected scan state.');
-      }
-      if (status instanceof HTMLElement) {
-        status.textContent = `Scanning ${file.name} in quarantine… You can keep this tab open.`;
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, TRANSFER_SCAN_POLL_MS));
-    }
-    throw new Error('Security scanning is still running. Retry later to read its preserved status.');
-  }
-
-  async function uploadResumableFile(
-    file: File,
-    path: string,
-    status: Element | null,
-    progress: Element | null,
-  ) {
-    const sourceSha256 = await hashFile(file, status, progress);
-    const stateKey = transferStateKey(file, path);
-    let transfer = readTransferState(stateKey, file, path, sourceSha256);
-    if (!transfer) {
-      transfer = await createTransfer(file, path, sourceSha256);
-      sessionStorage.setItem(stateKey, JSON.stringify(transfer));
-    }
-    let offset: number;
-    try {
-      offset = await confirmedOffset(transfer);
-    } catch (error) {
-      if (!(error instanceof TransferResumeError) || ![404, 410].includes(error.status)) {
-        throw error;
-      }
-      sessionStorage.removeItem(stateKey);
-      transfer = await createTransfer(file, path, sourceSha256);
-      sessionStorage.setItem(stateKey, JSON.stringify(transfer));
-      offset = 0;
-    }
-
-    while (offset < file.size) {
-      const end = Math.min(file.size, offset + TRANSFER_CHUNK_BYTES);
-      const chunk = file.slice(offset, end);
-      const chunkBytes = new Uint8Array(await chunk.arrayBuffer());
-      const checksum = base64(sha256(chunkBytes));
-      if (status instanceof HTMLElement) {
-        status.textContent = `Uploading ${file.name}… ${Math.round(offset / file.size * 100)}%`;
-      }
-      const response = await fetch(transfer.upload_url, {
-        method: 'PATCH',
-        headers: {
-          'content-type': 'application/offset+octet-stream',
-          'tus-resumable': '1.0.0',
-          'upload-checksum': `sha256 ${checksum}`,
-          'upload-chunk-length': String(chunk.size),
-          'upload-offset': String(offset),
-          'x-superii-transfer-token': transfer.transfer_token,
-        },
-        body: chunk,
-      });
-      if (!response.ok) {
-        const reconciled = await confirmedOffset(transfer);
-        if (reconciled !== offset) {
-          offset = reconciled;
-          continue;
-        }
-        const value = await response.json().catch(() => ({})) as Record<string, unknown>;
-        throw new Error(typeof value.error === 'string' ? value.error : `Chunk upload failed with ${response.status}.`);
-      }
-      const nextOffset = Number(response.headers.get('upload-offset'));
-      if (!Number.isSafeInteger(nextOffset) || nextOffset <= offset || nextOffset > file.size) {
-        throw new Error('Transfer returned an invalid committed offset.');
-      }
-      offset = nextOffset;
-      if (progress instanceof HTMLProgressElement) {
-        progress.value = 40 + offset / file.size * 55;
-      }
-    }
-
-    if (status instanceof HTMLElement) status.textContent = `Scanning ${file.name} in quarantine…`;
-    const prior = await scanStatus(transfer);
-    let result: unknown;
-    if (prior.state === 'ready') {
-      result = prior.receipt ?? prior;
-    } else if (prior.state === 'scanning' && !prior.error_code) {
-      result = await waitForScan(transfer, file, status);
-    } else {
-      let commit: Response | null = null;
-      try {
-        commit = await fetch(`${transfer.upload_url}/commit`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'tus-resumable': '1.0.0',
-            'x-superii-transfer-token': transfer.transfer_token,
-          },
-          body: '{}',
-        });
-      } catch {
-        // An edge disconnect after commit is uncertain. Read the durable state.
-      }
-      if (commit?.ok && commit.status !== 202) {
-        result = await commit.json().catch(() => ({}));
-      } else if (!commit || commit.status === 202 || commit.status >= 500) {
-        result = await waitForScan(transfer, file, status);
-      } else {
-        const value = await commit.json().catch(() => ({})) as Record<string, unknown>;
-        if ([404, 410, 422].includes(commit.status)) sessionStorage.removeItem(stateKey);
-        throw new Error(
-          typeof value.error === 'string'
-            ? value.error
-            : `Scan commit failed with ${commit.status}.`,
-        );
-      }
-    }
-    sessionStorage.removeItem(stateKey);
-    if (progress instanceof HTMLProgressElement) progress.value = 100;
-    return result;
-  }
-
-  const uploadForm = workspace?.querySelector('[data-upload-form]');
-  uploadForm?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (!(uploadForm instanceof HTMLFormElement) || !repositoryId) return;
-    const input = uploadForm.elements.namedItem('files');
-    const status = uploadForm.querySelector('[data-form-status]');
-    const progress = uploadForm.querySelector('[data-upload-progress]');
-    const submit = uploadForm.querySelector('button[type="submit"]');
-    if (!(input instanceof HTMLInputElement) || !input.files?.length) return;
-    if (submit instanceof HTMLButtonElement) submit.disabled = true;
-    if (progress instanceof HTMLProgressElement) { progress.hidden = false; progress.max = 100; progress.value = 0; }
-    try {
-      for (const file of input.files) {
-        const path = file.webkitRelativePath || file.name;
-        await uploadResumableFile(file, path, status, progress);
-      }
-      if (status instanceof HTMLElement) status.textContent = 'Files passed checksum and security scanning. Refreshing… ✅';
-      location.reload();
-    } catch (error) {
-      if (status instanceof HTMLElement) { status.textContent = error instanceof Error ? error.message : 'Upload failed.'; status.dataset.state = 'error'; }
-      if (submit instanceof HTMLButtonElement) submit.disabled = false;
-    }
-  });
 
   workspace?.querySelectorAll('[data-delete-file]').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -588,6 +270,10 @@ const published = repository?.revision_status === 'published';
   review?.addEventListener('click', async () => {
     if (!(review instanceof HTMLButtonElement) || !repositoryId) return;
     const status = workspace?.querySelector('[data-submit-status]');
+    if (workspace?.querySelector('[data-creator-editor][data-dirty], [data-creator-editor][data-saving]')) {
+      if (status instanceof HTMLElement) status.textContent = 'Save your draft before running publication checks.';
+      return;
+    }
     review.disabled = true;
     try {
       if (status instanceof HTMLElement) status.textContent = 'Running offline analysis and sealing the manifest…';

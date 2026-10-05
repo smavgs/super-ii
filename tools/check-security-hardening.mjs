@@ -93,7 +93,7 @@ assert.equal(catalogSearchInputSchema.safeParse({ unexpected: true }).success, f
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'space' }).success, true);
 assert.equal(catalogSearchWithKindSchema.safeParse({ kind: 'invalid' }).success, false);
 
-const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule, runtimeModule, repositoryWorkspace] = await Promise.all([
+const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServer, a2a, catalog, openapi, siteModule, runtimeModule, repositoryUpload] = await Promise.all([
   read('src/middleware.ts'),
   read('astro.config.mjs'),
   read('public/_headers'),
@@ -105,7 +105,7 @@ const [middleware, astroConfig, staticHeaders, searchRoute, healthRoute, mcpServ
   read('src/pages/openapi.json.ts'),
   read('src/lib/site.ts'),
   read('src/lib/runtime.ts'),
-  read('src/pages/repositories/[repositoryId]/edit.astro'),
+  read('src/lib/creator-upload.ts'),
 ]);
 
 const policyLine = staticHeaders.split('\n').find((line) => line.trim().startsWith('Content-Security-Policy:'));
@@ -157,9 +157,9 @@ assert.match(siteModule, /runtimeEnv\?\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
 assert.match(siteModule, /import\.meta\.env\.PUBLIC_CLERK_PUBLISHABLE_KEY/);
 assert.match(runtimeModule, /RUNTIME_READINESS_TIMEOUT_MS = 10_000/);
 assert.match(runtimeModule, /AbortSignal\.timeout\(RUNTIME_READINESS_TIMEOUT_MS\)/);
-assert.match(repositoryWorkspace, /SCAN_RESPONSE_UNCERTAIN|waitForScan|edge disconnect after commit/i);
-assert.match(repositoryWorkspace, /commit\.status >= 500/);
-assert.match(repositoryWorkspace, /state === 'scanning'/);
+assert.match(repositoryUpload, /SCAN_RESPONSE_UNCERTAIN|waitForScan|edge disconnect after commit/i);
+assert.match(repositoryUpload, /commit\.status >= 500/);
+assert.match(repositoryUpload, /state === 'scanning'/);
 
 assert.match(openapi, /name: 'kind', in: 'query', required: true/);
 assert.match(openapi, /name: 'limit'[\s\S]+minimum: 1, maximum: 50, default: 20/);

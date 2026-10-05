@@ -8,6 +8,11 @@ export type ManagedRepository = {
   slug: string;
   title: string;
   summary: string;
+  task: string;
+  library: string;
+  modality: string;
+  card_markdown: string;
+  presentation_version: number;
   license: string;
   visibility: string;
   provenance: { rights_declaration?: { basis?: string; source_url?: string } };
@@ -57,8 +62,13 @@ export async function managedRepository(
         r.kind,
         r.owner_handle,
         r.slug,
-        r.title,
-        r.summary,
+        coalesce(rr.presentation->>'title', r.title) as title,
+        coalesce(rr.presentation->>'summary', r.summary) as summary,
+        coalesce(rr.presentation->>'task', r.task, '') as task,
+        coalesce(rr.presentation->>'library', r.library, '') as library,
+        coalesce(rr.presentation->>'modality', r.modality, '') as modality,
+        coalesce(rr.presentation->>'card_markdown', r.card_markdown) as card_markdown,
+        rr.presentation_version,
         r.license,
         r.visibility,
         r.provenance,
@@ -106,8 +116,13 @@ export async function scopedManagedRepository(
         r.kind,
         r.owner_handle,
         r.slug,
-        r.title,
-        r.summary,
+        coalesce(rr.presentation->>'title', r.title) as title,
+        coalesce(rr.presentation->>'summary', r.summary) as summary,
+        coalesce(rr.presentation->>'task', r.task, '') as task,
+        coalesce(rr.presentation->>'library', r.library, '') as library,
+        coalesce(rr.presentation->>'modality', r.modality, '') as modality,
+        coalesce(rr.presentation->>'card_markdown', r.card_markdown) as card_markdown,
+        rr.presentation_version,
         r.license,
         r.visibility,
         r.provenance,

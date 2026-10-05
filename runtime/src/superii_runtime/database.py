@@ -738,6 +738,40 @@ class RepositoryDatabase:
             ).fetchone()
         return bool(row and row["has_files"] and row["all_clean"])
 
+    def save_revision_readme(self, repository_id: UUID, revision_id: UUID, card: str) -> None:
+        """Keep the public card tied to the exact, inspected README bytes."""
+        import hashlib
+
+        encoded = card.encode("utf-8")
+        if len(encoded) > 100_000:
+            raise ValueError("README exceeds the 100 KB model-card limit")
+        with self.connect() as connection:
+            connection.execute(
+                """
+                update app.repository_revisions
+                set presentation = presentation || %s::jsonb
+                where id = %s and repository_id = %s
+                  and status in ('draft','quarantined','scanning','review')
+                """,
+                (
+                    Jsonb(
+                        {
+                            "card_markdown": card,
+                            "readme_sha256": hashlib.sha256(encoded).hexdigest(),
+                        }
+                    ),
+                    revision_id,
+                    repository_id,
+                ),
+            )
+
+    def finish_bridge_in_workspace(self, item_id: UUID) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                "select app.finish_bridge_in_workspace(%s) as held", (item_id,)
+            ).fetchone()
+            return bool(row and row["held"])
+
     def finalize_for_policy(self, repository_id: UUID, revision_id: UUID) -> dict[str, Any]:
         from .workspaces import revision_manifest, revision_manifest_document
 

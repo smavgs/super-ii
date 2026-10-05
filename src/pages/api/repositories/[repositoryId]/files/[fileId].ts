@@ -28,6 +28,18 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const repositoryId = params.repositoryId ?? '';
   const fileId = params.fileId ?? '';
+  const draft = new URL(request.url).searchParams.get('draft') === '1';
+  let draftRevisionId: string | null = null;
+  if (draft) {
+    const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:read');
+    if (!authorization.ok) return Response.json({ error: 'file not found' }, { status: 404 });
+    const branch = new URL(request.url).searchParams.get('branch');
+    const repository = authorization.actor.kind === 'profile'
+      ? await managedRepository(sql, repositoryId, authorization.actor.profileId, branch)
+      : await scopedManagedRepository(sql, repositoryId, branch);
+    if (!repository) return Response.json({ error: 'file not found' }, { status: 404 });
+    draftRevisionId = repository.revision_id;
+  }
   let mimeType: string;
   try {
     const rows = await sql`
@@ -39,12 +51,12 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
         and r.id = ${repositoryId}::uuid
         and f.storage_state = 'available'
         and f.scan_status = 'clean'
-        and rr.status = 'published'
+        and ((${draft} and rr.id = ${draftRevisionId}::uuid) or (${!draft} and rr.status = 'published'))
 
       limit 1
     `;
     if (!rows.length) return Response.json({ error: 'file not found' }, { status: 404 });
-    if (!await canReadSdkRepository(locals, request, sql, {
+    if (!draft && !await canReadSdkRepository(locals, request, sql, {
       id: String(rows[0].repository_id), visibility: String(rows[0].visibility), status: String(rows[0].status),
     })) return Response.json({ error: 'file not found' }, { status: 404 });
     mimeType = String(rows[0].mime_type).toLowerCase();

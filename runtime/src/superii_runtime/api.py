@@ -587,6 +587,11 @@ def inspect_revision(
                 settings=get_settings(),
                 database=database,
             )
+            readme = workspace / "README.md"
+            if readme.is_file() and not readme.is_symlink() and readme.stat().st_size <= 100_000:
+                database.save_revision_readme(
+                    repository_id, revision_id, readme.read_bytes().decode("utf-8")
+                )
             if has_notebooks:
                 try:
                     notebook_result = inspect_notebooks(workspace)

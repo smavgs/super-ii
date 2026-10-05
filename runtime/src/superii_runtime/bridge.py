@@ -269,7 +269,7 @@ def _card_markdown(snapshot: Path) -> str:
     readme = snapshot / "README.md"
     if not readme.is_file() or readme.is_symlink() or readme.stat().st_size > 100_000:
         return ""
-    return readme.read_text(encoding="utf-8", errors="replace")[:100_000]
+    return readme.read_bytes().decode("utf-8")
 
 
 def _failure(error: Exception) -> tuple[str, str]:
@@ -399,6 +399,9 @@ class BridgeWorker:
                     item_id
                 )
                 if already_imported:
+                    # Recover a crash between source recording and the browser
+                    # finishing transition without creating a duplicate import.
+                    self.database.finish_bridge_in_workspace(item_id)
                     self.database.refresh_bridge_import(job_id)
                     return
                 progress = 0
@@ -426,6 +429,10 @@ class BridgeWorker:
                 _runtime_post(self.settings, f"{base}/inspect", {"kind": str(item["kind"])})
                 self.database.finalize_for_policy(repository_id, revision_id)
                 self.database.complete_bridge_item(item_id, card_markdown, verified_manifest)
+                if self.database.finish_bridge_in_workspace(item_id):
+                    self.database.set_bridge_item_state(item_id, "complete", progress)
+                    _log("item.ready_for_editor", job_id=job_id, item_id=item_id)
+                    return
                 publication = _runtime_post(self.settings, f"{base}/finalize")
                 published = publication.get("status") == "published"
                 self.database.set_bridge_item_state(

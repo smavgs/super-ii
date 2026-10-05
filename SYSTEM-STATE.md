@@ -17,6 +17,10 @@ Canonical product and operations truth for the Super ii control plane and self-h
 6. `production` — deployed on the public production path and independently verified.
 7. `GA` — generally available with documented support and operational maturity.
 
+## Creator editor release candidate (2026-10-05)
+
+The shared Create / repository editor is implemented and locally tested. It adds folder selection, README suggestions, Markdown formatting and image preview, revision-bound presentation, and a Bridge finishing draft. Existing public cards are preserved by migration 0033. This entry does not promote the new editor to production; rollout requires the migration, runtime and Worker in that order, followed by live verification. See [creator-editor architecture](docs/architecture/creator-editor.md).
+
 ## Capability register
 
 | Capability | Status | Availability | Evidence |

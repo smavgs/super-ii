@@ -118,14 +118,19 @@ class FakeDatabase:
         self.completed = (card, manifest)
         return "review"
 
+    def finish_bridge_in_workspace(self, _item_id):
+        return False
+
     def set_bridge_item_state(self, _item_id, state, progress, code=None, _detail=None):
         self.state = (state, progress, code)
         return state
 
 
+@pytest.mark.parametrize("finish_in_workspace", [False, True])
 def test_worker_imports_exact_snapshot_through_automatic_policy(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    finish_in_workspace: bool,
 ) -> None:
     payload = b"# Imported card\n"
     digest = hashlib.sha256(payload).hexdigest()
@@ -148,6 +153,7 @@ def test_worker_imports_exact_snapshot_through_automatic_policy(
         "progress_bytes": 0,
     }
     database = FakeDatabase()
+    monkeypatch.setattr(database, "finish_bridge_in_workspace", lambda _item: finish_in_workspace)
     uploaded: list[str] = []
     runtime_calls: list[tuple[str, object]] = []
 
@@ -176,7 +182,7 @@ def test_worker_imports_exact_snapshot_through_automatic_policy(
     assert database.completed is not None
     assert database.completed[0] == payload.decode()
     assert database.completed[1][0]["imported_sha256"] == digest
-    assert runtime_calls == [
+    expected_calls = [
         (
             f"/v1/repositories/{database.repository_id}/revisions/{database.revision_id}/inspect",
             {"kind": "dataset"},
@@ -186,6 +192,7 @@ def test_worker_imports_exact_snapshot_through_automatic_policy(
             None,
         ),
     ]
+    assert runtime_calls == (expected_calls[:1] if finish_in_workspace else expected_calls)
 
 
 def test_sync_preview_requires_public_complete_metadata(tmp_path: Path) -> None:
@@ -205,3 +212,11 @@ def test_sync_preview_requires_public_complete_metadata(tmp_path: Path) -> None:
     assert preview["source_visibility"] == "public"
     assert preview["blocked_reason"] is None
     assert preview["license"] == "mit"
+
+
+def test_imported_card_preserves_exact_readme_bytes(tmp_path: Path) -> None:
+    payload = "# Пример\r\n\r\n模型说明\r\n".encode()
+    (tmp_path / "README.md").write_bytes(payload)
+    assert bridge._card_markdown(tmp_path).encode() == payload
+    (tmp_path / "README.md").write_bytes(b"a" * 100_001)
+    assert bridge._card_markdown(tmp_path) == ""

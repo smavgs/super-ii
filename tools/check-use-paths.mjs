@@ -60,7 +60,8 @@ requireAll(usePage, [
   'Whatever you build, give it a home.',
 ], '/use page');
 
-requireAll(newPage, ['Astro.url.searchParams.get(\'kind\')', "requestedKind === 'dataset' || requestedKind === 'space'", "selected={selectedKind === 'model'}", "selected={selectedKind === 'space'}"], 'repository type preselection');
+requireAll(newPage, ['Astro.url.searchParams.get(\'kind\')', "requestedKind === 'dataset' || requestedKind === 'space'", 'kind={selectedKind}'], 'repository type preselection');
+requireAll(await read('src/components/CreatorEditor.astro'), ["selected={kind === 'model'}", "selected={kind === 'space'}"], 'shared editor type preselection');
 assert.ok(account.includes('<MemberWorkspace ') && memberWorkspace.includes('id="repositories"'), 'Workspace repository anchor is missing');
 requireAll(repositoryPage, ['data-copy-public-link', "new URL(location.pathname, location.origin).toString()", 'Public link copied.'], 'canonical public-link copy');
 requireAll(styles, ['.use-home-hook', '.use-way-hero', '.use-way-section--share', '.use-python-example', '@media (max-width: 430px)', '@media (prefers-reduced-motion: reduce)'], 'Use responsive styles');
