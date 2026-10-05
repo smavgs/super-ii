@@ -36,7 +36,7 @@ dependencies = [
 [project.optional-dependencies]
 diffusion = [
   "diffusers==0.40.0",
-  "torch==2.14.0",
+  "torch==2.14.1",
 ]
 spaces = [
   "gradio==6.28.0",
