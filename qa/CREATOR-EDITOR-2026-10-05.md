@@ -23,9 +23,15 @@ Local screenshots are in qa/evidence/creator-editor/: 02-desktop-draft.png, 03-c
 - PostgreSQL 17 migrations apply twice. Existing integration tests, signed restricted-role agent flows, and new creator tests pass.
 - New API tests: fresh personal draft with empty optional summary, missing authentication, cross-owner denial, exact clean README binding, stale version and wrong revision rejection, private preview isolation, unpublished anonymous download denial and clearing the card when its README is removed. The API harness uses real PostgreSQL authorization contexts; storage download bytes are mocked.
 - New SQL tests: presentation initialization/inheritance, no draft leak into repository metadata, public presentation sync, published immutability, missing/mismatched README rejection, runtime-only Bridge finishing, import replay and atomic completion.
-- Runtime suite: 119 tests passed before the additional focused README inspection test. The final focused API/Bridge suite, including that test, passed all 18 tests.
+- Runtime suite: the final full suite, including the additional README inspection test, passed all 120 tests.
 - Markdown and creator tests: bounded front matter, unsafe markup and URL exclusion, uploaded image allowlist, external-image links, nested folder path validation, template claim limits and translated control coverage.
 
 ## Practical limits
 
 The browser fixture validates selection and presentation; it does not certify a fresh real-user publication, a large production model upload or a completed live Bridge import. Existing transfer runtime tests remain the evidence for checksums, recovery and scanning. A new creator still needs valid files, storage entitlement, license/provenance declarations and passing publication checks. Card formatting does not manufacture model-quality evidence.
+
+## Release gate fixes — 2026-10-06
+
+The required RustSec workflow now runs on every pull request. Its former path filter could leave GitHub waiting for a check even when a manually dispatched audit passed on the same commit.
+
+A fresh npm audit flagged three existing dependency advisories. The lockfile now resolves proxy-addr 2.0.8 and source-map-js 1.2.2. A narrowly scoped ONNX installer override uses global-agent 4.1.3, removing its vulnerable roarr/sprintf-js chain. The installer bootstrap and HTTP proxy behavior are exercised against a local server by `tools/check-onnx-installer-dependency.mjs`. Transformers.js, the browser tokenizer package, ONNX engines and all four shipped WASM assets retain their existing versions and bytes. `npm audit --omit=dev` reports zero known vulnerabilities for this resolved tree.
