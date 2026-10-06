@@ -46,12 +46,29 @@ export async function sha256Hex(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function sameOriginBrowserRead(request: Request): boolean {
+  if (request.method !== 'GET' || request.headers.has('origin')) return false;
+  // Browsers omit Origin on same-origin fetches and image requests. Fetch
+  // Metadata is browser-controlled; older browsers can supply a same-origin
+  // Referer instead. Neither signal replaces profile or repository authority.
+  const fetchSite = request.headers.get('sec-fetch-site');
+  if (fetchSite !== null) return fetchSite === 'same-origin';
+  const referer = request.headers.get('referer');
+  if (!referer) return false;
+  try {
+    return new URL(referer).origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 export async function authorizeRepositoryRequest(
   locals: App.Locals,
   request: Request,
   sql: NeonQueryFunction<false, false>,
   repositoryId: string,
   scope: RepositoryScope,
+  options: { allowSameOriginRead?: boolean } = {},
 ): Promise<RepositoryAuthorization> {
   const authorizationHeader = request.headers.get('authorization');
   const token = bearerToken(request);
@@ -142,7 +159,9 @@ export async function authorizeRepositoryRequest(
     }
   }
 
-  if (!sameOrigin(request)) return { ok: false, status: 403, error: 'invalid origin' };
+  if (!sameOrigin(request) && !(options.allowSameOriginRead && sameOriginBrowserRead(request))) {
+    return { ok: false, status: 403, error: 'invalid origin' };
+  }
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return { ok: false, status: 401, error: 'authentication required' };
   return {

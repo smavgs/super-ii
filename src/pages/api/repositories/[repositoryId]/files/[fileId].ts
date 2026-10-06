@@ -31,7 +31,7 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   const draft = new URL(request.url).searchParams.get('draft') === '1';
   let draftRevisionId: string | null = null;
   if (draft) {
-    const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:read');
+    const authorization = await authorizeRepositoryRequest(locals, request, sql, repositoryId, 'repository:read', { allowSameOriginRead: true });
     if (!authorization.ok) return Response.json({ error: 'file not found' }, { status: 404 });
     const branch = new URL(request.url).searchParams.get('branch');
     const repository = authorization.actor.kind === 'profile'

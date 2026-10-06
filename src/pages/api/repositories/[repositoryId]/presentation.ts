@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   const sql = sqlClient(locals);
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const id = params.repositoryId ?? '';
-  const auth = await authorizeRepositoryRequest(locals, request, sql, id, 'repository:commit');
+  const auth = await authorizeRepositoryRequest(locals, request, sql, id, 'repository:commit', { allowSameOriginRead: true });
   if (!auth.ok) return Response.json({ error: auth.error }, { status: auth.status });
   const branch = new URL(request.url).searchParams.get('branch');
   const repo = auth.actor.kind === 'profile'

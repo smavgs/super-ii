@@ -17,7 +17,9 @@ await build({stdin:{contents:Object.entries(definitions).map(([key,file])=>`expo
 const routes=await import(pathToFileURL(bundle).href);
 const alice='creator_flow_alice',bob='creator_flow_bob';
 const locals=user=>({__testActor:user?{actorKind:'clerk',clerkUserId:user}:{actorKind:'public'},auth:()=>({userId:user??null}),currentUser:async()=>user?{id:user,username:user,firstName:'Creator',lastName:'Test',emailAddresses:[],primaryEmailAddressId:null,imageUrl:null}:null});
-const request=(method,body,path='/api/repositories')=>new Request(`http://localhost${path}`,{method,headers:{origin:'http://localhost','content-type':'application/json'},...(method==='GET'?{}:{body:JSON.stringify(body)})});
+// A real same-origin browser GET does not contain Origin. Keep that distinction
+// in the API fixtures so draft preflight and private image reads are exercised.
+const request=(method,body,path='/api/repositories',headers=method==='GET'?{'sec-fetch-site':'same-origin'}:{origin:'http://localhost','content-type':'application/json'})=>new Request(`http://localhost${path}`,{method,headers,...(method==='GET'?{}:{body:JSON.stringify(body)})});
 let repositoryId;
 try {
   const created=await routes.create.POST({locals:locals(alice),request:request('POST',{kind:'model',slug:'creator-fixture',title:'Initial page',summary:''})});
@@ -27,10 +29,21 @@ try {
   const card='# Updated page\n\nA real README.\n';const sha=createHash('sha256').update(card).digest('hex');
   const body={revision_id:data.revision_id,version:0,title:'Updated page',summary:'More detail',card_markdown:card};
   async function save(user,payload=body){return routes.presentation.POST({locals:locals(user),params,request:request('POST',payload,path)});}
-  const version=user=>routes.presentation.GET({locals:locals(user),params,request:request('GET',null,path)});
+  const version=(user,headers)=>routes.presentation.GET({locals:locals(user),params,request:request('GET',null,path,headers)});
   assert.equal((await version(null)).status,401);
   assert.equal((await version(bob)).status,404);
   assert.deepEqual(await (await version(alice)).json(),{revision_id:data.revision_id,version:0,editable:true});
+  assert.equal((await version(alice,{referer:'http://localhost/repositories/example/edit'})).status,200);
+  assert.equal((await version(alice,{origin:'http://localhost'})).status,200);
+  for(const headers of [{},{'sec-fetch-site':'cross-site'},{'sec-fetch-site':'same-site'},
+    {referer:'https://attacker.invalid/'},{referer:'invalid'},
+    {'sec-fetch-site':'cross-site',referer:'http://localhost/'},
+    {'sec-fetch-site':'same-origin',origin:'https://attacker.invalid'}]) {
+    assert.equal((await version(alice,headers)).status,403,'untrusted reads must stay closed');
+  }
+  assert.equal((await routes.presentation.POST({locals:locals(alice),params,
+    request:request('POST',body,path,{'sec-fetch-site':'same-origin','content-type':'application/json'})})).status,403,
+    'write requests still require the exact Origin header');
   assert.equal((await save(null)).status,401);
   assert.equal((await save(bob)).status,404);
   assert.equal((await save(alice)).status,409,'unscanned README must not become the public card');
@@ -42,8 +55,12 @@ try {
   const original=await queryDatabase(`select title from app.repositories where id='${repositoryId}'`,null,true);
   assert.equal(original[0].title,'Initial page','draft title leaked into public metadata');
   const fileId=rows[0].id;const filePath=`/api/repositories/${repositoryId}/files/${fileId}?draft=1&branch=${data.branch_id}`;
-  const getFile=user=>routes.files.GET({locals:locals(user),params:{repositoryId,fileId},request:request('GET',null,filePath)});
+  const getFile=(user,headers)=>routes.files.GET({locals:locals(user),params:{repositoryId,fileId},request:request('GET',null,filePath,headers)});
   assert.equal((await getFile(alice)).status,200);
+  assert.equal((await getFile(alice,{'sec-fetch-site':'same-origin','sec-fetch-dest':'image'})).status,200);
+  assert.equal((await getFile(alice,{referer:'http://localhost/repositories/example/edit'})).status,200);
+  assert.equal((await getFile(alice,{'sec-fetch-site':'cross-site','sec-fetch-dest':'image'})).status,404);
+  assert.equal((await getFile(alice,{'sec-fetch-site':'same-origin',origin:'https://attacker.invalid'})).status,404);
   assert.equal((await getFile(bob)).status,404);
   assert.equal((await getFile(null)).status,404);
   assert.equal((await routes.files.GET({locals:locals(null),params:{repositoryId,fileId},request:request('GET',null,filePath.replace('draft=1&',''))})).status,404);
@@ -52,7 +69,7 @@ try {
   const cleared=await queryDatabase(`select presentation from app.repository_revisions where id='${data.revision_id}'`,null,true);
   assert.equal(cleared[0].presentation.card_markdown,'');
   assert.equal(cleared[0].presentation.readme_sha256,undefined);
-  console.log('OK: fresh personal creator, scanned README binding, stale/wrong revision rejection, draft metadata isolation, private preview authorization');
+  console.log('OK: fresh personal creator, browser Origin-free reads, cross-origin/write rejection, scanned README binding, stale/wrong revision rejection, draft metadata isolation, private preview authorization');
 } finally {
   if(repositoryId)await queryDatabase(`delete from app.repositories where id='${repositoryId}' returning id`,null,true);
   await queryDatabase(`delete from app.profiles where clerk_user_id in ('${alice}','${bob}') returning id`,null,true);
