@@ -66,13 +66,14 @@ export const POST: APIRoute = async ({ locals, request }) => {
       ? String(payload.source_url)
       : inspected[0].source_url;
     const rows = await sql`
-      select app.create_bridge_import(
+      select app.create_bridge_editor_import(
         ${profile.profileId}::uuid,
         'huggingface',
         ${credentials.identity?.id ?? null}::uuid,
         ${sourceUrl},
         ${JSON.stringify(inspected)}::jsonb,
-        true
+        true,
+        ${payload.finish_in_workspace === true}
       ) as job_id
     `;
     return Response.json({

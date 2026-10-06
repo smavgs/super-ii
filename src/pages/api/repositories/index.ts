@@ -63,8 +63,8 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const sourceUrls = Array.isArray(payload.source_urls)
     ? payload.source_urls.map((value) => textValue(value, 2048)).filter(Boolean).slice(0, 50)
     : [];
-  if (!kinds.has(kind) || !repositorySlugPattern.test(slug) || title.length < 2 || summary.length < 10) {
-    return Response.json({ error: 'valid repository kind, slug, title, and summary are required' }, { status: 422 });
+  if (!kinds.has(kind) || !repositorySlugPattern.test(slug) || title.length < 2) {
+    return Response.json({ error: 'valid repository kind, slug, and title are required' }, { status: 422 });
   }
   if (sourceUrls.some((raw) => {
     try { return new URL(raw).protocol !== 'https:'; } catch { return true; }

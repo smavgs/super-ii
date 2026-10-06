@@ -1,11 +1,8 @@
 name: Rust security audit
 
 on:
+  # This job is required by branch protection, so every PR must report it.
   pull_request:
-    paths:
-      - rust/Cargo.toml
-      - rust/Cargo.lock
-      - .github/workflows/rust-audit.yml
   push:
     branches: [main]
     paths:

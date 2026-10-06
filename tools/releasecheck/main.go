@@ -258,7 +258,7 @@ func main() {
 		filepath.Join("src", "pages", "api", "transfers", "[transferId].ts"): {
 			"transfer_runtime_state_missing", "advance_resumable_upload",
 		},
-		filepath.Join("src", "pages", "repositories", "[repositoryId]", "edit.astro"): {
+		filepath.Join("src", "lib", "creator-upload.ts"): {
 			"TransferResumeError", "sessionStorage", "upload-checksum",
 		},
 		filepath.Join("src", "lib", "use-model.ts"): {

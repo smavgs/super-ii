@@ -309,6 +309,7 @@ def main() -> int:
                 ROOT / "rust" / "src" / "transfer.rs",
                 ROOT / "src" / "lib" / "transfer-ticket.ts",
                 ROOT / "src" / "lib" / "transfers.ts",
+                ROOT / "src" / "lib" / "creator-upload.ts",
                 ROOT / "src" / "pages" / "api" / "transfers" / "[transferId].ts",
                 ROOT / "src" / "pages" / "repositories" / "[repositoryId]" / "edit.astro",
             )

@@ -5,7 +5,8 @@ import RepositoryAnalysis from '@/components/RepositoryAnalysis.astro';
 import UseModel from '@/components/UseModel.astro';
 import BuildShip from '@/components/BuildShip.astro';
 import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
-import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
+import '@/styles/repository-card.css';
+import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
@@ -179,7 +180,10 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
           <article
             class="repository-card-markdown notebook-markdown"
             data-no-translate
-            set:html={renderNotebookMarkdown(repository.card_markdown)}
+            set:html={renderRepositoryMarkdown(repository.card_markdown, {
+              files: repository.files.map(file => ({ ...file, url: `/api/repositories/${repository.id}/files/${file.id}?inline=1` })),
+              sourceUrl: (repository.provenance.bridge as { source_url?: string } | undefined)?.source_url,
+            })}
           />
         ) : (
           <p>This repository does not yet include a written {cardTitle.toLowerCase()}.</p>

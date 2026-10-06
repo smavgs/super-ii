@@ -26,6 +26,41 @@ def test_health_does_not_require_secrets() -> None:
     }
 
 
+def test_revision_inspection_binds_the_exact_readme(monkeypatch, tmp_path) -> None:
+    repository_id, revision_id = uuid4(), uuid4()
+    payload = "# 模型\r\n\r\nDocumented work.\r\n".encode()
+    (tmp_path / "README.md").write_bytes(payload)
+
+    class Database:
+        card = None
+
+        def list_revision_files(self, _revision_id):
+            return [SimpleNamespace(repository_id=repository_id, path="README.md")]
+
+        def revision_files_missing_inspections(self, *_args):
+            return set()
+
+        def save_revision_readme(self, repo, revision, card):
+            assert (repo, revision) == (repository_id, revision_id)
+            self.card = card
+
+        def save_revision_analysis(self, *_args):
+            pass
+
+    @contextmanager
+    def materialized(*_args, **_kwargs):
+        yield tmp_path
+
+    database = Database()
+    monkeypatch.setattr(api_module, "materialized_revision", materialized)
+    monkeypatch.setattr(api_module, "get_store", lambda: object())
+    result = inspect_revision(
+        repository_id, revision_id, InspectRevisionRequest(kind="space"), object(), database
+    )
+    assert result["status"] == "passed"
+    assert database.card.encode() == payload
+
+
 def test_capabilities_fail_closed_without_runtime_token() -> None:
     response = TestClient(app).get("/v1/capabilities")
     assert response.status_code == 503

@@ -193,6 +193,8 @@ export const repositoryRevisions = app.table(
       .references(() => repositories.id, { onDelete: 'cascade' }),
     sequence: integer('sequence').notNull(),
     parentRevisionId: uuid('parent_revision_id'),
+    presentation: jsonb('presentation').$type<Record<string, unknown>>().notNull().default({}),
+    presentationVersion: integer('presentation_version').notNull().default(0),
     branchId: uuid('branch_id'),
     message: text('message').notNull().default(''),
     commitSha: text('commit_sha'),

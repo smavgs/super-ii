@@ -1,0 +1,113 @@
+---
+import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
+import type { ManagedRepository } from '@/lib/creator';
+import '@/styles/creator-editor.css';
+import '@/styles/repository-card.css';
+
+interface Props {
+  repository?: ManagedRepository | null;
+  owners?: Array<{ id: string | null; handle: string; label: string }>;
+  kind?: string;
+  files?: Array<{ id: string; path: string; size_bytes: string; mime_type: string; scan_status: string; storage_state: string; sha256: string }>;
+  demo?: boolean;
+}
+const { repository, owners = [], kind = 'model', files = [], demo = false } = Astro.props;
+const editable = !repository || ['draft','quarantined'].includes(repository.revision_status);
+const cardFiles = files.filter(file => file.storage_state === 'available' && file.scan_status === 'clean').map(file => ({
+  path: file.path, mime_type: file.mime_type,
+  url: `/api/repositories/${repository?.id}/files/${file.id}?draft=1&inline=1&branch=${repository?.branch_id}`,
+}));
+const sourceUrl = (repository?.provenance as { bridge?: { source_url?: string } } | undefined)?.bridge?.source_url;
+---
+
+<form class="creator-editor" data-creator-editor data-repository-id={repository?.id ?? ''}
+  data-revision-id={repository?.revision_id ?? ''} data-branch-id={repository?.branch_id ?? ''}
+  data-version={repository?.presentation_version ?? 0} data-demo={demo ? 'true' : undefined}
+  data-readme-sha={files.find(file => file.path === 'README.md')?.sha256 ?? ''}
+  data-editable={editable ? 'true' : 'false'} data-card-files={JSON.stringify(cardFiles)} data-source-url={sourceUrl ?? ''}
+  data-locale={Astro.locals.locale ?? 'en'} novalidate>
+  <header class="creator-editor__heading">
+    <div><p class="eyebrow">Your work</p><h2>{repository ? 'Files and page' : 'Start with your work'}</h2></div>
+    {repository && <span class="status-badge">{repository.revision_status === 'published' ? 'Published version' : 'Draft version'}</span>}
+  </header>
+  {!repository && <div class="creator-start">
+    <p>Add files or a folder. We will suggest details from your README and configuration.</p>
+    <a class="text-button" href="/bring-my-work">Already online? Bring my work →</a>
+    <div class="form-grid form-grid--two">
+      <label>Repository type<select name="kind"><option value="model" selected={kind === 'model'}>Model</option><option value="dataset" selected={kind === 'dataset'}>Dataset</option><option value="space" selected={kind === 'space'}>App / Space</option></select></label>
+      <label>Owner<select name="organization_id" disabled={!owners.length}>{owners.length ? owners.map(owner => <option value={owner.id ?? ''}>@{owner.handle} · {owner.label}</option>) : <option value="">Log in to choose an owner</option>}</select></label>
+    </div>
+  </div>}
+  {repository && <input type="hidden" name="kind" value={repository.kind} />}
+  {!editable && <div class="creator-callout">
+    <p>{repository?.revision_status === 'published' ? 'This published version stays unchanged while you prepare an update.' : 'This revision is sealed. Start an update to make changes.'}</p>
+    <button class="button button--dark" type="button" data-start-update>Edit this page</button>
+  </div>}
+
+  <details class="creator-panel" name="creator-panel" open={!repository || !files.length} data-files-panel>
+    <summary><span>01</span><strong>Files and folders</strong><small data-file-count>{files.length} files</small></summary>
+    <div class="creator-panel__body">
+      {editable && <>
+        <div class="creator-dropzone" data-file-dropzone>
+          <p><strong>Drop files here</strong></p>
+          <p>Up to 10 GiB per file. Use Choose folder to keep nested folders.</p>
+          <div class="button-row">
+            <label class="button button--secondary creator-file-picker">Choose files<input type="file" multiple data-choose-files /></label>
+            <label class="button button--secondary creator-file-picker">Choose folder<input type="file" multiple {...{webkitdirectory: ''}} data-choose-folder /></label>
+          </div>
+        </div>
+        <ul class="creator-queue" data-upload-queue aria-label="Selected files"></ul>
+        <p class="form-hint" data-selection-status aria-live="polite"></p>
+      </>}
+      {files.length > 0 && <div class="file-table-wrap"><table class="file-table"><thead><tr><th>File</th><th>Size</th><th>Checks</th><th></th></tr></thead><tbody>
+        {files.map(file => <tr><td><code>{file.path}</code></td><td>{(Number(file.size_bytes)/1024/1024).toLocaleString(undefined,{maximumFractionDigits:2})} MiB</td><td>{file.scan_status === 'clean' ? 'Scanned' : file.scan_status}</td><td>{editable && <button type="button" class="text-button" data-delete-file={file.id}>Remove</button>}</td></tr>)}
+      </tbody></table></div>}
+      {!editable && <p>Choose Edit this page to add, replace or remove files in a new draft.</p>}
+    </div>
+  </details>
+
+  <details class="creator-panel" name="creator-panel" open={Boolean(repository && files.length)} data-page-panel>
+    <summary><span>02</span><strong>Page details and preview</strong><small>Make it yours</small></summary>
+    <div class="creator-panel__body">
+      <fieldset disabled={!editable} class="creator-fields">
+        <label>Title<input name="title" value={repository?.title ?? ''} required minlength="2" maxlength="200" autocomplete="off" placeholder="A clear name for your work" /></label>
+        {!repository && <label>Repository URL name<input name="slug" required maxlength="96" pattern="[a-z0-9](?:[a-z0-9._-]{0,94}[a-z0-9])?" placeholder="my-model" /><span>Suggested from your title. You can change it before creating.</span></label>}
+        <label>Summary<textarea name="summary" rows="2" maxlength="2000" placeholder="What it does, who it helps, and important limitations.">{repository?.summary ?? ''}</textarea></label>
+        <details class="creator-metadata"><summary>License, task and framework</summary><div class="form-grid form-grid--two">
+          <label>License<input name="license" value={repository?.license ?? ''} readonly={Boolean(repository)} maxlength="120" list="creator-licenses" placeholder="Choose or type your license" />{repository && <a href="#publication">Change license in publication details</a>}</label>
+          <datalist id="creator-licenses"><option value="apache-2.0" /><option value="mit" /><option value="bsd-3-clause" /><option value="cc-by-4.0" /><option value="cc0-1.0" /></datalist>
+          <label>Task<input name="task" value={repository?.task ?? ''} maxlength="120" placeholder="text-generation" /></label>
+          <label>Library / framework<input name="library" value={repository?.library ?? ''} maxlength="120" placeholder="transformers" /></label>
+          <label>Modality<input name="modality" value={repository?.modality ?? ''} maxlength="120" placeholder="text" /></label>
+        </div></details>
+        <div class="creator-card-toolbar"><strong>README / model card</strong><div class="button-row"><button type="button" class="text-button" data-card-template>Use a starter template</button><label class="text-button creator-file-picker">Read a README<input type="file" accept=".md,.markdown,text/markdown,text/plain" data-read-card /></label></div></div>
+        <p class="form-hint">The README is your public card. Tables, code, links and uploaded images appear in the preview. Only include verification claims you can support.</p>
+        <div class="creator-formatting" role="group" aria-label="Card formatting">
+          <button type="button" class="button button--secondary button--small" data-format="heading">Heading</button>
+          <button type="button" class="button button--secondary button--small" data-format="bold">Bold</button>
+          <button type="button" class="button button--secondary button--small" data-format="link">Link</button>
+          <button type="button" class="button button--secondary button--small" data-format="code">Code</button>
+          <button type="button" class="button button--secondary button--small" data-format="table">Table</button>
+          <label class="creator-image-select">Insert image<select data-insert-image><option value="">Choose an uploaded image</option></select></label>
+        </div>
+        <div class="creator-writing">
+          <label>Write in Markdown<textarea class="creator-source" name="card_markdown" rows="18" maxlength="100000" spellcheck="false" data-no-translate>{repository?.card_markdown ?? ''}</textarea></label>
+          <section class="creator-preview" aria-label="Page preview"><p class="eyebrow">Live preview</p><h3 data-preview-title data-no-translate>{repository?.title ?? 'Your page title'}</h3><p data-preview-summary data-no-translate>{repository?.summary ?? ''}</p><article class="repository-card-markdown notebook-markdown" data-card-preview data-no-translate set:html={renderRepositoryMarkdown(repository?.card_markdown ?? '', { files: cardFiles, sourceUrl })} /></section>
+        </div>
+        <p class="form-hint">Raw HTML stays as text. External images are links; uploaded PNG, JPEG, WebP and GIF files can appear directly.</p>
+      </fieldset>
+    </div>
+  </details>
+  {editable && <footer class="creator-savebar">
+    <div><button type="submit" class="button button--dark" data-save-creator disabled={!repository && !owners.length && !demo}>{repository ? 'Save draft' : 'Create draft and upload'}</button><button type="button" class="text-button" data-pause-upload hidden>Pause after this file</button></div>
+    <p>Saving keeps your work in a draft. Publish when you are ready.</p>
+    {!repository && !owners.length && !demo && <a class="button button--secondary" href="/sign-in?redirect_url=%2Fnew">Log in to continue</a>}
+    <progress max="100" value="0" hidden data-creator-progress aria-label="Upload progress"></progress>
+  </footer>}
+  <p class="form-status" role="status" aria-live="polite" data-creator-status></p>
+</form>
+
+<script>
+  import { initializeCreatorEditors } from '@/lib/creator-editor';
+  initializeCreatorEditors();
+</script>

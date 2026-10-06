@@ -70,6 +70,10 @@ docker exec -i "$container_name" \
 
 docker exec -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
+  < "$project_root/database/tests/creator_presentation_smoke.sql" >/dev/null
+
+docker exec -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
   < "$project_root/database/tests/social_web_smoke.sql" >/dev/null
 
 docker exec -i "$container_name" \
@@ -178,5 +182,6 @@ if [ "$derivations" != "true:false" ]; then
 fi
 
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-agent-connection-flows.mjs"
+SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-creator-flows.mjs"
 
 echo "OK: PostgreSQL 17 migrations are rerunnable and the transactional integration test passed."

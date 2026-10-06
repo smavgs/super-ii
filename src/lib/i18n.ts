@@ -1,6 +1,7 @@
 import russianCatalog from '@/content/locales/ru.json';
 import chineseCatalog from '@/content/locales/zh-CN.json';
 import { connectionRussian } from './connection-localization';
+import { creatorRussian, creatorChinese } from './creator-localization';
 
 export type SiteLocale = 'en' | 'ru' | 'zh-CN';
 
@@ -2925,11 +2926,13 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
 export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedRussian,
   ...reviewedRussianMessages,
+  ...creatorRussian,
 });
 
 export const chineseMessages: Readonly<Record<string, string>> = Object.freeze({
   ...generatedChinese,
   ...reviewedChineseMessages,
+  ...creatorChinese,
 });
 
 const helpRussian: Readonly<Record<string, string>> = Object.freeze({
