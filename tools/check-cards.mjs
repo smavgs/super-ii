@@ -9,7 +9,7 @@ import { jpegDimensions, stripJpegMetadata } from '../src/lib/card-photo.ts';
 const vault = emptyCardVault('Ada Lovelace');
 vault.identity_en.role = 'Builder';
 vault.identity_en.organization = 'Super ii';
-vault.identity_en.tagline = 'Open intelligence, built together.';
+vault.identity_en.tagline = 'Open super intelligence, built together.';
 vault.identity_zh = { name: '阿达', role: '开发者', organization: 'Super ii', tagline: '一起构建开放智能。', bio: '' };
 vault.email = 'ada@example.com';
 vault.services.wechat = 'ada_wechat';

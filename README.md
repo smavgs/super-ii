@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.superii.site">
-    <img src="public/brand/super-ii-social-card.png" alt="Super ii — Open intelligence, built together" width="100%" />
+    <img src="public/brand/super-ii-social-card-si.png" alt="Super ii — Open super intelligence, built together" width="100%" />
   </a>
 </p>
 

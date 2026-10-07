@@ -182,7 +182,7 @@ const coreRussian: Record<string, string> = {
   'Repository / Repo': 'Репозиторий',
   'A repository is the home for one project and its files, versions and history.':
     'Репозиторий — это единое место для проекта, его файлов, версий и истории.',
-  'Open intelligence, built together.': 'Открытый интеллект, который мы создаём вместе.',
+  'Open super intelligence, built together.': 'Открытый сверхинтеллект, который мы создаём вместе.',
   'Open by design · Clear controls when needed': 'Открыто по замыслу · понятное управление при необходимости',
   'Every public release is reviewed': 'Каждый публичный релиз проходит проверку',
   'Super ii is an open home for AI models, datasets, apps, agents, research and the people building them.':
@@ -192,7 +192,6 @@ const coreRussian: Record<string, string> = {
   'Join Super ii': 'Присоединиться к Super ii',
   'No card required.': 'Банковская карта не требуется.',
   'Explore the hub': 'Открыть хаб',
-  'Built in public': 'Создано открыто',
   'Launch principles': 'Принципы запуска',
   'Public by default': 'Публично по умолчанию',
   'Built for speed': 'Создано для скорости',
@@ -322,10 +321,10 @@ const coreRussian: Record<string, string> = {
   'SEO Improver': 'Оптимизатор SEO',
   'Inbox Zero Assistant': 'Помощник «Пустая почта»',
   'YouTube Research Analyst': 'Аналитик YouTube-исследований',
-  'Super ii · Open intelligence, built together.': 'Super ii · Открытый интеллект, который мы создаём вместе.',
+  'Super ii · Open super intelligence, built together.': 'Super ii · Открытый сверхинтеллект, который мы создаём вместе.',
   'Super ii Sii brand mark': 'Фирменный знак Sii от Super ii',
-  'Super ii — Open intelligence, built together. Run your first AI agent with free cloud AI.':
-    'Super ii — открытый интеллект, который мы создаём вместе. Запустите первого ИИ-агента с бесплатным облачным ИИ.',
+  'Super ii — Open super intelligence, built together. Run your first AI agent with free cloud AI.':
+    'Super ii — открытый сверхинтеллект, который мы создаём вместе. Запустите первого ИИ-агента с бесплатным облачным ИИ.',
   'Download': 'Скачать',
   'Email': 'Электронная почта',
   'Error': 'Ошибка',
@@ -2172,7 +2171,6 @@ const highlightsTeamRussian: Record<string, string> = {
   'Paid visibility stays labeled.': 'Платная видимость всегда имеет отметку.',
   'Orange framing and “Promoted” appear everywhere.': 'Оранжевая рамка и отметка «Продвигается» видны везде.',
 
-  'Join Team · Build in public': 'Присоединяйтесь к команде · создавайте открыто',
   'An early invitation': 'Приглашение присоединиться на раннем этапе',
   'Ways to contribute': 'Способы внести свой вклад',
   'Build Super ii with us through the Founding Circle and help shape an open home for intelligence from an unusually early stage.':
@@ -2233,7 +2231,6 @@ const highlightsTeamRussian: Record<string, string> = {
     'Вы можете помочь их изобрести. Если вам интересно создавать компанию, технологию, культуру и будущее с необычно раннего этапа, мы хотим с вами познакомиться.',
   'No recruiters. No perfect CV required. Show us what you care about, what you have built, what you want to build, and why Super ii interests you.':
     'Без рекрутеров. Идеальное резюме не требуется. Покажите, что для вас важно, что вы уже создали, что хотите создать и почему вам интересен Super ii.',
-  'Built in public': 'Создаём открыто',
   'See the code. Follow the work.': 'Посмотрите код. Следите за работой.',
   'View Super ii on GitHub': 'Посмотреть Super ii на GitHub',
   'View Super ii on GitHub (opens in a new tab)': 'Посмотреть Super ii на GitHub (откроется в новой вкладке)',
@@ -2837,7 +2834,7 @@ const generatedChinese = Object.fromEntries(
 export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.freeze({
   'Agent Friendly': '对智能体友好',
   'Agent friendly': '对智能体友好',
-  'Open intelligence, built together.': '开放智能，共同构建。',
+  'Open super intelligence, built together.': '开放超级智能，共同构建。',
   'Super ii is an open home for AI models, datasets, apps, agents, research and the people building them.':
     'Super ii 是面向 AI 模型、数据集、应用、智能体、研究及其创造者的开放家园。',
   'Discover existing work. Understand how it was made. Build on it. Share what you create.':

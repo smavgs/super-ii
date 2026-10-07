@@ -71,7 +71,7 @@ for (const [english, translation] of Object.entries(exactRussian)) {
 }
 const exactChinese = {
   'Agent Friendly': '对智能体友好',
-  'Open intelligence, built together.': '开放智能，共同构建。',
+  'Open super intelligence, built together.': '开放超级智能，共同构建。',
   Models: '模型', Datasets: '数据集', Apps: '应用', Skills: '技能', Builders: '创作者', Pricing: '定价',
   Workspace: '工作区', 'Join free': '免费加入', 'Checking the web…': '正在搜索网络…',
   'Close navigation': '关闭导航',
@@ -101,7 +101,7 @@ const contracts = [
   [middleware, 'openGraphLocale(locale)', 'localized Open Graph locale'],
   [layout, '/scripts/localize-ru.js', 'Russian dynamic UI localizer'],
   [layout, '/scripts/localize-zh-cn.js', 'Simplified Chinese dynamic UI localizer'],
-  [layout, '/brand/super-ii-social-card-zh-cn.png', 'Simplified Chinese share card'],
+  [layout, '/brand/super-ii-social-card-zh-cn-si.png', 'Simplified Chinese share card'],
   [header, 'class="brand-lockup" href="/" aria-label="Super ii home" data-no-translate', 'untranslated header brand'],
   [footer, "'zh-CN': { label: '简体中文'", 'Simplified Chinese footer language choice'],
   [footer, "'zh-CN': ['en', 'ru']", 'Chinese-page alternate language order'],
