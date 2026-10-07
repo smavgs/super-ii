@@ -51,6 +51,7 @@ const capabilities = [
 const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?welcome=ai-worker#ai-worker')}`;
 const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
 const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
+const locale = Astro.locals.locale ?? 'en';
 const skillsCtaUrl = isSignedIn
   ? '/skills'
   : `/sign-up?redirect_url=${encodeURIComponent('/skills')}`;
@@ -69,7 +70,14 @@ const frontierCtaUrl = isSignedIn
           <span aria-hidden="true">·</span>
           <span>Every public release is reviewed <InfoTip term="automatedReview" /></span>
         </div>
-        <h1>Open intelligence, built together.</h1>
+        {locale === 'zh-CN' ? (
+          <h1 class="hero-heading--zh" data-no-translate>
+            <span>开放超级智能，</span>
+            <span>共同构建。</span>
+          </h1>
+        ) : (
+          <h1>Open super intelligence, built together.</h1>
+        )}
         <p class="hero-lead">
           Super ii is an open home for AI models, datasets, apps, agents, research and the people building them.
           <span>Discover existing work. Understand how it was made. Build on it. Share what you create.</span>
@@ -91,14 +99,29 @@ const frontierCtaUrl = isSignedIn
           </span>
         </div>
         <p class="hero-note">
-          <i class="ph ph-credit-card" aria-hidden="true"></i>
-          No card required. <a href="/models">Explore the hub</a>
+          <a href="/models">Explore the hub <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
         </p>
+        <a
+          class="hero-github-cta"
+          href="https://github.com/smavgs/super-ii"
+          target="_blank"
+          rel="external noreferrer"
+          aria-label="View Super ii on GitHub (opens in a new tab)"
+        >
+          <img
+            class="hero-github-cta__logo"
+            src="/brand/github-invertocat-white.svg"
+            width="98"
+            height="96"
+            alt=""
+          />
+          <span>See the code. Follow the work.</span>
+          <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+        </a>
       </div>
 
       <div class="hero-mark" aria-label="Super ii Sii brand mark">
         <LogoMark size="large" priority />
-        <span class="hero-mark__caption">Built in public</span>
       </div>
     </div>
   </section>

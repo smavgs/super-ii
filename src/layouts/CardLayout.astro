@@ -21,6 +21,9 @@ const pageTitle = unavailable
   : locale === 'zh-CN' ? `${title} · ${site.brand.name} 名片` : `${title} · ${site.brand.name} Card`;
 const skipLabel = locale === 'zh-CN' ? '跳到名片' : 'Skip to card';
 const publicDataLabel = locale === 'zh-CN' ? '公开名片数据' : 'Public card data';
+const socialCard = locale === 'zh-CN'
+  ? '/brand/super-ii-social-card-zh-cn-si.png'
+  : '/brand/super-ii-social-card-si.png';
 ---
 
 <!doctype html>
@@ -40,7 +43,7 @@ const publicDataLabel = locale === 'zh-CN' ? '公开名片数据' : 'Public card
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={absoluteUrl('/brand/super-ii-social-card.png')} />
+    <meta property="og:image" content={absoluteUrl(socialCard)} />
     <meta name="twitter:card" content="summary_large_image" />
     <title>{pageTitle}</title>
     {!unavailable && <link rel="alternate" type="application/json" href={`${path}/card.json`} title={publicDataLabel} />}
