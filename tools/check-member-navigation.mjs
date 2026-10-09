@@ -110,9 +110,18 @@ const muse = registry.connectors.find((connector) => connector.id === 'muse-code
 assert.equal(muse.status_label, 'Verified setup');
 assert.equal(muse.configuration_version, '1.4.4');
 assert.equal(muse.config_path, '~/.config/muse/settings.json');
-assert.ok(muse.config_example.includes('"mcpServers"'));
-assert.ok(muse.config_example.includes('"required": false'));
-assert.ok(muse.config_example.includes('https://superii.site/mcp'));
+const museConfig = JSON.parse(muse.config_example);
+assert.deepEqual(museConfig, {
+  schema_version: 1,
+  mcpServers: {
+    superii: {
+      type: 'streamable-http',
+      url: 'https://superii.site/mcp',
+      enabled: true,
+      required: false,
+    },
+  },
+});
 for (const marker of ['configuration_variants', 'muse-code', 'Choose your installed configuration']) {
   requireText(agentsPage, marker, 'agents connector UI');
 }
