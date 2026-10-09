@@ -1,0 +1,43 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ProductEditor from "@/components/ProductEditor.astro";
+import { ensureAuthenticatedProfile } from "@/lib/auth";
+import { sqlClient } from "@/lib/db";
+import { productDraft } from "@/lib/product-store";
+import { productUuid } from "@/lib/product-http";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const sql = sqlClient(Astro.locals);
+let draft = null;
+let failed = false;
+try {
+  if (!sql) failed = true;
+  else if (!(await ensureAuthenticatedProfile(Astro.locals, sql)))
+    return Astro.redirect(
+      `/sign-in?redirect_url=${encodeURIComponent(Astro.url.pathname)}`,
+    );
+  else if (productUuid.test(Astro.params.id ?? ""))
+    draft = await productDraft(Astro.locals, Astro.params.id!);
+} catch {
+  failed = true;
+}
+if (!draft) Astro.response.status = failed ? 503 : 404;
+---
+
+<BaseLayout title="Edit product" noindex
+  >{
+    draft ? (
+      <ProductEditor draft={draft} signedIn />
+    ) : (
+      <section class="shell product-page">
+        <>
+          <h1>
+            {failed
+              ? "Saved work is temporarily unavailable"
+              : "Product unavailable"}
+          </h1>
+          <a href="/workspace/products">Back to company and products</a>
+        </>
+      </section>
+    )
+  }</BaseLayout
+>

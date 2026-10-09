@@ -1,0 +1,49 @@
+---
+import { companyWorkspace } from "@/lib/product-store";
+import "@/styles/products.css";
+let products: Awaited<ReturnType<typeof companyWorkspace>>["products"] = [];
+let failed = false;
+try {
+  products = (await companyWorkspace(Astro.locals)).products;
+} catch {
+  failed = true;
+}
+---
+
+<section class="company-products-workspace">
+  <div class="workspace-panel-heading">
+    <div>
+      <h2>Company and products</h2><p>
+        A home for what you make and the people behind it.
+      </p>
+    </div><a
+      class="button button--secondary button--small"
+      href="/workspace/products/new">Present a product</a>
+  </div>
+  {
+    failed ? (
+      <p>Company products are temporarily unavailable. Please try again.</p>
+    ) : products.length ? (
+      <div class="product-work-list">
+        {products.map((product) => (
+          <a href={`/workspace/products/${product.id}`}>
+            <div>
+              <strong data-no-translate>
+                {product.name || `${product.owner}/${product.slug}`}
+              </strong>
+              <small data-no-translate>
+                {product.owner}/{product.slug}
+              </small>
+            </div>
+            <span>{product.status} →</span>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <p>
+        Start with your company and one product. Save privately, preview and
+        publish when ready.
+      </p>
+    )
+  }
+</section>

@@ -25,6 +25,8 @@ export const superiiAgentCard = {
   defaultInputModes: ['application/json', 'text/plain'],
   defaultOutputModes: ['application/json'],
   skills: [
+    {id:'search-company-products',name:'Search company products',description:'Find published company-provided products. Claims are not independently verified.',tags:['products','companies','robots','hardware'],examples:['{"skillId":"search-company-products","arguments":{"query":"robot"}}'],inputModes:['application/json'],outputModes:['application/json']},
+    {id:'read-company-product',name:'Read company product details',description:'Read the same published product facts, resources, contact channels and evidence limits shown to visitors. No authority to contact, purchase or control hardware is granted.',tags:['products','resources'],examples:['{"skillId":"read-company-product","arguments":{"owner":"company","slug":"product"}}'],inputModes:['application/json'],outputModes:['application/json']},
     {
       id: 'search-public-catalog',
       name: 'Search reviewed public AI repositories',

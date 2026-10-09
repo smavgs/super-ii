@@ -1,3 +1,6 @@
+import { publicProduct, searchProducts } from './product-store';
+import { productRepresentation } from './products';
+import { productLookupInput, productSearchInput } from './product-protocol';
 import { z } from 'zod';
 import { repositoryDocument } from './agent-resources';
 import { searchCatalog, type RepositoryKind } from './catalog';
@@ -16,6 +19,8 @@ const downloadArguments = repositoryArguments.extend({
 }).strict();
 
 const skillRequest = z.discriminatedUnion('skillId', [
+  z.object({skillId:z.literal('search-company-products'),arguments:productSearchInput}).strict(),
+  z.object({skillId:z.literal('read-company-product'),arguments:productLookupInput}).strict(),
   z.object({ skillId: z.literal('search-public-catalog'), arguments: catalogSearchWithKindSchema }).strict(),
   z.object({ skillId: z.literal('inspect-public-repository'), arguments: repositoryArguments }).strict(),
   z.object({ skillId: z.literal('resolve-verified-download'), arguments: downloadArguments }).strict(),
@@ -105,6 +110,42 @@ export async function executeA2APublicSkill(
   }
 
   const request = parsed.data;
+  if (request.skillId === 'search-company-products' || request.skillId === 'read-company-product') {
+    try {
+      if (request.skillId === 'search-company-products') {
+        const { query, kind, owner, limit, offset } = request.arguments;
+        const items = await searchProducts(
+          locals,
+          query,
+          kind ?? null,
+          owner ?? null,
+          limit,
+          offset,
+        );
+        return {
+          ok: true,
+          skillId: request.skillId,
+          output: {
+            items: items.map((item) => ({
+              owner: item.owner,
+              slug: item.slug,
+              name: item.product.name,
+              summary: item.product.summary,
+              url: productRepresentation(item, origin).url,
+              evidence: 'company-provided',
+            })),
+            next_offset: items.length === limit && offset + limit <= 10000 ? offset + limit : null,
+          },
+        };
+      }
+      const item = await publicProduct(locals, request.arguments.owner, request.arguments.slug);
+      return item
+        ? { ok: true, skillId: request.skillId, output: productRepresentation(item, origin) }
+        : { ok: false, status: 'rejected', message: 'Public product not found.' };
+    } catch {
+      return { ok: false, status: 'failed', message: 'Public product service unavailable.' };
+    }
+  }
   if (request.skillId === 'read-system-state') {
     return { ok: true, skillId: request.skillId, output: systemState };
   }

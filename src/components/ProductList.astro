@@ -1,0 +1,68 @@
+---
+import {
+  type PublishedProduct,
+  localizedField,
+  productPath,
+} from "@/lib/products";
+import "@/styles/products.css";
+interface Props {
+  items: PublishedProduct[];
+}
+const { items } = Astro.props;
+const locale = Astro.locals.locale ?? "en";
+---
+
+<div class="product-list">
+  {
+    items.map((item) => (
+      <a href={productPath(item.owner, item.slug)} class="product-list-item">
+        {item.images[0] ? (
+          <img
+            src={item.images[0].image_url}
+            alt={item.images[0].alt_text}
+            loading="lazy"
+            width="160"
+            height="100"
+            data-no-translate
+          />
+        ) : (
+          <span
+            class="product-list-monogram"
+            aria-hidden="true"
+            data-no-translate
+          >
+            {(item.product.name || item.product.name_zh).slice(0, 1)}
+          </span>
+        )}
+        <>
+          <div>
+            <>
+              <small data-no-translate>
+                {localizedField(
+                  item.company.name,
+                  item.company.name_zh,
+                  locale,
+                )}
+              </small>
+              <h3 data-no-translate>
+                {localizedField(
+                  item.product.name,
+                  item.product.name_zh,
+                  locale,
+                )}
+              </h3>
+              <p data-no-translate>
+                {localizedField(
+                  item.product.summary,
+                  item.product.summary_zh,
+                  locale,
+                )}
+              </p>
+            </>
+          </div>
+          <span>{item.product.kind} ↗</span>
+        </>
+      </a>
+    ))
+  }
+</div>

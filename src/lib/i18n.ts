@@ -1,6 +1,7 @@
 import russianCatalog from '@/content/locales/ru.json';
 import chineseCatalog from '@/content/locales/zh-CN.json';
 import { connectionRussian } from './connection-localization';
+import { productRussian as companyProductRussian, productChinese as companyProductChinese } from './product-localization';
 import { creatorRussian, creatorChinese } from './creator-localization';
 
 export type SiteLocale = 'en' | 'ru' | 'zh-CN';
@@ -63,6 +64,7 @@ const localizableRoots = new Set([
   'people',
   'posts',
   'pricing',
+  'products',
   'proposals',
   'repositories',
   'review',
@@ -78,6 +80,7 @@ const localizableRoots = new Set([
   'tokenizer',
   'transparent',
   'use',
+  'workspace',
 ]);
 
 const coreRussian: Record<string, string> = {
@@ -2832,6 +2835,7 @@ const generatedChinese = Object.fromEntries(
 );
 
 export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.freeze({
+  ...companyProductChinese,
   'Agent Friendly': '对智能体友好',
   'Agent friendly': '对智能体友好',
   'Open super intelligence, built together.': '开放超级智能，共同构建。',
@@ -2898,6 +2902,7 @@ export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.
   'model not disclosed': '未披露模型',
 });
 export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.freeze({
+  ...companyProductRussian,
   ...coreRussian,
   ...pricingRussian,
   ...publicPageRussian,

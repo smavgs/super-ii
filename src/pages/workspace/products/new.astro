@@ -1,0 +1,28 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ProductEditor from "@/components/ProductEditor.astro";
+import { ensureAuthenticatedProfile } from "@/lib/auth";
+import { sqlClient } from "@/lib/db";
+import { companyWorkspace } from "@/lib/product-store";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+let signedIn = false;
+let unavailable = false;
+let workspace;
+const sql = sqlClient(Astro.locals);
+try {
+  if (sql && (await ensureAuthenticatedProfile(Astro.locals, sql))) {
+    signedIn = true;
+    workspace = await companyWorkspace(Astro.locals);
+  }
+} catch {
+  unavailable = true;
+}
+---
+
+<BaseLayout title="Company and product" noindex
+  ><ProductEditor
+    workspace={workspace}
+    signedIn={signedIn}
+    unavailable={unavailable}
+  /></BaseLayout
+>

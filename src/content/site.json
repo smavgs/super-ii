@@ -73,6 +73,11 @@
     }
   },
   "routes": [
+    "/products",
+    "/workspace/products",
+    "/workspace/products/new",
+    "/api/products",
+    "/schemas/product/v1.json",
     "/",
     "/robot",
     "/robot/agents.md",

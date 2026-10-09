@@ -1,4 +1,7 @@
 ---
+import ProductList from '@/components/ProductList.astro';
+import { searchProducts } from '@/lib/product-store';
+import type { PublishedProduct } from '@/lib/products';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { repositoryPath, type PublicRepository } from '@/lib/catalog';
@@ -29,6 +32,8 @@ let organization: OrganizationView | null = null;
 let repositories: PublicRepository[] = [];
 let linkedWork: LinkedWorkItem[] = [];
 let showcase: ShowcaseItem[] = [];
+let products: PublishedProduct[] = [];
+let productsUnavailable = false;
 if (sql) {
   try {
     const rows = await sql`
@@ -63,6 +68,7 @@ if (sql) {
   }
 }
 if (!organization) Astro.response.status = 404;
+if (organization) { try { products = await searchProducts(Astro.locals,'',null,handle,50); } catch { productsUnavailable=true; } }
 ---
 
 <BaseLayout title={organization?.full_name ?? 'Organization unavailable'} description={organization?.description ?? 'Public Super ii organization profile.'} titleNoTranslate={Boolean(organization)} descriptionNoTranslate={Boolean(organization?.description)} noindex={!organization}>
@@ -86,6 +92,7 @@ if (!organization) Astro.response.status = 404;
           {organization.linkedin_url && <a class="button button--secondary button--small" href={organization.linkedin_url} rel="me external">LinkedIn</a>}
         </div>
       </header>
+      <section class="product-section"><h2>Products</h2>{products.length ? <><ProductList items={products} /><a href={`/products?owner=${encodeURIComponent(handle)}`}>Browse company products →</a></> : <p>{productsUnavailable ? 'Company products are temporarily unavailable. Please try again.' : 'No published products yet.'}</p>}</section>
       <ShowcaseGallery items={showcase} title="Selected work" />
       <LinkedWorkGrid items={linkedWork} heading="Linked work" />
       <section class="repository-section">
