@@ -69,7 +69,7 @@ for (const source of [profileApi, likeApi, followApi]) {
 for (const marker of ['YouTube', 'These are public links you provide; they are not verified connections.', "fetch('/api/profile'"]) {
   requireText(workspace, marker, 'profile workspace');
 }
-for (const marker of ['data-profile-like', 'data-profile-follow', 'ph-youtube-logo', 'person-interests', 'rel="me nofollow noopener noreferrer"']) {
+for (const marker of ['data-profile-like', 'data-profile-follow', '<CardServiceIcon service={link.service}', "service: 'youtube'", 'person-interests', 'rel="me nofollow noopener noreferrer"']) {
   requireText(publicPage, marker, 'public profile');
 }
 for (const marker of ['.member-profile-form', '.person-stats', '.person-like-button--active', '@media (max-width: 700px)']) {

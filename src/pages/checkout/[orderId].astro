@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { paymentSqlClient, sqlClient } from '@/lib/db';
@@ -55,6 +56,13 @@ const termLabel = order?.billing_term === '12_months' ? '12 months' : '30 days';
       <PageHero eyebrow="Secure crypto checkout 💳" title={`${order.plan_id === 'team' ? 'Team' : 'Pro'} · ${termLabel}`} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · ${order.seat_count} ${order.seat_count === 1 ? 'seat' : 'seats'} · pay in USDC on Ethereum`} compact />
       <main class="section shell checkout-shell" data-checkout data-order-id={order.id} data-terminal={String(terminal)}>
         <section class="checkout-card">
+          <div class="payment-provider-row" aria-label="Payment route">
+            <span><BrandMark brand="usdc" size="sm" label="USD Coin" /><strong data-no-translate>USDC</strong><small>Payment asset</small></span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            <span><BrandMark brand="ethereum" size="sm" label="Ethereum" /><strong data-no-translate>Ethereum</strong><small>ERC-20 network</small></span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            <span><BrandMark brand="nowpayments" size="sm" label="NOWPayments" /><strong data-no-translate>NOWPayments</strong><small>Payment monitor</small></span>
+          </div>
           <div class="checkout-status-row">
             <div><p class="eyebrow">Payment status</p><h2 data-checkout-status>{order.status.replaceAll('_', ' ')}</h2></div>
             <span class="status-dot" data-status={order.status}></span>

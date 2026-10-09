@@ -3,6 +3,7 @@ import ProductList from '@/components/ProductList.astro';
 import { searchProducts } from '@/lib/product-store';
 import type { PublishedProduct } from '@/lib/products';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CardServiceIcon from '@/components/CardServiceIcon.astro';
 import { sqlClient } from '@/lib/db';
 import { repositoryPath, type PublicRepository } from '@/lib/catalog';
 import LinkedWorkGrid from '@/components/LinkedWorkGrid.astro';
@@ -86,10 +87,10 @@ if (organization) { try { products = await searchProducts(Astro.locals,'',null,h
           {organization.ai_ml_interests.map((interest) => <span data-no-translate>{interest}</span>)}
         </div>
         <div class="button-row">
-          {organization.homepage_url && <a class="button button--secondary button--small" href={organization.homepage_url} rel="me external">Website</a>}
-          {organization.github_username && <a class="button button--secondary button--small" href={`https://github.com/${organization.github_username}`} rel="me external">GitHub</a>}
-          {organization.twitter_username && <a class="button button--secondary button--small" href={`https://x.com/${organization.twitter_username}`} rel="me external">X</a>}
-          {organization.linkedin_url && <a class="button button--secondary button--small" href={organization.linkedin_url} rel="me external">LinkedIn</a>}
+          {organization.homepage_url && <a class="button button--secondary button--small organization-brand-link" href={organization.homepage_url} rel="me external"><CardServiceIcon service="website" />Website</a>}
+          {organization.github_username && <a class="button button--secondary button--small organization-brand-link" href={`https://github.com/${organization.github_username}`} rel="me external"><CardServiceIcon service="github" />GitHub</a>}
+          {organization.twitter_username && <a class="button button--secondary button--small organization-brand-link" href={`https://x.com/${organization.twitter_username}`} rel="me external"><CardServiceIcon service="x" />X</a>}
+          {organization.linkedin_url && <a class="button button--secondary button--small organization-brand-link" href={organization.linkedin_url} rel="me external"><CardServiceIcon service="linkedin" />LinkedIn</a>}
         </div>
       </header>
       <section class="product-section"><h2>Products</h2>{products.length ? <><ProductList items={products} /><a href={`/products?owner=${encodeURIComponent(handle)}`}>Browse company products →</a></> : <p>{productsUnavailable ? 'Company products are temporarily unavailable. Please try again.' : 'No published products yet.'}</p>}</section>

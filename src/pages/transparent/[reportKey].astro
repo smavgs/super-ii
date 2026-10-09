@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import { compareStoredTransparencyReports, getTransparencyReport, searchTransparencyReports } from '@/lib/transparent-store';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
@@ -54,7 +55,7 @@ const description = report
           <div class="shell">
             <div class="transparent-report-hero__top">
               <div>
-                <p class="eyebrow">Super ii Transparent 🔎 · {report.repository.kind}</p>
+                <p class="eyebrow brand-inline"><BrandMark brand="huggingface" size="xs" />Super ii Transparent 🔎 · {report.repository.kind}</p>
                 <h1 data-no-translate>{report.repository.id}</h1>
                 <p>Public evidence report pinned to one exact Hugging Face commit.</p>
               </div>
@@ -126,7 +127,7 @@ const description = report
             <section>
               <p class="eyebrow">Source project</p>
               <a class="transparent-source-link" href={report.repository.revision_url} target="_blank" rel="noreferrer"><strong data-no-translate>{report.repository.id}</strong><span>Open exact revision</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-              <dl><div><dt>Provider</dt><dd data-no-translate>Hugging Face</dd></div><div><dt>Visibility</dt><dd>{report.repository.visibility}</dd></div><div><dt>Requested</dt><dd data-no-translate>{report.repository.requested_revision}</dd></div>{report.repository.last_modified && <div><dt>Provider modified</dt><dd>{new Date(report.repository.last_modified).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</dd></div>}</dl>
+              <dl><div><dt>Provider</dt><dd class="brand-inline" data-no-translate><BrandMark brand="huggingface" size="xs" />Hugging Face</dd></div><div><dt>Visibility</dt><dd>{report.repository.visibility}</dd></div><div><dt>Requested</dt><dd data-no-translate>{report.repository.requested_revision}</dd></div>{report.repository.last_modified && <div><dt>Provider modified</dt><dd>{new Date(report.repository.last_modified).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}</dd></div>}</dl>
               <small>Hugging Face identifies the source. No affiliation or endorsement is implied.</small>
             </section>
 

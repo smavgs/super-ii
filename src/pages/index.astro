@@ -4,6 +4,7 @@ import AgentBash from '@/components/AgentBash.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import '@/styles/robot.css';
 
@@ -197,7 +198,7 @@ const frontierCtaUrl = isSignedIn
         <p class="eyebrow">Three ways in</p>
         <h2>Run it. Code it. Share it. <span aria-hidden="true">😊</span></h2>
         <div class="use-home-hook__paths">
-          <p><span>01</span>Run models locally with Ollama, LM Studio &amp; ComfyUI.</p>
+          <p><span>01</span><span class="use-home-hook__path-copy"><span class="use-home-hook__brandmarks" aria-hidden="true"><BrandMark brand="ollama" size="xs" /><BrandMark brand="lmstudio" size="xs" /><BrandMark brand="comfyui" size="xs" /></span>Run models locally with Ollama, LM Studio &amp; ComfyUI.</span></p>
           <p><span>02</span>Use models directly in Python.</p>
           <p><span>03</span>Publish your work with one public link.</p>
         </div>

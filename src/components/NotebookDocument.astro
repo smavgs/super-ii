@@ -3,6 +3,7 @@ import {
   type NotebookDocument as NotebookDocumentType,
   type NotebookImageOutput,
 } from '@/lib/notebooks';
+import BrandMark from '@/components/BrandMark.astro';
 import { renderNotebookMarkdown } from '@/lib/notebook-markdown';
 import { localizeOfficialNotebookMarkdown } from '@/lib/official-notebook-localization';
 
@@ -48,7 +49,7 @@ function imageSource(output: NotebookImageOutput): string {
     <div class="button-row notebook-reader__actions">
       {colabUrl && (
         <a class="button button--yellow" href={colabUrl} target="_blank" rel="external noreferrer">
-          Open in Colab <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+          <BrandMark brand="colab" size="xs" />Open in Colab <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
         </a>
       )}
       {githubUrl && <a class="button button--secondary" href={githubUrl} target="_blank" rel="external noreferrer">View source</a>}
@@ -65,7 +66,7 @@ function imageSource(output: NotebookImageOutput): string {
 
   {colabUrl && (
     <aside class="notebook-external-warning">
-      <i class="ph ph-warning" aria-hidden="true"></i>
+      <BrandMark brand="colab" size="sm" label="Google Colab" />
       <p>You are leaving Super ii to run this notebook. Colab is a separate service. Review the notebook before running it and never add secrets to code you do not trust.</p>
     </aside>
   )}

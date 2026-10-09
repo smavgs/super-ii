@@ -3,6 +3,7 @@ import { Show, SignInButton } from '@clerk/astro/components';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { bridgeIsConfigured } from '@/lib/bridge';
 import { sqlClient } from '@/lib/db';
@@ -158,11 +159,11 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 <div class="bridge-step__content">
                   <p class="eyebrow">Choose a source</p>
                   <h2 id="bridge-source-heading">Paste a profile or repository link</h2>
-                  <p>Hugging Face is currently supported. Paste a profile or repository link to begin.</p>
+                  <p class="bridge-provider-intro"><BrandMark brand="huggingface" size="sm" label="Hugging Face" /><span><strong>Hugging Face</strong> is currently supported. Paste a profile or repository link to begin.</span></p>
                   <form class="bridge-source-form" data-bridge-source-form>
                     <label class="sr-only" for="bridge-source-url">Profile or repository URL</label>
                     <div class="bridge-url-control">
-                      <i class="ph ph-link" aria-hidden="true"></i>
+                      <BrandMark brand="huggingface" size="sm" />
                       <input id="bridge-source-url" name="source_url" type="url" inputmode="url" autocomplete="url" placeholder="https://huggingface.co/your-name" value={connections[0] ? `https://huggingface.co/${connections[0].provider_username}` : ''} required />
                       <button class="button button--dark" type="submit" disabled={!configured}>Find my work</button>
                     </div>
@@ -171,7 +172,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
 
                   <div class="bridge-connection-actions">
                     <button class="button button--secondary button--small" type="button" data-bridge-connect="public" disabled={!configured}>
-                      <i class="ph ph-plugs-connected" aria-hidden="true"></i> Connect account
+                      <BrandMark brand="huggingface" size="xs" /> Connect account
                     </button>
                     <details>
                       <summary>Need private, gated, or organization access?</summary>
@@ -255,7 +256,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 {connections.length ? connections.map((connection) => (
                   <div class="bridge-identity" data-identity-id={connection.id}>
                     {connection.avatar_url ? <img src={connection.avatar_url} alt="" width="42" height="42" loading="lazy" referrerpolicy="no-referrer" /> : <span class="bridge-identity__avatar"><i class="ph ph-user" aria-hidden="true"></i></span>}
-                    <div><strong>@{connection.provider_username}</strong><span>Hugging Face linked ✓</span></div>
+                    <div><strong>@{connection.provider_username}</strong><span class="brand-inline"><BrandMark brand="huggingface" size="xs" />Hugging Face linked ✓</span></div>
                     <button class="text-button bridge-disconnect" type="button" data-bridge-disconnect={connection.id} aria-label={`Disconnect @${connection.provider_username}`}>Disconnect</button>
                   </div>
                 )) : <p>No external account connected. Public links still work where the license permits.</p>}
