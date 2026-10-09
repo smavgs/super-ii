@@ -61,7 +61,7 @@ const nav = [
               <SignInButton asChild mode="modal">
                 <button class="button button--ghost button--small" type="button">Log in</button>
               </SignInButton>
-              <a class="button button--dark button--small" href="/sign-up">Join free</a>
+              <a class="button button--dark button--small" href="/sign-up?redirect_url=%2Faccount">Join free</a>
             </Show>
             <Show when="signed-in">
               <a class="button button--ghost button--small header-bridge-link" href="/bring-my-work">Bring my work</a>
@@ -77,7 +77,7 @@ const nav = [
         ) : (
           <>
             <a class="button button--ghost button--small" href="/sign-in">Log in</a>
-            <a class="button button--dark button--small" href="/sign-up">Join free</a>
+            <a class="button button--dark button--small" href="/sign-up?redirect_url=%2Faccount">Join free</a>
           </>
         )}
       </div>
@@ -109,7 +109,7 @@ const nav = [
         <>
           <Show when="signed-out">
             <a class="button button--secondary" href="/sign-in">Log in</a>
-            <a class="button button--dark" href="/sign-up">Join free</a>
+            <a class="button button--dark" href="/sign-up?redirect_url=%2Faccount">Join free</a>
           </Show>
           <Show when="signed-in">
             <a class="button button--secondary" href="/bring-my-work">Bring my work</a>
@@ -120,7 +120,7 @@ const nav = [
       ) : (
         <>
           <a class="button button--secondary" href="/sign-in">Log in</a>
-          <a class="button button--dark" href="/sign-up">Join free</a>
+          <a class="button button--dark" href="/sign-up?redirect_url=%2Faccount">Join free</a>
         </>
       )}
     </div>

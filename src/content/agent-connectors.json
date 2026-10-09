@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "registry_updated": "2026-09-27",
+  "registry_updated": "2026-10-09",
   "public_mcp_url": "https://superii.site/mcp",
   "work_mcp_url": "https://superii.site/mcp/work",
   "connector_policy": {
@@ -28,38 +28,54 @@
       "source_label": "OpenAI Codex MCP documentation"
     },
     {
-      "id": "opencode-v1",
+      "id": "opencode",
       "name": "OpenCode",
       "vendor": "OpenCode",
       "status": "verified",
-      "status_label": "Verified current config",
+      "status_label": "Verified setup",
       "transport": "streamable-http",
       "configuration_family": "json",
-      "configuration_version": "v1/current",
+      "configuration_version": "current + V2",
       "command": null,
       "verify_command": "opencode mcp list",
       "config_path": "opencode.json",
-      "config_example": "{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"mcp\": {\n    \"superii\": {\n      \"type\": \"remote\",\n      \"url\": \"https://superii.site/mcp\",\n      \"enabled\": true\n    }\n  }\n}",
-      "notes": "Use this profile for current OpenCode installations whose schema places servers directly under mcp.",
-      "source_url": "https://dev.opencode.ai/docs/mcp-servers/",
+      "config_example": null,
+      "configuration_variants": [
+        {
+          "label": "Current OpenCode",
+          "configuration_version": "current",
+          "config_path": "opencode.json",
+          "config_example": "{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"mcp\": {\n    \"superii\": {\n      \"type\": \"remote\",\n      \"url\": \"https://superii.site/mcp\",\n      \"enabled\": true\n    }\n  }\n}",
+          "notes": "Use this shape when servers sit directly under mcp."
+        },
+        {
+          "label": "OpenCode V2",
+          "configuration_version": "v2",
+          "config_path": "opencode.json",
+          "config_example": "{\n  \"mcp\": {\n    \"servers\": {\n      \"superii\": {\n        \"type\": \"remote\",\n        \"url\": \"https://superii.site/mcp\",\n        \"disabled\": false\n      }\n    }\n  }\n}",
+          "notes": "Use this shape only when your OpenCode installation uses mcp.servers."
+        }
+      ],
+      "notes": "One OpenCode connection with two supported configuration shapes. Choose the shape your installed OpenCode schema uses; the Super ii connector CLI detects it automatically.",
+      "source_url": "https://docs.opencode.ai/docs/mcp-servers/",
       "source_label": "OpenCode MCP server documentation"
     },
     {
-      "id": "opencode-v2",
-      "name": "OpenCode V2",
-      "vendor": "OpenCode",
+      "id": "muse-code",
+      "name": "Muse Code",
+      "vendor": "Meta",
       "status": "verified",
-      "status_label": "Verified V2 config",
+      "status_label": "Verified setup",
       "transport": "streamable-http",
       "configuration_family": "json",
-      "configuration_version": "v2",
-      "command": null,
-      "verify_command": "opencode mcp list",
-      "config_path": "opencode.json",
-      "config_example": "{\n  \"mcp\": {\n    \"servers\": {\n      \"superii\": {\n        \"type\": \"remote\",\n        \"url\": \"https://superii.site/mcp\",\n        \"disabled\": false\n      }\n    }\n  }\n}",
-      "notes": "Use only with the V2 configuration schema; the safe CLI detects before merging.",
-      "source_url": "https://opencode.ai/v2/docs/mcp-servers",
-      "source_label": "OpenCode V2 MCP documentation"
+      "configuration_version": "1.4.4",
+      "command": "curl -fsSL https://dev.meta.ai/install.sh | bash",
+      "verify_command": "muse --version",
+      "config_path": "~/.config/muse/settings.json",
+      "config_example": "{\n  \"schema_version\": 1,\n  \"mcpServers\": {\n    \"superii\": {\n      \"type\": \"streamable-http\",\n      \"url\": \"https://superii.site/mcp\",\n      \"enabled\": true,\n      \"required\": false\n    }\n  }\n}",
+      "notes": "Install Muse Code, merge the Super ii entry into settings.json, and start a new Muse session. The server is optional so Muse can still start if Super ii is temporarily unavailable; /mcp shows the connection and tools.",
+      "source_url": "https://meta-models.github.io/muse-code-sdk/next/guides/extend/mcp-servers/",
+      "source_label": "Official Muse Code MCP documentation"
     },
     {
       "id": "claude-code",

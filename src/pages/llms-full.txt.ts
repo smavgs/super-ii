@@ -4,7 +4,12 @@ import { agentConnectorRegistry } from '@/lib/agent-connectors';
 export const prerender = true;
 
 const connectorLines = agentConnectorRegistry.connectors.map((connector) => {
-  const setup = connector.command ?? (connector.config_example ? 'configuration available in the connector registry' : 'no command published');
+  const setup = connector.command
+    ?? (connector.configuration_variants?.length
+      ? `${connector.configuration_variants.length} verified configuration variants in the connector registry`
+      : connector.config_example
+        ? 'configuration available in the connector registry'
+        : 'no command published');
   return `- ${connector.name}: ${connector.status}; ${setup}; source: ${connector.source_url ?? 'verification pending'}`;
 }).join('\n');
 

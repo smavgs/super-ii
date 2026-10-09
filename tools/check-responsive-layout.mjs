@@ -93,7 +93,7 @@ assert(
 assert(aiWorker.includes('<details class="ai-worker"'), 'AI Worker must remain an on-demand details drawer');
 assert(aiWorker.includes("location.hash === '#ai-worker'"), 'AI Worker must open from the Workspace anchor');
 assert(agentBash.includes('role="list"') && agentBash.includes('role="listitem"'), 'the logo-only agent rail must remain accessible');
-assert((agentBash.match(/icon: '\/brand\/agents\//g) ?? []).length === 14, 'the handoff rail must include all 14 named agent marks');
+assert((agentBash.match(/icon: '\/brand\/agents\//g) ?? []).length === 15, 'the handoff rail must include all 15 named agent marks');
 assert(agentBash.includes('data-agent-bash-copy'), 'the universal agent instruction must remain copyable');
 assert(
   /\.agent-bash__logos\s*\{[\s\S]*?overflow-x:\s*auto;/.test(css),

@@ -1,8 +1,15 @@
 ---
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { memberAction } from '@/lib/member-actions';
 
 export const prerender = false;
+const accountAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/account',
+  signedOutLabel: 'Join free',
+  signedInLabel: 'Open workspace',
+});
+if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <BaseLayout title="About" description="Super ii is an open-source home where people and agents can discover, understand, use and improve AI work together.">
@@ -40,7 +47,7 @@ export const prerender = false;
       <h2 id="contact">Make a home here</h2>
       <p>Super ii is for open-source creators, researchers, independent builders, agent developers and teams that want their work to stay understandable and useful.</p>
       <p>Bring existing work to Super ii, join free, or tell us what you need.</p>
-      <p><a href="/bring-my-work">Bring your work</a> · <a href="/sign-up">Join free</a> · <a href="/contact">Contact Super ii</a></p>
+      <p><a href="/bring-my-work">Bring your work</a> · <a href={accountAction.href}>{accountAction.label}</a> · <a href="/contact">Contact Super ii</a></p>
     </article>
 
     <aside class="prose-aside">

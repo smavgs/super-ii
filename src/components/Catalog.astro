@@ -10,6 +10,7 @@ import {
   type RepositoryKind,
 } from '@/lib/catalog';
 import { searchLinkedWork } from '@/lib/linked-work';
+import { memberAction } from '@/lib/member-actions';
 
 interface Props {
   kind: CatalogKind;
@@ -67,6 +68,11 @@ const emptyState = {
     copy: 'The first reviewed public app will appear here when a creator publishes it.',
   },
 }[kind];
+const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/new',
+  signedOutLabel: 'Create your account',
+  signedInLabel: 'Create repository',
+});
 ---
 
 <form class="catalog-shell shell" method="get" data-catalog data-kind={kind} data-empty-default={emptyState.copy}>
@@ -222,7 +228,7 @@ const emptyState = {
               : emptyState.copy}
         </p>
         <div class="button-row">
-          <a class="button button--dark" href="/sign-up">Create your account</a>
+          <a class="button button--dark" href={createAction.href}>{createAction.label}</a>
           <a class="button button--secondary" href="/docs">Read the publishing guide</a>
         </div>
       </div>

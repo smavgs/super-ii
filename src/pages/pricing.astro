@@ -7,7 +7,10 @@ import { sqlClient } from '@/lib/db';
 import type { InfoHelpKey } from '@/lib/info-help';
 import { checkoutPriceCents } from '@/lib/nowpayments';
 import { plans } from '@/lib/site';
+import { isSignedInUser } from '@/lib/member-actions';
 
+const sessionSignedIn = isSignedInUser(Astro.locals);
+if (sessionSignedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 let signedIn = false;
 let teamOrganizations: Array<{ id: string; handle: string; name: string; member_count: number }> = [];
 const sql = sqlClient(Astro.locals);
@@ -35,7 +38,9 @@ if (sql) {
 }
 
 const planCta = {
-  free: { label: 'Join free', href: '/sign-up', featured: false },
+  free: sessionSignedIn
+    ? { label: 'Open workspace', href: '/account', featured: false }
+    : { label: 'Join free', href: '/sign-up?redirect_url=%2Faccount', featured: false },
   pro: { label: 'Pay with USDC', href: null, featured: true },
   team: { label: 'Pay with USDC', href: null, featured: false },
   enterprise: { label: 'Request a proposal', href: '/contact?interest=enterprise', featured: false },

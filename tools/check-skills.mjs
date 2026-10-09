@@ -23,6 +23,7 @@ const paths = {
   homepage: 'src/pages/index.astro',
   signUp: 'src/pages/sign-up.astro',
   signIn: 'src/pages/sign-in.astro',
+  authRedirects: 'src/lib/auth-redirects.ts',
   styles: 'src/styles/global.css',
   routes: 'src/content/site.json',
   sitemap: 'public/sitemap.xml',
@@ -131,16 +132,16 @@ for (const text of [
   'Give your AI agent a useful job.',
   'Explore Skills',
   'share it with someone',
-  'const skillsCtaUrl = isSignedIn',
-  'href={skillsCtaUrl}',
-  "`/sign-up?redirect_url=${encodeURIComponent('/skills')}`",
+  'const skillsAction = memberAction',
+  "destination: '/skills'",
+  'href={skillsAction.href}',
   'Copy any prompt. Use any agent. No lock-in.',
 ]) requireText('homepage', text);
 for (const removed of ['The hub is open', 'Publish a reviewed release.']) rejectText('homepage', removed);
 for (const page of ['signUp', 'signIn']) {
-  requireText(page, "const skillsRedirect = '/skills'");
-  requireText(page, 'skillsRedirect,');
+  requireText(page, 'safeAuthRedirect');
 }
+requireText('authRedirects', "'/skills'");
 
 for (const selector of [
   '.skills-home-hook', '.skills-page', '.skills-hero', '.skills-search', '.skills-filters',

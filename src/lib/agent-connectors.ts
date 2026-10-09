@@ -2,6 +2,14 @@ import registry from '@/content/agent-connectors.json';
 
 export type AgentConnectorStatus = 'verified' | 'compatible' | 'planned';
 
+export type AgentConnectorVariant = {
+  label: string;
+  configuration_version: string;
+  config_path: string;
+  config_example: string;
+  notes: string;
+};
+
 export type AgentConnector = {
   id: string;
   name: string;
@@ -15,6 +23,7 @@ export type AgentConnector = {
   verify_command: string | null;
   config_path: string | null;
   config_example: string | null;
+  configuration_variants?: AgentConnectorVariant[];
   notes: string;
   source_url: string | null;
   source_label: string | null;

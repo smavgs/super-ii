@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
 import { getPublicBuilders } from '@/lib/builders';
+import { memberAction } from '@/lib/member-actions';
 
 const requestedPage = Number(Astro.url.searchParams.get('page') ?? '1');
 const result = await getPublicBuilders(Astro.locals, Astro.url.searchParams.get('q') ?? '', requestedPage);
@@ -13,6 +14,12 @@ const pageHref = (page: number) => {
   return `/builders${suffix ? `?${suffix}` : ''}`;
 };
 const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'builder' : 'builders'}`;
+const profileAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/account#profile',
+  signedOutLabel: 'Join Super ii',
+  signedInLabel: 'Edit my profile',
+});
+if (profileAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <BaseLayout title="Builders" description="Discover the people publishing models, datasets, apps, posts, and proposals on Super ii." className="builders-page">
@@ -82,7 +89,7 @@ const totalLabel = `${result.total.toLocaleString()} ${result.total === 1 ? 'bui
   </section>
 
   <section class="builders-invitation">
-    <div class="shell builders-invitation__inner"><div><p class="eyebrow">Make your work findable</p><h2>Your public profile connects the person to the work.</h2><p>Add your story and interests, then publish models, datasets, apps, posts, or proposals under one identity.</p></div><div class="button-row"><a class="button button--yellow" href="/sign-up">Join Super ii</a><a class="button button--secondary" href="/account#profile">Edit my profile</a></div></div>
+    <div class="shell builders-invitation__inner"><div><p class="eyebrow">Make your work findable</p><h2>Your public profile connects the person to the work.</h2><p>Add your story and interests, then publish models, datasets, apps, posts, or proposals under one identity.</p></div><div class="button-row"><a class="button button--yellow" href={profileAction.href}>{profileAction.label}</a>{!profileAction.signedIn && <a class="button button--secondary" href="/sign-in?redirect_url=%2Faccount%23profile">Log in</a>}</div></div>
   </section>
 </BaseLayout>
 

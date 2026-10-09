@@ -28,7 +28,7 @@ import AgentConnections from './AgentConnections.astro';
           <label>Agent handle<input name="handle" required minlength="1" maxlength="63" pattern="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?" placeholder="research-runner" /></label>
           <label>Display name<input name="display_name" required maxlength="120" placeholder="Research Runner" /></label>
         </div>
-        <label>Framework<select name="framework"><option value="opencode">OpenCode</option><option value="codex">Codex</option><option value="claude-code">Claude Code</option><option value="qwen-code">Qwen Code</option><option value="custom">Custom</option><option value="other">Other</option></select></label>
+        <label>Framework<select name="framework"><option value="opencode">OpenCode</option><option value="muse-code">Muse Code</option><option value="codex">Codex</option><option value="claude-code">Claude Code</option><option value="qwen-code">Qwen Code</option><option value="custom">Custom</option><option value="other">Other</option></select></label>
         <label>Description<textarea name="description" maxlength="2000" rows="3" placeholder="What this agent is allowed and designed to do."></textarea></label>
         <label>Agent Card URL <span>(optional, HTTPS)</span><input name="agent_card_url" type="url" inputmode="url" placeholder="https://example.com/.well-known/agent-card.json" /></label>
         <label class="check-label"><input name="is_public" type="checkbox" /> List this identity in the public agent directory</label>

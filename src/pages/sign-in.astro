@@ -2,34 +2,23 @@
 import { SignIn } from '@clerk/astro/components';
 import AuthStory from '@/components/AuthStory.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { localizedHref, localizedPath, stripLocalePrefix } from '@/lib/i18n';
+import { safeAuthRedirect } from '@/lib/auth-redirects';
+import { localizedHref, localizedPath } from '@/lib/i18n';
+import { isSignedInUser } from '@/lib/member-actions';
 import { authIsConfigured } from '@/lib/site';
-import { connectionReturnPath } from '@/lib/connection-policy';
 
 const authConfigured = authIsConfigured(Astro.locals);
 const locale = Astro.locals.locale ?? 'en';
-const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
-const agentAccessRedirect = '/account#agents';
-const skillsRedirect = '/skills';
-const frontierRedirect = '/frontier-ai';
-const frontierSetupRedirect = '/frontier-ai#setup';
-const allowedRedirects = new Set([
-  aiWorkerRedirect,
-  agentAccessRedirect,
-  skillsRedirect,
-  frontierRedirect,
-  frontierSetupRedirect,
-]);
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const requestedPlainRedirect = requestedRedirect ? stripLocalePrefix(requestedRedirect) : null;
-const plainPostSignInRedirect = requestedPlainRedirect && (allowedRedirects.has(requestedPlainRedirect) || connectionReturnPath(requestedPlainRedirect))
-  ? requestedPlainRedirect
-  : '/account';
+const plainPostSignInRedirect = safeAuthRedirect(requestedRedirect, '/account');
 const postSignInRedirect = localizedHref(plainPostSignInRedirect, locale);
 const plainSignUpUrl = plainPostSignInRedirect === '/account'
   ? '/sign-up'
   : `/sign-up?redirect_url=${encodeURIComponent(plainPostSignInRedirect)}`;
 const signUpUrl = localizedHref(plainSignUpUrl, locale);
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+if (isSignedInUser(Astro.locals)) return Astro.redirect(postSignInRedirect, 302);
 ---
 
 <BaseLayout title="Log in" description="Log in to Super ii with email, Google, or GitHub." noindex className="auth-body">
