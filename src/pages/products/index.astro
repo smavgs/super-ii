@@ -26,6 +26,7 @@ try {
   Astro.response.status = 503;
 }
 Astro.response.headers.set("Cache-Control", "no-store");
+const hasMore = items.length === 20 && offset + 20 <= 10000;
 const next = new URLSearchParams({
   q,
   kind,
@@ -76,7 +77,7 @@ const next = new URLSearchParams({
       )
     }
     {
-      items.length === 20 && offset + 20 <= 10000 && (
+      hasMore && (
         <a href={`/products?${next}`}>More products →</a>
       )
     }
