@@ -6,10 +6,10 @@ import { productKinds, type PublishedProduct } from "@/lib/products";
 const q = (Astro.url.searchParams.get("q") ?? "").slice(0, 120);
 const owner = (Astro.url.searchParams.get("owner") ?? "").slice(0, 80) || null;
 const kind = Astro.url.searchParams.get("kind") ?? "";
-const offset = Math.max(
+const offset = Math.floor(Math.max(
   0,
   Math.min(10000, Number(Astro.url.searchParams.get("offset")) || 0),
-);
+));
 let items: PublishedProduct[] = [];
 let failed = false;
 try {
@@ -76,7 +76,7 @@ const next = new URLSearchParams({
       )
     }
     {
-      items.length === 20 && offset < 10000 && (
+      items.length === 20 && offset + 20 <= 10000 && (
         <a href={`/products?${next}`}>More products →</a>
       )
     }

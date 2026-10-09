@@ -82,7 +82,7 @@ export const GET: APIRoute = async ({ locals, request, url }) => {
       {
         items: items.map((item) => productRepresentation(item)),
         offset,
-        next_offset: items.length === 20 && offset < 10000 ? offset + 20 : null,
+        next_offset: items.length === 20 && offset + 20 <= 10000 ? offset + 20 : null,
       },
       { headers: productPublicHeaders },
     );
