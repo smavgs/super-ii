@@ -29,7 +29,7 @@ Local screenshots are stored in the release directory as `local-chinese-editor-3
 
 ## Remaining limits
 
-- Browser image selection/upload was blocked by the Chrome extension's disabled file-URL access. No browser permission was changed. Existing image handling, ownership and the lifetime counter have automated coverage, but this release does not claim a fresh browser upload succeeded.
+- Browser image selection/upload was blocked by the Chrome extension's disabled file-URL access. No browser permission was changed. The local image preview uses the same bounded rasterized JPEG preparation as upload. Existing image handling, ownership and the lifetime counter have automated coverage, but this release does not claim a fresh browser upload succeeded.
 - Production migration/deployment, live public reads and authenticated Workspace entry need separate verification after merge.
 - Mainland mobile, WeChat completion, actual exhibitor onboarding, delivered inquiries, large company catalogs and real-world product quality are unverified. They are not implied by the local tests.
 

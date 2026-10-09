@@ -539,16 +539,31 @@ function initialize(root: HTMLElement) {
       `${t("Uploads remaining")}: ${data.remaining}. ${t("Three successful Showcase uploads per member account, for its lifetime. Removing an image does not restore an upload.")}`;
     renderMedia();
   }
-  $<HTMLInputElement>("[data-image-file]").addEventListener("change", () => {
-    if (localImage) URL.revokeObjectURL(localImage);
-    const file = $<HTMLInputElement>("[data-image-file]").files?.[0];
-    const image = $<HTMLImageElement>("[data-image-preview]");
-    image.hidden = !file;
-    if (file) {
-      localImage = URL.createObjectURL(file);
-      image.src = localImage;
-    }
-  });
+  $<HTMLInputElement>("[data-image-file]").addEventListener(
+    "change",
+    async () => {
+      if (localImage) URL.revokeObjectURL(localImage);
+      const input = $<HTMLInputElement>("[data-image-file]");
+      const file = input.files?.[0];
+      const image = $<HTMLImageElement>("[data-image-preview]");
+      image.hidden = true;
+      if (!file) return;
+      try {
+        // Preview the same rasterized JPEG used by upload, never arbitrary selected file bytes.
+        const photo = await prepareImage(file);
+        if (input.files?.[0] !== file) return;
+        localImage = URL.createObjectURL(photo);
+        image.src = localImage;
+        image.hidden = false;
+      } catch (error) {
+        if (input.files?.[0] === file)
+          message(
+            error instanceof Error ? error.message : "Please try again.",
+            true,
+          );
+      }
+    },
+  );
   $("[data-image-upload]").addEventListener(
     "click",
     () =>
