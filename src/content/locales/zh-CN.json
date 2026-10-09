@@ -2,7 +2,7 @@
   "locale": "zh-CN",
   "sourceLocale": "en",
   "generatedFrom": "src/content/locales/ru.json source keys; reviewed with protected-token validation",
-  "messageCount": 5417,
+  "messageCount": 5423,
   "messages": {
     "# Overview Document intended use, limitations, evaluation, training data, and responsible-use notes.": "# 概述文档：预期用途、局限性、评估、训练数据及负责任使用说明",
     "$0 to start.": "从 $0 开始。",
@@ -5423,6 +5423,9 @@
     "01 / FRONT DOOR": "01 / 入门路径",
     "02 / ADVANCED PATH": "02 / 高级路径",
     "Before a real invoice, verify the current catalogue again, recipient target, exact USD price, quoted USDC amount, Ethereum address, expiry, and network notice. Payment requires separate wallet action and blockchain transfers may be irreversible.": "在生成真实发票之前，请再次核对当前目录、收款目标、准确的 USD 价格、报价的 USDC 金额、Ethereum 地址、到期时间和网络提示。付款需要单独的钱包操作，区块链转账可能无法撤销。",
-    "The checker constructs requests only for approved Hugging Face endpoints, follows only a bounded provider cache redirect, limits time, bytes and file count, reads only metadata and small evidence files, and never executes repository code or loads weights. A newer revision produces a separate immutable report that can be compared field by field. Saving, watching, submitting public evidence, and verified creator responses use Workspace; a claim requires the matching Hugging Face OAuth identity or verified organization namespace and cannot rewrite an existing report.": "检查器只会向获准的 Hugging Face 端点构造请求，仅跟随受限的提供商缓存重定向，并限制时间、字节数和文件数量；它只读取元数据和小型证据文件，绝不执行仓库代码或加载权重。较新的修订版本会生成单独的不可变报告，可逐字段比较。保存、关注、提交公开证据和经过验证的创作者回应均通过 Workspace 完成；声明所有权需要匹配的 Hugging Face OAuth 身份或经过验证的组织命名空间，并且不能改写现有报告。"
+    "The checker constructs requests only for approved Hugging Face endpoints, follows only a bounded provider cache redirect, limits time, bytes and file count, reads only metadata and small evidence files, and never executes repository code or loads weights. A newer revision produces a separate immutable report that can be compared field by field. Saving, watching, submitting public evidence, and verified creator responses use Workspace; a claim requires the matching Hugging Face OAuth identity or verified organization namespace and cannot rewrite an existing report.": "检查器只会向获准的 Hugging Face 端点构造请求，仅跟随受限的提供商缓存重定向，并限制时间、字节数和文件数量；它只读取元数据和小型证据文件，绝不执行仓库代码或加载权重。较新的修订版本会生成单独的不可变报告，可逐字段比较。保存、关注、提交公开证据和经过验证的创作者回应均通过 Workspace 完成；声明所有权需要匹配的 Hugging Face OAuth 身份或经过验证的组织命名空间，并且不能改写现有报告。",
+    "Company and product home": "公司与产品之家",
+    "release candidate; production verification pending": "发布候选版本；生产环境验证待完成",
+    "Company-owned model, robot, component and hardware pages use private drafts, explicit publication, supplied English/Chinese text, existing Showcase images and lifetime upload quota, public contacts, QR/print sheets, and the same published facts through JSON, Markdown, MCP and A2A. Restricted PostgreSQL and local browser checks cover save/reload/publish and missing-evidence answers. Optional DNS TXT checks establish exact hostname control only. Mainland/WeChat completion and a real exhibitor journey remain unverified. See docs/architecture/company-products.md.": "公司拥有的模型、机器人、组件和硬件页面支持私密草稿、明确发布、用户提供的中英文内容、现有 Showcase 图片及终身上传配额、公开联系方式、二维码和打印资料页。JSON、Markdown、MCP 和 A2A 使用同一份已发布信息。受限 PostgreSQL 和本地浏览器测试覆盖保存、重新打开、发布以及缺少证据的回答。可选 DNS TXT 检查仅证明对确切网站主机名的控制。中国大陆与微信流程及真实参展商体验尚未验证。详见 docs/architecture/company-products.md。"
   }
 }

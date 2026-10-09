@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "database" / "migrations"
 REQUIRED_TABLES = {
+    "company_pages", "company_products", "company_website_checks",
     "profiles",
     "organizations",
     "organization_members",

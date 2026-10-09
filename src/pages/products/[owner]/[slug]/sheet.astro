@@ -1,0 +1,50 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ProductPresentation from "@/components/ProductPresentation.astro";
+import { publicProduct } from "@/lib/product-store";
+let item = null;
+let failed = false;
+try {
+  item = await publicProduct(
+    Astro.locals,
+    Astro.params.owner ?? "",
+    Astro.params.slug ?? "",
+  );
+} catch {
+  failed = true;
+}
+Astro.response.headers.set("Cache-Control", "no-store");
+if (!item) Astro.response.status = failed ? 503 : 404;
+---
+
+<BaseLayout title="Product sheet" noindex
+  ><section class="shell product-page product-print-page">
+    {
+      item ? (
+        <>
+          <>
+            <div class="product-print-controls">
+              <>
+                <p>
+                  Print or save this sheet as PDF using your browser. Both
+                  supplied languages appear on the sheet.
+                </p>
+                <button class="button button--dark" data-print-sheet>
+                  Print / save PDF
+                </button>
+              </>
+            </div>
+            <ProductPresentation item={item} sheet />
+          </>
+        </>
+      ) : (
+        <h1>Product unavailable</h1>
+      )
+    }
+  </section></BaseLayout
+>
+<script>
+  document
+    .querySelector("[data-print-sheet]")
+    ?.addEventListener("click", () => window.print());
+</script>

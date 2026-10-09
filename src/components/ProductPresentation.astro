@@ -1,0 +1,317 @@
+---
+import { translateProduct } from "@/lib/product-localization";
+import CardServiceIcon from "./CardServiceIcon.astro";
+import {
+  localizedField as field,
+  productPath,
+  type PublishedProduct,
+} from "@/lib/products";
+import "@/styles/products.css";
+interface Props {
+  item: PublishedProduct;
+  sheet?: boolean;
+}
+const { item, sheet = false } = Astro.props;
+const locale = Astro.locals.locale ?? "en";
+const t = (text: string) => translateProduct(text, locale);
+const { company, product } = item;
+const path = productPath(item.owner, item.slug);
+const title = field(product.name, product.name_zh, locale);
+---
+
+<article class:list={["product-presentation", { "product-sheet": sheet }]}>
+  <header class="product-company-line">
+    {
+      company.logo_url && (
+        <img
+          src={company.logo_url}
+          alt=""
+          width="48"
+          height="48"
+          referrerpolicy="no-referrer"
+        />
+      )
+    }
+    <a href={`/organizations/${item.owner}`} data-no-translate
+      >{field(company.name, company.name_zh, locale)}</a
+    >
+    {
+      sheet && company.name && company.name_zh && (
+        <span lang={locale === "zh-CN" ? "en" : "zh-CN"} data-no-translate>
+          {locale === "zh-CN" ? company.name : company.name_zh}
+        </span>
+      )
+    }
+    <span class="product-evidence">Company-provided information</span>
+  </header>
+  <div class="product-hero" id="overview">
+    <div>
+      <p class="eyebrow">{t(product.kind)} · {t(product.stage)}</p><h1
+        data-no-translate
+      >
+        {title}
+      </h1>
+      <p class="product-purpose" data-no-translate>
+        {field(product.summary, product.summary_zh, locale)}
+      </p>
+      {
+        sheet && product.name && product.name_zh && (
+          <p lang={locale === "zh-CN" ? "en" : "zh-CN"} data-no-translate>
+            {locale === "zh-CN" ? product.name : product.name_zh}
+            <br />
+            {locale === "zh-CN" ? product.summary : product.summary_zh}
+          </p>
+        )
+      }
+      {
+        !sheet && (
+          <div class="button-row">
+            <>
+              <a class="button button--dark" href="#contact">
+                Contact the company
+              </a>
+              <a class="button button--secondary" href="#resources">
+                Technical resources
+              </a>
+            </>
+          </div>
+        )
+      }
+    </div>
+    {
+      item.images[0] && (
+        <img
+          class="product-hero-image"
+          src={item.images[0].image_url}
+          alt={item.images[0].alt_text}
+          width="1600"
+          height="1000"
+          data-no-translate
+        />
+      )
+    }
+  </div>
+  {
+    product.description && (
+      <p class="product-description" data-no-translate>
+        {field(product.description, product.description_zh, locale)}
+      </p>
+    )
+  }
+  {
+    !product.description && product.description_zh && (
+      <p class="product-description" data-no-translate>
+        {product.description_zh}
+      </p>
+    )
+  }
+  {
+    sheet && product.description && product.description_zh && (
+      <p
+        class="product-description"
+        lang={locale === "zh-CN" ? "en" : "zh-CN"}
+        data-no-translate
+      >
+        {locale === "zh-CN" ? product.description : product.description_zh}
+      </p>
+    )
+  }
+  {
+    !sheet && item.images.length > 1 && (
+      <div class="product-image-strip">
+        {item.images.slice(1).map((image) => (
+          <figure>
+            <img
+              src={image.image_url}
+              alt={image.alt_text}
+              width="1600"
+              height="1000"
+              loading="lazy"
+              data-no-translate
+            />
+            {image.caption && (
+              <figcaption data-no-translate>{image.caption}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    )
+  }
+  <section id="specifications" class="product-section">
+    <h2>Specifications</h2>
+    {
+      product.specs.length ? (
+        <dl class="product-specs">
+          {product.specs.map((spec) => (
+            <div>
+              <dt data-no-translate>
+                {field(spec.label, spec.label_zh, locale)}
+                {sheet && spec.label_zh && spec.label && (
+                  <small lang={locale === "zh-CN" ? "en" : "zh-CN"}>
+                    {locale === "zh-CN" ? spec.label : spec.label_zh}
+                  </small>
+                )}
+              </dt>
+              <dd data-no-translate>
+                {field(spec.value, spec.value_zh, locale)}
+                {sheet && spec.value_zh && spec.value && (
+                  <small lang={locale === "zh-CN" ? "en" : "zh-CN"}>
+                    {locale === "zh-CN" ? spec.value : spec.value_zh}
+                  </small>
+                )}
+                {spec.source_url && (
+                  <a
+                    href={spec.source_url}
+                    rel="noopener noreferrer"
+                    class="product-source-link"
+                  >
+                    ↗ <span>Source</span>
+                  </a>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p>No specifications supplied.</p>
+      )
+    }
+  </section>
+  <section id="resources" class="product-section">
+    <h2>Technical resources</h2><p>
+      Resources supplied by the company. Follow each link for its terms and
+      availability.
+    </p>
+    {
+      product.resources.length ? (
+        <ul class="product-resources">
+          {product.resources.map((resource) => (
+            <li>
+              <a href={resource.url} rel="noopener noreferrer">
+                <span class="product-resource-name">
+                  <CardServiceIcon
+                    service={
+                      new URL(resource.url).hostname === "github.com"
+                        ? "github"
+                        : new URL(resource.url).hostname === "huggingface.co"
+                          ? "huggingface"
+                          : "website"
+                    }
+                  />
+                  <span data-no-translate>
+                    {field(resource.label, resource.label_zh, locale)}
+                  </span>
+                </span>
+                <span>{t(resource.kind)} ↗</span>
+              </a>
+              {sheet && resource.label && resource.label_zh && (
+                <small
+                  lang={locale === "zh-CN" ? "en" : "zh-CN"}
+                  data-no-translate
+                >
+                  {locale === "zh-CN" ? resource.label : resource.label_zh}
+                </small>
+              )}
+              {sheet && <small data-no-translate>{resource.url}</small>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No technical resource links supplied.</p>
+      )
+    }
+  </section>
+  <section id="contact" class="product-section">
+    <h2>Contact</h2><p data-no-translate>
+      {field(company.name, company.name_zh, locale)}
+    </p>
+    <div class="product-contacts">
+      {
+        company.email && (
+          <a href={`mailto:${company.email}`} data-no-translate>
+            <CardServiceIcon service="email" />
+            {company.email}
+          </a>
+        )
+      }
+      {
+        company.phone && (
+          <a
+            href={`tel:${company.phone.replace(/[^+\d]/gu, "")}`}
+            data-no-translate
+          >
+            <CardServiceIcon service="phone" />
+            {company.phone}
+          </a>
+        )
+      }
+      {
+        company.wechat && (
+          <p>
+            <>
+              <CardServiceIcon service="wechat" />
+              <span>WeChat</span>
+            </>
+            : <span data-no-translate>{company.wechat}</span>
+          </p>
+        )
+      }
+      {
+        company.representative_card_url && (
+          <a href={company.representative_card_url}>
+            Meet the representative →
+          </a>
+        )
+      }
+      {
+        company.website && (
+          <a href={company.website} rel="noopener noreferrer">
+            Company website ↗
+          </a>
+        )
+      }
+      {
+        !company.email &&
+          !company.phone &&
+          !company.wechat &&
+          !company.representative_card_url && (
+            <p>No current contact method supplied.</p>
+          )
+      }
+    </div>
+    {
+      item.website_control && (
+        <p class="product-evidence">
+          <span>Website control checked</span>:{" "}
+          <span data-no-translate>
+            {item.website_control.hostname} ·{" "}
+            {item.website_control.checked_at.slice(0, 10)}
+          </span>
+          .{" "}
+          <span>This does not verify company identity or product quality.</span>
+        </p>
+      )
+    }
+  </section>
+  {
+    sheet && (
+      <footer class="product-sheet-footer">
+        <>
+          <img
+            src={`${path}/qr.svg`}
+            alt="Product page QR code"
+            width="100"
+            height="100"
+          />
+          <div>
+            <>
+              <strong>Super ii</strong>
+              <p data-no-translate>https://superii.site{path}</p>
+              <p>Company-provided information</p>
+            </>
+          </div>
+        </>
+      </footer>
+    )
+  }
+</article>

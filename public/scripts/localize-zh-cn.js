@@ -7,9 +7,9 @@
     '', 'about', 'account', 'agents', 'bring-my-work', 'build', 'builders', 'chats', 'checkout',
     'collections', 'contact', 'datasets', 'docs', 'enterprise', 'fame', 'feed', 'frontier-ai',
     'highlights', 'join-team', 'legal', 'models', 'new', 'notebooks', 'organizations', 'papers',
-    'people', 'posts', 'pricing', 'proposals', 'repositories', 'review', 'robot', 'security',
+    'people', 'posts', 'pricing', 'products', 'proposals', 'repositories', 'review', 'robot', 'security',
     'sign-in', 'sign-up', 'skills', 'social', 'spaces', 'status', 'system-state', 'tokenizer',
-    'transparent', 'use',
+    'transparent', 'use', 'workspace',
   ]);
   let messages = {};
   let reviewedMessages = {};
@@ -242,7 +242,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/zh-cn.json?v=20261005-1', { credentials: 'same-origin' })
+  fetch('/locales/zh-cn.json?v=20261009-1', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Simplified Chinese catalogue unavailable');
       return response.json();

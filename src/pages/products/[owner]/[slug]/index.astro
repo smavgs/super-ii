@@ -1,0 +1,167 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ProductPresentation from "@/components/ProductPresentation.astro";
+import { publicProduct } from "@/lib/product-store";
+import { localizedField, productPath } from "@/lib/products";
+let item = null;
+let unavailable = false;
+try {
+  item = await publicProduct(
+    Astro.locals,
+    Astro.params.owner ?? "",
+    Astro.params.slug ?? "",
+  );
+} catch {
+  unavailable = true;
+}
+Astro.response.headers.set("Cache-Control", "no-store");
+if (!item) Astro.response.status = unavailable ? 503 : 404;
+const path = item ? productPath(item.owner, item.slug) : "";
+const locale = Astro.locals.locale ?? "en";
+---
+
+<BaseLayout
+  title={item
+    ? localizedField(item.product.name, item.product.name_zh, locale)
+    : "Product unavailable"}
+  titleNoTranslate={Boolean(item)}
+  description={item
+    ? localizedField(item.product.summary, item.product.summary_zh, locale)
+    : undefined}
+  descriptionNoTranslate={Boolean(item)}
+  image={item?.images[0]?.image_url}
+  imageType="image/jpeg"
+  noindex={!item}
+>
+  <section class="shell product-page">
+    {
+      item ? (
+        <>
+          <nav class="product-breadcrumb">
+            <>
+              <a href="/products">Products</a>
+              <span aria-hidden="true"> / </span>
+              <a href={`/organizations/${item.owner}`} data-no-translate>
+                {item.company.name || item.company.name_zh}
+              </a>
+            </>
+          </nav>
+          <ProductPresentation item={item} />
+          <section
+            class="product-section product-answer"
+            data-product-answer
+            data-endpoint={`/api/products/${item.owner}/${item.slug}/answer`}
+            data-locale={locale}
+          >
+            <>
+              <h2>Find an answer in this page</h2>
+              <p>
+                Search the published details and follow their sources. Missing
+                information is marked as not documented.
+              </p>
+            </>
+            <>
+              <form>
+                <>
+                  <label for="product-question">Your question</label>
+                  <div class="product-inline">
+                    <>
+                      <input
+                        id="product-question"
+                        name="question"
+                        required
+                        maxlength="500"
+                        placeholder="Where is the SDK?"
+                      />
+                      <button class="button button--dark" type="submit">
+                        Find
+                      </button>
+                    </>
+                  </div>
+                </>
+              </form>
+              <div data-answers aria-live="polite" />
+            </>
+          </section>
+          <section class="product-section product-share">
+            <>
+              <div>
+                <>
+                  <h2>Share this product</h2>
+                  <p>
+                    Give a visitor or your AI agent the same published
+                    information.
+                  </p>
+                </>
+                <div class="button-row">
+                  <>
+                    <button
+                      class="button button--dark"
+                      data-copy-product
+                      data-url={`https://superii.site${path}`}
+                    >
+                      Copy page link
+                    </button>
+                    <a class="button button--secondary" href={`${path}/sheet`}>
+                      Bilingual product sheet
+                    </a>
+                    <a href={`${path}/qr.svg`} download={`${item.slug}-qr.svg`}>
+                      Download QR
+                    </a>
+                  </>
+                </div>
+                <details>
+                  <>
+                    <summary>For your AI agent</summary>
+                    <p>
+                      Ask your agent to read the product page. It can also use
+                      the public JSON, Markdown or Super ii MCP.
+                    </p>
+                    <div class="button-row">
+                      <>
+                        <a href={`${path}/product.json`}>JSON</a>
+                        <a href={`${path}/product.md`}>Markdown</a>
+                        <a href="/agents">Connect an agent</a>
+                      </>
+                    </div>
+                    <p>
+                      Reading needs no account. This page grants no permission
+                      to contact people, purchase anything or control hardware.
+                    </p>
+                  </>
+                </details>
+                <p data-copy-status role="status" />
+              </div>
+              <img
+                src={`${path}/qr.svg`}
+                alt="Product page QR code"
+                width="160"
+                height="160"
+                loading="lazy"
+              />
+            </>
+          </section>
+        </>
+      ) : (
+        <section class="product-section">
+          <>
+            <h1>
+              {unavailable
+                ? "Product service unavailable"
+                : "Product unavailable"}
+            </h1>
+            <p>
+              {unavailable
+                ? "Please try again shortly."
+                : "This product may be private, paused or no longer available."}
+            </p>
+            <a href="/products">Browse products</a>
+          </>
+        </section>
+      )
+    }
+  </section>
+</BaseLayout>
+<script>
+  import "@/scripts/product-public";
+</script>

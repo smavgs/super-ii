@@ -24,6 +24,11 @@ const statusChinese: Record<CapabilityStatus, string> = {
 };
 
 const capabilitiesRussian: Record<string, RussianCapability> = {
+  'Company and product home': {
+    capability: 'Дом компании и продукта',
+    availability: 'кандидат на выпуск; проверка рабочей среды ещё не выполнена',
+    evidence: 'Страницы моделей, роботов, компонентов и оборудования принадлежат компании. Доступны приватные черновики, явная публикация, собственный английский и китайский текст, существующие изображения Showcase и пожизненный лимит загрузок, публичные контакты, QR и печатные листы. JSON, Markdown, MCP и A2A читают те же опубликованные сведения. Проверки PostgreSQL с ограниченными ролями и локального браузера охватывают сохранение, повторное открытие, публикацию и честное отсутствие доказательств. DNS TXT подтверждает только контроль точного имени хоста. Материковый Китай, WeChat и реальный путь экспонента ещё не проверены. См. docs/architecture/company-products.md.',
+  },
   'Astro and Cloudflare public control plane': {
     capability: 'Публичная плоскость управления Astro и Cloudflare',
     availability: 'работает',

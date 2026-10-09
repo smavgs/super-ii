@@ -1,0 +1,46 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import CompanyProductWorkspace from "@/components/CompanyProductWorkspace.astro";
+import { ensureAuthenticatedProfile } from "@/lib/auth";
+import { sqlClient } from "@/lib/db";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const sql = sqlClient(Astro.locals);
+let signedIn = false;
+try {
+  signedIn = Boolean(
+    sql && (await ensureAuthenticatedProfile(Astro.locals, sql)),
+  );
+} catch {
+  Astro.response.status = 503;
+}
+---
+
+<BaseLayout title="Company and products" noindex
+  ><section class="shell product-page">
+    <a href="/account">← Workspace</a>{
+      signedIn ? (
+        <CompanyProductWorkspace />
+      ) : (
+        <>
+          <>
+            <h1>Give your product a home</h1>
+            <p>
+              Start with your company and one product. Save privately, preview
+              and publish when ready.
+            </p>
+            <div class="button-row">
+              <>
+                <a class="button button--dark" href="/workspace/products/new">
+                  Try the preview
+                </a>
+                <a href="/sign-in?redirect_url=%2Fworkspace%2Fproducts">
+                  Sign in to resume
+                </a>
+              </>
+            </div>
+          </>
+        </>
+      )
+    }
+  </section></BaseLayout
+>

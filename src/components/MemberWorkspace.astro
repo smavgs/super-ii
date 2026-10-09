@@ -8,6 +8,7 @@ import CardWorkspace from './CardWorkspace.astro';
 import type { EditableMemberProfile } from '@/lib/member-profile';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import '@/styles/workspace.css';
+import CompanyProductWorkspace from './CompanyProductWorkspace.astro';
 
 interface Props {
   repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }>;
@@ -106,6 +107,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
           </div>
         </details>}
 
+        <CompanyProductWorkspace />
         <section class="workspace-activity" id="activity" aria-labelledby="activity-title">
           <h3 id="activity-title">Recent activity</h3>
           {notifications.length ? <>

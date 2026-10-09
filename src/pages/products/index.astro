@@ -1,0 +1,85 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import ProductList from "@/components/ProductList.astro";
+import { searchProducts } from "@/lib/product-store";
+import { productKinds, type PublishedProduct } from "@/lib/products";
+const q = (Astro.url.searchParams.get("q") ?? "").slice(0, 120);
+const owner = (Astro.url.searchParams.get("owner") ?? "").slice(0, 80) || null;
+const kind = Astro.url.searchParams.get("kind") ?? "";
+const offset = Math.floor(Math.max(
+  0,
+  Math.min(10000, Number(Astro.url.searchParams.get("offset")) || 0),
+));
+let items: PublishedProduct[] = [];
+let failed = false;
+try {
+  items = await searchProducts(
+    Astro.locals,
+    q,
+    productKinds.includes(kind as (typeof productKinds)[number]) ? kind : null,
+    owner,
+    20,
+    Math.floor(offset),
+  );
+} catch {
+  failed = true;
+  Astro.response.status = 503;
+}
+Astro.response.headers.set("Cache-Control", "no-store");
+const hasMore = items.length === 20 && offset + 20 <= 10000;
+const next = new URLSearchParams({
+  q,
+  kind,
+  ...(owner ? { owner } : {}),
+  offset: String(offset + 20),
+});
+---
+
+<BaseLayout title="Products"
+  ><section class="shell product-page">
+    <p class="eyebrow">Companies and makers</p><h1>
+      Understand the product. Find the people behind it.
+    </h1><p>
+      Explore company-provided product information, technical resources and
+      contact details.
+    </p><a class="button button--dark" href="/workspace/products/new"
+      >Present your company and product</a
+    >
+    <form class="product-search" action="/products">
+      {owner && <input type="hidden" name="owner" value={owner} />}<label
+        >Find a product<input
+          type="search"
+          name="q"
+          value={q}
+          maxlength="120"
+        /></label
+      ><label
+        >Type<select name="kind"
+          ><option value="">All types</option>{
+            productKinds.map((type) => (
+              <option value={type} selected={kind === type}>
+                {type}
+              </option>
+            ))
+          }</select
+        ></label
+      ><button type="submit" class="button button--secondary">Search</button>
+    </form>
+    {
+      items.length ? (
+        <ProductList items={items} />
+      ) : (
+        <p role="status">
+          {failed
+            ? "Product search unavailable. Please try again."
+            : "No published products match this search."}
+        </p>
+      )
+    }
+    {
+      hasMore && (
+        <a href={`/products?${next}`}>More products →</a>
+      )
+    }
+  </section></BaseLayout
+>
