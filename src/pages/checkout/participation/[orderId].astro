@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import PageHero from '@/components/PageHero.astro';
 import { UUID_PATTERN } from '@/lib/agent-management';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
@@ -68,6 +69,13 @@ const productTitle = fame
       <PageHero eyebrow="Secure crypto checkout 💳" title={productTitle} description={`$${(order.price_amount_cents / 100).toFixed(2)} USD · pay in USDC on Ethereum${!fame && order.title ? ` · ${order.owner_handle}/${order.slug}` : ''}`} compact />
       <main class="section shell checkout-shell" data-participation-checkout data-order-id={order.id} data-product={order.product_type} data-terminal={String(terminal)}>
         <section class="checkout-card">
+          <div class="payment-provider-row" aria-label="Payment route">
+            <span><BrandMark brand="usdc" size="sm" label="USD Coin" /><strong data-no-translate>USDC</strong><small>Payment asset</small></span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            <span><BrandMark brand="ethereum" size="sm" label="Ethereum" /><strong data-no-translate>Ethereum</strong><small>ERC-20 network</small></span>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+            <span><BrandMark brand="nowpayments" size="sm" label="NOWPayments" /><strong data-no-translate>NOWPayments</strong><small>Payment monitor</small></span>
+          </div>
           <div class="checkout-status-row"><div><p class="eyebrow">Payment status</p><h2 data-checkout-status>{order.status.replaceAll('_', ' ')}</h2></div><span class="status-dot" data-status={order.status}></span></div>
           {order.status === 'finished' ? (
             <div class="creator-callout creator-callout--success"><i class="ph ph-check-circle" aria-hidden="true"></i><p><strong>{fame ? 'Founding place active ✦' : 'Highlight ready ✦'}</strong> {fame ? `Your permanent place is #${String(order.slot_number).padStart(3, '0')}.` : 'Your campaign is active now or scheduled directly after an existing campaign for the same repository.'}</p></div>

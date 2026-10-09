@@ -1,0 +1,218 @@
+---
+import {
+  siAnthropic,
+  siApple,
+  siCircle,
+  siClerk,
+  siCloudflare,
+  siDeepseek,
+  siDiscord,
+  siDocker,
+  siEthereum,
+  siGithub,
+  siGithubactions,
+  siGooglecolab,
+  siGooglegemini,
+  siHuggingface,
+  siJupyter,
+  siKaggle,
+  siMetaai,
+  siModelcontextprotocol,
+  siMoonshotai,
+  siNeon,
+  siNetlify,
+  siNvidia,
+  siOllama,
+  siPerplexity,
+  siPoe,
+  siPython,
+  siQwen,
+  siRaspberrypi,
+  siVercel,
+  siVllm,
+  siX,
+  siYoutube,
+} from 'simple-icons';
+
+type SimpleIcon = {
+  title: string;
+  hex: string;
+  path: string;
+};
+
+interface Props {
+  brand: string;
+  label?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
+  shape?: 'rounded' | 'circle';
+}
+
+const {
+  brand,
+  label,
+  size = 'sm',
+  shape = 'rounded',
+} = Astro.props;
+
+const normalized = brand.trim().toLowerCase();
+
+const simpleMarks: Record<string, SimpleIcon> = {
+  anthropic: siAnthropic,
+  apple: siApple,
+  circle: siCircle,
+  clerk: siClerk,
+  cloudflare: siCloudflare,
+  colab: siGooglecolab,
+  deepseek: siDeepseek,
+  discord: siDiscord,
+  docker: siDocker,
+  ethereum: siEthereum,
+  gemini: siGooglegemini,
+  github: siGithub,
+  'github-actions': siGithubactions,
+  huggingface: siHuggingface,
+  huggingchat: siHuggingface,
+  jupyter: siJupyter,
+  kaggle: siKaggle,
+  meta: siMetaai,
+  mcp: siModelcontextprotocol,
+  moonshot: siMoonshotai,
+  neon: siNeon,
+  netlify: siNetlify,
+  nvidia: siNvidia,
+  ollama: siOllama,
+  perplexity: siPerplexity,
+  poe: siPoe,
+  python: siPython,
+  qwen: siQwen,
+  raspberrypi: siRaspberrypi,
+  transformers: siHuggingface,
+  'transformers-js': siHuggingface,
+  diffusers: siHuggingface,
+  usdc: siCircle,
+  v0: siVercel,
+  vllm: siVllm,
+  x: siX,
+  youtube: siYoutube,
+};
+
+const localMarks: Record<string, { src: string; color: string }> = {
+  chatgpt: { src: '/brand/agents/codex.svg', color: '#10a37f' },
+  claude: { src: '/brand/agents/claude-code.svg', color: '#d97757' },
+  codex: { src: '/brand/agents/codex.svg', color: '#10a37f' },
+  comfyui: { src: '/brand/use/comfyui.svg', color: '#101010' },
+  copilot: { src: '/brand/agents/copilot.svg', color: '#6e40c9' },
+  grok: { src: '/brand/agents/grok.svg', color: '#111111' },
+  hermes: { src: '/brand/agents/hermes.png', color: '#171717' },
+  kimi: { src: '/brand/agents/kimi.svg', color: '#111111' },
+  lmstudio: { src: '/brand/use/lm-studio.svg', color: '#111111' },
+  mistral: { src: '/brand/agents/mistral.svg', color: '#f7a600' },
+  openclaw: { src: '/brand/agents/openclaw.svg', color: '#8b5cf6' },
+  opencode: { src: '/brand/agents/opencode.svg', color: '#111111' },
+  superii: { src: '/brand/super-ii-icon-192.png', color: '#ffd51f' },
+};
+
+const fallbackMarks: Record<string, { short: string; color: string; title: string }> = {
+  ai2sql: { short: 'AI', color: '#6c5ce7', title: 'AI2SQL' },
+  bolt: { short: 'B', color: '#1389fd', title: 'Bolt' },
+  cursor: { short: 'C', color: '#111111', title: 'Cursor' },
+  goose: { short: 'G', color: '#f97316', title: 'Goose' },
+  jan: { short: 'J', color: '#111111', title: 'Jan' },
+  ktransformers: { short: 'KT', color: '#7c3aed', title: 'KTransformers' },
+  llamacpp: { short: 'L', color: '#5b4636', title: 'llama.cpp' },
+  lovable: { short: 'L', color: '#ed4a82', title: 'Lovable' },
+  manus: { short: 'M', color: '#111111', title: 'Manus' },
+  mlx: { short: 'MLX', color: '#111111', title: 'MLX' },
+  nowpayments: { short: 'NOW', color: '#6b5cff', title: 'NOWPayments' },
+  phind: { short: 'P', color: '#4f46e5', title: 'Phind' },
+  pi: { short: 'π', color: '#6d4aff', title: 'Pi' },
+  sglang: { short: 'SG', color: '#2563eb', title: 'SGLang' },
+  vscode: { short: '<>', color: '#007acc', title: 'Visual Studio Code' },
+  waveshare: { short: 'W', color: '#1476ba', title: 'Waveshare' },
+  you: { short: 'YOU', color: '#111111', title: 'You.com' },
+};
+
+const icon = simpleMarks[normalized];
+const local = localMarks[normalized];
+const fallback = fallbackMarks[normalized] ?? {
+  short: brand.slice(0, 2).toUpperCase(),
+  color: '#0b2947',
+  title: label ?? brand,
+};
+const title = label ?? icon?.title ?? fallback.title ?? brand;
+const color = icon ? `#${icon.hex}` : local?.color ?? fallback.color;
+const ariaHidden = !label;
+---
+
+<span
+  class:list={['brand-mark', `brand-mark--${size}`, `brand-mark--${shape}`, local && 'brand-mark--image', normalized === 'superii' && 'brand-mark--superii']}
+  style={`--brand-mark-color:${color}`}
+  title={title}
+  aria-label={ariaHidden ? undefined : title}
+  aria-hidden={ariaHidden ? 'true' : undefined}
+  data-brand-mark={normalized}
+  data-no-translate
+>
+  {icon ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={icon.path}></path></svg>
+  ) : local ? (
+    <img src={local.src} alt="" loading="lazy" decoding="async" />
+  ) : (
+    <span>{fallback.short}</span>
+  )}
+</span>
+
+<style>
+  .brand-mark {
+    --brand-mark-size: 2rem;
+    display: inline-grid;
+    place-items: center;
+    width: var(--brand-mark-size);
+    height: var(--brand-mark-size);
+    flex: 0 0 var(--brand-mark-size);
+    border: 1px solid color-mix(in srgb, var(--brand-mark-color) 28%, #d7dee7);
+    border-radius: 0.62rem;
+    background: color-mix(in srgb, var(--brand-mark-color) 8%, white);
+    color: var(--brand-mark-color);
+    box-shadow: 0 6px 18px rgb(7 26 47 / 0.09), inset 0 1px 0 rgb(255 255 255 / 0.88);
+    vertical-align: middle;
+  }
+
+  .brand-mark--xs { --brand-mark-size: 1.45rem; border-radius: 0.42rem; }
+  .brand-mark--sm { --brand-mark-size: 2rem; }
+  .brand-mark--md { --brand-mark-size: 2.55rem; border-radius: 0.74rem; }
+  .brand-mark--lg { --brand-mark-size: 3.25rem; border-radius: 0.9rem; }
+  .brand-mark--circle { border-radius: 50%; }
+
+  .brand-mark :is(svg, img) {
+    width: 62%;
+    height: 62%;
+  }
+
+  .brand-mark svg { fill: currentColor; }
+  .brand-mark img { object-fit: contain; }
+  .brand-mark > span {
+    color: var(--brand-mark-color);
+    font: 900 clamp(0.48rem, calc(var(--brand-mark-size) * 0.31), 0.78rem)/1 var(--font-mono);
+    letter-spacing: -0.04em;
+  }
+
+  .brand-mark--image {
+    background: white;
+  }
+
+  .brand-mark--superii {
+    border-color: #e7bd00;
+    background: #ffd51f;
+  }
+
+  .brand-mark--superii img { width: 84%; height: 84%; }
+
+  :global(:root[data-theme='dark']) .brand-mark {
+    border-color: color-mix(in srgb, var(--brand-mark-color) 46%, #35475a);
+    background: color-mix(in srgb, var(--brand-mark-color) 12%, #11263a);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+  }
+
+  :global(:root[data-theme='dark']) .brand-mark--image { background: #f8fafc; }
+</style>

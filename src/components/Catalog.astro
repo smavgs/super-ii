@@ -1,6 +1,7 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 import {
   repositoryPath,
@@ -188,7 +189,7 @@ const emptyState = {
           <article class="catalog-card catalog-card--external">
             <div class="catalog-card__topline">
               <CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} />
-              <span class="origin-badge origin-badge--external">External · Hugging Face</span>
+              <span class="origin-badge origin-badge--external"><BrandMark brand="huggingface" size="xs" />External · Hugging Face</span>
             </div>
             <h2 data-no-translate>{item.title}</h2>
             <p data-no-translate>{item.summary || `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`}</p>
@@ -201,7 +202,7 @@ const emptyState = {
               {item.provider_downloads !== null && <span title="Downloads reported by Hugging Face">HF ⬇️ {Number(item.provider_downloads).toLocaleString()}</span>}
               {item.provider_likes !== null && <span title="Likes reported by Hugging Face">HF ❤️ {Number(item.provider_likes).toLocaleString()}</span>}
             </div>
-            <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}><span>Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+            <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}><span><BrandMark brand="huggingface" size="xs" />Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
         ))}
       </div>

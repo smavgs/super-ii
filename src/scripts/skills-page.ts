@@ -1,4 +1,44 @@
 import type { Skill, SkillVariable, SkillsCatalog } from '@/lib/skills';
+import {
+  siApple,
+  siCursor,
+  siDeepseek,
+  siDiscord,
+  siDropbox,
+  siFigma,
+  siGmail,
+  siGithub,
+  siGithubactions,
+  siGoogleads,
+  siGoogleanalytics,
+  siGooglecalendar,
+  siGoogledocs,
+  siGoogledrive,
+  siGooglegemini,
+  siGooglesearchconsole,
+  siGooglesheets,
+  siGoogleslides,
+  siHuggingface,
+  siHubspot,
+  siInstagram,
+  siIntercom,
+  siLinear,
+  siMetaai,
+  siNetlify,
+  siNotion,
+  siPerplexity,
+  siPi,
+  siPoe,
+  siReddit,
+  siStripe,
+  siTiktok,
+  siVercel,
+  siWebflow,
+  siX,
+  siYoutube,
+  siZendesk,
+  siZoom,
+} from 'simple-icons';
 
 type LaunchGroup = 'chat' | 'code';
 type LaunchMode = 'url' | 'copy' | 'deeplink';
@@ -43,36 +83,37 @@ const DIRECT_PROMPT_LIMIT = 3_500;
 const LAST_TARGET_KEY = 'superii.skills.last-play-target.v1';
 
 const launchTargets: LaunchTarget[] = [
-  { id: 'chatgpt', name: 'ChatGPT', group: 'chat', mode: 'url', icon: 'ph-open-ai-logo', openUrl: 'https://chatgpt.com/', makeUrl: (prompt) => `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
+  { id: 'chatgpt', name: 'ChatGPT', group: 'chat', mode: 'url', asset: '/brand/agents/codex.svg', openUrl: 'https://chatgpt.com/', makeUrl: (prompt) => `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
   { id: 'claude', name: 'Claude', group: 'chat', mode: 'url', asset: '/brand/agents/claude-code.svg', openUrl: 'https://claude.ai/new', makeUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}` },
-  { id: 'gemini', name: 'Gemini', group: 'chat', mode: 'copy', icon: 'ph-sparkle', openUrl: 'https://gemini.google.com/app' },
+  { id: 'gemini', name: 'Gemini', group: 'chat', mode: 'copy', openUrl: 'https://gemini.google.com/app' },
   { id: 'grok', name: 'Grok', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=none&q=${encodeURIComponent(prompt)}` },
   { id: 'grok-think', name: 'Grok Think', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=think&q=${encodeURIComponent(prompt)}` },
   { id: 'grok-search', name: 'Grok Deep Search', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=deepsearch&q=${encodeURIComponent(prompt)}` },
   { id: 'mistral', name: 'Le Chat', group: 'chat', mode: 'url', asset: '/brand/agents/mistral.svg', openUrl: 'https://chat.mistral.ai/chat', makeUrl: (prompt) => `https://chat.mistral.ai/chat?q=${encodeURIComponent(prompt)}` },
-  { id: 'perplexity', name: 'Perplexity', group: 'chat', mode: 'url', icon: 'ph-magnifying-glass', openUrl: 'https://www.perplexity.ai/', makeUrl: (prompt) => `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}` },
+  { id: 'perplexity', name: 'Perplexity', group: 'chat', mode: 'url', openUrl: 'https://www.perplexity.ai/', makeUrl: (prompt) => `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}` },
   { id: 'phind', name: 'Phind', group: 'chat', mode: 'url', icon: 'ph-magnifying-glass', openUrl: 'https://www.phind.com/', makeUrl: (prompt) => `https://www.phind.com/search?q=${encodeURIComponent(prompt)}` },
   { id: 'you', name: 'You.com', group: 'chat', mode: 'url', icon: 'ph-globe', openUrl: 'https://you.com/', makeUrl: (prompt) => `https://you.com/search?q=${encodeURIComponent(prompt)}` },
-  { id: 'huggingchat', name: 'HuggingChat', group: 'chat', mode: 'url', icon: 'ph-smiley', openUrl: 'https://huggingface.co/chat/', makeUrl: (prompt) => `https://huggingface.co/chat/?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'poe', name: 'Poe', group: 'chat', mode: 'url', icon: 'ph-chats', openUrl: 'https://poe.com/', makeUrl: (prompt) => `https://poe.com/?q=${encodeURIComponent(prompt)}` },
-  { id: 'meta', name: 'Meta AI', group: 'chat', mode: 'url', icon: 'ph-meta-logo', openUrl: 'https://www.meta.ai/', makeUrl: (prompt) => `https://www.meta.ai/?q=${encodeURIComponent(prompt)}` },
+  { id: 'huggingchat', name: 'HuggingChat', group: 'chat', mode: 'url', openUrl: 'https://huggingface.co/chat/', makeUrl: (prompt) => `https://huggingface.co/chat/?prompt=${encodeURIComponent(prompt)}` },
+  { id: 'poe', name: 'Poe', group: 'chat', mode: 'url', openUrl: 'https://poe.com/', makeUrl: (prompt) => `https://poe.com/?q=${encodeURIComponent(prompt)}` },
+  { id: 'meta', name: 'Meta AI', group: 'chat', mode: 'url', openUrl: 'https://www.meta.ai/', makeUrl: (prompt) => `https://www.meta.ai/?q=${encodeURIComponent(prompt)}` },
   { id: 'manus', name: 'Manus', group: 'chat', mode: 'url', icon: 'ph-hand', openUrl: 'https://manus.im/app', makeUrl: (prompt) => `https://manus.im/app?q=${encodeURIComponent(prompt)}` },
   { id: 'copilot', name: 'Microsoft Copilot', group: 'chat', mode: 'copy', asset: '/brand/agents/copilot.svg', openUrl: 'https://copilot.microsoft.com/' },
-  { id: 'deepseek', name: 'DeepSeek', group: 'chat', mode: 'copy', icon: 'ph-wave-sine', openUrl: 'https://chat.deepseek.com/' },
-  { id: 'pi', name: 'Pi', group: 'chat', mode: 'copy', icon: 'ph-pi', openUrl: 'https://pi.ai/' },
+  { id: 'deepseek', name: 'DeepSeek', group: 'chat', mode: 'copy', openUrl: 'https://chat.deepseek.com/' },
+  { id: 'pi', name: 'Pi', group: 'chat', mode: 'copy', openUrl: 'https://pi.ai/' },
   { id: 'codex', name: 'Codex', group: 'code', mode: 'copy', asset: '/brand/agents/codex.svg', openUrl: 'https://chatgpt.com/codex' },
-  { id: 'cursor', name: 'Cursor', group: 'code', mode: 'deeplink', icon: 'ph-cursor', makeUrl: (prompt) => `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(prompt)}` },
-  { id: 'vscode', name: 'VS Code · Copilot Chat', group: 'code', mode: 'deeplink', asset: '/brand/agents/copilot.svg', makeUrl: (prompt) => `vscode://GitHub.Copilot-Chat/chat?prompt=${encodeURIComponent(prompt)}` },
+  { id: 'cursor', name: 'Cursor', group: 'code', mode: 'deeplink', makeUrl: (prompt) => `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(prompt)}` },
+  { id: 'vscode', name: 'VS Code · Copilot Chat', group: 'code', mode: 'deeplink', makeUrl: (prompt) => `vscode://GitHub.Copilot-Chat/chat?prompt=${encodeURIComponent(prompt)}` },
   { id: 'vscode-insiders', name: 'VS Code Insiders', group: 'code', mode: 'deeplink', icon: 'ph-code', makeUrl: (prompt) => `vscode-insiders://GitHub.Copilot-Chat/chat?prompt=${encodeURIComponent(prompt)}` },
   { id: 'goose', name: 'Goose', group: 'code', mode: 'deeplink', icon: 'ph-bird', makeUrl: (prompt, skill) => gooseRecipe(prompt, skill) },
-  { id: 'v0', name: 'v0', group: 'code', mode: 'url', icon: 'ph-square', openUrl: 'https://v0.dev/chat', makeUrl: (prompt) => `https://v0.dev/chat?q=${encodeURIComponent(prompt)}` },
+  { id: 'v0', name: 'v0', group: 'code', mode: 'url', openUrl: 'https://v0.dev/chat', makeUrl: (prompt) => `https://v0.dev/chat?q=${encodeURIComponent(prompt)}` },
   { id: 'bolt', name: 'Bolt', group: 'code', mode: 'url', icon: 'ph-lightning', openUrl: 'https://bolt.new/', makeUrl: (prompt) => `https://bolt.new/?prompt=${encodeURIComponent(prompt)}` },
   { id: 'lovable', name: 'Lovable', group: 'code', mode: 'url', icon: 'ph-heart', openUrl: 'https://lovable.dev/', makeUrl: (prompt) => `https://lovable.dev/?autosubmit=true#prompt=${encodeURIComponent(prompt)}` },
-  { id: 'netlify', name: 'Netlify', group: 'code', mode: 'url', icon: 'ph-diamond', openUrl: 'https://app.netlify.com/', makeUrl: (prompt) => `https://app.netlify.com/run?prompt=${encodeURIComponent(prompt)}` },
+  { id: 'netlify', name: 'Netlify', group: 'code', mode: 'url', openUrl: 'https://app.netlify.com/', makeUrl: (prompt) => `https://app.netlify.com/run?prompt=${encodeURIComponent(prompt)}` },
   { id: 'ai2sql', name: 'AI2SQL', group: 'code', mode: 'url', icon: 'ph-database', openUrl: 'https://builder.ai2sql.io/', makeUrl: (prompt) => `https://builder.ai2sql.io/dashboard/builder-all-lp?tab=generate&prompt=${encodeURIComponent(prompt)}` },
 ];
 
 const programAssets: Record<string, string> = {
+  chatgpt: '/brand/agents/codex.svg',
   claude: '/brand/agents/claude-code.svg',
   'claude code': '/brand/agents/claude-code.svg',
   codex: '/brand/agents/codex.svg',
@@ -85,6 +126,80 @@ const programAssets: Record<string, string> = {
   mistral: '/brand/agents/mistral.svg',
   opencode: '/brand/agents/opencode.svg',
   kimi: '/brand/agents/kimi.svg',
+};
+
+type ProgramSimpleIcon = { path: string; hex: string };
+const programSimpleIcons: Record<string, ProgramSimpleIcon> = {
+  apple: siApple,
+  cursor: siCursor,
+  deepseek: siDeepseek,
+  discord: siDiscord,
+  dropbox: siDropbox,
+  figma: siFigma,
+  gemini: siGooglegemini,
+  gmail: siGmail,
+  github: siGithub,
+  'github actions': siGithubactions,
+  'google ads': siGoogleads,
+  'google analytics': siGoogleanalytics,
+  'google calendar': siGooglecalendar,
+  'google docs': siGoogledocs,
+  'google drive': siGoogledrive,
+  'google search console': siGooglesearchconsole,
+  'search console': siGooglesearchconsole,
+  'google sheets': siGooglesheets,
+  'google slides': siGoogleslides,
+  huggingchat: siHuggingface,
+  'hugging face': siHuggingface,
+  hubspot: siHubspot,
+  instagram: siInstagram,
+  intercom: siIntercom,
+  linear: siLinear,
+  meta: siMetaai,
+  'meta ai': siMetaai,
+  netlify: siNetlify,
+  notion: siNotion,
+  perplexity: siPerplexity,
+  pi: siPi,
+  poe: siPoe,
+  reddit: siReddit,
+  stripe: siStripe,
+  tiktok: siTiktok,
+  v0: siVercel,
+  webflow: siWebflow,
+  x: siX,
+  youtube: siYoutube,
+  zendesk: siZendesk,
+  zoom: siZoom,
+};
+
+const programMonograms: Record<string, { copy: string; color: string }> = {
+  ai2sql: { copy: 'AI', color: '#6c5ce7' },
+  bolt: { copy: 'B', color: '#1389fd' },
+  'ai tuber': { copy: 'AI', color: '#7c3aed' },
+  aituber: { copy: 'AI', color: '#7c3aed' },
+  gong: { copy: 'G', color: '#e63757' },
+  goose: { copy: 'G', color: '#f97316' },
+  granola: { copy: 'G', color: '#6c5ce7' },
+  lovable: { copy: 'L', color: '#ed4a82' },
+  manus: { copy: 'M', color: '#111111' },
+  phind: { copy: 'P', color: '#4f46e5' },
+  quickbooks: { copy: 'QB', color: '#2ca01c' },
+  soundcheck: { copy: 'S', color: '#f97316' },
+  transcriptapi: { copy: 'T', color: '#2563eb' },
+  vscode: { copy: '<>', color: '#007acc' },
+  'vscode insiders': { copy: '<>', color: '#24bfa5' },
+  'vscode-insiders': { copy: '<>', color: '#24bfa5' },
+  you: { copy: 'YOU', color: '#111111' },
+  'you.com': { copy: 'YOU', color: '#111111' },
+};
+
+const programGlyphColors: Record<string, string> = {
+  amazon: '#ff9900',
+  linkedin: '#0a66c2',
+  outlook: '#0078d4',
+  salesforce: '#00a1e0',
+  slack: '#4a154b',
 };
 
 const programIcons: Record<string, string> = {
@@ -196,7 +311,34 @@ function programMark(name: string, target?: LaunchTarget) {
     wrapper.appendChild(image);
     return wrapper;
   }
+  const simple = programSimpleIcons[target?.id ?? ''] ?? programSimpleIcons[normalized];
+  if (simple) {
+    wrapper.classList.add('program-mark--brand');
+    wrapper.style.setProperty('--program-brand', `#${simple.hex}`);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('focusable', 'false');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', simple.path);
+    svg.appendChild(path);
+    wrapper.appendChild(svg);
+    return wrapper;
+  }
+  const monogram = programMonograms[target?.id ?? ''] ?? programMonograms[normalized];
+  if (monogram) {
+    wrapper.classList.add('program-mark--brand');
+    wrapper.style.setProperty('--program-brand', monogram.color);
+    const copy = document.createElement('b');
+    copy.textContent = monogram.copy;
+    wrapper.appendChild(copy);
+    return wrapper;
+  }
   const icon = document.createElement('i');
+  const glyphColor = programGlyphColors[normalized];
+  if (glyphColor) {
+    wrapper.classList.add('program-mark--brand');
+    wrapper.style.setProperty('--program-brand', glyphColor);
+  }
   icon.className = `ph ${target?.icon ?? programIcons[normalized] ?? genericProgramIcon(name)}`;
   wrapper.appendChild(icon);
   return wrapper;

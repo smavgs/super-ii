@@ -1,4 +1,5 @@
 ---
+import BrandMark from '@/components/BrandMark.astro';
 import '@/styles/transparent.css';
 
 interface Props {
@@ -11,7 +12,7 @@ const { variant = 'page', initialSource = '' } = Astro.props;
 
 <section class:list={['transparency-checker', `transparency-checker--${variant}`]} data-transparency-checker>
   <div class="transparency-checker__copy">
-    <p class="eyebrow">Super ii Transparent <span aria-hidden="true">🔎</span></p>
+    <p class="eyebrow transparency-checker__provider"><BrandMark brand="huggingface" size="xs" /> Super ii Transparent <span aria-hidden="true">🔎</span></p>
     {variant === 'page' ? (
       <>
         <h1>What is known.<br />What is only claimed.<br />What is still missing.</h1>
@@ -33,7 +34,7 @@ const { variant = 'page', initialSource = '' } = Astro.props;
   <form class="transparency-checker__form" data-transparency-form>
     <label for={`transparent-source-${variant}`}>Public Hugging Face link or repository ID</label>
     <div class="transparency-checker__control">
-      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <BrandMark brand="huggingface" size="sm" label="Hugging Face" />
       <input
         id={`transparent-source-${variant}`}
         name="source"

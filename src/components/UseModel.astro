@@ -1,5 +1,6 @@
 ---
 import CreatorLink from '@/components/CreatorLink.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import type { RepositoryBundle } from '@/lib/repository';
 import { buildUseManifest, type IntegrationCategory } from '@/lib/use-model';
 
@@ -26,6 +27,24 @@ const categories = categoryOrder.map((category) => ({
 })).filter((category) => category.candidates.length > 0);
 const firstCandidate = manifest.integrations[0] ?? null;
 const derivedCount = manifest.derivedVersions.length;
+const integrationBrand = (id: string) => ({
+  'llama-cpp': 'llamacpp',
+  ollama: 'ollama',
+  'mlx-lm': 'mlx',
+  transformers: 'transformers',
+  diffusers: 'diffusers',
+  'transformers-js': 'transformers-js',
+  'lm-studio': 'lmstudio',
+  comfyui: 'comfyui',
+  jan: 'jan',
+  'docker-model-runner': 'docker',
+  ktransformers: 'ktransformers',
+  vllm: 'vllm',
+  sglang: 'sglang',
+  'superii-runtime': 'superii',
+}[id] ?? id);
+const agentBrand = (id: string) => id;
+const notebookBrand = (id: string) => id === 'google-colab' || id === 'colab' ? 'colab' : id;
 ---
 
 <section class="use-model" id="use-model" data-use-model hidden aria-labelledby="use-model-title">
@@ -42,7 +61,7 @@ const derivedCount = manifest.derivedVersions.length;
   </header>
 
   <div class="use-model__recommendation" aria-live="polite">
-    <div class="use-model__recommendation-icon"><i class="ph ph-sparkle" aria-hidden="true"></i></div>
+    <div class="use-model__recommendation-icon">{firstCandidate ? <BrandMark brand={integrationBrand(firstCandidate.integrationId)} size="md" /> : <i class="ph ph-sparkle" aria-hidden="true"></i>}</div>
     <div>
       <span>Recommended for your machine</span>
       <strong data-use-best>{firstCandidate?.name ?? 'No compatible execution route identified'}</strong>
@@ -129,7 +148,7 @@ const derivedCount = manifest.derivedVersions.length;
                 <article class="use-option" data-use-candidate={candidate.id} data-suitability="unknown">
                   <div class="use-option__topline">
                     <div>
-                      <h4>{candidate.name}</h4>
+                      <h4 class="use-brand-title"><BrandMark brand={integrationBrand(candidate.integrationId)} size="sm" />{candidate.name}</h4>
                       <p>{candidate.summary}</p>
                     </div>
                     <span class:list={['use-status', candidate.status === 'verified' ? 'use-status--verified' : 'use-status--reviewed']}>{candidate.status === 'verified' ? '✅ verified path' : '◷ docs reviewed'}</span>
@@ -199,7 +218,7 @@ const derivedCount = manifest.derivedVersions.length;
         <div class="use-agent-grid">
           {manifest.agents.configurations.map((config) => (
             <article>
-              <div><h4>{config.name}</h4><span class:list={['use-status', config.status === 'verified' ? 'use-status--verified' : 'use-status--reviewed']}>{config.status}</span></div>
+              <div><h4 class="use-brand-title"><BrandMark brand={agentBrand(config.id)} size="sm" />{config.name}</h4><span class:list={['use-status', config.status === 'verified' ? 'use-status--verified' : 'use-status--reviewed']}>{config.status}</span></div>
               <p>{config.summary}</p>
               {config.content ? (
                 <details class="use-code-block">
@@ -220,8 +239,9 @@ const derivedCount = manifest.derivedVersions.length;
         <div class="use-notebook-grid">
           {manifest.notebooks.map((notebook) => (
             <a href={notebook.url} rel={notebook.id === 'jupyter' ? undefined : 'external noreferrer'} download={notebook.id === 'jupyter' ? true : undefined}>
-              <i class:list={['ph', notebook.id === 'jupyter' ? 'ph-download-simple' : 'ph-arrow-up-right']} aria-hidden="true"></i>
+              <BrandMark brand={notebookBrand(notebook.id)} size="sm" />
               <span><strong>{notebook.name}</strong><small>{notebook.id === 'jupyter' ? 'Exact assets and SHA-256 verification' : notebook.warning}</small></span>
+              <i class:list={['ph', notebook.id === 'jupyter' ? 'ph-download-simple' : 'ph-arrow-up-right']} aria-hidden="true"></i>
             </a>
           ))}
         </div>

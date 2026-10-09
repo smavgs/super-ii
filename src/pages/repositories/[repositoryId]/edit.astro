@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import CreatorEditor from '@/components/CreatorEditor.astro';
 import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
@@ -162,7 +163,7 @@ const published = repository?.revision_status === 'published';
         </section>
 
         <section class="repository-section">
-          <div class="repository-section__heading"><div><p class="eyebrow">Keyless automation 🔐</p><h2>GitHub Actions trusted publishing</h2></div><span>{trustedPublishers.filter((publisher) => publisher.enabled).length} active</span></div>
+          <div class="repository-section__heading"><div><p class="eyebrow">Keyless automation 🔐</p><h2 class="brand-heading"><BrandMark brand="github-actions" size="md" label="GitHub Actions" />GitHub Actions trusted publishing</h2></div><span>{trustedPublishers.filter((publisher) => publisher.enabled).length} active</span></div>
           <p>Bind one GitHub repository and branch, tag, environment, or pull request to this Super ii repository. GitHub OIDC is verified against its live signing keys, then exchanged for a repository-bound token lasting no more than 10 minutes. No long-lived Super ii secret is stored in GitHub.</p>
           <form class="mini-form trusted-publisher-form" data-trusted-publisher-form>
             <label>GitHub OIDC subject

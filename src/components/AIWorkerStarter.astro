@@ -1,5 +1,6 @@
 ---
 import { absoluteUrl } from '@/lib/site';
+import BrandMark from '@/components/BrandMark.astro';
 
 const mcpEndpoint = absoluteUrl('/mcp');
 const installCommands = {
@@ -15,7 +16,7 @@ const installCommands = {
     <span class="ai-worker__summary-copy">
       <span class="eyebrow">AI Worker</span>
       <strong>Your own free AI worker</strong>
-      <small>Local AI · Ollama + OpenCode · opens only when you choose it</small>
+      <small class="brand-inline"><BrandMark brand="ollama" size="xs" /><BrandMark brand="opencode" size="xs" />Local AI · Ollama + OpenCode · opens only when you choose it</small>
     </span>
     <span class="ai-worker__summary-progress">
       <strong data-worker-summary-progress>0 of 4 complete</strong>
@@ -48,7 +49,7 @@ const installCommands = {
         <div class="agent-starter__step-number">01</div>
         <div class="agent-starter__step-content">
           <p class="eyebrow">Install</p>
-          <h3>Install Ollama</h3>
+          <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Install Ollama</h3>
           <p>Choose your operating system. This guide shows the matching official Ollama installer command and download page.</p>
 
           <div class="agent-os-picker" role="group" aria-label="Choose your computer operating system">
@@ -84,7 +85,7 @@ const installCommands = {
         <div class="agent-starter__step-number">02</div>
         <div class="agent-starter__step-content">
           <p class="eyebrow">AI model</p>
-          <h3>Download a capable small model</h3>
+          <h3 class="brand-heading"><BrandMark brand="qwen" size="sm" />Download a capable small model</h3>
           <p>Start with <strong>qwen3.5:4b</strong>, a compact local model that works with OpenCode. Model size and availability can change, so the official model page remains the source of truth.</p>
           <div class="agent-model-recommendation">
             <div>
@@ -111,7 +112,7 @@ const installCommands = {
         <div class="agent-starter__step-number">03</div>
         <div class="agent-starter__step-content">
           <p class="eyebrow">Working memory</p>
-          <h3>Set context length to 64K or higher</h3>
+          <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Set context length to 64K or higher</h3>
           <p>Open <strong>Ollama → Settings → Context length</strong> and choose at least <strong>64K</strong>. More context helps the worker understand longer instructions, files, and tool results; the comfortable size depends on your computer’s available memory.</p>
           <div class="ai-worker__context-card">
             <i class="ph ph-brain" aria-hidden="true"></i>
@@ -127,7 +128,7 @@ const installCommands = {
         <div class="agent-starter__step-number">04</div>
         <div class="agent-starter__step-content">
           <p class="eyebrow">Launch</p>
-          <h3>Start your AI worker</h3>
+          <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Start your AI worker</h3>
           <p>Ollama will set up and launch OpenCode. If the model picker appears, choose <strong>qwen3.5:4b</strong>.</p>
           <div class="agent-command">
             <span>Terminal</span>
@@ -162,7 +163,7 @@ const installCommands = {
     <section class="agent-connect" id="connect-super-ii-worker">
       <div class="agent-connect__intro">
         <p class="eyebrow">Next · Connect Super ii</p>
-        <h3>Your worker is ready. Give it Super ii discovery.</h3>
+        <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Your worker is ready. Give it Super ii discovery.</h3>
         <p>Connect Super ii’s public, read-only MCP so OpenCode can discover reviewed models, datasets, apps, papers, and verified files.</p>
       </div>
 
@@ -194,7 +195,7 @@ const installCommands = {
       </div>
 
       <div class="agent-connect__finish">
-        <div><i class="ph ph-check-circle" aria-hidden="true"></i><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
+        <div><BrandMark brand="opencode" size="sm" /><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
         <p>Try: “Use Super ii to show its system state and explain what it can discover.”</p>
       </div>
     </section>

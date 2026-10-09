@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import CardServiceIcon from '@/components/CardServiceIcon.astro';
 import { sqlClient } from '@/lib/db';
 import { repositoryPath, type PublicRepository } from '@/lib/catalog';
 import LinkedWorkGrid from '@/components/LinkedWorkGrid.astro';
@@ -80,10 +81,10 @@ if (!organization) Astro.response.status = 404;
           {organization.ai_ml_interests.map((interest) => <span data-no-translate>{interest}</span>)}
         </div>
         <div class="button-row">
-          {organization.homepage_url && <a class="button button--secondary button--small" href={organization.homepage_url} rel="me external">Website</a>}
-          {organization.github_username && <a class="button button--secondary button--small" href={`https://github.com/${organization.github_username}`} rel="me external">GitHub</a>}
-          {organization.twitter_username && <a class="button button--secondary button--small" href={`https://x.com/${organization.twitter_username}`} rel="me external">X</a>}
-          {organization.linkedin_url && <a class="button button--secondary button--small" href={organization.linkedin_url} rel="me external">LinkedIn</a>}
+          {organization.homepage_url && <a class="button button--secondary button--small organization-brand-link" href={organization.homepage_url} rel="me external"><CardServiceIcon service="website" />Website</a>}
+          {organization.github_username && <a class="button button--secondary button--small organization-brand-link" href={`https://github.com/${organization.github_username}`} rel="me external"><CardServiceIcon service="github" />GitHub</a>}
+          {organization.twitter_username && <a class="button button--secondary button--small organization-brand-link" href={`https://x.com/${organization.twitter_username}`} rel="me external"><CardServiceIcon service="x" />X</a>}
+          {organization.linkedin_url && <a class="button button--secondary button--small organization-brand-link" href={organization.linkedin_url} rel="me external"><CardServiceIcon service="linkedin" />LinkedIn</a>}
         </div>
       </header>
       <ShowcaseGallery items={showcase} title="Selected work" />

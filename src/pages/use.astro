@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 
 export const prerender = false;
 
@@ -88,7 +89,7 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
         <p class="use-way-section__lead">For developers, researchers and people already working in code.</p>
         <div class="use-brand-row">
           <span class="use-brand"><img src="/brand/use/python.svg" alt="" /><strong>Python</strong></span>
-          <span class="use-brand use-brand--text"><i class="ph ph-brackets-curly" aria-hidden="true"></i><strong>Transformers</strong></span>
+          <span class="use-brand"><BrandMark brand="transformers" size="md" /><strong>Transformers</strong></span>
         </div>
         <div class="use-python-example">
           <div class="use-python-example__top"><span>Reviewed local model example</span><button type="button" data-copy-use data-copy-text={pythonExample}>Copy Python</button></div>

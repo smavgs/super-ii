@@ -145,6 +145,7 @@
 .robot-reference__paths article { padding: 2.2rem 0; border-bottom: 1px solid color-mix(in srgb, white 25%, transparent); }
 .robot-reference__paths article > span { color: var(--robot-yellow); font: 0.7rem 'IBM Plex Mono', monospace; }
 .robot-reference__paths h3 { margin: 0.55rem 0; font-size: clamp(1.8rem, 3vw, 3.4rem); }
+.robot-brand-heading { display: flex; align-items: center; gap: 0.8rem; }
 .robot-reference__paths p { color: color-mix(in srgb, white 65%, transparent); }.robot-reference__paths strong { display: block; max-width: 43rem; }
 .robot-reference__paths ul { padding-left: 1.15rem; color: color-mix(in srgb, white 60%, transparent); }
 
@@ -157,6 +158,8 @@
 .robot-component-row:hover { padding-inline: 1rem; background: color-mix(in srgb, var(--robot-yellow) 12%, transparent); }
 .robot-component-row__number { color: var(--muted); font: 0.75rem 'IBM Plex Mono', monospace; }
 .robot-component-row > span:nth-child(2) { display: grid; }.robot-component-row small { color: var(--muted); text-transform: uppercase; font: 0.66rem 'IBM Plex Mono', monospace; }
+.robot-component-row .robot-component-identity { display: flex; align-items: center; gap: 0.75rem; }
+.robot-component-identity > span { display: grid; min-width: 0; }
 .robot-component-row strong { font-size: 1.12rem; }.robot-component-row p { margin: 0; color: var(--muted); font-size: 0.9rem; }
 
 .robot-public { background: color-mix(in srgb, var(--surface) 86%, var(--robot-yellow)); }

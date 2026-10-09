@@ -1,5 +1,6 @@
 ---
 import SuperAssistant from '@/components/SuperAssistant.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 export const prerender = false;
@@ -21,7 +22,7 @@ const frontierStartUrl = isSignedIn
   <section class="frontier-hero">
     <div class="shell frontier-hero__inner">
       <div class="frontier-hero__copy">
-        <p class="eyebrow">Super ii frontier path · NVIDIA + OpenCode</p>
+        <p class="eyebrow frontier-brand-line"><BrandMark brand="nvidia" size="xs" /><BrandMark brand="opencode" size="xs" /> Super ii frontier path · NVIDIA + OpenCode</p>
         <h1>Maximum-power AI.<br /><span>$0 to start.</span> ⚡</h1>
         <p class="frontier-hero__lead">Use a 2.8-trillion-parameter frontier model.</p>
         <ul class="frontier-hero__promises" aria-label="What you need to start">
@@ -36,13 +37,14 @@ const frontierStartUrl = isSignedIn
         <span class="frontier-orbit__ring frontier-orbit__ring--outer" aria-hidden="true"></span>
         <span class="frontier-orbit__ring frontier-orbit__ring--inner" aria-hidden="true"></span>
         <div class="frontier-orbit__core">
+          <BrandMark brand="kimi" size="sm" />
           <span>Kimi</span>
           <strong>K3</strong>
           <small>~2.8T</small>
         </div>
         <span class="frontier-orbit__node frontier-orbit__node--computer"><i class="ph ph-laptop" aria-hidden="true"></i>Your computer</span>
-        <span class="frontier-orbit__node frontier-orbit__node--code"><i class="ph ph-terminal-window" aria-hidden="true"></i>OpenCode</span>
-        <span class="frontier-orbit__node frontier-orbit__node--cloud"><i class="ph ph-cloud" aria-hidden="true"></i>NVIDIA API</span>
+        <span class="frontier-orbit__node frontier-orbit__node--code"><BrandMark brand="opencode" size="xs" />OpenCode</span>
+        <span class="frontier-orbit__node frontier-orbit__node--cloud"><BrandMark brand="nvidia" size="xs" />NVIDIA API</span>
       </div>
     </div>
   </section>
@@ -54,11 +56,11 @@ const frontierStartUrl = isSignedIn
       <ol class="frontier-path__rail">
         <li><i class="ph ph-laptop" aria-hidden="true"></i><span>Your computer</span></li>
         <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
-        <li><i class="ph ph-terminal-window" aria-hidden="true"></i><span>OpenCode</span></li>
+        <li><BrandMark brand="opencode" size="sm" /><span>OpenCode</span></li>
         <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
-        <li><i class="ph ph-cloud-arrow-up" aria-hidden="true"></i><span>NVIDIA API</span></li>
+        <li><BrandMark brand="nvidia" size="sm" /><span>NVIDIA API</span></li>
         <li aria-hidden="true"><i class="ph ph-arrow-right"></i></li>
-        <li><i class="ph ph-brain" aria-hidden="true"></i><span>Kimi K3 <small>~2.8T</small></span></li>
+        <li><BrandMark brand="kimi" size="sm" /><span>Kimi K3 <small>~2.8T</small></span></li>
       </ol>
       <p>The massive model runs on NVIDIA infrastructure. OpenCode stays on your computer and uses the model through NVIDIA’s API, so you do not need to download Kimi K3 or buy a high-end GPU.</p>
     </div>
@@ -83,7 +85,7 @@ const frontierStartUrl = isSignedIn
         <li class="frontier-step" data-frontier-step="access">
           <span class="frontier-step__number">01</span>
           <div class="frontier-step__body">
-            <p class="eyebrow">Get NVIDIA access</p>
+            <p class="eyebrow frontier-brand-line"><BrandMark brand="nvidia" size="xs" /> Get NVIDIA access</p>
             <h3>Create your free NVIDIA account and API key.</h3>
             <p>Open the official Kimi K3 page on NVIDIA Build, sign in, and choose <strong>Generate API Key</strong>.</p>
             <div class="frontier-step__actions">
@@ -101,7 +103,7 @@ const frontierStartUrl = isSignedIn
         <li class="frontier-step" data-frontier-step="connect">
           <span class="frontier-step__number">02</span>
           <div class="frontier-step__body">
-            <p class="eyebrow">Connect</p>
+            <p class="eyebrow frontier-brand-line"><BrandMark brand="opencode" size="xs" /> Connect</p>
             <h3>Connect NVIDIA to OpenCode.</h3>
             <p>Inside OpenCode, type the command below. Choose <strong>NVIDIA</strong>, then paste your NVIDIA API key into OpenCode’s credential prompt.</p>
             <div class="frontier-command">
@@ -124,7 +126,7 @@ const frontierStartUrl = isSignedIn
         <li class="frontier-step" data-frontier-step="model">
           <span class="frontier-step__number">03</span>
           <div class="frontier-step__body">
-            <p class="eyebrow">Choose your AI</p>
+            <p class="eyebrow frontier-brand-line"><BrandMark brand="kimi" size="xs" /> Choose your AI</p>
             <h3>Select Kimi K3.</h3>
             <p>Inside OpenCode, open the model picker. Search for <strong>Kimi K3</strong> under NVIDIA and select the exact model shown below.</p>
             <div class="frontier-command">
@@ -135,6 +137,7 @@ const frontierStartUrl = isSignedIn
               </button>
             </div>
             <div class="frontier-model">
+              <BrandMark brand="moonshot" size="md" />
               <div><span>NVIDIA</span><strong data-frontier-copy-source="model">moonshotai/kimi-k3</strong><small>2.8T total parameters · 104B active · 1M context</small></div>
               <button type="button" data-frontier-copy="model" aria-label="Copy the Kimi K3 model ID">
                 <i class="ph ph-copy" aria-hidden="true"></i><span>Copy model</span>

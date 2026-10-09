@@ -1,10 +1,16 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
 const connectors = agentConnectorRegistry.connectors;
+const connectorBrand = (id: string) => id.startsWith('opencode') ? 'opencode'
+  : id === 'claude-code' ? 'claude'
+    : id === 'generic-streamable-http' ? 'mcp'
+      : id === 'qwen-code' ? 'qwen'
+        : id;
 const russian = Astro.locals.locale === 'ru';
 const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
@@ -92,6 +98,7 @@ if (sql) {
           <article class="agents-connector" data-connector-status={connector.status} hidden={connector.status === 'planned'}>
             <div class="agents-connector__identity">
               <span class="agents-connector__index">{String(index + 1).padStart(2, '0')}</span>
+              <BrandMark brand={connectorBrand(connector.id)} size="md" label={connector.name} />
               <div>
                 <h3 data-no-translate>{connector.name}</h3>
                 <p><span data-no-translate>{connector.vendor}</span> · {connector.configuration_version
