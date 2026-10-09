@@ -2,9 +2,16 @@
 import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { memberAction } from '@/lib/member-actions';
 
 export const prerender = false;
 const russian = Astro.locals.locale === 'ru';
+const accountAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/account',
+  signedOutLabel: 'Create an account',
+  signedInLabel: 'Open workspace',
+});
+if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <BaseLayout title="Documentation" description="Learn how Super ii accounts, repositories, publishing, MCP, hardware discovery, trusted automation, organizations, reviews, and plans work.">
@@ -26,7 +33,7 @@ const russian = Astro.locals.locale === 'ru';
       <div class="docs-quick-start">
         <strong>New here? Start with:</strong>
         <ol>
-          <li><a href="/sign-up">Create an account</a></li>
+          <li><a href={accountAction.href}>{accountAction.label}</a></li>
           <li><a href="/models">Explore models</a> and <a href="/datasets">datasets</a></li>
           <li><a href="/notebooks">Read a notebook</a></li>
           <li><a href="/bring-my-work">Bring existing work</a></li>

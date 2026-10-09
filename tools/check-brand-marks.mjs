@@ -27,6 +27,8 @@ const files = {
   profile: read('src/pages/people/[handle].astro'),
   organization: read('src/pages/organizations/[handle].astro'),
   footer: read('src/components/Footer.astro'),
+  museMark: read('public/brand/agents/muse-code.svg'),
+  agentBash: read('src/components/AgentBash.astro'),
   styles: read('src/styles/global.css'),
 };
 
@@ -42,12 +44,14 @@ for (const name of [
 for (const name of ['codex', 'claude', 'comfyui', 'hermes', 'kimi', 'lmstudio', 'openclaw', 'opencode']) {
   requireText('component', `${name}:`);
 }
+requireText('component', "'muse-code':");
 requireText('component', "aria-hidden=\"true\"");
 
 const surfaceRequirements = {
   homepage: ['brand="ollama"', 'brand="lmstudio"', 'brand="comfyui"'],
   frontier: ['brand="nvidia"', 'brand="opencode"', 'brand="kimi"'],
   agents: ['<BrandMark', 'connectorBrand'],
+  agentBash: ['/brand/agents/muse-code.svg'],
   useModel: ['integrationBrand', 'agentBrand', 'notebookBrand'],
   starter: ['brand="ollama"', 'brand="opencode"'],
   worker: ['brand="qwen"', 'brand="ollama"', 'brand="opencode"'],
@@ -69,6 +73,8 @@ const surfaceRequirements = {
 for (const [file, requirements] of Object.entries(surfaceRequirements)) {
   for (const text of requirements) requireText(file, text);
 }
+requireText('museMark', '<title>Meta AI</title>');
+requireText('museMark', 'fill="#9844FF"');
 
 for (const text of ['programSimpleIcons', 'siGithub', 'siHuggingface', 'siGooglegemini', 'siX', 'siYoutube']) {
   requireText('skills', text);

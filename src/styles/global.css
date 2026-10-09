@@ -9603,6 +9603,59 @@ pre {
   font-size: 0.9rem;
 }
 
+.agents-connector__variants {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.agents-connector__variants > p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+.agents-connector__variants > p span,
+.agents-connector__variants details > p {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.agents-connector__variants details {
+  margin: 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+}
+
+.agents-connector__variants summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.agents-connector__variants summary small {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.agents-connector__variants details > p {
+  margin: 0.6rem 0 0;
+}
+
+.agents-config-path code {
+  color: var(--ink);
+}
+
 .agents-code-block {
   align-items: start;
 }

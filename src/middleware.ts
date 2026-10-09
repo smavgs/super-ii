@@ -216,6 +216,9 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     const vary = new Set((headers.get('vary') ?? '').split(',').map((value) => value.trim()).filter(Boolean));
     vary.add('Cookie');
     headers.set('vary', [...vary].join(', '));
+    if (/(?:^|;\s*)__session=/.test(request.headers.get('cookie') ?? '')) {
+      headers.set('cache-control', 'private, no-store');
+    }
     if (locale !== 'en') {
       headers.append('set-cookie', `${localeCookie}=${encodeURIComponent(locale)}; Path=/; Max-Age=31536000; SameSite=Lax; Secure; HttpOnly`);
     }

@@ -421,7 +421,7 @@ def main() -> int:
             "opencode mcp add",
             "opencode mcp list",
             "oauth: false",
-            "/account?welcome=agent-starter#agent-starter",
+            "/account#agent-starter",
         ):
             if marker not in agent_starter_contract:
                 errors.append(f"Agent Starter contract is missing {marker}")
@@ -513,7 +513,8 @@ def main() -> int:
             "data-agent-bash-copy",
             "https://x.com/intent/tweet",
             "Share on X <span>optional</span>",
-            "agentAccessRedirect = '/account#agents'",
+            "const agentJoinPath = '/account#agents'",
+            "signedInLabel: 'Manage agent access'",
             "https://superii.site/system-state.json",
             "Do not request an account or credential when the user only wants public discovery.",
             "SUPERII_TOKEN",
@@ -526,8 +527,13 @@ def main() -> int:
                 errors.append(f"universal agent handoff contract is missing {marker}")
         logo_directory = ROOT / "public" / "brand" / "agents"
         logo_assets = [path for path in logo_directory.glob("*") if path.suffix in {".svg", ".png"}]
-        if len(logo_assets) != 14:
-            errors.append(f"universal agent handoff must ship exactly 14 named logo assets, found {len(logo_assets)}")
+        expected_agent_logos = {
+            "agy.png", "claude-code.svg", "cline.svg", "codex.svg", "copilot.svg",
+            "grok.svg", "hermes.png", "kilo.svg", "kimi.svg", "kiro.svg",
+            "mistral.svg", "muse-code.svg", "openclaw.svg", "opencode.svg", "qoder.svg",
+        }
+        if {path.name for path in logo_assets} != expected_agent_logos:
+            errors.append("universal agent handoff logo set is incomplete or contains an unreviewed mark")
         if any(path.stat().st_size > 100_000 for path in logo_assets):
             errors.append("universal agent handoff logo assets must remain below 100 KB each")
         agent_participation_contract = "\n".join(
@@ -576,8 +582,33 @@ def main() -> int:
             item.get("id") for item in connector_contract.get("connectors", [])
             if item.get("status") == "verified"
         }
-        if not {"codex", "opencode-v1", "opencode-v2", "claude-code"}.issubset(verified_connectors):
+        if not {"codex", "opencode", "muse-code", "claude-code"}.issubset(verified_connectors):
             errors.append("connector registry is missing a verified first-party setup")
+        connector_by_id = {
+            item.get("id"): item for item in connector_contract.get("connectors", [])
+        }
+        opencode = connector_by_id.get("opencode", {})
+        opencode_variants = opencode.get("configuration_variants", [])
+        if (
+            len(opencode_variants) != 2
+            or {item.get("configuration_version") for item in opencode_variants}
+            != {"current", "v2"}
+            or any("https://superii.site/mcp" not in item.get("config_example", "") for item in opencode_variants)
+        ):
+            errors.append("OpenCode must expose one card with verified current and V2 configurations")
+        muse = connector_by_id.get("muse-code", {})
+        muse_config = muse.get("config_example", "")
+        if (
+            muse.get("configuration_version") != "1.4.4"
+            or muse.get("config_path") != "~/.config/muse/settings.json"
+            or '"schema_version": 1' not in muse_config
+            or '"mcpServers"' not in muse_config
+            or '"url": "https://superii.site/mcp"' not in muse_config
+            or '"required": false' not in muse_config
+        ):
+            errors.append("Muse Code verified setup must match the tested 1.4.4 MCP contract")
+        if {"opencode-v1", "opencode-v2"}.intersection(connector_by_id):
+            errors.append("OpenCode must not be duplicated across separate public cards")
         connect_cli = (ROOT / "rust" / "src" / "connect.rs").read_text(encoding="utf-8")
         for marker in (
             'PUBLIC_MCP_URL: &str = "https://superii.site/mcp"',

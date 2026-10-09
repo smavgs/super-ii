@@ -2,35 +2,24 @@
 import { SignUp } from '@clerk/astro/components';
 import AuthStory from '@/components/AuthStory.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { localizedHref, localizedPath, stripLocalePrefix } from '@/lib/i18n';
+import { safeAuthRedirect } from '@/lib/auth-redirects';
+import { localizedHref, localizedPath } from '@/lib/i18n';
+import { isSignedInUser } from '@/lib/member-actions';
 import { authIsConfigured } from '@/lib/site';
-import { connectionReturnPath } from '@/lib/connection-policy';
 
 const authConfigured = authIsConfigured(Astro.locals);
 const locale = Astro.locals.locale ?? 'en';
-const agentStarterRedirect = '/account?welcome=agent-starter#agent-starter';
-const aiWorkerRedirect = '/account?welcome=ai-worker#ai-worker';
-const agentAccessRedirect = '/account#agents';
-const skillsRedirect = '/skills';
-const frontierRedirect = '/frontier-ai';
-const frontierSetupRedirect = '/frontier-ai#setup';
-const allowedRedirects = new Set([
-  aiWorkerRedirect,
-  agentAccessRedirect,
-  skillsRedirect,
-  frontierRedirect,
-  frontierSetupRedirect,
-]);
+const agentStarterRedirect = '/account#agent-starter';
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const requestedPlainRedirect = requestedRedirect ? stripLocalePrefix(requestedRedirect) : null;
-const plainPostSignUpRedirect = requestedPlainRedirect && (allowedRedirects.has(requestedPlainRedirect) || connectionReturnPath(requestedPlainRedirect))
-  ? requestedPlainRedirect
-  : agentStarterRedirect;
+const plainPostSignUpRedirect = safeAuthRedirect(requestedRedirect, agentStarterRedirect);
 const postSignUpRedirect = localizedHref(plainPostSignUpRedirect, locale);
 const plainSignInUrl = plainPostSignUpRedirect === agentStarterRedirect
   ? '/sign-in'
   : `/sign-in?redirect_url=${encodeURIComponent(plainPostSignUpRedirect)}`;
 const signInUrl = localizedHref(plainSignInUrl, locale);
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+if (isSignedInUser(Astro.locals)) return Astro.redirect(postSignUpRedirect, 302);
 ---
 
 <BaseLayout title="Join Super ii" description="Explore, build, publish and collaborate around open intelligence. Sign up with email, Google, or GitHub. No card required." noindex className="auth-body">

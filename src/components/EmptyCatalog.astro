@@ -1,5 +1,6 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
+import { memberAction } from '@/lib/member-actions';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 
 interface Props {
@@ -22,6 +23,11 @@ const emptyState = {
     copy: 'The first reviewed public app will appear here when a creator publishes it.',
   },
 }[kind];
+const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/new',
+  signedOutLabel: 'Create your account',
+  signedInLabel: 'Create repository',
+});
 ---
 
 <section class="catalog-shell shell" data-catalog data-kind={kind} data-empty-default={emptyState.copy}>
@@ -73,7 +79,7 @@ const emptyState = {
       </div>
       <p data-empty-copy>{emptyState.copy}</p>
       <div class="button-row">
-        <a class="button button--dark" href="/sign-up">Create your account</a>
+        <a class="button button--dark" href={createAction.href}>{createAction.label}</a>
         <a class="button button--secondary" href="/bring-my-work">Bring existing work</a>
       </div>
       <p class="empty-state__footnote"><a href="/docs">Or read the publishing guide</a></p>

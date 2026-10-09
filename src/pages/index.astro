@@ -6,6 +6,7 @@ import SuperAssistant from '@/components/SuperAssistant.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { memberAction } from '@/lib/member-actions';
 import '@/styles/robot.css';
 
 export const prerender = false;
@@ -49,16 +50,33 @@ const capabilities = [
   },
 ];
 
-const aiWorkerSignupUrl = `/sign-up?redirect_url=${encodeURIComponent('/account?welcome=ai-worker#ai-worker')}`;
-const authentication = typeof Astro.locals.auth === 'function' ? Astro.locals.auth() : null;
-const isSignedIn = Boolean(authentication && 'userId' in authentication && authentication.userId);
 const locale = Astro.locals.locale ?? 'en';
-const skillsCtaUrl = isSignedIn
-  ? '/skills'
-  : `/sign-up?redirect_url=${encodeURIComponent('/skills')}`;
-const frontierCtaUrl = isSignedIn
-  ? '/frontier-ai'
-  : `/sign-up?redirect_url=${encodeURIComponent('/frontier-ai')}`;
+const heroAction = memberAction(Astro.locals, locale, {
+  destination: '/account',
+  signedOutLabel: 'Join Super ii',
+  signedInLabel: 'Open workspace',
+});
+const agentStarterAction = memberAction(Astro.locals, locale, {
+  destination: '/account#agent-starter',
+  signedOutLabel: 'Start Agent Starter',
+  signedInLabel: 'Open Agent Starter',
+});
+const aiWorkerAction = memberAction(Astro.locals, locale, {
+  destination: '/account?welcome=ai-worker#ai-worker',
+  signedOutLabel: 'Launch 🚀 my AI worker',
+  signedInLabel: 'Open my AI worker',
+});
+const skillsAction = memberAction(Astro.locals, locale, {
+  destination: '/skills',
+  signedOutLabel: 'Explore skills',
+  signedInLabel: 'Explore skills',
+});
+const frontierAction = memberAction(Astro.locals, locale, {
+  destination: '/frontier-ai',
+  signedOutLabel: 'Use frontier AI',
+  signedInLabel: 'Use frontier AI',
+});
+if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
 <BaseLayout>
@@ -85,8 +103,8 @@ const frontierCtaUrl = isSignedIn
         </p>
         <div class="button-row">
           <span class="button-with-info">
-            <a class="button button--dark" href="/sign-up">
-              Join Super ii
+            <a class="button button--dark" href={heroAction.href}>
+              {heroAction.label}
               <i class="ph ph-arrow-right" aria-hidden="true"></i>
             </a>
             <InfoTip term="joinFree" label="joining Super ii" />
@@ -145,8 +163,8 @@ const frontierCtaUrl = isSignedIn
         <h2>Run your first AI agent—with free ☁️ AI.</h2>
         <p>No GPU required. No API setup. Join Super ii and we’ll help you get an agent running on your computer.</p>
       </div>
-      <a class="button button--dark" href="/sign-up">
-        Start Agent Starter
+      <a class="button button--dark" href={agentStarterAction.href}>
+        {agentStarterAction.label}
         <i class="ph ph-arrow-right" aria-hidden="true"></i>
       </a>
     </div>
@@ -218,8 +236,8 @@ const frontierCtaUrl = isSignedIn
         </div>
         <p>Give it work. It gets it done on your computer.</p>
       </div>
-      <a class="button button--yellow" href={aiWorkerSignupUrl}>
-        Launch 🚀 my AI worker
+      <a class="button button--yellow" href={aiWorkerAction.href}>
+        {aiWorkerAction.label}
         <i class="ph ph-arrow-right" aria-hidden="true"></i>
       </a>
     </div>
@@ -276,7 +294,7 @@ const frontierCtaUrl = isSignedIn
           <li>No high-end GPU needed.</li>
           <li>Use it from your own computer.</li>
         </ul>
-        <a class="button button--yellow" href={frontierCtaUrl}>
+        <a class="button button--yellow" href={frontierAction.href}>
           Use frontier AI <span aria-hidden="true">🧠</span>
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </a>
@@ -290,7 +308,7 @@ const frontierCtaUrl = isSignedIn
         <p class="eyebrow">Skills · Included from Free</p>
         <h2>Give your AI agent a useful job.</h2>
         <p>Explore ready-to-use skills, copy the complete prompt, or share it with someone.</p>
-        <a class="button button--dark" href={skillsCtaUrl}>
+        <a class="button button--dark" href={skillsAction.href}>
           Explore Skills
           <i class="ph ph-arrow-right" aria-hidden="true"></i>
         </a>

@@ -4,15 +4,23 @@ import BrandMark from '@/components/BrandMark.astro';
 import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
+import { memberAction } from '@/lib/member-actions';
 
 const connectors = agentConnectorRegistry.connectors;
 const connectorBrand = (id: string) => id.startsWith('opencode') ? 'opencode'
+  : id === 'muse-code' ? 'muse-code'
   : id === 'claude-code' ? 'claude'
     : id === 'generic-streamable-http' ? 'mcp'
       : id === 'qwen-code' ? 'qwen'
         : id;
 const russian = Astro.locals.locale === 'ru';
 const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
+const accountAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
+  destination: '/account#agents',
+  signedOutLabel: 'Join Super ii',
+  signedInLabel: 'Manage agent access',
+});
+if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 let publicAgents: Array<{ handle: string; display_name: string; description: string; framework: string; organization_handle: string; organization_name: string; reputation_score: number; accepted_contributions: number }> = [];
 const sql = sqlClient(Astro.locals);
 if (sql) {
@@ -131,7 +139,26 @@ if (sql) {
                   </div>
                 </details>
               )}
+              {connector.configuration_variants?.length ? (
+                <div class="agents-connector__variants" aria-label={`${connector.name} configuration choices`}>
+                  <p><strong>Choose your installed configuration</strong><span>One client card. Use only the matching format.</span></p>
+                  {connector.configuration_variants.map((variant, variantIndex) => (
+                    <details open={variantIndex === 0}>
+                      <summary><span>{variant.label}</span><small data-no-translate>{variant.configuration_version}</small></summary>
+                      <p>{variant.notes}</p>
+                      <p class="agents-config-path">Config: <code>{variant.config_path}</code></p>
+                      <div class="agents-code-block">
+                        <pre><code>{variant.config_example}</code></pre>
+                        <button type="button" data-copy-value={variant.config_example} aria-label={`Copy ${variant.label} configuration`}>
+                          <i class="ph ph-copy" aria-hidden="true"></i><span>Copy</span>
+                        </button>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              ) : null}
               <div class="agents-connector__meta">
+                {connector.config_path && <span>Config: <code>{connector.config_path}</code></span>}
                 {connector.verify_command && <span>Verify: <code>{connector.verify_command}</code></span>}
                 {connector.source_url && <a href={connector.source_url} rel="noreferrer">{connector.source_label}<i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>}
               </div>
@@ -231,7 +258,7 @@ if (sql) {
   <section class="cta-band agents-cta">
     <div class="shell cta-band__inner">
       <div><p class="eyebrow">Your agent stays accountable</p><h2>Connect the work. Keep the human in control.</h2></div>
-      <a class="button button--yellow" href="/sign-up">Join Super ii</a>
+      <a class="button button--yellow" href={accountAction.href}>{accountAction.label}</a>
     </div>
   </section>
 </BaseLayout>

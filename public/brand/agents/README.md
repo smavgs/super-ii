@@ -7,7 +7,7 @@ Repository-wide attribution and trademark boundaries are recorded in
 [`TRADEMARKS.md`](../../../TRADEMARKS.md).
 
 - Codex: OpenAI Developers favicon, https://developers.openai.com/favicon.svg
-- Claude Code, Grok/X, OpenCode, Cline, Mistral AI, GitHub Copilot, and Kimi: Simple Icons 16.29.0, https://simpleicons.org/ (CC0 data; marks remain subject to their owners' trademark rights)
+- Claude Code, Grok/X, OpenCode, Cline, Mistral AI, GitHub Copilot, Kimi, and the Meta AI mark used for Muse Code: Simple Icons 16.33.0, https://simpleicons.org/ (CC0 data; marks remain subject to their owners' trademark rights)
 - Google Antigravity: official product image, https://www.agy.dev/assets/image/antigravity-logo.png
 - Kilo: official favicon, https://kilo.ai/favicon/favicon.svg
 - Kiro: official favicon, https://kiro.dev/icon.svg

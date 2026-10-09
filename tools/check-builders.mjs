@@ -76,8 +76,9 @@ for (const marker of [
   '<CreatorLink',
   'View profile',
   'builders-pagination',
-  'href="/sign-up"',
-  'href="/account#profile"',
+  'memberAction',
+  "destination: '/account#profile'",
+  'signedInLabel: \'Edit my profile\'',
 ]) requireText(builderPage, marker, 'builders page');
 
 for (const marker of ['/people/${encodeURIComponent(handle)}', '/organizations/${encodeURIComponent(handle)}', 'creator-link__fallback', 'referrerpolicy="no-referrer"']) {
