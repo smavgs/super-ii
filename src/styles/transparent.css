@@ -94,6 +94,12 @@
   line-height: 1.5;
 }
 
+.transparency-checker__provider {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .transparency-checker__form {
   margin-top: clamp(1.25rem, 3vw, 2.5rem);
 }
@@ -117,9 +123,8 @@
   background: #fff;
 }
 
-.transparency-checker__control > i {
-  padding-left: 0.75rem;
-  font-size: 1.45rem;
+.transparency-checker__control > .brand-mark {
+  margin-left: 0.32rem;
 }
 
 .transparency-checker__control input {

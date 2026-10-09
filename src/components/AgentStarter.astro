@@ -1,5 +1,6 @@
 ---
 import { absoluteUrl } from '@/lib/site';
+import BrandMark from '@/components/BrandMark.astro';
 
 const mcpEndpoint = absoluteUrl('/mcp');
 const mcpConfig = JSON.stringify({
@@ -45,7 +46,7 @@ const installCommands = {
       <div class="agent-starter__step-number">01</div>
       <div class="agent-starter__step-content">
         <p class="eyebrow">Install</p>
-        <h3>Install Ollama</h3>
+        <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Install Ollama</h3>
         <p>Choose the computer where you want to run OpenCode. We’ll show the current official installer command.</p>
 
         <div class="agent-os-picker" role="group" aria-label="Choose your computer operating system">
@@ -81,7 +82,7 @@ const installCommands = {
       <div class="agent-starter__step-number">02</div>
       <div class="agent-starter__step-content">
         <p class="eyebrow">Cloud access</p>
-        <h3>Sign in to Ollama</h3>
+        <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Sign in to Ollama</h3>
         <p>This opens Ollama’s browser sign-in flow and connects the CLI to the cloud models available on your account.</p>
         <div class="agent-command">
           <span>Terminal</span>
@@ -100,7 +101,7 @@ const installCommands = {
       <div class="agent-starter__step-number">03</div>
       <div class="agent-starter__step-content">
         <p class="eyebrow">Launch</p>
-        <h3>Start OpenCode</h3>
+        <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Start OpenCode</h3>
         <p>Ollama starts the OpenCode setup and opens its model picker. No API key configuration is required.</p>
         <div class="agent-command">
           <span>Terminal</span>
@@ -156,7 +157,7 @@ const installCommands = {
   <section class="agent-connect" id="connect-super-ii">
     <div class="agent-connect__intro">
       <p class="eyebrow">Next · Connect Super ii</p>
-      <h3>Your agent is working. Give it a trusted discovery layer.</h3>
+      <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Your agent is working. Give it a trusted discovery layer.</h3>
       <p>Connect Super ii’s public, read-only MCP so OpenCode can discover reviewed models, datasets, apps, papers, and verified files.</p>
     </div>
 
@@ -195,7 +196,7 @@ const installCommands = {
     </details>
 
     <div class="agent-connect__finish">
-      <div><i class="ph ph-check-circle" aria-hidden="true"></i><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
+      <div><BrandMark brand="opencode" size="sm" /><span><strong>Super ii MCP → OpenCode</strong><small>Public and read-only · publishing and private data stay separate</small></span></div>
       <p>Try: “Use Super ii to show its system state and explain what it can discover.”</p>
     </div>
   </section>

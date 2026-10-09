@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import RobotWorkspace from '@/components/RobotWorkspace.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { robotCatalog } from '@/lib/robot';
@@ -82,6 +83,10 @@ if (sql) {
   }
 }
 const reference = robotCatalog.referenceRobots[0];
+const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry Pi' ? 'raspberrypi'
+  : manufacturer === 'NVIDIA' ? 'nvidia'
+    : manufacturer === 'Waveshare' ? 'waveshare'
+      : manufacturer;
 ---
 
 <BaseLayout
@@ -93,7 +98,7 @@ const reference = robotCatalog.referenceRobots[0];
     <section class="robot-hero">
       <div class="shell robot-hero__grid">
         <div class="robot-hero__copy">
-          <p class="eyebrow">Super ii Robot · Raspberry Pi first</p>
+          <p class="eyebrow brand-inline"><BrandMark brand="raspberrypi" size="xs" />Super ii Robot · Raspberry Pi first</p>
           <h1>Make a Robot.<br /><span>Know what fits.</span></h1>
           <p class="robot-hero__lead">Start with what you want it to do. Super ii turns source-backed components, interfaces and open questions into a Robot you can inspect, version and share.</p>
           <div class="button-row">
@@ -224,7 +229,7 @@ const reference = robotCatalog.referenceRobots[0];
           {reference.variants.map((variant, index) => (
             <article>
               <span>0{index + 1} / {variant.id === 'pi5' ? 'FRONT DOOR' : 'ADVANCED PATH'}</span>
-              <h3>{variant.name}</h3>
+              <h3 class="robot-brand-heading"><BrandMark brand={variant.id === 'pi5' ? 'raspberrypi' : 'nvidia'} size="md" />{variant.name}</h3>
               <p>{variant.audience}</p>
               <strong>{variant.why}</strong>
               <ul>{variant.openRequirements.slice(0, 2).map((item) => <li>{item}</li>)}</ul>
@@ -241,7 +246,7 @@ const reference = robotCatalog.referenceRobots[0];
           {robotCatalog.components.map((component, index) => (
             <a href={`/robot/components/${component.slug}`} class="robot-component-row">
               <span class="robot-component-row__number">{String(index + 1).padStart(2, '0')}</span>
-              <span><small>{component.category} · {component.manufacturer}</small><strong>{component.name}</strong></span>
+              <span class="robot-component-identity"><BrandMark brand={manufacturerBrand(component.manufacturer)} size="md" /><span><small>{component.category} · {component.manufacturer}</small><strong>{component.name}</strong></span></span>
               <span class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</span>
               <p>{component.summary}</p>
               <i class="ph ph-arrow-up-right" aria-hidden="true"></i>

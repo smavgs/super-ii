@@ -1,4 +1,5 @@
 ---
+import BrandMark from './BrandMark.astro';
 import { commerceProducts } from '@/lib/commerce';
 
 const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$${(cents / 100).toFixed(2)} USD`;
@@ -10,6 +11,13 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
     <a class="button button--secondary button--small" href="/agents#commerce-lane">Machine guide</a>
   </div>
   <p>Issue a separate, revocable commerce token with exact products, dollars, targets, order count, and expiry. It can create a NOWPayments invoice; it cannot open, sign, or debit any wallet.</p>
+  <div class="commerce-provider-row" aria-label="Agent commerce payment route">
+    <span><BrandMark brand="usdc" size="sm" label="USD Coin" /><strong data-no-translate>USDC</strong></span>
+    <i class="ph ph-arrow-right" aria-hidden="true"></i>
+    <span><BrandMark brand="ethereum" size="sm" label="Ethereum" /><strong data-no-translate>Ethereum</strong></span>
+    <i class="ph ph-arrow-right" aria-hidden="true"></i>
+    <span><BrandMark brand="nowpayments" size="sm" label="NOWPayments" /><strong data-no-translate>NOWPayments</strong></span>
+  </div>
 
   <section class="commerce-managed">
     <div class="repository-section__heading"><div><p class="eyebrow">Revoke and audit</p><h3>Your delegations</h3></div><button class="text-button" type="button" data-commerce-refresh>Refresh</button></div>
@@ -227,6 +235,9 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
 <style>
   .commerce-workspace { display: grid; gap: 1.4rem; }
   .commerce-workspace > p { margin: 0; max-width: 76ch; color: var(--muted); }
+  .commerce-provider-row { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; width: fit-content; padding: .7rem .8rem; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+  .commerce-provider-row span { display: inline-flex; align-items: center; gap: .5rem; }
+  .commerce-provider-row > i { color: var(--muted-soft); }
   .commerce-boundary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
   .commerce-boundary span { display: grid; gap: .25rem; padding: 1rem; color: var(--muted); }
   .commerce-boundary span + span { border-left: 1px solid var(--line); }
@@ -268,6 +279,8 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
     .commerce-limits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 560px) {
+    .commerce-provider-row { display: grid; width: 100%; grid-template-columns: 1fr; }
+    .commerce-provider-row > i { display: none; }
     .commerce-limits { grid-template-columns: 1fr; }
     .commerce-connect > div { grid-template-columns: 1fr; }
     .commerce-delegation-list article { flex-direction: column; }

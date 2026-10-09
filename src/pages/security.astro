@@ -1,4 +1,5 @@
 ---
+import BrandMark from '@/components/BrandMark.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
@@ -12,6 +13,18 @@ export const prerender = false;
     description="See the security controls in use today, their current limits and how to report a problem."
     compact
   />
+
+  <section class="shell security-provider-map" aria-label="Super ii service boundaries">
+    <p class="eyebrow">Named service boundaries</p>
+    <div>
+      <span><BrandMark brand="cloudflare" size="sm" label="Cloudflare" /><strong data-no-translate>Cloudflare</strong><small>Edge and object storage</small></span>
+      <span><BrandMark brand="clerk" size="sm" label="Clerk" /><strong data-no-translate>Clerk</strong><small>Account identity</small></span>
+      <span><BrandMark brand="neon" size="sm" label="Neon" /><strong data-no-translate>Neon</strong><small>Application data</small></span>
+      <span><BrandMark brand="huggingface" size="sm" label="Hugging Face" /><strong data-no-translate>Hugging Face</strong><small>Linked public sources</small></span>
+      <span><BrandMark brand="nowpayments" size="sm" label="NOWPayments" /><strong data-no-translate>NOWPayments</strong><small>Payment monitoring</small></span>
+    </div>
+    <p>Each provider has one visible job. Super ii keeps authentication, data, linked sources, storage, and payment authority separate.</p>
+  </section>
 
   <div class="shell content-shell">
     <article class="prose">

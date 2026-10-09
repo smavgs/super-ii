@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import BrandMark from '@/components/BrandMark.astro';
 import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
 import { officialNotebooks } from '@/lib/notebooks';
@@ -52,7 +53,7 @@ export const prerender = false;
     <div class="shell notebook-principles">
       <article><i class="ph ph-shield-check" aria-hidden="true"></i><div class="heading-with-help"><h3>Static on Super ii</h3><InfoTip term="staticNotebook" /></div><p>Super ii shows the notebook text, code and safe outputs without running it. Active web content and automatic code execution stay off.</p></article>
       <article><i class="ph ph-git-commit" aria-hidden="true"></i><div class="heading-with-help"><h3>Exact source</h3><InfoTip term="checksum" /></div><p>Every official notebook has a recorded checksum and source link, so you can verify exactly which version you are reading.</p></article>
-      <article><i class="ph ph-arrow-square-out" aria-hidden="true"></i><h3>Clear handoff</h3><p>Colab links are external execution paths, visibly separated from Super ii's static reader and governed by the external provider.</p></article>
+      <article><BrandMark brand="colab" size="md" label="Google Colab" /><h3>Clear handoff</h3><p>Colab links are external execution paths, visibly separated from Super ii's static reader and governed by the external provider.</p></article>
     </div>
   </section>
 </BaseLayout>

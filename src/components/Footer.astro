@@ -1,4 +1,5 @@
 ---
+import BrandMark from './BrandMark.astro';
 import LogoMark from './LogoMark.astro';
 import { isLocalizablePath, localizedPath, stripLocalePrefix, type SiteLocale } from '@/lib/i18n';
 
@@ -79,7 +80,7 @@ const languageHref = (targetLocale: SiteLocale) => {
       <a href="/security">Security</a>
       <a href="/legal/privacy">Privacy</a>
       <a href="/legal/terms">Terms</a>
-      <a href="https://x.com/superiisite" rel="me external" data-no-translate>X · @superiisite</a>
+      <a class="brand-inline" href="https://x.com/superiisite" rel="me external" data-no-translate><BrandMark brand="x" size="xs" label="X" />X · @superiisite</a>
       <a class="footer-join-team" href="/join-team">Join Team <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
     </div>
   </div>
