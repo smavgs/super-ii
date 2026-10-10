@@ -1,6 +1,6 @@
 # Company and product home
 
-Release candidate tested locally. Production verification is pending; see the release evidence before treating the feature as deployed.
+Deployed through PR #95 with migration 0034. Production checks cover public machine access on both hosts, protected write boundaries and signed-in Workspace entry. Local fixtures cover the complete publishing journey; no demo product was created in production. See [release verification](../../qa/COMPANY-PRODUCTS-2026-10-09.md) for evidence and remaining limits.
 
 ## Approved experience
 
