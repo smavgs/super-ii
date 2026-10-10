@@ -34,11 +34,13 @@ export async function dnsRecords(
   endpoint.searchParams.set("type", type);
   const response = await transport(endpoint, {
     headers: { accept: "application/dns-json" },
-    redirect: "error",
+    redirect: "manual",
     signal: AbortSignal.timeout(6000),
   });
-  if (!response.ok)
+  if (!response.ok) {
+    await response.body?.cancel();
     throw new Error("The website could not be checked. Please try again.");
+  }
   const data = JSON.parse(await boundedBody(response, 32000)) as {
     Status?: number;
     Answer?: Array<{ type: number; data: string }>;

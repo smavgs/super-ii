@@ -1,6 +1,6 @@
-# Company and product home — local verification
+# Company and product home — release verification
 
-Status: release candidate, not production verification. No production company, product, contact, inquiry, repository or uploaded file was created or changed during these checks.
+Status: deployed through PR #95; production verification recorded on 2026-10-10. No production company, product, contact, inquiry, repository or uploaded file was created or changed during these checks.
 
 ## Implemented journey
 
@@ -27,10 +27,23 @@ Chrome used a loopback-only proxy with the actual editor, public presentation an
 
 Local screenshots are stored in the release directory as `local-chinese-editor-390.png` and `local-bilingual-sheet.png`; they contain explicitly disposable fixture content and are not a live catalog.
 
+## Production verification (2026-10-10)
+
+- PR #95 merged at `87198c7b16d640a47e1b628a00bedf442cd618fb`, matching the tested source tree. All eight required checks, aggregate CodeQL and triggered post-merge workflows passed. The owner approved the scoped merge override after those checks passed.
+- Migration 0034 was applied once. All three new tables retain RLS; backend roles have no direct table CRUD or public function execution. All 17 function grants match the intended narrow roles. Existing repository and business-data fingerprints stayed unchanged.
+- The initial product Worker deployed as `3062d772-dad7-40a4-ac0f-a554121394ec`. Subsequent PR #97 and Worker `c6ace4d6-f20b-4c8f-a0fa-627abd180880` are preserved by the release follow-up.
+- Ordinary unauthenticated clients passed 35 product checks on each canonical/www host, including catalog/schema/contract reads, MCP and A2A, unavailable-product responses, authentication and cross-origin rejection. The existing machine-access checker passed 40 checks per host. Empty published company catalogs remain honest; no fixtures were seeded.
+- The existing host-scoped Cloudflare browser-integrity exception now includes only the product `product.json` and `product.md` machine representations. Those paths reach application-level 404 responses for missing products; ordinary requests to the human-facing directory retain the existing browser check.
+- Signed-in Chrome reached the real Workspace editor with draft and publish controls. English, Russian and Simplified Chinese interfaces were inspected. A 390px Chinese editor had one expanded section and no page-wide overflow. These checks read production state; they do not claim a new live company was published.
+- Live source-suggestion testing exposed an unsupported `redirect: "error"` mode in the Worker DNS fetch. The follow-up uses `manual` and rejects non-success responses, preserving the no-redirect DNS policy. `tools/check-product-worker.mjs` runs the actual Workerd Request implementation and covers metadata, exact TXT matching and rejected DNS redirects. A separate real-network Workerd read successfully returned the Example Domain title. The final deployed source-suggestion result and Worker version are recorded in the external release evidence directory.
+
+External release evidence folder: `superii-company-products-release-2026-10-09`. It contains the database verification, both-host HTTP results, Cloudflare scope, workflow results, deployment logs and real production screenshots. The filename date identifies the original release preparation; the live machine-path checks above were completed on 2026-10-10.
+
+The production npm audit returned zero vulnerabilities. This does not mean the repository has no advisories: pre-existing CodeQL alert #8 in the unchanged vendored HTTP cache and five moderate Python dependency alerts remain separately recorded. No new PR #95 source alert remained open.
+
 ## Remaining limits
 
 - Browser image selection/upload was blocked by the Chrome extension's disabled file-URL access. No browser permission was changed. The local image preview uses the same bounded rasterized JPEG preparation as upload. Existing image handling, ownership and the lifetime counter have automated coverage, but this release does not claim a fresh browser upload succeeded.
-- Production migration/deployment, live public reads and authenticated Workspace entry need separate verification after merge.
 - Mainland mobile, WeChat completion, actual exhibitor onboarding, delivered inquiries, large company catalogs and real-world product quality are unverified. They are not implied by the local tests.
 
 ## Reproduce local browser QA
