@@ -5,6 +5,7 @@ import LogoMark from '@/components/LogoMark.astro';
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { memberAction } from '@/lib/member-actions';
 import '@/styles/robot.css';
@@ -216,9 +217,9 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
         <p class="eyebrow">Three ways in</p>
         <h2>Run it. Code it. Share it. <span aria-hidden="true">😊</span></h2>
         <div class="use-home-hook__paths">
-          <p><span>01</span><span class="use-home-hook__path-copy"><span class="use-home-hook__brandmarks" aria-hidden="true"><BrandMark brand="ollama" size="xs" /><BrandMark brand="lmstudio" size="xs" /><BrandMark brand="comfyui" size="xs" /></span>Run models locally with Ollama, LM Studio &amp; ComfyUI.</span></p>
-          <p><span>02</span>Use models directly in Python.</p>
-          <p><span>03</span>Publish your work with one public link.</p>
+          <p><JourneyLabel kind="way" current={1} total={3} /><span class="use-home-hook__path-copy"><span class="use-home-hook__brandmarks" aria-hidden="true"><BrandMark brand="ollama" size="xs" /><BrandMark brand="lmstudio" size="xs" /><BrandMark brand="comfyui" size="xs" /></span>Run models locally with Ollama, LM Studio &amp; ComfyUI.</span></p>
+          <p><JourneyLabel kind="way" current={2} total={3} />Use models directly in Python.</p>
+          <p><JourneyLabel kind="way" current={3} total={3} />Publish your work with one public link.</p>
         </div>
       </div>
       <a class="button button--dark" href="/use">Choose your path 😊 <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
@@ -276,9 +277,9 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
       <p>Three public systems, with three deliberately separate kinds of value.</p>
     </div>
     <div class="shell participation-home__list">
-      <a href="/proposals"><span class="participation-home__number">01</span><span><small>Public roadmap 🗳️</small><strong>Help build Super ii.</strong><p>Propose what comes next. At 100 verified human votes, we commit to building it.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-      <a href="/fame"><span class="participation-home__number">02</span><span><small>The Founding 200 ✦</small><strong>Be remembered at the beginning.</strong><p>Exactly 200 equal, permanent Hall of Fame places. No #201.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-      <a href="/highlights"><span class="participation-home__number">03</span><span><small>Paid discovery · clearly labeled</small><strong>Give reviewed work a fair turn in front.</strong><p>$1 for 24 hours or $15 for 30 days, separate from organic ranking.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/proposals"><span><small>Public roadmap 🗳️</small><strong>Help build Super ii.</strong><p>Propose what comes next. At 100 verified human votes, we commit to building it.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/fame"><span><small>The Founding 200 ✦</small><strong>Be remembered at the beginning.</strong><p>Exactly 200 equal, permanent Hall of Fame places. No #201.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      <a href="/highlights"><span><small>Paid discovery · clearly labeled</small><strong>Give reviewed work a fair turn in front.</strong><p>$1 for 24 hours or $15 for 30 days, separate from organic ranking.</p></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
     </div>
     <div class="shell participation-home__rule"><span aria-hidden="true">⚖️</span><p><strong>Recognition never buys power.</strong> Fame adds no votes. Highlights add no organic rank. Community support cannot be purchased.</p></div>
   </section>

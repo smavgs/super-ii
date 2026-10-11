@@ -2,6 +2,7 @@
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 export const prerender = false;
 
@@ -83,14 +84,15 @@ const frontierStartUrl = isSignedIn
 
       <ol class="frontier-steps">
         <li class="frontier-step" data-frontier-step="access">
-          <span class="frontier-step__number">01</span>
+          <JourneyLabel class="frontier-step__number" kind="step" current={1} total={3} />
           <div class="frontier-step__body">
             <p class="eyebrow frontier-brand-line"><BrandMark brand="nvidia" size="xs" /> Get NVIDIA access</p>
             <h3>Create your free NVIDIA account and API key.</h3>
             <p>Open the official Kimi K3 page on NVIDIA Build, sign in, and choose <strong>Generate API Key</strong>.</p>
             <div class="frontier-step__actions">
-              <a class="button button--dark" href={nvidiaModelUrl} target="_blank" rel="noreferrer">
-                Open NVIDIA Kimi K3 <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+              <a class="button pixel-action" href={nvidiaModelUrl} target="_blank" rel="noreferrer">
+                <span class="pixel-action__copy"><JourneyLabel kind="step" current={1} total={3} /><strong>Open NVIDIA Kimi K3</strong></span>
+                <i class="ph ph-arrow-up-right pixel-action__arrow" aria-hidden="true"></i>
               </a>
               <button class="frontier-step__complete" type="button" data-frontier-complete="access" aria-pressed="false">
                 <i class="ph ph-circle" aria-hidden="true"></i><span>Mark key created</span>
@@ -101,7 +103,7 @@ const frontierStartUrl = isSignedIn
         </li>
 
         <li class="frontier-step" data-frontier-step="connect">
-          <span class="frontier-step__number">02</span>
+          <JourneyLabel class="frontier-step__number" kind="step" current={2} total={3} />
           <div class="frontier-step__body">
             <p class="eyebrow frontier-brand-line"><BrandMark brand="opencode" size="xs" /> Connect</p>
             <h3>Connect NVIDIA to OpenCode.</h3>
@@ -124,7 +126,7 @@ const frontierStartUrl = isSignedIn
         </li>
 
         <li class="frontier-step" data-frontier-step="model">
-          <span class="frontier-step__number">03</span>
+          <JourneyLabel class="frontier-step__number" kind="step" current={3} total={3} />
           <div class="frontier-step__body">
             <p class="eyebrow frontier-brand-line"><BrandMark brand="kimi" size="xs" /> Choose your AI</p>
             <h3>Select Kimi K3.</h3>

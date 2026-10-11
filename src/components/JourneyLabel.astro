@@ -1,0 +1,101 @@
+---
+import type { SiteLocale } from '@/lib/i18n';
+
+type JourneyKind =
+  | 'step'
+  | 'section'
+  | 'path'
+  | 'way'
+  | 'stage'
+  | 'rule'
+  | 'principle'
+  | 'level'
+  | 'rank'
+  | 'source'
+  | 'slot'
+  | 'connect'
+  | 'payment'
+  | 'item'
+  | 'evidence'
+  | 'how';
+
+interface Props {
+  kind: JourneyKind;
+  current?: number;
+  total?: number;
+  class?: string;
+}
+
+const { kind, current, total, class: className } = Astro.props;
+const locale = (Astro.locals.locale ?? 'en') as SiteLocale;
+
+const nouns: Record<SiteLocale, Record<JourneyKind, string>> = {
+  en: {
+    step: 'Step',
+    section: 'Section',
+    path: 'Path',
+    way: 'Way',
+    stage: 'Stage',
+    rule: 'Rule',
+    principle: 'Principle',
+    level: 'Level',
+    rank: 'Rank',
+    source: 'Source',
+    slot: 'Slot',
+    connect: 'Connect',
+    payment: 'Payment step',
+    item: 'Item',
+    evidence: 'Evidence type',
+    how: 'How it works',
+  },
+  ru: {
+    step: 'Шаг',
+    section: 'Раздел',
+    path: 'Путь',
+    way: 'Способ',
+    stage: 'Этап',
+    rule: 'Правило',
+    principle: 'Принцип',
+    level: 'Уровень',
+    rank: 'Место',
+    source: 'Источник',
+    slot: 'Ячейка',
+    connect: 'Подключение',
+    payment: 'Шаг оплаты',
+    item: 'Элемент',
+    evidence: 'Тип доказательства',
+    how: 'Как это работает',
+  },
+  'zh-CN': {
+    step: '步',
+    section: '部分',
+    path: '路径',
+    way: '方式',
+    stage: '阶段',
+    rule: '规则',
+    principle: '原则',
+    level: '级别',
+    rank: '排名',
+    source: '来源',
+    slot: '位置',
+    connect: '连接',
+    payment: '支付步骤',
+    item: '项目',
+    evidence: '证据类型',
+    how: '工作方式',
+  },
+};
+
+function label(): string {
+  const noun = nouns[locale][kind];
+  if (current === undefined) return noun;
+  if (locale === 'zh-CN') {
+    if (kind === 'step' && total) return `第 ${current} 步，共 ${total} 步`;
+    if (kind === 'section' && total) return `第 ${current} 部分，共 ${total} 部分`;
+    return total ? `${noun} ${current}/${total}` : `${noun} ${current}`;
+  }
+  return total ? `${noun} ${current} ${locale === 'ru' ? 'из' : 'of'} ${total}` : `${noun} ${current}`;
+}
+---
+
+<span class:list={['journey-label', className]} data-journey-kind={kind} data-no-translate>{label()}</span>

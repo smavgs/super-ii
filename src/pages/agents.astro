@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { agentConnectorRegistry } from '@/lib/agent-connectors';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
@@ -105,7 +106,7 @@ if (sql) {
         {connectors.map((connector, index) => (
           <article class="agents-connector" data-connector-status={connector.status} hidden={connector.status === 'planned'}>
             <div class="agents-connector__identity">
-              <span class="agents-connector__index">{String(index + 1).padStart(2, '0')}</span>
+              <JourneyLabel class="agents-connector__index" kind="item" current={index + 1} />
               <BrandMark brand={connectorBrand(connector.id)} size="md" label={connector.name} />
               <div>
                 <h3 data-no-translate>{connector.name}</h3>
@@ -201,7 +202,7 @@ if (sql) {
       </div>
       <div class="agents-contract__lanes">
         <section>
-          <span>01 · public</span>
+          <span><JourneyLabel kind="level" current={1} total={3} /> · public</span>
           <h3>Discovery MCP</h3>
           <code>https://superii.site/mcp</code>
           <ul>
@@ -212,7 +213,7 @@ if (sql) {
           <a href="/docs#agent-native">Read the public contract</a>
         </section>
         <section>
-          <span>02 · authenticated</span>
+          <span><JourneyLabel kind="level" current={2} total={3} /> · authenticated</span>
           <h3>Super ii Work MCP</h3>
           <code>https://superii.site/mcp/work</code>
           <ul>
@@ -223,7 +224,7 @@ if (sql) {
           <a href="/account#agents">Manage agent access</a>
         </section>
         <section id="commerce-lane">
-          <span>03 · separately delegated</span>
+          <span><JourneyLabel kind="level" current={3} total={3} /> · separately delegated</span>
           <h3>Super ii Commerce MCP</h3>
           <code>https://superii.site/mcp/commerce</code>
           <ul>

@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { officialNotebooks } from '@/lib/notebooks';
 
 export const prerender = false;
@@ -32,7 +33,7 @@ export const prerender = false;
     <div class="notebook-library__grid">
       {officialNotebooks.map((notebook, index) => (
         <article class="notebook-card">
-          <div class="notebook-card__topline"><span>{String(index + 1).padStart(2, '0')}</span><span>{notebook.category}</span></div>
+          <div class="notebook-card__topline"><JourneyLabel kind="item" current={index + 1} /><span>{notebook.category}</span></div>
           <div>
             <p class="eyebrow">{notebook.level} · {notebook.durationMinutes} min</p>
             <h3><a href={`/notebooks/${notebook.slug}`}>{notebook.title}</a></h3>

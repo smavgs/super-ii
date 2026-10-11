@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { systemState } from '@/lib/system-state';
 import { localizeCapability, localizeCapabilityStatus } from '@/lib/system-state-localization';
 
@@ -53,7 +54,7 @@ const capabilities = systemState.capabilities.map((item) => localizeCapability(i
     <section class="repository-section">
       <div class="repository-section__heading"><div><p class="eyebrow">{russian ? 'Общие определения' : 'Shared vocabulary'}</p><h2>{russian ? 'Уровни статуса' : 'Status ladder'}</h2></div></div>
       <ol class="status-ladder">
-        {systemState.statusLadder.map((status, index) => <li data-no-translate><span>{index + 1}</span><code>{localizeCapabilityStatus(status, locale)}</code></li>)}
+        {systemState.statusLadder.map((status, index) => <li><JourneyLabel kind="level" current={index + 1} /><code data-no-translate>{localizeCapabilityStatus(status, locale)}</code></li>)}
       </ol>
       <p>{russian
         ? 'Если обязательная проверка недоступна, Super ii считает возможность недоступной, а не пропускает проверку. Публичная конечная точка MCP работает только на чтение; вычисления, публикация, приватные данные и платежи не входят в её полномочия.'

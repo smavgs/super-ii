@@ -1,6 +1,7 @@
 ---
 import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
 import type { ManagedRepository } from '@/lib/creator';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import '@/styles/creator-editor.css';
 import '@/styles/repository-card.css';
 
@@ -45,7 +46,7 @@ const sourceUrl = (repository?.provenance as { bridge?: { source_url?: string } 
   </div>}
 
   <details class="creator-panel" name="creator-panel" open={!repository || !files.length} data-files-panel>
-    <summary><span>01</span><strong>Files and folders</strong><small data-file-count>{files.length} files</small></summary>
+    <summary><JourneyLabel kind="section" current={1} total={2} /><strong>Files and folders</strong><small data-file-count>{files.length} files</small></summary>
     <div class="creator-panel__body">
       {editable && <>
         <div class="creator-dropzone" data-file-dropzone>
@@ -67,7 +68,7 @@ const sourceUrl = (repository?.provenance as { bridge?: { source_url?: string } 
   </details>
 
   <details class="creator-panel" name="creator-panel" open={Boolean(repository && files.length)} data-page-panel>
-    <summary><span>02</span><strong>Page details and preview</strong><small>Make it yours</small></summary>
+    <summary><JourneyLabel kind="section" current={2} total={2} /><strong>Page details and preview</strong><small>Make it yours</small></summary>
     <div class="creator-panel__body">
       <fieldset disabled={!editable} class="creator-fields">
         <label>Title<input name="title" value={repository?.title ?? ''} required minlength="2" maxlength="200" autocomplete="off" placeholder="A clear name for your work" /></label>
@@ -99,7 +100,7 @@ const sourceUrl = (repository?.provenance as { bridge?: { source_url?: string } 
     </div>
   </details>
   {editable && <footer class="creator-savebar">
-    <div><button type="submit" class="button button--dark" data-save-creator disabled={!repository && !owners.length && !demo}>{repository ? 'Save draft' : 'Create draft and upload'}</button><button type="button" class="text-button" data-pause-upload hidden>Pause after this file</button></div>
+    <div><button type="submit" class="button pixel-action pixel-action--single" data-save-creator disabled={!repository && !owners.length && !demo}>{repository ? 'Save draft' : 'Create draft and upload'}</button><button type="button" class="text-button" data-pause-upload hidden>Pause after this file</button></div>
     <p>Saving keeps your work in a draft. Publish when you are ready.</p>
     {!repository && !owners.length && !demo && <a class="button button--secondary" href="/sign-in?redirect_url=%2Fnew">Log in to continue</a>}
     <progress max="100" value="0" hidden data-creator-progress aria-label="Upload progress"></progress>

@@ -247,6 +247,9 @@
   border-bottom: 1px solid var(--line, #d8dfe3);
 }
 .product-editor summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   padding: 1.1rem 0;
   font-size: 1.1rem;
 }

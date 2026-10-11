@@ -9,6 +9,7 @@ import {
   resourceKinds,
 } from "@/lib/products";
 import type { companyWorkspace } from "@/lib/product-store";
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import "@/styles/products.css";
 interface Props {
   draft?: ProductDraft | null;
@@ -86,7 +87,7 @@ const productFields = [
   <div class="product-editor-layout">
     <form data-product-form novalidate>
       <details name="product-editor-section" open>
-        <summary>1. Company</summary><div class="product-fields">
+        <summary><JourneyLabel kind="section" current={1} total={5} /><strong>Company</strong></summary><div class="product-fields">
           {
             !draft && (
               <>
@@ -177,7 +178,7 @@ const productFields = [
         </div>
       </details>
       <details name="product-editor-section">
-        <summary>2. Product</summary><div class="product-fields">
+        <summary><JourneyLabel kind="section" current={2} total={5} /><strong>Product</strong></summary><div class="product-fields">
           <div class="product-field-pair">
             <label
               >Product type<select name="product.kind"
@@ -246,7 +247,7 @@ const productFields = [
         </div>
       </details>
       <details name="product-editor-section">
-        <summary>3. Images</summary><div class="product-fields">
+        <summary><JourneyLabel kind="section" current={3} total={5} /><strong>Images</strong></summary><div class="product-fields">
           <p>
             Choose up to three company images. Reusing an image uses no new
             upload.
@@ -286,7 +287,7 @@ const productFields = [
         </div>
       </details>
       <details name="product-editor-section">
-        <summary>4. Specifications and resources</summary><div
+        <summary><JourneyLabel kind="section" current={4} total={5} /><strong>Specifications and resources</strong></summary><div
           class="product-fields"
         >
           <p>
@@ -306,7 +307,7 @@ const productFields = [
         </div>
       </details>
       <details name="product-editor-section">
-        <summary>5. Contact and ownership</summary><div class="product-fields">
+        <summary><JourneyLabel kind="section" current={5} total={5} /><strong>Contact and ownership</strong></summary><div class="product-fields">
           <p>
             Add at least one public contact method. These details belong to the
             company; your personal Card remains yours.
@@ -370,7 +371,7 @@ const productFields = [
         </div>
       </details>
       <div class="product-save-bar">
-        <button class="button button--dark" type="submit" disabled={unavailable}
+        <button class="button pixel-action pixel-action--single" type="submit" disabled={unavailable}
           >Save draft</button
         ><span data-draft-state>Private until you publish</span>
       </div>
@@ -392,7 +393,7 @@ const productFields = [
           link.</label
         >
         <button
-          class="button button--dark"
+          class="button pixel-action pixel-action--single"
           type="button"
           data-publish
           disabled={unavailable}>Publish company and product</button

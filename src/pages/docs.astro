@@ -3,6 +3,7 @@ import InfoTip from '@/components/InfoTip.astro';
 import PageHero from '@/components/PageHero.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { memberAction } from '@/lib/member-actions';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 export const prerender = false;
 const russian = Astro.locals.locale === 'ru';
@@ -32,12 +33,12 @@ if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
       </p>
       <div class="docs-quick-start">
         <strong>New here? Start with:</strong>
-        <ol>
-          <li><a href={accountAction.href}>{accountAction.label}</a></li>
-          <li><a href="/models">Explore models</a> and <a href="/datasets">datasets</a></li>
-          <li><a href="/notebooks">Read a notebook</a></li>
-          <li><a href="/bring-my-work">Bring existing work</a></li>
-          <li><a href="/new">Publish when ready</a></li>
+        <ol class="journey-list journey-list--compact">
+          <li><JourneyLabel kind="step" current={1} total={5} /><span><a href={accountAction.href}>{accountAction.label}</a></span></li>
+          <li><JourneyLabel kind="step" current={2} total={5} /><span><a href="/models">Explore models</a> and <a href="/datasets">datasets</a></span></li>
+          <li><JourneyLabel kind="step" current={3} total={5} /><span><a href="/notebooks">Read a notebook</a></span></li>
+          <li><JourneyLabel kind="step" current={4} total={5} /><span><a href="/bring-my-work">Bring existing work</a></span></li>
+          <li><JourneyLabel kind="step" current={5} total={5} /><span><a href="/new">Publish when ready</a></span></li>
         </ol>
       </div>
     </div>
@@ -50,10 +51,10 @@ if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
       <blockquote><p>Model, dataset, and app uploads stay closed until the separate Super ii Runtime reports local storage and both required scanners ready. Every revision needs a signed passing decision from the independent automatic policy service before Postgres permits publication.</p></blockquote>
 
       <h2 id="account">Create an account</h2>
-      <ol>
-        <li>Select <strong>Join free</strong> anywhere on the site.</li>
-        <li>Continue with email, Google, or GitHub.</li>
-        <li>Verify the address when prompted and complete your public profile.</li>
+      <ol class="journey-list">
+        <li><JourneyLabel kind="step" current={1} total={3} /><span>Select <strong>Join free</strong> anywhere on the site.</span></li>
+        <li><JourneyLabel kind="step" current={2} total={3} /><span>Continue with email, Google, or GitHub.</span></li>
+        <li><JourneyLabel kind="step" current={3} total={3} /><span>Verify the address when prompted and complete your public profile.</span></li>
       </ol>
       <p>The free plan requires no payment card. Authentication is provided through a dedicated Super ii application; account credentials are not stored in the website source.</p>
       <p>In <a href="/account#profile">Workspace → Profile</a>, members can add a short biography, up to 12 interests, and public links for X, GitHub, LinkedIn, a website, and YouTube. Name and photo continue to come from the login profile. The public <a href="/builders">Builders directory</a> and creator links on public work lead back to these member pages. Public member pages retain follows and add one reversible profile like per signed-in member; profile likes remain separate from repository likes, Community Leader votes, reputation, search, and ranking. Member-supplied links are labeled as links, not verified connections.</p>

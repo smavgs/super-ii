@@ -1,6 +1,7 @@
 ---
 import { absoluteUrl } from '@/lib/site';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 const mcpEndpoint = absoluteUrl('/mcp');
 const installCommands = {
@@ -46,7 +47,7 @@ const installCommands = {
 
     <ol class="agent-starter__steps">
       <li class="agent-starter__step" data-worker-step="install">
-        <div class="agent-starter__step-number">01</div>
+        <JourneyLabel class="agent-starter__step-number" kind="step" current={1} total={4} />
         <div class="agent-starter__step-content">
           <p class="eyebrow">Install</p>
           <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Install Ollama</h3>
@@ -82,7 +83,7 @@ const installCommands = {
       </li>
 
       <li class="agent-starter__step" data-worker-step="model">
-        <div class="agent-starter__step-number">02</div>
+        <JourneyLabel class="agent-starter__step-number" kind="step" current={2} total={4} />
         <div class="agent-starter__step-content">
           <p class="eyebrow">AI model</p>
           <h3 class="brand-heading"><BrandMark brand="qwen" size="sm" />Download a capable small model</h3>
@@ -109,7 +110,7 @@ const installCommands = {
       </li>
 
       <li class="agent-starter__step" data-worker-step="context">
-        <div class="agent-starter__step-number">03</div>
+        <JourneyLabel class="agent-starter__step-number" kind="step" current={3} total={4} />
         <div class="agent-starter__step-content">
           <p class="eyebrow">Working memory</p>
           <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Set context length to 64K or higher</h3>
@@ -125,7 +126,7 @@ const installCommands = {
       </li>
 
       <li class="agent-starter__step" data-worker-step="launch">
-        <div class="agent-starter__step-number">04</div>
+        <JourneyLabel class="agent-starter__step-number" kind="step" current={4} total={4} />
         <div class="agent-starter__step-content">
           <p class="eyebrow">Launch</p>
           <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Start your AI worker</h3>
@@ -169,7 +170,7 @@ const installCommands = {
 
       <div class="agent-connect__flow">
         <div>
-          <span>1</span>
+          <JourneyLabel kind="connect" current={1} total={3} />
           <p>In a new terminal, start the guided setup:</p>
           <div class="agent-command agent-command--light">
             <code data-worker-command-id="mcp-add">opencode mcp add</code>
@@ -177,7 +178,7 @@ const installCommands = {
           </div>
         </div>
         <div>
-          <span>2</span>
+          <JourneyLabel kind="connect" current={2} total={3} />
           <p>Choose <strong>Remote</strong>, name it <strong>superii</strong>, and use:</p>
           <div class="agent-command agent-command--light">
             <code data-worker-command-id="mcp-url">{mcpEndpoint}</code>
@@ -185,7 +186,7 @@ const installCommands = {
           </div>
         </div>
         <div>
-          <span>3</span>
+          <JourneyLabel kind="connect" current={3} total={3} />
           <p>Verify the connection:</p>
           <div class="agent-command agent-command--light">
             <code data-worker-command-id="mcp-list">opencode mcp list</code>

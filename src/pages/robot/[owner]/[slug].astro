@@ -5,6 +5,7 @@ import { sqlClient } from '@/lib/db';
 import { getAccessibleRobot, listRobotVersions } from '@/lib/robot-store';
 import type { RobotPlan } from '@/lib/robot';
 import ShowcaseGallery from '@/components/ShowcaseGallery.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import '@/styles/robot.css';
 
@@ -46,7 +47,7 @@ const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
             <section id="overview" class="robot-profile-overview"><div><p class="eyebrow">Editable public profile</p><h2>{robot.project_stage} stage</h2>{robot.software_summary ? <p data-no-translate>{robot.software_summary}</p> : <p>The builder has not added a software overview yet.</p>}</div>{robot.capabilities.length > 0 && <ul aria-label="Robot capabilities">{robot.capabilities.map((capability) => <li data-no-translate>{capability}</li>)}</ul>}</section>
             {robot.showcase_links.length > 0 && <section><h2>Software and project links</h2><div class="robot-resource-links">{robot.showcase_links.map((link) => <a href={link.url} target="_blank" rel="ugc nofollow noopener noreferrer external"><span>{link.kind}</span><strong data-no-translate>{link.label}</strong><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div></section>}
             <section><h2>Recommendation</h2><h3>{plan.recommendation.name}</h3><p>{plan.recommendation.reason}</p><p><strong>Intended audience:</strong> {plan.recommendation.audience}</p></section>
-            <section id="parts"><h2>Parts list (BOM)</h2><div class="robot-bom">{plan.components.map((component, index) => <a class="robot-bom__row" href={`/robot/components/${component.slug}`}><span>{String(index + 1).padStart(2, '0')}</span><span><strong>{component.name}</strong><small>{component.manufacturer} · {component.ownership}</small></span><em class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</em></a>)}</div></section>
+            <section id="parts"><h2>Parts list (BOM)</h2><div class="robot-bom">{plan.components.map((component, index) => <a class="robot-bom__row" href={`/robot/components/${component.slug}`}><JourneyLabel kind="item" current={index + 1} /><span><strong>{component.name}</strong><small>{component.manufacturer} · {component.ownership}</small></span><em class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</em></a>)}</div></section>
             <section id="check"><h2>Robot Check</h2><div class="robot-check">{plan.robot_check.map((check) => <div class="robot-check__row"><div><strong>{check.dimension}</strong><span class={`robot-evidence robot-evidence--${check.status}`}>{check.status}</span></div><p>{check.explanation}</p></div>)}</div></section>
             <section id="unknowns"><h2>Open requirements</h2><ul>{plan.open_requirements.map((requirement) => <li>{requirement}</li>)}</ul><p><strong>Safety boundary:</strong> {plan.safety}</p></section>
             <section><h2>Make stages</h2>{plan.stages.map((stage) => <article><span class="eyebrow">{stage.id} · {stage.label}</span><p>{stage.copy}</p></article>)}</section>

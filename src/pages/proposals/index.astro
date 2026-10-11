@@ -2,6 +2,7 @@
 import { Show, SignInButton } from '@clerk/astro/components';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import PageHero from '@/components/PageHero.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import {
@@ -131,13 +132,13 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
       </div>
       <ol class="leader-list" data-leader-panel="month">
         {monthlyLeaders.map((leader, index) => (
-          <li><span class="leader-rank">{index < 3 ? medal(index + 1) : String(index + 1).padStart(2, '0')}</span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
+          <li><span class="leader-rank">{index < 3 && <span aria-hidden="true">{medal(index + 1)}</span>}<JourneyLabel kind="rank" current={index + 1} /></span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
         ))}
         {!monthlyLeaders.length && <li class="leader-list__empty">No valid votes this month yet.</li>}
       </ol>
       <ol class="leader-list" data-leader-panel="all" hidden>
         {allTimeLeaders.map((leader, index) => (
-          <li><span class="leader-rank">{index < 3 ? medal(index + 1) : String(index + 1).padStart(2, '0')}</span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
+          <li><span class="leader-rank">{index < 3 && <span aria-hidden="true">{medal(index + 1)}</span>}<JourneyLabel kind="rank" current={index + 1} /></span><div><a href={`/people/${leader.handle}`}>{leader.display_name}</a><small>{leader.valid_human_votes} valid votes · {leader.shipped_count} ideas shipped</small><a href={`/proposals/${leader.winning_proposal_slug}`}>{leader.winning_proposal_title}</a></div></li>
         ))}
         {!allTimeLeaders.length && <li class="leader-list__empty">The all-time board begins with the first valid vote.</li>}
       </ol>

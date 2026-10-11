@@ -66,7 +66,8 @@ const glyphs: Record<string, string> = {
 };
 
 const russian = document.documentElement.lang === 'ru';
-const languagePrefix = russian ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
+const chinese = document.documentElement.lang === 'zh-CN';
+const languagePrefix = russian ? '/ru' : chinese ? '/zh-cn' : '';
 const categoryRussian: Record<string, string> = {
   All: 'Все',
   Marketing: 'Маркетинг',
@@ -541,7 +542,7 @@ function makeCard(skill: Skill, index: number) {
   mark.setAttribute('aria-hidden', 'true');
   mark.textContent = glyph(skill.category);
   const number = document.createElement('small');
-  number.textContent = String(index + 1).padStart(3, '0');
+  number.textContent = `${russian ? 'Элемент' : chinese ? '项目' : 'Item'} ${String(index + 1).padStart(3, '0')}`;
   top.appendChild(mark);
   top.appendChild(number);
 

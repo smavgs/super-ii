@@ -5,6 +5,7 @@ import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { paymentSqlClient, sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 type CheckoutOrder = {
   id: string;
@@ -94,10 +95,10 @@ const termLabel = order?.billing_term === '12_months' ? '12 months' : '30 days';
         </section>
         <aside class="checkout-aside">
           <h2>What happens next</h2>
-          <ol>
-            <li>Your payment is monitored for arrival.</li>
-            <li>Ethereum confirmations update this page.</li>
-            <li>Your plan activates after the payment is confirmed.</li>
+          <ol class="journey-list journey-list--compact">
+            <li><JourneyLabel kind="payment" current={1} total={3} /><span>Your payment is monitored for arrival.</span></li>
+            <li><JourneyLabel kind="payment" current={2} total={3} /><span>Ethereum confirmations update this page.</span></li>
+            <li><JourneyLabel kind="payment" current={3} total={3} /><span>Your plan activates after the payment is confirmed.</span></li>
           </ol>
           <p>This is one {termLabel} purchase, not an automatic renewal. Renew manually before the period ends if you want to continue.</p>
           <p>Network and processor fees may apply. Amounts underpaid, overpaid, sent on the wrong network, or sent after expiry may require NOWPayments support.</p>

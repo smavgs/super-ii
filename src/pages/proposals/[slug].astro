@@ -6,6 +6,7 @@ import { sqlClient } from '@/lib/db';
 import { getProposalBySlug, type ProposalDetail } from '@/lib/participation';
 import { authIsConfigured } from '@/lib/site';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 const slug = Astro.params.slug ?? '';
 const sql = sqlClient(Astro.locals);
@@ -46,7 +47,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
       <ol class="proposal-timeline" aria-label="Proposal roadmap status">
         {stages.map((stage, index) => (
           <li data-complete={String(index <= stageIndex)} aria-current={stage === proposal.status ? 'step' : undefined}>
-            <span>{index < stageIndex ? '✓' : index + 1}</span><strong>{stage[0].toUpperCase() + stage.slice(1)}</strong>
+            <span class="proposal-timeline__state" aria-hidden="true">{index < stageIndex ? '✓' : '·'}</span><JourneyLabel kind="stage" current={index + 1} total={stages.length} /><strong>{stage[0].toUpperCase() + stage.slice(1)}</strong>
           </li>
         ))}
       </ol>
