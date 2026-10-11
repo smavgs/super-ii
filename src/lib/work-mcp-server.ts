@@ -1,3 +1,4 @@
+import { registerWorkroomTools } from './workroom-mcp';
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { McpServer } from '@modelcontextprotocol/server';
 import { createMcpHandler } from 'agents/mcp/server';
@@ -104,6 +105,7 @@ export function createSuperiiWorkMcpServer(
     },
   );
 
+  registerWorkroomTools(server, locals, request);
   server.registerTool('get_connection_status', {
     title: 'Check this agent connection', description: 'Read granted scopes, repository binding, expiry and remaining actions without spending an action. A connection is not proof that a task is complete.',
     inputSchema: z.object({}), annotations: readAnnotations,

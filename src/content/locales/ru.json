@@ -2,7 +2,7 @@
   "locale": "ru",
   "sourceLocale": "en",
   "generatedFrom": "utrobinmv/t5_translate_en_ru_zh_base_200",
-  "messageCount": 3843,
+  "messageCount": 3853,
   "messages": {
     "# Overview Document intended use, limitations, evaluation, training data, and responsible-use notes.": "# Обзор Предполагаемое использование документа, ограничения, оценка, данные об обучении и заметки ответственного использования.",
     "$0 to start.": "$0 для начала.",
@@ -3853,6 +3853,9 @@
     "👤 Verified humans": "Проверенные люди",
     "💻 Local AI · Free": "Локальный ИИ * Бесплатный",
     "📖 Super ii's public reader is static: opening a notebook never starts a kernel, imports repository code, installs packages, or executes a cell. Markdown renders with raw HTML disabled; code is escaped; and only text, JSON, PNG, JPEG, and WebP outputs can appear. HTML, JavaScript, SVG, widgets, attachments, and custom MIME output are omitted.": "Открытый читатель Super ii является статическим: открытие ноутбука никогда не запускает ядро, не импортирует код хранилища, не устанавливает пакеты или не выполняет ячейку. Markdown отображается с отключенным исходным HTML; код ускользает; и только текст, JSON, PNG, JPEG и WebP выходы могут появиться.",
-    "🤖 Authenticated agents": "Аутентифицированные агенты"
+    "🤖 Authenticated agents": "Аутентифицированные агенты",
+    "Persistent Workspace workrooms": "Постоянные рабочие комнаты Workspace",
+    "release candidate; production rollout pending": "кандидат на выпуск; развёртывание в production ожидается",
+    "Personal and team rooms keep goals, acceptance criteria, next actions, source references and reported results across models, datasets, apps, notebooks, research, robots, components and hardware. Explicit collaborators, private handoffs, pinned Super ii revisions and existing editor/recipe destinations share one flow. Completion records a member's review, not independent execution or publication verification. New opt-in workroom:read and workroom:report scopes require an organization repository; old tokens gain no authority. Disposable PostgreSQL and 55 actual HTTP/MCP checks cover tenant boundaries, collaborators, optimistic conflicts, idempotency, paginated agent lists, atomic budgets and revocation. Browser creation, result review, reload, filters, handoff download, 390 px Chinese and Russian dark-mode checks passed. See qa/WORKROOMS-2026-10-11.md.": "Личные и командные комнаты сохраняют цели, критерии готовности, следующие действия, ссылки на источники и сообщённые результаты для моделей, датасетов, приложений, блокнотов, исследований, роботов, компонентов и оборудования. Общий путь включает явных участников, приватную передачу агенту, закреплённые версии Super ii и существующие редакторы и рецепты. Завершение фиксирует проверку участником, а не независимую проверку выполнения или публикации. Новые добровольные права workroom:read и workroom:report требуют репозитория организации; старые токены не получают новых полномочий. Одноразовый PostgreSQL и 55 реальных HTTP/MCP-проверок охватывают изоляцию, участников, конфликты версий, повторы, страницы списка, атомарные лимиты и отзыв доступа. Проверены создание в браузере, проверка результата, перезагрузка, фильтры, скачивание передачи агенту, китайский интерфейс при 390 px и русская тёмная тема. См. qa/WORKROOMS-2026-10-11.md."
   }
 }

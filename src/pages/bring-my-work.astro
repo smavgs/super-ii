@@ -130,6 +130,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
   </section>
 
   <section class="shell bridge-workspace" data-bridge-workspace data-active-job={activeJob?.id ?? ''}>
+    <p>Working from another source or still exploring? <a href="/workspace/workrooms/new">Start a private workroom with your link</a>. Save the goal and results while files stay at their source.</p>
     {!configured && (
       <div class="notice notice--warning" role="status">
         <i class="ph ph-warning" aria-hidden="true"></i>

@@ -79,6 +79,8 @@ The Work MCP may expose these scoped tools when the current system state and tok
 - get_action_receipt
 - get_connection_status
 - get_work_status
+- get_workroom (explicit workroom:read; organization repository binding)
+- report_workroom_result (explicit workroom:report; creation_key UUID; reported result awaiting member review)
 
 The legacy submit_revision_for_review name is an alias for the same automatic policy submission. Contribution jobs retain their separate acceptance process.
 

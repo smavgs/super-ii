@@ -1,0 +1,64 @@
+---
+import { kindNames, workKinds } from '@/lib/workrooms';
+import '@/styles/workrooms.css';
+interface Props { id?: string; }
+const {id = ''} = Astro.props;
+---
+<section class="shell workroom-page" data-workroom-editor data-room-id={id}>
+  <nav aria-label="Breadcrumb"><a href="/account#work">Workspace</a><span aria-hidden="true"> / </span><span>{id ? 'Workroom' : 'Start work'}</span></nav>
+  <header class="workspace-heading"><h1 data-room-title data-no-translate={id ? true : undefined}>{id ? 'Your workroom' : 'What do you want to work on?'}</h1><p data-room-subtitle>{id ? 'Your goal, progress and results.' : 'Start with an idea, a repository or a link. A personal workroom needs no company.'}</p></header>
+  <p data-room-status role="status" aria-live="polite">Loading your Workspace…</p>
+  <button class="text-button" type="button" data-room-retry hidden>Try loading again</button>
+  <div data-room-body hidden>
+    <section data-room-overview hidden class="workroom-overview" aria-label="Current work">
+      <span class="status-badge" data-room-state></span><p class="workroom-goal" data-room-goal data-no-translate></p>
+      <p><strong data-room-next-label>Next action</strong><br/><span data-room-next data-no-translate></span></p>
+      <div class="workroom-actions" data-room-actions></div>
+    </section>
+    <details name="workroom-details" data-room-edit-details open>
+      <summary>{id ? 'Goal and source' : 'Set up your workroom'}</summary>
+      <form data-room-form>
+        <fieldset data-room-fields>
+          <div class="workroom-grid"><label>Title<input name="title" required minlength="2" maxlength="160" placeholder="A short name for your work" /></label>
+          <label>Kind of work<select name="kind">{workKinds.map(kind=><option value={kind}>{kindNames[kind]}</option>)}</select></label></div>
+          <label>What do you want to achieve?<textarea name="goal" rows="3" required minlength="3" maxlength="2000" placeholder="Describe the result you want." /></label>
+          <label>How will you know it is ready?<textarea name="acceptance" rows="2" maxlength="2000" placeholder="The checks or result you want to review." /></label>
+          <label>Next action<input name="next_action" maxlength="1000" placeholder="One useful thing to do next" /></label>
+          {!id && <div class="workroom-grid"><label>Who is this for?<select name="organization_id"><option value="">Just me</option></select></label><label>Existing repository (optional)<select name="repository_id"><option value="">Start without a repository</option></select></label></div>}
+          <details class="workroom-source"><summary>Source link and version (optional)</summary>
+            <label>Source link<input name="source_url" type="url" maxlength="2048" placeholder="https://…" /></label>
+            <label>Source version you are using<input name="source_revision" maxlength="200" placeholder="A commit, release or version, if known" /></label>
+            <p>Keep a link from GitHub, GitLab, Codeberg, Hugging Face or another public website. This saves a reference; it does not import or run its files. Keep credentials out of links.</p>
+          </details>
+          {id && <><div class="workroom-grid"><label>Progress<select name="status"><option value="active">In progress</option><option value="blocked">Blocked</option><option value="review">Ready to review</option><option value="complete">Complete</option><option value="archived">Archived</option></select></label>
+          <label data-review-field hidden>Result I reviewed<select name="reviewed_entry_id"><option value="">Select a saved result</option></select></label></div>
+          <p data-review-copy hidden>Mark complete after checking the result against your goal. This records your review; it does not independently verify execution or publish anything.</p></>}
+          <button class="button button--dark" type="submit">{id ? 'Save changes' : 'Create workroom'}</button>
+        </fieldset>
+      </form>
+    </details>
+    <details name="workroom-details" data-room-results hidden>
+      <summary>Results and notes <span data-entry-count></span></summary>
+      <p>Keep decisions, results and blockers here. Uploaded files stay in their repository; link the result below.</p>
+      <form data-entry-form><fieldset data-entry-fields>
+        <label>Add<select name="kind"><option value="note">A note or decision</option><option value="result">A result for review</option><option value="blocker">A blocker</option></select></label>
+        <label>What happened?<textarea name="body" required maxlength="8000" rows="3" /></label>
+        <details><summary>Result link and checksum (optional)</summary><label>Result or evidence link<input name="url" type="url" maxlength="2048" placeholder="https://…" /></label><label>SHA-256<input name="sha256" pattern="[a-f0-9]{64}" maxlength="64" placeholder="If you have a file checksum" /></label></details>
+        <button class="button button--dark button--small" type="submit">Save entry</button>
+      </fieldset></form>
+      <div class="workroom-history" data-room-history></div><button class="text-button" type="button" data-history-more hidden>Show earlier entries</button>
+    </details>
+    <details name="workroom-details" data-room-people hidden>
+      <summary>People and agents</summary>
+      <p data-room-access></p><div data-room-members></div>
+      <form data-share-form hidden><label>Member's public handle<input name="handle" required maxlength="100" autocomplete="off" /></label>
+        <label>Access<select name="role"><option value="viewer">Can view</option><option value="editor">Can edit and add results</option></select></label><button class="button button--secondary button--small" type="submit">Give access</button><p>Access includes the goal, source references and result history. This does not share the underlying repository or its files.</p></form>
+      <hr/><h3>Continue with your agent</h3><p>Download a handoff containing this workroom's goal, source and reported entries. Share it only with an agent you choose.</p>
+      <button class="button button--secondary button--small" type="button" data-room-export>Download handoff</button>
+      <p data-room-agent-access></p><a href="/account#agents">Manage agent access</a>
+    </details>
+    <p data-room-pin class="workroom-muted"></p>
+  </div>
+  <noscript><p>Enable JavaScript to load and save this private workroom.</p></noscript>
+</section>
+<script>import '../scripts/workrooms';</script>

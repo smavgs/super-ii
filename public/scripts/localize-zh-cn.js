@@ -17,7 +17,9 @@
   const normalize = (value) => value.replace(/\s+/g, ' ').trim();
   const exact = (value) => reviewedMessages[value] || messages[value] || value;
   const translateDynamic = (value) => {
-    let match = value.match(/^About (.+)$/);
+    let match = value.match(/^(\d+) of (\d+) workrooms$/);
+    if (match) return `显示 ${match[2]} 个工作室中的 ${match[1]} 个`;
+    match = value.match(/^About (.+)$/);
     if (match) return `关于${exact(match[1])}`;
     match = value.match(/^Close (.+) information$/);
     if (match) return `关闭${exact(match[1])}说明`;
@@ -242,7 +244,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/zh-cn.json?v=20261010-1', { credentials: 'same-origin' })
+  fetch('/locales/zh-cn.json?v=20261011-2', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Simplified Chinese catalogue unavailable');
       return response.json();

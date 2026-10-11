@@ -98,6 +98,7 @@ const published = repository?.revision_status === 'published';
         <div class="button-row">
           {published && <a class="button button--dark" href={publicHref}>View public repository</a>}
           <a class="button button--secondary" href="/account">Back to account</a>
+          <a class="button button--secondary" href={`/workspace/workrooms/new?repository=${repository.id}`}>Start work from this repository</a>
         </div>
       </PageHero>
       <main class="section shell creator-workspace" data-repository-workspace data-repository-id={repository.id} data-revision-id={repository.revision_id} data-branch-id={repository.branch_id}>

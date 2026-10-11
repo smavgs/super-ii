@@ -1,0 +1,9 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import WorkroomEditor from '@/components/WorkroomEditor.astro';
+import { z } from 'zod';
+const id = Astro.params.id ?? '';
+if (!z.uuid().safeParse(id).success) return Astro.redirect('/account#work');
+Astro.response.headers.set('Cache-Control','private, no-store');
+---
+<BaseLayout title="Workroom" noindex><WorkroomEditor id={id} /></BaseLayout>
