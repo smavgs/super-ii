@@ -1,5 +1,6 @@
 ---
 import type { EditableMemberProfile } from '@/lib/member-profile';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 type WorkspaceProfile = EditableMemberProfile & {
   id: string;
@@ -101,7 +102,7 @@ const emptySlots = Math.max(0, Math.min(3 - showcase.length, uploadsRemaining));
           <p class="form-status" role="status" aria-live="polite"></p>
         </form>
       </article>)}
-      {Array.from({ length: emptySlots }, (_, index) => <div class="showcase-editor__empty" aria-hidden="true"><span>0{showcase.length + index + 1}</span><i class="ph ph-image" aria-hidden="true"></i><small>Open showcase slot</small></div>)}
+      {Array.from({ length: emptySlots }, (_, index) => <div class="showcase-editor__empty"><JourneyLabel kind="slot" current={showcase.length + index + 1} /><i class="ph ph-image" aria-hidden="true"></i><small>Open showcase slot</small></div>)}
     </div>
     {showcase.length < 3 && uploadsRemaining > 0 && <form class="showcase-upload" data-showcase-upload>
       <label>Describe the image for people using screen readers <input name="alt_text" maxlength="240" required placeholder="Robot prototype on a workbench" /></label>

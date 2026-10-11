@@ -15,6 +15,13 @@ const planner = document.querySelector<HTMLFormElement>('[data-robot-planner]');
 const result = document.querySelector<HTMLElement>('[data-robot-result]');
 const saveForm = document.querySelector<HTMLFormElement>('[data-robot-save]');
 let currentPlan: RobotPlan | null = null;
+const locale = root?.dataset.locale ?? 'en';
+
+function itemLabel(index: number) {
+  if (locale === 'ru') return `Элемент ${index}`;
+  if (locale === 'zh-CN') return `项目 ${index}`;
+  return `Item ${index}`;
+}
 
 function syncOwnerPrefix() {
   const owner = saveForm?.elements.namedItem('organization_id');
@@ -44,7 +51,7 @@ function renderPlan(plan: RobotPlan) {
   components?.replaceChildren(...plan.components.map((component, index) => {
     const row = node('a', 'robot-bom__row') as HTMLAnchorElement;
     row.href = `/robot/components/${encodeURIComponent(component.slug)}`;
-    row.appendChild(node('span', '', String(index + 1).padStart(2, '0')));
+    row.appendChild(node('span', 'journey-label', itemLabel(index + 1)));
     const description = node('span');
     description.appendChild(node('strong', '', component.name));
     description.appendChild(node('small', '', `${component.manufacturer} · ${component.ownership}`));

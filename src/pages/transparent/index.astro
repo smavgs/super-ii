@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import TransparencyWorkspace from '@/components/TransparencyWorkspace.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
@@ -58,10 +59,10 @@ if (sql) {
         <h2 id="transparent-principles-title">A report says only what its sources support.</h2>
       </div>
       <div class="transparent-principles__grid">
-        <article data-state="verified"><span>01</span><h3>Verified</h3><p>Directly observed by the bounded checker at the exact commit. Not a safety certification.</p></article>
-        <article data-state="declared"><span>02</span><h3>Declared</h3><p>Stated by the repository creator or Hugging Face. Not independently reproduced.</p></article>
-        <article data-state="derived"><span>03</span><h3>Derived</h3><p>Calculated from observed metadata. Every derived field exposes its method.</p></article>
-        <article data-state="unknown"><span>04</span><h3>Unknown</h3><p>The public evidence does not establish it. Super ii does not fill gaps with guesses.</p></article>
+        <article data-state="verified"><JourneyLabel kind="evidence" /><h3>Verified</h3><p>Directly observed by the bounded checker at the exact commit. Not a safety certification.</p></article>
+        <article data-state="declared"><JourneyLabel kind="evidence" /><h3>Declared</h3><p>Stated by the repository creator or Hugging Face. Not independently reproduced.</p></article>
+        <article data-state="derived"><JourneyLabel kind="evidence" /><h3>Derived</h3><p>Calculated from observed metadata. Every derived field exposes its method.</p></article>
+        <article data-state="unknown"><JourneyLabel kind="evidence" /><h3>Unknown</h3><p>The public evidence does not establish it. Super ii does not fill gaps with guesses.</p></article>
       </div>
     </section>
 

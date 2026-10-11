@@ -1,6 +1,7 @@
 ---
 import { absoluteUrl } from '@/lib/site';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 const mcpEndpoint = absoluteUrl('/mcp');
 const mcpConfig = JSON.stringify({
@@ -43,7 +44,7 @@ const installCommands = {
 
   <ol class="agent-starter__steps">
     <li class="agent-starter__step" data-agent-step="install">
-      <div class="agent-starter__step-number">01</div>
+      <JourneyLabel class="agent-starter__step-number" kind="step" current={1} total={4} />
       <div class="agent-starter__step-content">
         <p class="eyebrow">Install</p>
         <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Install Ollama</h3>
@@ -79,7 +80,7 @@ const installCommands = {
     </li>
 
     <li class="agent-starter__step" data-agent-step="signin">
-      <div class="agent-starter__step-number">02</div>
+      <JourneyLabel class="agent-starter__step-number" kind="step" current={2} total={4} />
       <div class="agent-starter__step-content">
         <p class="eyebrow">Cloud access</p>
         <h3 class="brand-heading"><BrandMark brand="ollama" size="sm" />Sign in to Ollama</h3>
@@ -98,7 +99,7 @@ const installCommands = {
     </li>
 
     <li class="agent-starter__step" data-agent-step="launch">
-      <div class="agent-starter__step-number">03</div>
+      <JourneyLabel class="agent-starter__step-number" kind="step" current={3} total={4} />
       <div class="agent-starter__step-content">
         <p class="eyebrow">Launch</p>
         <h3 class="brand-heading"><BrandMark brand="opencode" size="sm" />Start OpenCode</h3>
@@ -117,7 +118,7 @@ const installCommands = {
     </li>
 
     <li class="agent-starter__step" data-agent-step="model">
-      <div class="agent-starter__step-number">04</div>
+      <JourneyLabel class="agent-starter__step-number" kind="step" current={4} total={4} />
       <div class="agent-starter__step-content">
         <p class="eyebrow">Model</p>
         <h3>Choose a free cloud model</h3>
@@ -163,7 +164,7 @@ const installCommands = {
 
     <div class="agent-connect__flow">
       <div>
-        <span>1</span>
+        <JourneyLabel kind="connect" current={1} total={3} />
         <p>In a new terminal, run:</p>
         <div class="agent-command agent-command--light">
           <code data-command-id="mcp-add">opencode mcp add</code>
@@ -171,7 +172,7 @@ const installCommands = {
         </div>
       </div>
       <div>
-        <span>2</span>
+        <JourneyLabel kind="connect" current={2} total={3} />
         <p>Choose <strong>Remote</strong>, name it <strong>superii</strong>, and use this URL:</p>
         <div class="agent-command agent-command--light">
           <code data-command-id="mcp-url">{mcpEndpoint}</code>
@@ -179,7 +180,7 @@ const installCommands = {
         </div>
       </div>
       <div>
-        <span>3</span>
+        <JourneyLabel kind="connect" current={3} total={3} />
         <p>Confirm the connection:</p>
         <div class="agent-command agent-command--light">
           <code data-command-id="mcp-list">opencode mcp list</code>

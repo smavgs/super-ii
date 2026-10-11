@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import CreatorEditor from '@/components/CreatorEditor.astro';
 import PageHero from '@/components/PageHero.astro';
@@ -196,11 +197,11 @@ const published = repository?.revision_status === 'published';
           </div>
           <details class="trusted-publisher-guide">
             <summary>GitHub Actions exchange contract</summary>
-            <ol>
-              <li>Grant the workflow <code>id-token: write</code> and <code>contents: read</code>.</li>
-              <li>Request a GitHub OIDC token with audience <code>https://superii.site</code>.</li>
-              <li>POST it as a bearer token to <code>https://superii.site/api/trusted-publishing/github/exchange</code> with this repository ID and the needed scopes.</li>
-              <li>Use the returned bearer token only for the bounded upload, commit, or submit call; never print or persist it.</li>
+            <ol class="journey-list journey-list--compact">
+              <li><JourneyLabel kind="step" current={1} total={4} /><span>Grant the workflow <code>id-token: write</code> and <code>contents: read</code>.</span></li>
+              <li><JourneyLabel kind="step" current={2} total={4} /><span>Request a GitHub OIDC token with audience <code>https://superii.site</code>.</span></li>
+              <li><JourneyLabel kind="step" current={3} total={4} /><span>POST it as a bearer token to <code>https://superii.site/api/trusted-publishing/github/exchange</code> with this repository ID and the needed scopes.</span></li>
+              <li><JourneyLabel kind="step" current={4} total={4} /><span>Use the returned bearer token only for the bounded upload, commit, or submit call; never print or persist it.</span></li>
             </ol>
           </details>
         </section>

@@ -36,6 +36,8 @@ rust/target/
 
 # local visual QA captures (the written QA record remains tracked)
 qa/evidence/
+output/playwright/
+.playwright-cli/
 
 # macOS-specific files
 .DS_Store

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 export const prerender = false;
 ---
@@ -85,11 +86,11 @@ export const prerender = false;
         <h2 id="join-team-path-title">The strongest relationships can grow naturally.</h2>
       </div>
       <ol class="join-team-path__steps">
-        <li><span>01</span><strong>Contribute</strong></li>
-        <li><span>02</span><strong>Build together</strong></li>
-        <li><span>03</span><strong>Earn trust</strong></li>
-        <li><span>04</span><strong>Take responsibility</strong></li>
-        <li><span>05</span><strong>Join the Founding Team</strong></li>
+        <li><JourneyLabel kind="stage" current={1} total={5} /><strong>Contribute</strong></li>
+        <li><JourneyLabel kind="stage" current={2} total={5} /><strong>Build together</strong></li>
+        <li><JourneyLabel kind="stage" current={3} total={5} /><strong>Earn trust</strong></li>
+        <li><JourneyLabel kind="stage" current={4} total={5} /><strong>Take responsibility</strong></li>
+        <li><JourneyLabel kind="stage" current={5} total={5} /><strong>Join the Founding Team</strong></li>
       </ol>
       <p class="join-team-ownership"><strong>Ownership must remain fair.</strong> For people who become long-term members of the founding team, Super ii intends to create meaningful ownership opportunities. Equity is not automatically granted for individual contributions. Any equity arrangement would be formally agreed, documented and designed to vest over time.</p>
     </div>

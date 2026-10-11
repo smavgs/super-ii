@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { compareStoredTransparencyReports, getTransparencyReport, searchTransparencyReports } from '@/lib/transparent-store';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
@@ -109,7 +110,7 @@ const description = report
 
             <section class="transparent-sources" id="sources">
               <p class="eyebrow">Direct evidence</p><h2>Sources read for this report</h2>
-              <div>{report.sources.map((source, index) => <a href={source.url} target="_blank" rel="noreferrer"><span>{String(index + 1).padStart(2, '0')}</span><strong>{source.label}</strong><small>{new Date(source.observed_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</small><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div>
+              <div>{report.sources.map((source, index) => <a href={source.url} target="_blank" rel="noreferrer"><JourneyLabel kind="source" current={index + 1} /><strong>{source.label}</strong><small>{new Date(source.observed_at).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short' })}</small><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}</div>
             </section>
 
             {report.community.creator_responses.length > 0 && <section class="transparent-creator-responses">

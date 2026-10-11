@@ -1,6 +1,7 @@
 ---
 import SuperAssistant from '@/components/SuperAssistant.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 
 export const prerender = false;
 ---
@@ -18,7 +19,7 @@ export const prerender = false;
         <p>Ready-to-use skills for your AI agent.</p>
       </div>
       <div class="skills-hero__note" aria-label="How Skills work">
-        <span>01</span>
+        <JourneyLabel kind="how" />
         <p><strong>Pick a useful job.</strong> Copy it, share it, or play it with the AI tool you already use.</p>
       </div>
     </div>

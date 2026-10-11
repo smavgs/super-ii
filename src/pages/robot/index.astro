@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import RobotWorkspace from '@/components/RobotWorkspace.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { robotCatalog } from '@/lib/robot';
@@ -94,7 +95,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
   description="Plan a source-backed Raspberry Pi or Jetson Robot, keep unknowns visible, publish versions, and let any agent use the same public interface."
   className="robot-site"
 >
-  <div data-robot-page data-signed-in={String(signedIn)}>
+  <div data-robot-page data-signed-in={String(signedIn)} data-locale={Astro.locals.locale ?? 'en'}>
     <section class="robot-hero">
       <div class="shell robot-hero__grid">
         <div class="robot-hero__copy">
@@ -129,10 +130,10 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
 
     <section class="robot-proofbar" aria-label="Robot evidence principles">
       <div class="shell">
-        <span><b>01</b> Official sources</span>
-        <span><b>02</b> Explicit unknowns</span>
-        <span><b>03</b> Versioned plans</span>
-        <span><b>04</b> Human + agent access</span>
+        <span><JourneyLabel kind="principle" current={1} /> Official sources</span>
+        <span><JourneyLabel kind="principle" current={2} /> Explicit unknowns</span>
+        <span><JourneyLabel kind="principle" current={3} /> Versioned plans</span>
+        <span><JourneyLabel kind="principle" current={4} /> Human + agent access</span>
       </div>
     </section>
 
@@ -147,14 +148,14 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
           <h2>Tell us the job.<br />Get an honest first plan.</h2>
           <p>This first path is deliberately focused: a mobile Rover built around Raspberry Pi 5, with Jetson Orin Nano Super as the advanced compute path.</p>
           <ol>
-            <li><span>1</span>Choose a goal and constraints.</li>
-            <li><span>2</span>Read every fit claim and unknown.</li>
-            <li><span>3</span>Save a public or private version.</li>
+            <li><JourneyLabel kind="step" current={1} total={3} />Choose a goal and constraints.</li>
+            <li><JourneyLabel kind="step" current={2} total={3} />Read every fit claim and unknown.</li>
+            <li><JourneyLabel kind="step" current={3} total={3} />Save a public or private version.</li>
           </ol>
         </header>
 
         <div class="robot-maker__console">
-          <div class="robot-console__top"><span>MAKE ROBOT / 01</span><span>CATALOG {robotCatalog.catalogRevision}</span></div>
+          <div class="robot-console__top"><span><JourneyLabel kind="step" current={1} total={3} /></span><span>CATALOG {robotCatalog.catalogRevision}</span></div>
           <form class="robot-form" data-robot-planner>
             <label>What should it do?
               <select name="goal" required>
@@ -192,7 +193,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
                 <option value="over-1000">Over $1,000</option>
               </select>
             </label>
-            <button class="button button--yellow" type="submit">Make my first plan <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+            <button class="button pixel-action" type="submit"><span class="pixel-action__copy"><JourneyLabel kind="step" current={1} total={3} /><strong>Make my first plan</strong></span><i class="ph ph-arrow-right pixel-action__arrow" aria-hidden="true"></i></button>
             <p class="robot-form__status" data-robot-plan-status role="status" aria-live="polite">Free. No account needed to plan.</p>
           </form>
         </div>
@@ -216,7 +217,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
             <label>Short summary <textarea name="summary" minlength="10" maxlength="2000" rows="3" required></textarea></label>
             <label>Who is it for? <input name="audience" maxlength="160" value="Makers learning mobile robotics" required /></label>
             <fieldset><legend>Visibility</legend><label><input type="radio" name="visibility" value="public" checked /> Public · Free</label><label><input type="radio" name="visibility" value="private" /> Private · Pro</label></fieldset>
-            <button class="button button--dark" type="submit">Save version 1</button>
+            <button class="button pixel-action" type="submit"><span class="pixel-action__copy"><JourneyLabel kind="step" current={3} total={3} /><strong>Save version 1</strong></span><i class="ph ph-arrow-right pixel-action__arrow" aria-hidden="true"></i></button>
             <p data-robot-save-status role="status" aria-live="polite">{signedIn ? 'Ready to save.' : 'You will be asked to join or log in before saving.'}</p>
           </form>
         </details>
@@ -229,7 +230,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         <div class="robot-reference__paths">
           {reference.variants.map((variant, index) => (
             <article>
-              <span>0{index + 1} / {variant.id === 'pi5' ? 'FRONT DOOR' : 'ADVANCED PATH'}</span>
+              <span><JourneyLabel kind="path" current={index + 1} total={reference.variants.length} /> / {variant.id === 'pi5' ? 'FRONT DOOR' : 'ADVANCED PATH'}</span>
               <h3 class="robot-brand-heading"><BrandMark brand={variant.id === 'pi5' ? 'raspberrypi' : 'nvidia'} size="md" />{variant.name}</h3>
               <p>{variant.audience}</p>
               <strong>{variant.why}</strong>
@@ -246,7 +247,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         <div class="robot-component-list">
           {robotCatalog.components.map((component, index) => (
             <a href={`/robot/components/${component.slug}`} class="robot-component-row">
-              <span class="robot-component-row__number">{String(index + 1).padStart(2, '0')}</span>
+              <JourneyLabel class="robot-component-row__number" kind="item" current={index + 1} />
               <span class="robot-component-identity"><BrandMark brand={manufacturerBrand(component.manufacturer)} size="md" /><span><small>{component.category} · {component.manufacturer}</small><strong>{component.name}</strong></span></span>
               <span class={`robot-evidence robot-evidence--${component.evidenceStatus}`}>{component.evidenceStatus}</span>
               <p>{component.summary}</p>

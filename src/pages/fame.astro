@@ -2,6 +2,7 @@
 import { Show, SignInButton } from '@clerk/astro/components';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import LogoMark from '@/components/LogoMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { getFameBoard, type FamePlace } from '@/lib/participation';
@@ -111,10 +112,10 @@ const numberLabel = (value: number) => String(value).padStart(3, '0');
     <section class="shell fame-rules">
       <h2>What the place means</h2>
       <div>
-        <p><span>01</span><strong>Linked to one account</strong>Your number and Fame badge are non-transferable and cannot be resold.</p>
-        <p><span>02</span><strong>Always equal</strong>No larger picture, preferred placement, or upgrade can be purchased.</p>
-        <p><span>03</span><strong>Your living profile</strong>Your displayed name and photograph follow your public Super ii profile updates.</p>
-        <p><span>04</span><strong>Recognition, not power</strong>Fame adds no proposal votes, organic rank, moderation authority, or product access.</p>
+        <p><JourneyLabel kind="rule" current={1} /><strong>Linked to one account</strong>Your number and Fame badge are non-transferable and cannot be resold.</p>
+        <p><JourneyLabel kind="rule" current={2} /><strong>Always equal</strong>No larger picture, preferred placement, or upgrade can be purchased.</p>
+        <p><JourneyLabel kind="rule" current={3} /><strong>Your living profile</strong>Your displayed name and photograph follow your public Super ii profile updates.</p>
+        <p><JourneyLabel kind="rule" current={4} /><strong>Recognition, not power</strong>Fame adds no proposal votes, organic rank, moderation authority, or product access.</p>
       </div>
     </section>
   </main>

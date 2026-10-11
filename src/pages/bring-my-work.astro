@@ -4,6 +4,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import LogoMark from '@/components/LogoMark.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import BrandMark from '@/components/BrandMark.astro';
+import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { bridgeIsConfigured } from '@/lib/bridge';
 import { sqlClient } from '@/lib/db';
@@ -155,7 +156,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
           <div class="bridge-layout">
             <div class="bridge-main">
               <section class="bridge-step" aria-labelledby="bridge-source-heading">
-                <div class="bridge-step__number">01</div>
+                <JourneyLabel class="bridge-step__number" kind="step" current={1} total={3} />
                 <div class="bridge-step__content">
                   <p class="eyebrow">Choose a source</p>
                   <h2 id="bridge-source-heading">Paste a profile or repository link</h2>
@@ -165,7 +166,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                     <div class="bridge-url-control">
                       <BrandMark brand="huggingface" size="sm" />
                       <input id="bridge-source-url" name="source_url" type="url" inputmode="url" autocomplete="url" placeholder="https://huggingface.co/your-name" value={connections[0] ? `https://huggingface.co/${connections[0].provider_username}` : ''} required />
-                      <button class="button button--dark" type="submit" disabled={!configured}>Find my work</button>
+                      <button class="button pixel-action pixel-action--single" type="submit" disabled={!configured}>Find my work</button>
                     </div>
                     <p class="form-status" data-bridge-source-status aria-live="polite"></p>
                   </form>
@@ -187,7 +188,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
               </section>
 
               <section class="bridge-step" data-bridge-results hidden aria-labelledby="bridge-results-heading">
-                <div class="bridge-step__number">02</div>
+                <JourneyLabel class="bridge-step__number" kind="step" current={2} total={3} />
                 <div class="bridge-step__content">
                   <p class="eyebrow">Choose what happens</p>
                   <div class="bridge-results-heading">
@@ -212,7 +213,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
                         </select>
                       </label>}
                       <button class="button button--secondary" type="button" data-bridge-link disabled>Add to profile</button>
-                      <button class="button button--dark" type="button" data-bridge-import disabled>Import selected</button>
+                      <button class="button pixel-action pixel-action--single" type="button" data-bridge-import disabled>Import selected</button>
                     </div>
                   </div>
                   <p class="bridge-link-note"><strong>Add to profile</strong> creates a free external card and keeps every file on Hugging Face. <strong>Import selected</strong> copies an exact revision into a draft. Preview and finish its page in Workspace before publishing.</p>
@@ -221,7 +222,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
               </section>
 
               <section class="bridge-step" aria-labelledby="bridge-progress-heading">
-                <div class="bridge-step__number">03</div>
+                <JourneyLabel class="bridge-step__number" kind="step" current={3} total={3} />
                 <div class="bridge-step__content">
                   <p class="eyebrow">Verified arrival</p>
                   <h2 id="bridge-progress-heading">Import activity</h2>
