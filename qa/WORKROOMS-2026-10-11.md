@@ -2,8 +2,8 @@
 
 The common working surface covers models, datasets, apps, notebooks, research,
 robots, components and hardware. Personal creators can start without a company.
-This record initially describes local verification; live evidence is appended
-only after the production migration and Worker are independently checked.
+The implementation passed local verification on 11 October. The production
+rollout and independent live checks below completed on 12 October.
 
 ## Verified locally
 
@@ -43,3 +43,26 @@ member review does not independently verify correctness, safety or execution.
 Universal Git import/execution, browser notebook execution, a new local runtime,
 Lean proofs and community compute are outside this release. The existing Bridge,
 notebooks, runnable recipes and repository/product editors remain available.
+
+## Production verification — 12 October 2026
+
+PR #100 merged as `a2b059be70e42c3b1f6f64519825ad398d7756c6` after all eight
+required checks and aggregate CodeQL passed. The merged tree matches the tested
+source. Migration 0035 committed once in a transaction after preservation checks:
+8 repositories, 9 revisions and 63 files are unchanged, together with business
+records, agent credentials/receipts and existing function grants. All three new
+tables have RLS, no direct runtime-role CRUD and only the intended gateway grants.
+
+Worker `e16d6531-1052-487d-81f9-21f5c6fadff2` deployed with existing variables
+retained. Each domain passed 12 new read/access-boundary requests plus the existing
+40 machine-access checks. Anonymous Workroom reads/writes and MCP tool calls are
+denied. OAuth metadata advertises the explicit new scopes. Signed-in Chrome
+verified the Workspace entry, real authorized repository choices, all eight work
+kinds, English/Russian/Chinese forms and 390 px Chinese layout without overflow.
+No form was submitted and no production test content or credential was created.
+
+Locale JSON is a browser resource behind the existing Browser Integrity Check;
+ordinary Python requests receive 403 there. Rendered language editions were
+verified in Chrome without changing protection rules. The first actual member
+room and production agent report remain pending. Production deployment is not a
+claim of GA, independent result verification or a completed real-user journey.

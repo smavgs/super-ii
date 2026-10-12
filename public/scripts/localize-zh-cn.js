@@ -244,7 +244,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/zh-cn.json?v=20261011-2', { credentials: 'same-origin' })
+  fetch('/locales/zh-cn.json?v=20261012-1', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Simplified Chinese catalogue unavailable');
       return response.json();
