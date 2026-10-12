@@ -1,0 +1,6 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import WorkroomEditor from '@/components/WorkroomEditor.astro';
+Astro.response.headers.set('Cache-Control','private, no-store');
+---
+<BaseLayout title="Start work" noindex><WorkroomEditor /></BaseLayout>

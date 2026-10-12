@@ -112,8 +112,8 @@ const contracts = [
   [ruClient, 'MutationObserver', 'Russian dynamic content localization'],
   [zhClient, 'MutationObserver', 'Chinese dynamic content localization'],
   [zhClient, "headers.set('x-superii-locale', 'zh-CN')", 'Chinese localized client requests'],
-  [layout, '/scripts/localize-zh-cn.js?v=20261010-1', 'current Chinese localizer cache key'],
-  [zhClient, '/locales/zh-cn.json?v=20261010-1', 'current Chinese catalogue cache key'],
+  [layout, '/scripts/localize-zh-cn.js?v=20261011-2', 'current Chinese localizer cache key'],
+  [zhClient, '/locales/zh-cn.json?v=20261011-2', 'current Chinese catalogue cache key'],
   [zhClient, "value.match(/^(\\d+) verified models? ready\\.$/)", 'Chinese live tokenizer ready-count localization'],
   [zhClient, "value.match(/^(\\d+) verified models? found\\.$/)", 'Chinese live tokenizer result-count localization'],
   [i18n, "export type SiteLocale = 'en' | 'ru' | 'zh-CN'", 'three-locale type'],
@@ -154,7 +154,7 @@ const capabilityRows = capabilitySection.split('\n').filter((line) => /^\|/.test
 const canonicalCapabilityCount = capabilityRows.filter((line) => line.split('|').length >= 6).length;
 const russianCapabilityCount = (systemStateLocalization.match(/^  ['"].+['"]: \{$/gm) ?? []).length;
 const chineseProductLabels = new Set(['Python SDK', 'Super ii Robot', 'Super ii Transparent']);
-if (canonicalCapabilityCount !== 59) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 59`);
+if (canonicalCapabilityCount !== 60) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 60`);
 if (russianCapabilityCount !== canonicalCapabilityCount) errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
 for (const row of capabilityRows) {
   const cells = row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim().replaceAll('`', ''));

@@ -1,7 +1,25 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import BuildShip from '@/components/BuildShip.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import type { Workroom } from '@/lib/workrooms';
+import { z } from 'zod';
+const requested = Astro.url.searchParams.get('workroom');
+let room: Workroom | null = null;
+if (requested) {
+  Astro.response.headers.set('Cache-Control','private, no-store');
+  try {
+    const sql=sqlClient(Astro.locals);
+    if (z.uuid().safeParse(requested).success && sql && await ensureAuthenticatedProfile(Astro.locals,sql)) {
+      const rows=await sql`select app.read_workroom(${requested}::uuid) as room`;
+      room=rows[0]?.room as Workroom|null;
+    }
+  } catch { room=null; }
+}
+const source=room?.repository && room.source_commit && room.repository.revision_status === 'published' && ['model','dataset'].includes(room.repository.kind)
+  ? {kind:room.repository.kind,owner_handle:room.repository.owner,slug:room.repository.slug,commit_sha:room.source_commit} : undefined;
 ---
 <BaseLayout title="Build & Ship" description="Generate reproducible RAG, model API and LoRA training projects from immutable Super ii repositories.">
-  <main class="shell" style="padding-block: 2rem"><h1>Build with a published repository</h1><p>Start here or select Build &amp; Ship on a model or dataset page. Each project keeps its source revision and produces an execution record when you run it.</p><BuildShip expanded /></main>
+  <main class="shell" style="padding-block: 2rem">{room && <p><a href={`/workspace/workrooms/${room.id}`}>← {room.document.title}</a></p>}{requested && !room && <p role="status">The requested workroom is unavailable. You can still prepare a project below.</p>}<h1>Build with a published repository</h1><p>Start here or select Build &amp; Ship on a model or dataset page. Each project keeps its source revision and produces an execution record when you run it.</p><BuildShip expanded source={source} workroomId={room?.can_edit?room.id:undefined} /></main>
 </BaseLayout>

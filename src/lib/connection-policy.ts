@@ -9,6 +9,8 @@ export const connectionScopes = {
     'events:read': 'Read work notifications',
     'jobs:claim': 'Claim contribution jobs',
     'jobs:submit': 'Submit contribution results',
+    'workroom:read': 'Read repository workrooms',
+    'workroom:report': 'Add reported workroom results for member review',
     'robot:read': 'Read organization Robots',
     'robot:create': 'Create organization Robots',
     'robot:update': 'Add Robot versions',
@@ -127,6 +129,8 @@ export const workToolScopes: Record<string, string> = {
   get_organization_robot: 'robot:read',
   get_action_receipt: 'receipts:read',
   get_work_status: 'repository:read',
+  get_workroom: 'workroom:read',
+  report_workroom_result: 'workroom:report',
 };
 export const socialToolScopes: Record<string, string> = {
   social_get_feed: 'social.read',

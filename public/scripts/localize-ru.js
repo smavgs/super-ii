@@ -15,7 +15,9 @@
   };
   const exact = (value) => messages[value] || value;
   const translateDynamic = (value) => {
-    let match = value.match(/^(\d+) of (\d+) complete$/);
+    let match = value.match(/^(\d+) of (\d+) workrooms$/);
+    if (match) return `Показано ${match[1]} из ${match[2]} комнат`;
+    match = value.match(/^(\d+) of (\d+) complete$/);
     if (match) return `${match[1]} из ${match[2]} выполнено`;
     match = value.match(/^(\d+) selected$/);
     if (match) return `Выбрано: ${match[1]}`;
@@ -245,7 +247,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/ru.json?v=20261010-1', { credentials: 'same-origin' })
+  fetch('/locales/ru.json?v=20261011-2', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Russian catalogue unavailable');
       return response.json();

@@ -56,6 +56,9 @@ export async function requireConnection(
       !scope ||
       [
         'repository:read',
+        'workroom:read',
+        // The atomic report gateway enforces budget and permits exact retries.
+        'workroom:report',
         'robot:read',
         'transparent:read',
         'events:read',

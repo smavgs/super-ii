@@ -2,13 +2,14 @@
 interface Props {
   source?: { kind: string; owner_handle: string; slug: string; commit_sha: string | null };
   expanded?: boolean;
+  workroomId?: string;
 }
-const { source, expanded = false } = Astro.props;
+const { source, expanded = false, workroomId } = Astro.props;
 const model = source?.kind === 'model';
 const dataset = source?.kind === 'dataset';
 const identity = source ? `${source.owner_handle}/${source.slug}` : '';
 ---
-<section id="build-ship" class="build-ship" data-build-ship hidden={!expanded} aria-labelledby="build-ship-title">
+<section id="build-ship" class="build-ship" data-build-ship data-workroom-id={workroomId} hidden={!expanded} aria-labelledby="build-ship-title">
   <div class="build-ship-heading"><div><p class="eyebrow">Engineering recipes</p><h2 id="build-ship-title" tabindex="-1">Build &amp; Ship</h2></div>{!expanded && <button type="button" class="button button--small button--secondary" data-build-close>Close</button>}</div>
   <p>Choose the result. Super ii will prepare one reproducible plan with pinned inputs, runnable code, tests and an execution record.</p>
   <form data-build-form>
@@ -61,6 +62,7 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
   </form>
   <div data-build-result hidden>
     <div class="build-result-heading"><div><p class="eyebrow">Project ready</p><p>Review the exact files, then download and run them on your computer.</p></div><button class="button button--yellow" type="button" data-build-download>Download ZIP</button></div>
+    {workroomId && <><button class="button button--secondary button--small" type="button" data-build-save-room>Save plan to workroom</button><p data-build-room-status role="status"></p></>}
     <label>Preview file<select data-build-file data-no-translate></select></label>
     <pre class="build-preview" tabindex="0"><code data-build-preview></code></pre>
   </div>
@@ -202,6 +204,21 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
       const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: 'application/zip' }));
       const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const roomButton=panel.querySelector<HTMLButtonElement>('[data-build-save-room]');
+    let roomKey=crypto.randomUUID(),savedPlan='';
+    roomButton?.addEventListener('click',async()=>{
+      const status=panel.querySelector<HTMLElement>('[data-build-room-status]')!;
+      roomButton.disabled=true;
+      try {
+        const recipe=JSON.parse(files['superii-recipe.json']);
+        if(savedPlan && savedPlan!==recipe.recipe_sha256)roomKey=crypto.randomUUID();
+        savedPlan=recipe.recipe_sha256;
+        const response=await fetch(`/api/workrooms/${panel.dataset.workroomId}?action=entry`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({creation_key:roomKey,document:{kind:'note',body:`Prepared ${recipe.outcome} recipe ${recipe.recipe_sha256}. Project: ${filename}. Plan generated only; execution has not been reported. Download and run the project, then attach its result for review.`,url:'',sha256:recipe.recipe_sha256}})});
+        const result=await response.json() as {error?:string};if(!response.ok)throw new Error(result.error||'The plan could not be saved.');
+        status.textContent='Plan saved to your workroom. No execution or completion has been claimed.';
+      } catch(error) {status.textContent=error instanceof Error?error.message:'The plan could not be saved.';}
+      finally {roomButton.disabled=false;}
     });
   }
   setupBuildShip(); document.addEventListener('astro:page-load', setupBuildShip);

@@ -17,6 +17,8 @@ export const agentScopes = [
   'receipts:read',
   'jobs:claim',
   'jobs:submit',
+  'workroom:read',
+  'workroom:report',
 ] as const;
 
 export type AgentScope = (typeof agentScopes)[number];

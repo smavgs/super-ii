@@ -1,4 +1,5 @@
 ---
+import WorkroomHub from './WorkroomHub.astro';
 import AgentStarter from './AgentStarter.astro';
 import AIWorkerStarter from './AIWorkerStarter.astro';
 import AgentWorkspace from './AgentWorkspace.astro';
@@ -55,9 +56,11 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
     <div class="workspace-panels">
       <section data-workspace-panel="work" id="work" aria-labelledby="work-title">
         <div class="workspace-panel-heading" id="repositories">
-          <div><h2 class="workspace-panel-title" id="work-title" tabindex="-1">Your work</h2><p>Continue with a repository or start something new.</p></div>
+          <div><h2 class="workspace-panel-title" id="work-title" tabindex="-1">Your work</h2><p>Resume a workroom, open a repository or start something new.</p></div>
           <div class="button-row"><a class="button button--dark button--small" href="/new">Create</a><a class="button button--secondary button--small" href="/bring-my-work">Bring my work</a></div>
         </div>
+        <WorkroomHub />
+        <h3>Your repositories</h3>
         {repositories.length > 0 ? <>
           <div class="workspace-filters" hidden data-workspace-filters>
             <label>Find your work<input type="search" data-repository-search placeholder="Search titles or names" autocomplete="off" /></label>

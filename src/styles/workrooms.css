@@ -1,0 +1,176 @@
+.workroom-hub {
+  margin: 0 0 2rem;
+  padding-bottom: 1.6rem;
+  border-bottom: 1px solid var(--line, var(--line));
+}
+.workroom-hub h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+.workroom-filter,
+.workroom-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+}
+.workroom-list {
+  display: grid;
+}
+.workroom-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+.workroom-row strong,
+.workroom-row small {
+  display: block;
+}
+.workroom-row small {
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+.workroom-row:hover strong {
+  text-decoration: underline;
+}
+.workroom-row > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workroom-row > span:last-child {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+.workroom-page {
+  max-width: 1040px;
+  padding-block: 2rem 4rem;
+}
+.workroom-page h1 {
+  font-size: clamp(1.9rem, 5vw, 2.8rem);
+  overflow-wrap: anywhere;
+}
+.workroom-page [hidden],
+.workroom-hub [hidden] {
+  display: none !important;
+}
+.workroom-page form,
+.workroom-page fieldset {
+  display: grid;
+  gap: 1rem;
+}
+.workroom-page fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.workroom-page label,
+.workroom-filter label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.workroom-page input,
+.workroom-page textarea,
+.workroom-page select,
+.workroom-filter input,
+.workroom-filter select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.35rem;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+.workroom-page textarea {
+  resize: vertical;
+}
+.workroom-page button {
+  justify-self: start;
+}
+.workroom-page :is(button, a, input, select, textarea, summary):focus-visible,
+.workroom-hub :focus-visible {
+  outline: 3px solid #d8a800;
+  outline-offset: 3px;
+}
+.workroom-page details {
+  margin-block: 1rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.workroom-page summary {
+  cursor: pointer;
+  font-weight: 650;
+  font-size: 1.05rem;
+  padding-bottom: 0.7rem;
+}
+.workroom-overview {
+  margin-block: 1.4rem 2rem;
+}
+.workroom-goal {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.workroom-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 1.8rem;
+  margin-top: 1.5rem;
+}
+.workroom-actions a {
+  font-weight: 650;
+}
+.workroom-actions p {
+  margin: 0.3rem 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.workroom-history article {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.workroom-history article p {
+  white-space: pre-wrap;
+}
+.workroom-history time,
+.workroom-muted {
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.workroom-member {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+.workroom-page form p {
+  font-weight: 400;
+}
+.workroom-page .status-badge {
+  display: inline-block;
+}
+@media (max-width: 620px) {
+  .workroom-filter,
+  .workroom-grid,
+  .workroom-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workroom-row {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workroom-page *,
+  .workroom-hub * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
