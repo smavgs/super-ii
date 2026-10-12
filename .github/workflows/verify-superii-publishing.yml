@@ -22,7 +22,7 @@ jobs:
       - run: sdk/python/.venv/bin/python tools/verify_superii_publishing.py
         env:
           SUPERII_VERIFY_REPOSITORY_ID: ${{ vars.SUPERII_VERIFY_REPOSITORY_ID }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: github-superii-publishing
           path: reports/github-superii-publishing.json
@@ -53,7 +53,7 @@ jobs:
         run: '"$RUNNER_TEMP/superii-project-environment/.venv/bin/python" tools/verify_superii_projects.py'
         env:
           SUPERII_PROJECT_FIXTURES: ${{ vars.SUPERII_PROJECT_FIXTURES }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: generated-projects
           path: reports/generated-projects.json
