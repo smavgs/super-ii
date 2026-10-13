@@ -6,6 +6,7 @@ import {
   type Workroom,
   type WorkContext,
 } from "../lib/workrooms";
+import { workKindIcons } from "../lib/workspace-presentation";
 
 const stateNames: Record<string, string> = {
   active: "In progress",
@@ -70,7 +71,7 @@ if (hub && !hub.dataset.ready) {
     ) as unknown as HTMLSelectElement;
   const more = hub.querySelector<HTMLButtonElement>("[data-room-more]")!;
   let items: Workroom[] = [],
-    limit = 4;
+    limit = 2;
   function draw() {
     const matches = items.filter(
       (r) =>
@@ -108,7 +109,12 @@ if (hub && !hub.dataset.ready) {
           return summary;
         })(),
       );
-      add(a, text, node("span", stateNames[room.status]));
+      const icon = node("i", "", `ph ${workKindIcons[room.document.kind]} workspace-kind-icon`);
+      icon.setAttribute("aria-hidden", "true");
+      const badge = node("span", stateNames[room.status], "workspace-state");
+      badge.dataset.state = room.status;
+      a.dataset.kind = room.document.kind;
+      add(a, icon, text, badge);
       add(list, a);
     }
     status.textContent = matches.length
@@ -119,11 +125,11 @@ if (hub && !hub.dataset.ready) {
     more.hidden = matches.length <= limit;
   }
   search.addEventListener("input", () => {
-    limit = 4;
+    limit = 2;
     draw();
   });
   filter.addEventListener("change", () => {
-    limit = 4;
+    limit = 2;
     draw();
   });
   more.addEventListener("click", () => {
@@ -135,7 +141,7 @@ if (hub && !hub.dataset.ready) {
   api<WorkContext>("/api/workrooms")
     .then((data: WorkContext) => {
       items = data.rooms;
-      hub.querySelector<HTMLElement>("[data-room-filters]")!.hidden = false;
+      hub.querySelector<HTMLElement>("[data-room-filters]")!.hidden = items.length === 0;
       draw();
     })
     .catch((error) => {
@@ -162,6 +168,7 @@ if (root && !root.dataset.ready) {
       | HTMLInputElement
       | HTMLTextAreaElement
       | HTMLSelectElement
+      | RadioNodeList
       | null;
   const id = root.dataset.roomId || "";
   let room: Workroom | null = null,
@@ -258,6 +265,7 @@ if (root && !root.dataset.ready) {
       ),
     );
     get("[data-room-state]").textContent = stateNames[room.status];
+    get("[data-room-state]").dataset.state = room.status;
     get("[data-room-goal]").textContent = room.document.goal;
     get("[data-room-next-label]").textContent =
       room.status === "complete" ? "Reviewed result" : "Next action";
@@ -272,7 +280,7 @@ if (root && !root.dataset.ready) {
     actions.replaceChildren();
     for (const action of roomActions(room)) {
       const wrapper = node("div"),
-        a = node("a", action.label);
+        a = node("a", action.label, "workspace-tool-link");
       a.href = action.href;
       if (action.href.startsWith("https:")) {
         a.target = "_blank";
@@ -386,11 +394,15 @@ if (root && !root.dataset.ready) {
         });
         const query = new URLSearchParams(location.search),
           source = query.get("source") || "";
-        if (source.length <= 2048) field("source_url")!.value = source;
+        if (source.length <= 2048) {
+          field("source_url")!.value = source;
+          if (source) get<HTMLDetailsElement>(".workroom-source").open = true;
+        }
         const requested = context.repositories.find(
           (r) => r.id === query.get("repository"),
         );
         if (requested) {
+          get<HTMLDetailsElement>("[data-room-source-options]").open = true;
           repo.value = requested.id;
           repo.dispatchEvent(new Event("change"));
         }
@@ -403,6 +415,14 @@ if (root && !root.dataset.ready) {
     }
   }
   retry.addEventListener("click", load);
+  // Reveal an invalid optional field before native validation tries to focus it.
+  form.addEventListener("invalid", (event) => {
+    let parent = (event.target as HTMLElement).parentElement;
+    while (parent && parent !== root) {
+      if (parent instanceof HTMLDetailsElement) parent.open = true;
+      parent = parent.parentElement;
+    }
+  }, true);
   form.addEventListener("input", () => {
     formDirty = true;
     reviewField();

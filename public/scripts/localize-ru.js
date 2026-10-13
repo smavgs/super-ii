@@ -247,7 +247,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/ru.json?v=20261012-1', { credentials: 'same-origin' })
+  fetch('/locales/ru.json?v=20261013-1', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Russian catalogue unavailable');
       return response.json();

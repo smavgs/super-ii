@@ -1,12 +1,14 @@
 ---
 import { kindNames, workKinds } from '@/lib/workrooms';
 import '@/styles/workrooms.css';
+import '@/styles/workspace-theme.css';
+import { workKindIcons } from '@/lib/workspace-presentation';
 interface Props { id?: string; }
 const {id = ''} = Astro.props;
 ---
-<section class="shell workroom-page" data-workroom-editor data-room-id={id}>
+<section class="shell workroom-page workspace-skin" data-workroom-editor data-room-id={id}>
   <nav aria-label="Breadcrumb"><a href="/account#work">Workspace</a><span aria-hidden="true"> / </span><span>{id ? 'Workroom' : 'Start work'}</span></nav>
-  <header class="workspace-heading"><h1 data-room-title data-no-translate={id ? true : undefined}>{id ? 'Your workroom' : 'What do you want to work on?'}</h1><p data-room-subtitle>{id ? 'Your goal, progress and results.' : 'Start with an idea, a repository or a link. A personal workroom needs no company.'}</p></header>
+  <header class="workspace-heading"><div class="workspace-brand"><span class="workspace-mascot" aria-hidden="true">👾</span><h1 data-room-title data-no-translate={id ? true : undefined}>{id ? 'Your workroom' : 'What do you want to work on?'}</h1></div><p data-room-subtitle>{id ? 'Your goal, progress and results.' : 'Start with an idea, a repository or a link. A personal workroom needs no company.'}</p></header>
   <p data-room-status role="status" aria-live="polite">Loading your Workspace…</p>
   <button class="text-button" type="button" data-room-retry hidden>Try loading again</button>
   <div data-room-body hidden>
@@ -19,13 +21,15 @@ const {id = ''} = Astro.props;
       <summary>{id ? 'Goal and source' : 'Set up your workroom'}</summary>
       <form data-room-form>
         <fieldset data-room-fields>
-          <div class="workroom-grid"><label>Title<input name="title" required minlength="2" maxlength="160" placeholder="A short name for your work" /></label>
-          <label>Kind of work<select name="kind">{workKinds.map(kind=><option value={kind}>{kindNames[kind]}</option>)}</select></label></div>
+          <fieldset class="workroom-kinds"><legend>Kind of work</legend><div>{workKinds.map((kind, index)=><label data-kind={kind}><input type="radio" name="kind" value={kind} checked={index === 0} /><i class={`ph ${workKindIcons[kind]}`} aria-hidden="true"></i><span>{kindNames[kind]}</span><i class="ph ph-check workroom-kind-check" aria-hidden="true"></i></label>)}</div></fieldset>
+          <label>Title<input name="title" required minlength="2" maxlength="160" placeholder="A short name for your work" /></label>
           <label>What do you want to achieve?<textarea name="goal" rows="3" required minlength="3" maxlength="2000" placeholder="Describe the result you want." /></label>
-          <label>How will you know it is ready?<textarea name="acceptance" rows="2" maxlength="2000" placeholder="The checks or result you want to review." /></label>
-          <label>Next action<input name="next_action" maxlength="1000" placeholder="One useful thing to do next" /></label>
-          {!id && <div class="workroom-grid"><label>Who is this for?<select name="organization_id"><option value="">Just me</option></select></label><label>Existing repository (optional)<select name="repository_id"><option value="">Start without a repository</option></select></label></div>}
-          <details class="workroom-source"><summary>Source link and version (optional)</summary>
+          <details class="workroom-optional" name="workroom-options"><summary>Plan your next step (optional)</summary><div>
+            <label>How will you know it is ready?<textarea name="acceptance" rows="2" maxlength="2000" placeholder="The checks or result you want to review." /></label>
+            <label>Next action<input name="next_action" maxlength="1000" placeholder="One useful thing to do next" /></label>
+          </div></details>
+          {!id && <details class="workroom-optional" name="workroom-options" data-room-source-options><summary>Connect a repository or team (optional)</summary><div class="workroom-grid"><label>Who is this for?<select name="organization_id"><option value="">Just me</option></select></label><label>Existing repository (optional)<select name="repository_id"><option value="">Start without a repository</option></select></label></div></details>}
+          <details class="workroom-source" name="workroom-options"><summary>Source link and version (optional)</summary>
             <label>Source link<input name="source_url" type="url" maxlength="2048" placeholder="https://…" /></label>
             <label>Source version you are using<input name="source_revision" maxlength="200" placeholder="A commit, release or version, if known" /></label>
             <p>Keep a link from GitHub, GitLab, Codeberg, Hugging Face or another public website. This saves a reference; it does not import or run its files. Keep credentials out of links.</p>
@@ -33,7 +37,7 @@ const {id = ''} = Astro.props;
           {id && <><div class="workroom-grid"><label>Progress<select name="status"><option value="active">In progress</option><option value="blocked">Blocked</option><option value="review">Ready to review</option><option value="complete">Complete</option><option value="archived">Archived</option></select></label>
           <label data-review-field hidden>Result I reviewed<select name="reviewed_entry_id"><option value="">Select a saved result</option></select></label></div>
           <p data-review-copy hidden>Mark complete after checking the result against your goal. This records your review; it does not independently verify execution or publish anything.</p></>}
-          <button class="button button--dark" type="submit">{id ? 'Save changes' : 'Create workroom'}</button>
+          <button class="button button--dark" type="submit"><i class={`ph ${id ? 'ph-check' : 'ph-plus'}`} aria-hidden="true"></i>{id ? 'Save changes' : 'Create workroom'}</button>
         </fieldset>
       </form>
     </details>
