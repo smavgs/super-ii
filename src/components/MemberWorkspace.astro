@@ -9,10 +9,13 @@ import CardWorkspace from './CardWorkspace.astro';
 import type { EditableMemberProfile } from '@/lib/member-profile';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import '@/styles/workspace.css';
+import '@/styles/workspace-theme.css';
+import BrandMark from './BrandMark.astro';
+import { workKindIcons, revisionLabels } from '@/lib/workspace-presentation';
 import CompanyProductWorkspace from './CompanyProductWorkspace.astro';
 
 interface Props {
-  repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string }>;
+  repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string; visibility: string }>;
   notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }>;
   bridgeSources: Array<{ repository_id: string; provider_repo_id: string; source_revision: string; source_visibility: string; imported_at: string; sync_enabled: boolean }>;
   linkedWork: Array<{ id: string; kind: string; provider: string; provider_repo_id: string; source_url: string; source_revision: string; title: string; summary: string; license: string | null; updated_at: string }>;
@@ -37,16 +40,16 @@ const sections = [
 const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space: 'App' })[kind] ?? kind;
 ---
 
-<section class="shell member-workspace" data-member-workspace>
+<section class="shell member-workspace workspace-skin" data-member-workspace>
   <header class="workspace-heading">
-    <h1>Workspace</h1>
+    <div class="workspace-brand"><span class="workspace-mascot" aria-hidden="true">👾</span><h1>Workspace</h1></div>
     <p>Your work, tools and account.</p>
   </header>
   {unavailable && <p class="workspace-prerequisite" role="status">Some Workspace details could not be loaded. Please refresh to try again.</p>}
   <div class="workspace-layout">
     <div class="workspace-navigation">
       <nav class="workspace-nav" aria-label="Workspace sections">
-        {sections.map((section) => <a href={`#${section.id}`} data-workspace-nav={section.id} aria-current={section.id === 'work' ? 'page' : undefined}><i class={`ph ${section.icon}`} aria-hidden="true"></i>{section.label}</a>)}
+        {sections.map((section) => <a href={`#${section.id}`} data-workspace-nav={section.id} aria-current={section.id === 'work' ? 'page' : undefined}><i class={`ph ${section.icon}`} aria-hidden="true"></i><span>{section.label}</span></a>)}
       </nav>
       <label class="workspace-mobile-picker" hidden>Workspace section
         <select data-workspace-select>{sections.map((section) => <option value={section.id}>{section.label}</option>)}</select>
@@ -57,22 +60,24 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
       <section data-workspace-panel="work" id="work" aria-labelledby="work-title">
         <div class="workspace-panel-heading" id="repositories">
           <div><h2 class="workspace-panel-title" id="work-title" tabindex="-1">Your work</h2><p>Resume a workroom, open a repository or start something new.</p></div>
-          <div class="button-row"><a class="button button--dark button--small" href="/new">Create</a><a class="button button--secondary button--small" href="/bring-my-work">Bring my work</a></div>
+          <div class="button-row"><a class="button button--dark button--small" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a><a class="button button--secondary button--small workspace-connect" href="/bring-my-work"><i class="ph ph-plugs-connected" aria-hidden="true"></i>Bring my work</a></div>
         </div>
         <WorkroomHub />
-        <h3>Your repositories</h3>
+        <h3 class="workspace-section-title"><i class="ph ph-stack" aria-hidden="true"></i>Your repositories</h3>
         {repositories.length > 0 ? <>
           <div class="workspace-filters" hidden data-workspace-filters>
             <label>Find your work<input type="search" data-repository-search placeholder="Search titles or names" autocomplete="off" /></label>
-            <label>Type<select data-repository-kind><option value="all">All types</option><option value="model">Models</option><option value="dataset">Datasets</option><option value="space">Apps</option></select></label>
+            <label>Repository type<select data-repository-kind><option value="all">All types</option><option value="model">Models</option><option value="dataset">Datasets</option><option value="space">Apps</option></select></label>
           </div>
           <p class="workspace-results" data-repository-results aria-live="polite" aria-atomic="true"></p>
           {repositories.length === 50 && <p class="workspace-results">Showing your 50 most recently updated repositories.</p>}
           <div class="workspace-repositories">
-            {repositories.map((repository) => <a class="workspace-repository" data-repository-row data-kind={repository.kind} data-search={`${repository.title} ${repository.owner_handle}/${repository.slug}`} href={`/repositories/${repository.id}/edit`}>
-              <span><strong>{repository.title || repository.slug}</strong><small>{repository.owner_handle}/{repository.slug}</small><small>{kindLabel(repository.kind)} · {repository.revision_status}</small></span>
-              <span class="workspace-repository__action"><span>Open</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></span>
-            </a>)}
+            {repositories.map((repository) => <div class="workspace-repository" data-repository-row data-kind={repository.kind} data-search={`${repository.title} ${repository.owner_handle}/${repository.slug}`}>
+              <i class={`ph ${workKindIcons[repository.kind] || 'ph-folder'} workspace-kind-icon`} aria-hidden="true"></i>
+              <a class="workspace-repository__title" href={`/repositories/${repository.id}/edit`}><strong data-no-translate>{repository.title || repository.slug}</strong><small data-no-translate>{repository.owner_handle}/{repository.slug}</small></a>
+              <span class="workspace-repository__meta"><span class="workspace-kind-label">{kindLabel(repository.kind)}</span><span class="workspace-state" data-state={repository.revision_status}>{revisionLabels[repository.revision_status] || repository.revision_status}</span></span>
+              <span class="workspace-repository__actions"><a href={`/repositories/${repository.id}/edit`}>Edit page<i class="ph ph-pencil-simple" aria-hidden="true"></i></a>{repository.status === 'published' && repository.visibility === 'public' && <a href={`/${({model:'models',dataset:'datasets',space:'spaces'} as Record<string,string>)[repository.kind]}/${repository.owner_handle}/${repository.slug}#files`}>View files<i class="ph ph-files" aria-hidden="true"></i></a>}</span>
+            </div>)}
           </div>
           <p data-repository-empty hidden>No repositories match. Try another search or type.</p>
           <button class="text-button workspace-more" type="button" data-repository-more hidden>Show more repositories</button>
@@ -102,7 +107,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
             <div class="account-list account-list--static linked-work-list">
               {linkedWork.map((item) => <div data-linked-work-item={item.id}>
                 <span><strong>{item.title}</strong><small>{item.kind} · External · Hugging Face · {item.provider_repo_id}</small></span>
-                <span class="linked-work-list__actions"><a class="button button--secondary button--small" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open</a><button class="text-button" type="button" data-unlink-work={item.id}>Remove</button></span>
+                <span class="linked-work-list__actions"><a class="button button--secondary button--small" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external"><BrandMark brand="huggingface" size="xs" />View source</a><button class="text-button" type="button" data-unlink-work={item.id}>Remove</button></span>
               </div>)}
             </div>
             <p class="form-status" data-linked-work-status aria-live="polite"></p>
@@ -130,9 +135,10 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
       <section data-workspace-panel="cards" id="cards" aria-labelledby="cards-title" hidden><CardWorkspace /></section>
 
       <section data-workspace-panel="setup" id="setup" aria-labelledby="setup-title" hidden>
-        <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="setup-title" tabindex="-1">AI setup</h2><p>Choose a guide. Your progress stays on this device.</p></div></div>
+        <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="setup-title" tabindex="-1">Set up your AI</h2><p>Choose a guide. Your progress stays on this device.</p></div></div>
+        <nav class="workspace-tools" aria-label="AI guides and tools"><a href="#agent-starter"><BrandMark brand="opencode" size="xs" />OpenCode<span>Cloud guide</span></a><a href="#ai-worker"><BrandMark brand="ollama" size="xs" />Ollama<span>Local guide</span></a><a href="/agents#connectors"><BrandMark brand="mcp" size="xs" />MCP<span>Connect your agent</span></a></nav>
         <details class="workspace-disclosure" name="workspace-ai-setup" data-agent-starter-disclosure>
-          <summary>Agent Starter<small>Run your first agent with a free cloud model.</small></summary>
+          <summary><i class="ph ph-cloud" aria-hidden="true"></i>Agent Starter<small>Run your first agent with a free cloud model.</small></summary>
           <AgentStarter />
         </details>
         <AIWorkerStarter />
@@ -144,15 +150,15 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
       <section data-workspace-panel="account" id="account" aria-labelledby="account-title" hidden>
         <div class="workspace-panel-heading"><div><h2 class="workspace-panel-title" id="account-title" tabindex="-1">Account</h2><p>Open the settings you want to change.</p></div></div>
         <details class="workspace-disclosure" name="workspace-account">
-          <summary>Profile<small>Your introduction, interests and public links.</small></summary>
+          <summary><i class="ph ph-user" aria-hidden="true"></i>Profile<small>Your introduction, interests and public links.</small></summary>
           {memberProfile ? <MemberProfileWorkspace profile={memberProfile} showcase={showcaseMedia} uploadsRemaining={showcaseUploadsRemaining} /> : <p class="workspace-disclosure__body">Your public profile could not be loaded. Please refresh to try again.</p>}
         </details>
         <details class="workspace-disclosure" id="identity" name="workspace-account">
-          <summary>Identity and security<small>Login, name and photo.</small></summary>
+          <summary><i class="ph ph-shield-check" aria-hidden="true"></i>Identity and security<small>Login, name and photo.</small></summary>
           <div class="account-card"><slot name="identity" /></div>
         </details>
         <details class="workspace-disclosure" id="billing" name="workspace-account">
-          <summary>Billing<small>Your subscriptions and payment history.</small></summary>
+          <summary><i class="ph ph-receipt" aria-hidden="true"></i>Billing<small>Your subscriptions and payment history.</small></summary>
           <div class="workspace-disclosure__body">
             {subscriptions.length ? <div class="account-list account-list--static">{subscriptions.map((subscription) => <div><span><strong>{subscription.plan_id}</strong><small>{subscription.owner_label} · {subscription.status}{subscription.current_period_end ? ` · through ${new Date(subscription.current_period_end).toLocaleDateString(dateLocale, { dateStyle: 'medium' })}` : ''}</small></span></div>)}</div> : <p>No active paid plan.</p>}
             {payments.length > 0 && <div class="payment-history"><h3>Payment history</h3>{payments.map((payment) => <a href={`/checkout/${payment.id}`}><span>{payment.plan_id} · {payment.billing_term === '12_months' ? '12 months' : '30 days'} · ${(payment.price_amount_cents / 100).toFixed(2)} USD</span><strong>{payment.status}</strong></a>)}</div>}

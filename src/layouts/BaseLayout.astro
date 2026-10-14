@@ -20,6 +20,7 @@ interface Props {
   className?: string;
   titleNoTranslate?: boolean;
   descriptionNoTranslate?: boolean;
+  preferLight?: boolean;
 }
 
 const locale = Astro.locals.locale ?? 'en';
@@ -57,6 +58,7 @@ const {
   className = '',
   titleNoTranslate = false,
   descriptionNoTranslate = false,
+  preferLight = false,
 } = Astro.props;
 
 // The Simplified Chinese edition intentionally uses one consistent, localized
@@ -76,7 +78,7 @@ const imageHeightContent = String(imageHeight);
 ---
 
 <!doctype html>
-<html lang={locale} data-theme="light" data-locale={locale}>
+<html lang={locale} data-theme="light" data-locale={locale} data-prefer-light={preferLight ? '' : undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -112,7 +114,7 @@ const imageHeightContent = String(imageHeight);
       (() => {
         try {
           const saved = localStorage.getItem('superii-theme');
-          const dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+          const dark = saved === 'dark' || (!saved && !document.documentElement.hasAttribute('data-prefer-light') && matchMedia('(prefers-color-scheme: dark)').matches);
           document.documentElement.dataset.theme = dark ? 'dark' : 'light';
         } catch {}
       })();
@@ -131,7 +133,7 @@ const imageHeightContent = String(imageHeight);
     </main>
     <Footer />
     <script is:inline src="/scripts/site.js" defer></script>
-    {locale === 'ru' && <script is:inline src="/scripts/localize-ru.js?v=20261012-1" defer></script>}
-    {locale === 'zh-CN' && <script is:inline src="/scripts/localize-zh-cn.js?v=20261012-1" defer></script>}
+    {locale === 'ru' && <script is:inline src="/scripts/localize-ru.js?v=20261013-1" defer></script>}
+    {locale === 'zh-CN' && <script is:inline src="/scripts/localize-zh-cn.js?v=20261013-1" defer></script>}
   </body>
 </html>

@@ -6,4 +6,4 @@ const id = Astro.params.id ?? '';
 if (!z.uuid().safeParse(id).success) return Astro.redirect('/account#work');
 Astro.response.headers.set('Cache-Control','private, no-store');
 ---
-<BaseLayout title="Workroom" noindex><WorkroomEditor id={id} /></BaseLayout>
+<BaseLayout title="Workroom" noindex preferLight><WorkroomEditor id={id} /></BaseLayout>

@@ -7,7 +7,7 @@ if (root) {
   const picker = root.querySelector('[data-workspace-select]') as unknown as HTMLSelectElement | null;
   const russian = document.documentElement.lang === 'ru';
   const languagePrefix = russian ? '/ru' : document.documentElement.lang === 'zh-CN' ? '/zh-cn' : '';
-  const copy = (english: string, translated: string) => russian ? translated : english;
+  const copy = (english: string, translated: string, chinese?: string) => russian ? translated : document.documentElement.lang === 'zh-CN' && chinese ? chinese : english;
 
   function reveal(target: HTMLElement) {
     let ancestor: HTMLElement | null = target;
@@ -90,7 +90,7 @@ if (root) {
     const matches = rows.filter((row) => repositoryMatches(row.dataset.search ?? '', row.dataset.kind ?? '', search?.value ?? '', kind?.value ?? 'all'));
     for (const row of rows) row.hidden = true;
     for (const row of matches.slice(0, repositoryLimit)) row.hidden = false;
-    if (resultCount) resultCount.textContent = copy(`Showing ${Math.min(repositoryLimit, matches.length)} of ${matches.length} repositories`, `Показано ${Math.min(repositoryLimit, matches.length)} из ${matches.length} репозиториев`);
+    if (resultCount) resultCount.textContent = copy(`Showing ${Math.min(repositoryLimit, matches.length)} of ${matches.length} repositories`, `Показано ${Math.min(repositoryLimit, matches.length)} из ${matches.length} репозиториев`, `已显示 ${Math.min(repositoryLimit, matches.length)} / ${matches.length} 个仓库`);
     if (noResults) noResults.hidden = matches.length > 0;
     if (more) more.hidden = matches.length <= repositoryLimit;
   }
@@ -100,7 +100,7 @@ if (root) {
     const previousLimit = repositoryLimit;
     repositoryLimit += 6;
     filterRepositories();
-    rows.filter((row) => !row.hidden)[previousLimit]?.focus();
+    rows.filter((row) => !row.hidden)[previousLimit]?.querySelector<HTMLAnchorElement>('a')?.focus();
   });
   const filters = root.querySelector<HTMLElement>('[data-workspace-filters]');
   if (filters) filters.hidden = false;
