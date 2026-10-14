@@ -23,6 +23,10 @@ Work in progress initially shows two recent rooms, with existing search/filter/s
 Evidence: local release folder `superii-workspace-pixel-release-2026-10-13/`.
 Browser fixtures and proxy are local-only and removed from the release tree.
 
+## Release dependency patch — 14 October 2026
+
+The required RustSec check found three advisories against the existing `quinn-proto` 0.11.17 lockfile entry: RUSTSEC-2026-0343, RUSTSEC-2026-0340 and RUSTSEC-2026-0338. The lockfile now selects upstream's patched 0.11.18, with no other dependency changes. Locked Rust tests, Clippy and the required RustSec workflow must pass before release; final outcomes are recorded in the release report.
+
 ## Remaining boundaries
 
 Responsive viewport checks are not real mainland-network or WeChat-device verification; those remain deferred. This is not a complete assistive-technology audit. Local Card and agent lists used empty fixture responses, not production credential mutations. Public deployment and final CI evidence are recorded separately in the release report.
