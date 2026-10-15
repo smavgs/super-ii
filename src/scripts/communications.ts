@@ -32,7 +32,14 @@ revealTarget(location.hash, Boolean(location.hash));
 
 // Reveal invalid fields before the browser moves focus, including nested panels.
 root?.addEventListener('invalid', (event) => {
-  let ancestor = event.target instanceof Element ? event.target.parentElement : null;
+  const field = event.target;
+  if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) return;
+  const firstInvalid = field.form && [...field.form.elements].find((control) =>
+    (control instanceof HTMLInputElement || control instanceof HTMLSelectElement || control instanceof HTMLTextAreaElement)
+    && control.willValidate && !control.validity.valid);
+  // Opening a second exclusive panel would hide the first invalid field.
+  if (firstInvalid && firstInvalid !== field) { event.preventDefault(); return; }
+  let ancestor = field.parentElement;
   while (ancestor && ancestor !== root) {
     if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
     ancestor = ancestor.parentElement;
