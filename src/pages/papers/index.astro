@@ -1,7 +1,7 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
-import PageHero from '@/components/PageHero.astro';
+import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
 import { sqlClient } from '@/lib/db';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 
@@ -9,14 +9,14 @@ type Paper = { owner: string; owner_name: string; owner_avatar_url: string | nul
 const sql = sqlClient(Astro.locals);
 const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 let papers: Paper[] = [];
-let unavailable = false;
+let unavailable = !sql;
 if (sql) {
   try {
     papers = await sql`
       select profile.handle as owner, profile.display_name as owner_name,
              profile.avatar_url as owner_avatar_url, paper.slug, paper.title, paper.abstract, paper.doi,
              paper.published_on, paper.created_at,
-             (select count(*)::integer from app.paper_repository_links link where link.paper_id = paper.id) as repository_count
+             (select count(*)::integer from app.paper_repository_links link join app.repositories repository on repository.id = link.repository_id and repository.visibility = 'public' and repository.status = 'published' where link.paper_id = paper.id) as repository_count
       from app.papers paper join app.profiles profile on profile.id = paper.owner_profile_id and profile.is_public
       where paper.is_public order by coalesce(paper.published_on::timestamptz, paper.created_at) desc limit 100
     ` as Paper[];
@@ -24,9 +24,11 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="Papers" description="Research papers connected to real Super ii models, datasets, and apps.">
-  <PageHero eyebrow="Research and evidence 📄" title="Papers connected to working repositories." description="Share research and connect it to the models, datasets and apps it describes, uses or evaluates." compact><div class="button-row"><a class="button button--dark" href="/papers/new">Publish a paper</a><a class="button button--secondary" href="/feed">Open community feed</a></div></PageHero>
-  <main class="section shell">
-    {papers.length ? <div class="content-card-grid">{papers.map((paper) => <article class="content-card"><div class="content-card__byline"><CreatorLink compact handle={paper.owner} displayName={paper.owner_name} avatarUrl={paper.owner_avatar_url} /><span>{paper.repository_count} linked repositories</span></div><h2><a class="content-card__title-link" href={`/papers/${encodeURIComponent(paper.owner)}/${encodeURIComponent(paper.slug)}`}><span data-no-translate>{paper.title}</span></a></h2><p data-no-translate>{paper.abstract}</p>{paper.doi ? <span data-no-translate>DOI {paper.doi}</span> : <span>{paper.published_on ? new Date(paper.published_on).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Publication date not declared'}</span>}<a class="content-card__open" href={`/papers/${encodeURIComponent(paper.owner)}/${encodeURIComponent(paper.slug)}`}>Read paper <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="empty-state"><div class="empty-state__icon"><i class="ph ph-file-text" aria-hidden="true"></i></div><h2>{unavailable ? 'Papers are temporarily unavailable.' : 'Publish the first paper'}</h2><p>{unavailable ? 'Please try again shortly.' : 'Connect a real paper to reviewed public repositories.'}</p><a class="button button--dark" href="/papers/new">Publish a paper</a></div>}
-  </main>
-</BaseLayout>
+<CommunicationsLayout active="papers" title="Papers" description="Research papers connected to real Super ii models, datasets, and apps.">
+  <CommunicationsHeading audience="Public research" title="Papers" description="Read research and explore the models, datasets and apps connected to it."><div class="button-row"><a class="button button--dark" href="/papers/new">Publish a paper</a></div></CommunicationsHeading>
+  <div class="section shell" data-collection-filter>
+    {papers.length > 0 && <div class="communications-toolbar"><label>Search these papers<input type="search" data-collection-search placeholder="Title, author or abstract" /></label><small><span data-filter-count aria-live="polite"></span> · <span>Latest 100 public papers</span></small></div>}
+    {papers.length ? <div class="content-card-grid">{papers.map((paper) => <article class="content-card" data-collection-item><div class="content-card__byline"><CreatorLink compact handle={paper.owner} displayName={paper.owner_name} avatarUrl={paper.owner_avatar_url} /><span>{paper.repository_count} linked repositories</span></div><h2><a class="content-card__title-link" href={`/papers/${encodeURIComponent(paper.owner)}/${encodeURIComponent(paper.slug)}`}><span data-no-translate>{paper.title}</span></a></h2><p data-no-translate>{paper.abstract}</p>{paper.doi ? <span data-no-translate>DOI {paper.doi}</span> : <span>{paper.published_on ? new Date(paper.published_on).toLocaleDateString(dateLocale, { dateStyle: 'medium' }) : 'Publication date not declared'}</span>}<a class="content-card__open" href={`/papers/${encodeURIComponent(paper.owner)}/${encodeURIComponent(paper.slug)}`}>Read paper <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="empty-state"><div class="empty-state__icon"><i class="ph ph-file-text" aria-hidden="true"></i></div><h2>{unavailable ? 'Papers are temporarily unavailable.' : 'Publish the first paper'}</h2><p>{unavailable ? 'Please try again shortly.' : 'Connect a real paper to reviewed public repositories.'}</p></div>}
+    {papers.length > 0 && <p data-filter-empty hidden>No papers match your search.</p>}
+  </div>
+</CommunicationsLayout>

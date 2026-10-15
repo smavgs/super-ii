@@ -1,0 +1,79 @@
+/* Shared tactile controls for Workspace and communications. */
+:is(.workspace-skin, .communications-skin) {
+  --ws-panel: #fffdf6;
+  --ws-soft: #f3f0e6;
+  --ws-border: #7d8a99;
+  --ws-strong: #20344b;
+  --ws-shadow: #20344b;
+  --ws-cyan: #b6f3ee;
+  --ws-violet: #e6d9ff;
+  --ws-focus: #7342ce;
+  --ws-violet-ink: #6536a4;
+  --ws-green-bg: #e3f3e8;
+  --ws-green-ink: #226140;
+  --ws-amber-bg: #fff0bf;
+  --ws-amber-ink: #775000;
+  --ws-red-bg: #fde4e6;
+  --ws-red-ink: #963447;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  color: var(--ink);
+}
+:root[data-theme='dark'] :is(.workspace-skin, .communications-skin) {
+  --ws-panel: #122337;
+  --ws-soft: #182d43;
+  --ws-border: #72859a;
+  --ws-strong: #7793b0;
+  --ws-shadow: #000b17;
+  --ws-cyan: #88e5dd;
+  --ws-violet: #d2b4ff;
+  --ws-focus: #c9a0ff;
+  --ws-violet-ink: #d2b4ff;
+  --ws-green-bg: #193d32;
+  --ws-green-ink: #a0e4ba;
+  --ws-amber-bg: #40351a;
+  --ws-amber-ink: #ffdc80;
+  --ws-red-bg: #412431;
+  --ws-red-ink: #ffb2c0;
+}
+:is(.workspace-skin, .communications-skin) .button {
+  border-radius: 3px;
+  border: 1px solid var(--ws-strong);
+  box-shadow: 2px 2px 0 var(--ws-shadow);
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  line-height: 1.25;
+  font-weight: 650;
+  text-align: center;
+  transition: transform 100ms ease, box-shadow 100ms ease, background-color 100ms ease;
+}
+:root :is(.workspace-skin, .communications-skin) .button.button--dark,
+:root :is(.workspace-skin, .communications-skin) .button.button--yellow {
+  background: var(--yellow);
+  color: #071a2f;
+  border-color: #20344b;
+}
+:root :is(.workspace-skin, .communications-skin) .button.button--secondary { background: var(--ws-panel); color: var(--ink); }
+:is(.workspace-skin, .communications-skin) .button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ws-shadow); }
+:is(.workspace-skin, .communications-skin) .button:active { transform: translate(2px, 2px); box-shadow: none; }
+:is(.workspace-skin, .communications-skin) .button:disabled { transform: none; box-shadow: none; opacity: 0.55; cursor: not-allowed; }
+:is(.workspace-skin, .communications-skin) :is(a, button, input, textarea, select, summary):focus-visible {
+  outline: 3px solid var(--ws-focus);
+  outline-offset: 3px;
+}
+:is(.workspace-skin, .communications-skin) .text-button { min-height: 2.75rem; padding-block: 0.45rem; }
+:is(.workspace-skin, .communications-skin) :is(input, textarea, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) {
+  border-radius: 3px;
+  border-color: var(--ws-border);
+  background: var(--surface-raised);
+  color: var(--ink);
+  min-height: 2.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.workspace-skin, .communications-skin) .button { transition: none; }
+}
+@media (forced-colors: active) {
+  :is(.workspace-skin, .communications-skin) .button { border: 1px solid ButtonText; box-shadow: none; }
+}

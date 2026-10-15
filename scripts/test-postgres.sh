@@ -186,5 +186,6 @@ SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-crea
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-product-flows.mjs"
 
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-workroom-flows.mjs"
+SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-communication-flows.mjs"
 
 echo "OK: PostgreSQL 17 migrations are rerunnable and the transactional integration test passed."

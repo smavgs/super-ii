@@ -1,42 +1,5 @@
+@import './pixel-controls.css';
 /* Workspace only: a quiet reading surface and a tactile, colourful control layer. */
-.workspace-skin {
-  --ws-panel: #fffdf6;
-  --ws-soft: #f3f0e6;
-  --ws-border: #7d8a99;
-  --ws-strong: #20344b;
-  --ws-shadow: #20344b;
-  --ws-cyan: #b6f3ee;
-  --ws-violet: #e6d9ff;
-  --ws-focus: #7342ce;
-  --ws-violet-ink: #6536a4;
-  --ws-green-bg: #e3f3e8;
-  --ws-green-ink: #226140;
-  --ws-amber-bg: #fff0bf;
-  --ws-amber-ink: #775000;
-  --ws-red-bg: #fde4e6;
-  --ws-red-ink: #963447;
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-lg: 8px;
-  color: var(--ink);
-}
-:root[data-theme='dark'] .workspace-skin {
-  --ws-panel: #122337;
-  --ws-soft: #182d43;
-  --ws-border: #72859a;
-  --ws-strong: #7793b0;
-  --ws-shadow: #000b17;
-  --ws-cyan: #88e5dd;
-  --ws-violet: #d2b4ff;
-  --ws-focus: #c9a0ff;
-  --ws-violet-ink: #d2b4ff;
-  --ws-green-bg: #193d32;
-  --ws-green-ink: #a0e4ba;
-  --ws-amber-bg: #40351a;
-  --ws-amber-ink: #ffdc80;
-  --ws-red-bg: #412431;
-  --ws-red-ink: #ffb2c0;
-}
 .workspace-skin .workspace-heading {
   border-bottom: 2px solid var(--ws-strong);
   padding-bottom: 1.15rem;
@@ -90,41 +53,6 @@
   gap: 0.5rem;
   margin: 0.25rem 0 0;
   font-size: 1.25rem;
-}
-.workspace-skin .button {
-  border-radius: 3px;
-  border: 1px solid var(--ws-strong);
-  box-shadow: 2px 2px 0 var(--ws-shadow);
-  min-height: 2.75rem;
-  padding: 0.55rem 0.85rem;
-  line-height: 1.25;
-  font-weight: 650;
-  text-align: center;
-  transition: transform 100ms ease, box-shadow 100ms ease, background-color 100ms ease;
-}
-:root .workspace-skin .button.button--dark,
-:root .workspace-skin .button.button--yellow {
-  background: var(--yellow);
-  color: #071a2f;
-  border-color: #20344b;
-}
-:root .workspace-skin .button.button--secondary { background: var(--ws-panel); color: var(--ink); }
-:root .workspace-skin .button.workspace-connect { background: var(--ws-cyan); color: #071a2f; border-color: #20344b; }
-:root .workspace-skin [data-workspace-panel='agents'] .button--dark { background: var(--ws-violet); color: #071a2f; }
-.workspace-skin .button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ws-shadow); }
-.workspace-skin .button:active { transform: translate(2px, 2px); box-shadow: none; }
-.workspace-skin .button:disabled { transform: none; box-shadow: none; opacity: 0.55; cursor: not-allowed; }
-.workspace-skin :is(a, button, input, textarea, select, summary):focus-visible {
-  outline: 3px solid var(--ws-focus);
-  outline-offset: 3px;
-}
-.workspace-skin .text-button { min-height: 2.75rem; padding-block: 0.45rem; }
-.workspace-skin :is(input, textarea, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) {
-  border-radius: 3px;
-  border-color: var(--ws-border);
-  background: var(--surface-raised);
-  color: var(--ink);
-  min-height: 2.75rem;
 }
 .workspace-skin .workspace-filters { gap: 0.75rem; }
 .workspace-skin .workspace-results { font-size: 0.8rem; }
@@ -286,3 +214,6 @@
   .workspace-skin .workspace-nav a[aria-current='page'],
   .workspace-skin.workroom-page .workroom-kinds label:has(:checked) { border: 3px solid Highlight; }
 }
+
+:root .workspace-skin .button.workspace-connect { background: var(--ws-cyan); color: #071a2f; border-color: #20344b; }
+:root .workspace-skin [data-workspace-panel='agents'] .button--dark { background: var(--ws-violet); color: #071a2f; }

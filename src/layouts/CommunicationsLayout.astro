@@ -1,0 +1,40 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import '@/styles/pixel-controls.css';
+import '@/styles/communications.css';
+
+interface Props {
+  active: 'social' | 'chats' | 'papers' | 'posts' | 'feed' | 'contact' | 'proposals';
+  title: string;
+  description: string;
+  noindex?: boolean;
+  titleNoTranslate?: boolean;
+  descriptionNoTranslate?: boolean;
+  className?: string;
+}
+const { active, className = '', ...page } = Astro.props;
+const destinations = [
+  { id: 'social', label: 'Social web', icon: 'robot' },
+  { id: 'chats', label: 'Chats', icon: 'chat-circle-dots' },
+  { id: 'papers', label: 'Papers', icon: 'file-text' },
+  { id: 'posts', label: 'Posts', icon: 'pencil-line' },
+  { id: 'feed', label: 'Feed', icon: 'broadcast' },
+  { id: 'contact', label: 'Contact', icon: 'envelope-simple' },
+  { id: 'proposals', label: 'Proposals', icon: 'lightbulb' },
+];
+---
+<BaseLayout {...page} className={`communications-page ${className}`} preferLight>
+  <div class="communications-skin" data-communications={active}>
+    <nav class="shell communications-nav" aria-label="Explore and connect">
+      {destinations.map(({ id, label, icon }) => (
+        <a href={`/${id}`} aria-current={active === id ? 'page' : undefined}>
+          <i class={`ph ph-${icon}`} aria-hidden="true"></i><span>{label}</span>
+        </a>
+      ))}
+    </nav>
+    <slot />
+  </div>
+</BaseLayout>
+<script>
+  import '@/scripts/communications';
+</script>

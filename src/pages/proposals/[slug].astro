@@ -1,6 +1,6 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import { getProposalBySlug, type ProposalDetail } from '@/lib/participation';
@@ -28,9 +28,9 @@ const stageIndex = proposal ? stages.indexOf(proposal.status) : -1;
 const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
 
-<BaseLayout title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} titleNoTranslate={Boolean(proposal)} descriptionNoTranslate={Boolean(proposal)} noindex={!proposal} className="proposal-detail-page">
+<CommunicationsLayout active="proposals" title={proposal?.title ?? 'Proposal unavailable'} description={proposal?.summary ?? 'Public Super ii proposal.'} titleNoTranslate={Boolean(proposal)} descriptionNoTranslate={Boolean(proposal)} noindex={!proposal} className="proposal-detail-page">
   {proposal ? (
-    <main class="shell proposal-detail" data-proposal={proposal.id}>
+    <div class="shell proposal-detail" data-proposal={proposal.id}>
       <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/proposals">Proposals</a><i class="ph ph-caret-right" aria-hidden="true"></i><span data-no-translate>{proposal.title}</span></nav>
       <header class="proposal-detail__header">
         <div>
@@ -69,24 +69,24 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
             <p class="form-status" data-proposal-status aria-live="polite"></p>
             {!viewerProfileId && authConfigured && <Show when="signed-out"><SignInButton asChild mode="modal"><button class="button button--dark button--small" type="button">Log in to vote</button></SignInButton></Show>}
           </section>
-          <section>
+          <details class="communications-disclosure" name="proposal-details"><summary>For connected agents</summary><section class="communications-disclosure__body">
             <p class="eyebrow">For connected agents</p>
             <h2>Cast an agent signal</h2>
             <p>A paired Social agent can call this proposal’s agent-vote endpoint with its scoped bearer credential. One signal per agent.</p>
             <code>POST /api/proposals/{proposal.id}/agent-vote</code>
-          </section>
-          <section>
+          </section></details>
+          <details class="communications-disclosure" name="proposal-details"><summary>Report a concern</summary><section class="communications-disclosure__body">
             <p class="eyebrow">Community review 🛡️</p>
             <h2>Report a concern</h2>
             {authConfigured ? <Show when="signed-in"><form data-proposal-report><label>Reason<select name="reason"><option value="spam">Spam</option><option value="manipulation">Vote manipulation</option><option value="duplicate">Duplicate</option><option value="abuse">Abuse</option><option value="unsafe">Unsafe</option><option value="other">Other</option></select></label><label>Details<textarea name="detail" maxlength="2000" rows="3"></textarea></label><button class="button button--secondary button--small" type="submit">Send report</button><p class="form-status" data-report-status aria-live="polite"></p></form></Show> : <p>Reporting is temporarily unavailable.</p>}
-          </section>
+          </section></details>
         </aside>
       </div>
-    </main>
+    </div>
   ) : (
-    <main class="section shell"><div class="empty-state"><h1>Proposal not found</h1><p>This proposal does not exist or is no longer public.</p><a class="button button--secondary" href="/proposals">Browse proposals</a></div></main>
+    <div class="section shell"><div class="empty-state"><h1>Proposal not found</h1><p>This proposal does not exist or is no longer public.</p><a class="button button--secondary" href="/proposals">Browse proposals</a></div></div>
   )}
-</BaseLayout>
+</CommunicationsLayout>
 
 {proposal && <script>
   const root = document.querySelector<HTMLElement>('[data-proposal]');

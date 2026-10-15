@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import PageHero from '@/components/PageHero.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
+import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 const sql = sqlClient(Astro.locals);
@@ -12,18 +12,34 @@ if (sql) {
   } catch { repositories = []; }
 }
 ---
-<BaseLayout title="Publish paper" description="Publish research metadata and link it to Super ii repositories." noindex>
-  <PageHero eyebrow="Research publishing 📄" title="Publish a paper" description="Add the paper details and connect it to any Super ii repositories it introduces, trains, evaluates, references or reproduces." compact />
-  <main class="section shell creator-shell"><form class="form-card creator-form" data-paper-form>
-    <div class="form-grid form-grid--two"><label>Slug <input name="slug" required maxlength="96" pattern="[a-z0-9][a-z0-9._-]{0,94}[a-z0-9]|[a-z0-9]" placeholder="open-model-evaluation" /></label><label>Published on <input name="published_on" type="date" /></label></div>
-    <label>Title <input name="title" required minlength="3" maxlength="300" /></label>
-    <label>Abstract <textarea name="abstract" required minlength="10" maxlength="20000" rows="10"></textarea></label>
-    <div class="form-grid form-grid--two"><label>Original paper URL <span>(optional)</span><input name="canonical_url" type="url" maxlength="2048" placeholder="https://arxiv.org/abs/…" /></label><label>DOI <span>(optional)</span><input name="doi" maxlength="300" placeholder="10.1234/example" /></label></div>
-    <label>Related public repository <span>(optional)</span><select name="repository_id"><option value="">None</option>{repositories.map((repository) => <option value={repository.id}>{repository.kind} · {repository.owner_handle}/{repository.slug}</option>)}</select></label>
-    <label>Relationship <select name="relationship_type"><option value="introduces">Introduces</option><option value="trains">Trains</option><option value="evaluates">Evaluates</option><option value="references">References</option><option value="reproduces">Reproduces</option></select></label>
-    <div class="form-actions"><button class="button button--dark" type="submit">Publish paper</button><a class="button button--secondary" href="/papers">Cancel</a></div><p class="form-status" data-form-status aria-live="polite"></p>
-  </form></main>
-</BaseLayout>
+<CommunicationsLayout active="papers" title="Publish paper" description="Publish research metadata and link it to Super ii repositories." noindex>
+  <CommunicationsHeading audience="Public research" title="Publish a paper" description="Add your title and abstract, then connect sources and related work." />
+  <div class="section shell creator-shell"><form class="form-card creator-form" data-paper-form data-writing-form="paper">
+    <label>Title <input name="title" required minlength="3" maxlength="300" autocomplete="off" /></label>
+    <label>Abstract <textarea name="abstract" required minlength="10" maxlength="20000" rows="8"></textarea></label>
+    <details class="communications-disclosure" name="paper-options">
+      <summary>Sources and publication details</summary>
+      <div class="communications-disclosure__body">
+        <label>Original paper URL <span>(optional)</span><input name="canonical_url" type="url" maxlength="2048" placeholder="https://arxiv.org/abs/…" /></label>
+        <div class="form-grid form-grid--two"><label>DOI <span>(optional)</span><input name="doi" maxlength="300" placeholder="10.1234/example" /></label><label>Published on <input name="published_on" type="date" /></label></div>
+      </div>
+    </details>
+    <details class="communications-disclosure" name="paper-options">
+      <summary>Connect related work</summary>
+      <div class="communications-disclosure__body">
+        <label>Related public repository <span>(optional)</span><select name="repository_id"><option value="">None</option>{repositories.map((repository) => <option value={repository.id}>{repository.kind} · {repository.owner_handle}/{repository.slug}</option>)}</select></label>
+        <label>Relationship <select name="relationship_type"><option value="introduces">Introduces</option><option value="trains">Trains</option><option value="evaluates">Evaluates</option><option value="references">References</option><option value="reproduces">Reproduces</option></select></label>
+      </div>
+    </details>
+    <details class="communications-disclosure" name="paper-options">
+      <summary>Page address</summary>
+      <div class="communications-disclosure__body"><label>Page address <input name="slug" required maxlength="96" pattern="[a-z0-9][a-z0-9._\-]{0,94}[a-z0-9]|[a-z0-9]" autocomplete="off" aria-describedby="address-help" /></label><small id="address-help">Suggested from your title. You can edit it before publishing.</small></div>
+    </details>
+    <details class="communications-disclosure" data-writing-preview name="paper-options"><summary>Preview</summary><div class="communications-disclosure__body communications-preview" data-no-translate><h2 data-preview-field="title"></h2><p data-preview-field="abstract"></p></div></details>
+    <p class="communications-caption">Your paper details will be public on your profile.</p>
+    <div class="form-actions"><button class="button button--dark" type="submit"><i class="ph ph-upload-simple" aria-hidden="true"></i>Publish paper</button><a class="button button--secondary" href="/papers">Cancel</a></div><p class="form-status" data-form-status aria-live="polite"></p>
+  </form></div>
+</CommunicationsLayout>
 <script>
   const form = document.querySelector('[data-paper-form]');
   form?.addEventListener('submit', async (event) => {
