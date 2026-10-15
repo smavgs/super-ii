@@ -1,7 +1,7 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import PageHero from '@/components/PageHero.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
+import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
 import { authIsConfigured } from '@/lib/site';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -53,13 +53,12 @@ const formatBytes = (bytes: number) => {
 };
 ---
 
-<BaseLayout title="Chats" description="Return to saved Super ii conversations, search your archive, organize projects, and control chat memory." noindex>
-  <PageHero
-    eyebrow="Your Super ii conversations 💬"
+<CommunicationsLayout active="chats" title="Chats" description="Return to saved Super ii conversations, search your archive, organize projects, and control chat memory." noindex>
+  <CommunicationsHeading
+    audience="Your private conversations"
     title="Chats"
-    description="Return to earlier work, organize project conversations, and decide whether Super ii may retrieve relevant context later."
-    compact
-  />
+    description="Start a conversation with Super ii or pick up where you left off."
+  ><a class="button button--dark" href="/"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i>Talk with Super ii</a></CommunicationsHeading>
 
   <section class="shell chats-shell">
     {authConfigured ? (
@@ -75,15 +74,6 @@ const formatBytes = (bytes: number) => {
           {dataReady ? (
             <div class="chats-workspace" data-chats-workspace>
               <div class="chats-main">
-                <div class="chats-plan-strip">
-                  <div>
-                    <p class="eyebrow">{plan} plan</p>
-                    <strong>{persistent ? 'Persistent chat history is active.' : 'Chat stays in your current session.'}</strong>
-                    <p>{persistent ? `${formatBytes(assistantStorageBytes)} of conversation data currently uses your included hosted storage.` : 'Upgrade only if you want an archive, search, and optional cross-chat memory.'}</p>
-                  </div>
-                  {!persistent && <a class="button button--dark button--small" href="/pricing">Compare plans</a>}
-                </div>
-
                 <nav class="chats-tabs" aria-label="Chat views">
                   <a href="/chats" aria-current={view === 'recent' ? 'page' : undefined}>Recent</a>
                   <a href="/chats#chat-search" aria-current={view === 'search' ? 'page' : undefined}>Search</a>
@@ -114,6 +104,7 @@ const formatBytes = (bytes: number) => {
                       </div>
                       <div class="chat-thread-row__actions">
                         <a class="button button--dark button--small" href={`/?chat=${thread.id}`}>Continue</a>
+                        <details class="communications-disclosure" name="chat-management"><summary>Manage chat</summary><div class="communications-disclosure__body">
                         <form data-thread-update>
                           <input type="hidden" name="thread_id" value={thread.id} />
                           <input type="hidden" name="status" value={thread.status === 'archived' ? 'recent' : 'archived'} />
@@ -121,6 +112,7 @@ const formatBytes = (bytes: number) => {
                           <button class="text-button" type="submit">{thread.status === 'archived' ? 'Restore' : 'Save project & archive'}</button>
                         </form>
                         <button class="text-button text-button--danger" type="button" data-thread-delete={thread.id}>Delete</button>
+                        </div></details>
                       </div>
                     </article>
                   )) : (
@@ -135,7 +127,16 @@ const formatBytes = (bytes: number) => {
                 <p class="form-status" data-chats-status aria-live="polite"></p>
               </div>
 
-              <aside class="chat-memory-panel" aria-labelledby="chat-memory-heading">
+              <aside class="chat-settings" aria-label="Chat settings">
+                <details class="communications-disclosure" name="chat-settings"><summary>Plan and storage</summary><div class="chats-plan-strip">
+                  <div>
+                    <p class="eyebrow">{plan} plan</p>
+                    <strong>{persistent ? 'Persistent chat history is active.' : 'Chat stays in your current session.'}</strong>
+                    <p>{persistent ? `${formatBytes(assistantStorageBytes)} of conversation data currently uses your included hosted storage.` : 'Upgrade only if you want an archive, search, and optional cross-chat memory.'}</p>
+                  </div>
+                  {!persistent && <a class="button button--dark button--small" href="/pricing">Compare plans</a>}
+                </div></details>
+                <details class="communications-disclosure chat-memory-panel" name="chat-settings"><summary>Chat memory <span class="communications-kind">{memoryEnabled ? 'On' : 'Off'}</span></summary><div class="communications-disclosure__body">
                 <p class="eyebrow">Optional continuity 🧠</p>
                 <h2 id="chat-memory-heading">Chat memory</h2>
                 <p>History stores conversations. Memory is a separate set of details Super ii may retrieve when relevant.</p>
@@ -163,6 +164,7 @@ const formatBytes = (bytes: number) => {
                 </div>
                 {memoryItems.length > 0 && <button class="text-button text-button--danger" type="button" data-memory-delete-all>Delete all chat memory</button>}
                 <p class="chat-memory-note">Deleting memory does not delete your chat history. Deleting a chat removes that conversation from search and retrieval too.</p>
+                </div></details>
               </aside>
             </div>
           ) : (
@@ -174,7 +176,7 @@ const formatBytes = (bytes: number) => {
       <div class="chats-auth"><h2>Account access is temporarily unavailable</h2><p>Your existing session-only assistant is unaffected.</p></div>
     )}
   </section>
-</BaseLayout>
+</CommunicationsLayout>
 
 <script>
   const workspace = document.querySelector<HTMLElement>('[data-chats-workspace]');

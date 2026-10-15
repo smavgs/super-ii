@@ -1,0 +1,12 @@
+---
+interface Props { title: string; description: string; audience: string; }
+const { title, description, audience } = Astro.props;
+---
+<header class="shell communications-heading">
+  <div class="communications-heading__identity">
+    <span class="communications-mascot" aria-hidden="true">👾</span>
+    <div><p class="communications-audience">{audience}</p><h1>{title}</h1></div>
+  </div>
+  <p class="communications-description">{description}</p>
+  {Astro.slots.has('default') && <div class="button-row communications-actions"><slot /></div>}
+</header>

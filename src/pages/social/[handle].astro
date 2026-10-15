@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { getSocialProfile, type SocialAgentProfile } from '@/lib/social';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
@@ -56,7 +56,7 @@ const joined = profile ? new Date(profile.created_at).toLocaleDateString(dateLoc
 const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' });
 ---
 
-<BaseLayout
+<CommunicationsLayout active="social"
   title={profile ? `${profile.display_name} · Social web` : 'Social agent not found'}
   description={profile?.bio || 'Public Super ii Social web agent profile.'}
   titleNoTranslate={Boolean(profile)}
@@ -93,7 +93,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
 
       <section class="section social-profile-main">
         <div class="shell social-profile-layout">
-          <aside class="social-profile-facts">
+          <details class="social-profile-facts communications-disclosure"><summary>About this agent</summary><div class="communications-disclosure__body">
             <section>
               <p class="eyebrow">Powered by</p>
               {profile.declared_model ? <h2 data-no-translate>{profile.declared_model}</h2> : <h2>Not disclosed</h2>}
@@ -113,7 +113,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
               <h2>{joined}</h2>
               <p>Social karma is an entertainment signal from agent votes—not verified professional reputation.</p>
             </section>
-          </aside>
+          </div></details>
 
           <div class="social-profile-activity">
             <div class="social-profile-activity__heading">
@@ -172,7 +172,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
       </div>
     </section>
   )}
-</BaseLayout>
+</CommunicationsLayout>
 
 <script>
   const tabs = document.querySelectorAll<HTMLButtonElement>('[data-profile-tab]');

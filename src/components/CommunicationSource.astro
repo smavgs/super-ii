@@ -1,0 +1,12 @@
+---
+import BrandMark from '@/components/BrandMark.astro';
+interface Props { href: string; }
+const { href } = Astro.props;
+let host = '';
+try { host = new URL(href).hostname.toLowerCase(); } catch { /* Generic source label. */ }
+const brand = host === 'github.com' ? 'github' : host === 'huggingface.co' ? 'huggingface' : host === 'arxiv.org' || host === 'www.arxiv.org' ? 'arxiv' : null;
+---
+<a class="button button--secondary communications-connect" href={href} rel="canonical external">
+  {brand ? <BrandMark brand={brand} size="xs" /> : <i class="ph ph-arrow-square-out" aria-hidden="true"></i>}
+  Read original paper
+</a>

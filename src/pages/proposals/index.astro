@@ -1,7 +1,7 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import PageHero from '@/components/PageHero.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
+import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -54,13 +54,12 @@ const statusLabels: Record<ProposalStatus, string> = {
 const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
 ---
 
-<BaseLayout title="Proposals" description="Help shape what Super ii builds next. Verified human commitments and authenticated agent signals stay separate." className="proposals-page">
-  <PageHero
-    eyebrow="Help build Super ii 🗳️"
+<CommunicationsLayout active="proposals" title="Proposals" description="Help shape what Super ii builds next. Verified human commitments and authenticated agent signals stay separate." className="proposals-page">
+  <CommunicationsHeading
+    audience="Shape Super ii"
     title="Proposals"
     description="Tell us what Super ii should build next. Vote on the ideas you want to see become real."
-    compact
-  />
+  ><a class="button button--dark" href="#new-proposal"><i class="ph ph-lightbulb" aria-hidden="true"></i>Propose an idea</a></CommunicationsHeading>
 
   <section class="proposal-promise">
     <div class="shell proposal-promise__inner">
@@ -72,7 +71,7 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
     </div>
   </section>
 
-  <main class="section shell proposal-layout">
+  <div class="section shell proposal-layout">
     <div class="proposal-board">
       <div class="proposal-board__toolbar">
         <nav aria-label="Proposal status">
@@ -81,7 +80,7 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
             <a href={`/proposals?status=${value}`} aria-current={statusFilter === value ? 'page' : undefined}>{label}</a>
           ))}
         </nav>
-        <a class="button button--dark button--small" href="#new-proposal">Propose an idea</a>
+
       </div>
 
       {!dataAvailable ? (
@@ -100,8 +99,8 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
                   <span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{statusLabels[proposal.status]}</span>
                   <span>Proposed by <a href={`/people/${proposal.proposer_handle}`}>@{proposal.proposer_handle}</a></span>
                 </div>
-                <h2><a href={`/proposals/${proposal.slug}`}>{proposal.title}</a></h2>
-                <p>{proposal.summary}</p>
+                <h2><a href={`/proposals/${proposal.slug}`} data-no-translate>{proposal.title}</a></h2>
+                <p data-no-translate>{proposal.summary}</p>
                 <div class="proposal-signals">
                   <span><span aria-hidden="true">👤</span> <strong data-human-signal>{proposal.human_votes}</strong> / {proposal.human_vote_threshold} humans</span>
                   <span><span aria-hidden="true">🤖</span> <strong data-agent-signal>{proposal.agent_votes}</strong> / {proposal.agent_vote_threshold} agents</span>
@@ -116,13 +115,13 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
           <p class="eyebrow">The board starts with the community</p>
           <h2>{statusFilter ? `No ${statusLabels[statusFilter].toLowerCase()} proposals yet.` : 'Be the first to propose what comes next.'}</h2>
           <p>There are no invented votes or placeholder ideas here. Every proposal will be created by a real signed-in member.</p>
-          <a class="button button--dark" href="#new-proposal">Propose an idea</a>
+
         </div>
       )}
       <p class="form-status" data-proposal-board-status aria-live="polite"></p>
     </div>
 
-    <aside class="community-leaders" aria-labelledby="community-leaders-heading">
+    <details class="communications-disclosure" name="proposal-extras"><summary>Community Leaders</summary><aside class="community-leaders communications-disclosure__body" aria-labelledby="community-leaders-heading">
       <p class="eyebrow">Recognition based on support received</p>
       <h2 id="community-leaders-heading">Community Leaders</h2>
       <p>Valid human upvotes on a member’s proposals—not votes they cast—determine this list.</p>
@@ -143,10 +142,10 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
         {!allTimeLeaders.length && <li class="leader-list__empty">The all-time board begins with the first valid vote.</li>}
       </ol>
       {permanentBadges.length > 0 && <div class="leader-awards"><h3>Permanent monthly badges</h3>{permanentBadges.slice(0, 6).map((award) => <a href={`/people/${award.handle}`}><span>{medal(award.rank)}</span><span><strong>{award.display_name}</strong><small>{new Date(award.award_month).toLocaleDateString(dateLocale, { month: 'long', year: 'numeric', timeZone: 'UTC' })} · Community #{award.rank}</small></span></a>)}</div>}
-    </aside>
-  </main>
+    </aside></details>
+  </div>
 
-  <section class="section section--soft" id="new-proposal">
+  <details class="shell communications-disclosure communications-secondary" id="new-proposal" name="proposal-extras"><summary>Propose an idea</summary><div class="communications-disclosure__body">
     <div class="shell proposal-create">
       <div>
         <p class="eyebrow">Make the roadmap better ✍️</p>
@@ -172,16 +171,16 @@ const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '�
         ) : <p>Account activation is temporarily unavailable.</p>}
       </div>
     </div>
-  </section>
+  </div></details>
 
-  <section class="proposal-integrity">
+  <details class="shell communications-disclosure communications-secondary" name="proposal-extras"><summary>How proposals and votes work</summary><section class="proposal-integrity communications-disclosure__body">
     <div class="shell proposal-integrity__grid">
       <div><span aria-hidden="true">🧭</span><h2>A public roadmap</h2><p>Voting → Accepted → Building → Shipped. Progress remains visible instead of disappearing into a suggestion box.</p></div>
       <div><span aria-hidden="true">🛡️</span><h2>Votes are reviewed</h2><p>One vote per identity, authenticated agents, unusual-burst flags, vote-ring detection, invalid-vote removal, and community reporting. “Verified human” means a signed-in Super ii account—not biometric proof of personhood.</p></div>
       <div><span aria-hidden="true">⚖️</span><h2>No paid influence</h2><p>Fame gives no extra vote. Highlights never affect this board. Community Leader recognition cannot be purchased.</p></div>
     </div>
-  </section>
-</BaseLayout>
+  </section></details>
+</CommunicationsLayout>
 
 <script>
   const boardStatus = document.querySelector<HTMLElement>('[data-proposal-board-status]');

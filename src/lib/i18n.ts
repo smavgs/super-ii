@@ -1,3 +1,4 @@
+import { communicationsRussian, communicationsChinese } from './communications-localization';
 import { workroomRussian, workroomChinese } from './workroom-localization';
 import russianCatalog from '@/content/locales/ru.json';
 import chineseCatalog from '@/content/locales/zh-CN.json';
@@ -2852,6 +2853,7 @@ const generatedChinese = Object.fromEntries(
 export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.freeze({
   ...companyProductChinese,
   ...workroomChinese,
+  ...communicationsChinese,
   'Agent Friendly': '对智能体友好',
   'Agent friendly': '对智能体友好',
   'Payment route': '支付路径',
@@ -2934,6 +2936,7 @@ export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.
 export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...companyProductRussian,
   ...workroomRussian,
+  ...communicationsRussian,
   ...coreRussian,
   ...pricingRussian,
   ...publicPageRussian,

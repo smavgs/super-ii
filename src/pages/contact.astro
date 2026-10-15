@@ -1,16 +1,15 @@
 ---
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
+import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
 
 export const prerender = false;
 ---
 
-<BaseLayout title="Contact" description="Contact Super ii about joining the Founding Circle, creator access, plans, enterprise requirements, security, privacy, or launch feedback.">
-  <PageHero
-    eyebrow="Contact"
-    title="What are you building?"
-    description="Tell us about your project, idea or organization, or let us know how Super ii could improve. We can help with publishing, plans, partnerships, Enterprise, security, privacy and feedback."
-    compact
+<CommunicationsLayout active="contact" title="Contact" description="Contact Super ii about joining the Founding Circle, creator access, plans, enterprise requirements, security, privacy, or launch feedback.">
+  <CommunicationsHeading
+    audience="Message the Super ii team"
+    title="Contact"
+    description="Tell us what you need help with or what you would like to build together."
   />
 
   <section class="section">
@@ -28,6 +27,7 @@ export const prerender = false;
           <div class="field field--full">
             <label for="contact-interest">What can we help with?</label>
             <select id="contact-interest" name="interest" required>
+              <option value="" selected disabled>Choose a topic</option>
               <option value="founding-circle">Join the Founding Circle</option>
               <option value="founding-team">Founding Team</option>
               <option value="creator">Creator and publishing access</option>
@@ -46,9 +46,9 @@ export const prerender = false;
           </div>
         </div>
         <input class="sr-only" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-        <button class="button button--dark" type="submit">Send message</button>
+        <button class="button button--dark" type="submit"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Send message</button>
         <p class="form-status" data-form-status hidden aria-live="polite"></p>
       </form>
     </div>
   </section>
-</BaseLayout>
+</CommunicationsLayout>
