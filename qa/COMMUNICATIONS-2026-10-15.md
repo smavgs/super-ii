@@ -26,3 +26,7 @@ Libraries search the latest loaded public records. Feed filters operate on the l
 Browser examples and preview API responses live outside the repository. They contain no credentials and are not part of the release. Form layout/preview checks are not a claim of new authenticated publication verification. An initial invalid-pattern attempt reached the isolated database-unavailable handler; no data was stored, and the corrected pattern was then verified to prevent submission.
 
 Evidence is retained in the local `superii-communications-release-2026-10-14` folder. Release identifiers, final CI outcomes, deployment and production read-only checks are recorded separately after completion. Mainland mobile/WeChat testing remains deferred.
+
+## Release dependency patch
+
+The required RustSec check reported four 14 October advisories against the existing Rustls 0.23.45 lockfile entry: RUSTSEC-2026-0346, 0347, 0348 and 0349. RustSec prescribes 0.23.46; only that lockfile entry and checksum were updated. Locked Rust tests, Clippy, the final build and required CI must pass before release. This does not change application permissions or disable any release check.
