@@ -16,12 +16,14 @@ interface Props {
   workspace?: Awaited<ReturnType<typeof companyWorkspace>>;
   signedIn?: boolean;
   unavailable?: boolean;
+  embedded?: boolean;
 }
 const {
   draft = null,
   workspace = { companies: [], products: [] },
   signedIn = false,
   unavailable = false,
+  embedded = false,
 } = Astro.props;
 const t = (text: string) => translateProduct(text, Astro.locals.locale);
 const company = draft?.company ?? emptyCompany();
@@ -51,6 +53,7 @@ const productFields = [
   data-signed-in={String(signedIn)}
   data-initial={JSON.stringify({ draft, workspace })}
 >
+  {!embedded && <>
   <nav class="product-breadcrumb">
     <a href="/account">Workspace</a><span aria-hidden="true"> / </span><a
       href="/workspace/products">Company and products</a
@@ -63,6 +66,7 @@ const productFields = [
       Help people understand it, find its resources and reach the right person.
     </p>
   </header>
+  </>}
   {
     unavailable && (
       <p role="alert">
@@ -108,7 +112,7 @@ const productFields = [
                     <input
                       name="handle"
                       maxlength="40"
-                      pattern="[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?"
+                      pattern="[a-z0-9](?:[a-z0-9\-]{0,38}[a-z0-9])?"
                       placeholder="your-company"
                       data-no-translate
                     />

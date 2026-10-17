@@ -1,7 +1,6 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import LogoMark from '@/components/LogoMark.astro';
+import WorkspaceJourneyLayout from '@/layouts/WorkspaceJourneyLayout.astro';
 import TransparencyChecker from '@/components/TransparencyChecker.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import JourneyLabel from '@/components/JourneyLabel.astro';
@@ -115,22 +114,9 @@ const claimableOrganizations = connections.flatMap((connection) => {
 });
 ---
 
-<BaseLayout title="Bring my work" description="Bring existing AI models, datasets, and compatible apps to Super ii without changing the source." noindex className="bridge-body">
-  <section class="bridge-hero">
-    <div class="shell bridge-hero__inner">
-      <div>
-        <p class="eyebrow">Super ii Bridge 🌉</p>
-        <h1>Bring your work.<br />Keep your freedom.</h1>
-        <p>Import existing models, datasets, and compatible apps. Your original account and files stay exactly where they are.</p>
-      </div>
-      <div class="bridge-hero__mark" aria-hidden="true">
-        <LogoMark size="large" priority />
-      </div>
-    </div>
-  </section>
-
+<WorkspaceJourneyLayout active="bridge" title="Bring my work" eyebrow="Super ii Bridge" description="Bring models, datasets and compatible apps. Your source account and files stay where they are." noindex>
   <section class="shell bridge-workspace" data-bridge-workspace data-active-job={activeJob?.id ?? ''}>
-    <p>Working from another source or still exploring? <a href="/workspace/workrooms/new">Start a private workroom with your link</a>. Save the goal and results while files stay at their source.</p>
+    <p class="journey-hint">Working from another source or still exploring? <a href="/workspace/workrooms/new">Start a private workroom with your link</a>. Save the goal and results while files stay at their source.</p>
     {!configured && (
       <div class="notice notice--warning" role="status">
         <i class="ph ph-warning" aria-hidden="true"></i>
@@ -222,11 +208,9 @@ const claimableOrganizations = connections.flatMap((connection) => {
                 </div>
               </section>
 
-              <section class="bridge-step" aria-labelledby="bridge-progress-heading">
-                <JourneyLabel class="bridge-step__number" kind="step" current={3} total={3} />
-                <div class="bridge-step__content">
-                  <p class="eyebrow">Verified arrival</p>
-                  <h2 id="bridge-progress-heading">Import activity</h2>
+              <details class="journey-panel bridge-activity" id="import-activity" open={Boolean(activeJob)}>
+                <summary><JourneyLabel kind="step" current={3} total={3} /><strong>Import activity</strong></summary>
+                <div class="journey-panel__body">
                   <p>Super ii copies the exact version, checks its files and records the source. Open the finished import in Workspace to edit its page and submit publication checks.</p>
                   <div class="bridge-job-list" data-bridge-job-list>
                     {jobs.length ? jobs.map((job) => (
@@ -245,16 +229,19 @@ const claimableOrganizations = connections.flatMap((connection) => {
                     )) : <p class="bridge-empty-jobs">No imports yet. Your first verified import will appear here.</p>}
                   </div>
                 </div>
-              </section>
+              </details>
 
-              <div class="bridge-transparent-lane">
+              <details class="journey-panel bridge-transparent-lane" id="source-check" open={Boolean(requestedTransparentSource)}>
+                <summary><i class="ph ph-scan" aria-hidden="true"></i><strong>Check a source before importing</strong></summary>
+                <div class="journey-panel__body">
                 <TransparencyChecker variant="bridge" initialSource={requestedTransparentSource} />
-              </div>
+                </div>
+              </details>
             </div>
 
             <aside class="bridge-sidebar" aria-label="Bridge account and safeguards">
-              <section>
-                <p class="eyebrow">Connected identities</p>
+              <details class="journey-panel" name="bridge-support">
+                <summary><strong>Connected identities</strong></summary><div class="journey-panel__body">
                 {connections.length ? connections.map((connection) => (
                   <div class="bridge-identity" data-identity-id={connection.id}>
                     {connection.avatar_url ? <img src={connection.avatar_url} alt="" width="42" height="42" loading="lazy" referrerpolicy="no-referrer" /> : <span class="bridge-identity__avatar"><i class="ph ph-user" aria-hidden="true"></i></span>}
@@ -282,7 +269,8 @@ const claimableOrganizations = connections.flatMap((connection) => {
                     <button class="button button--secondary button--small button--block" type="button" data-bridge-organization-claim>Claim organization</button>
                   </div>)}
                 </div>}
-              </section>
+                </div>
+              </details>
               <section>
                 <p class="eyebrow">Bridge guarantees</p>
                 <ul class="bridge-guarantees">
@@ -293,15 +281,16 @@ const claimableOrganizations = connections.flatMap((connection) => {
                   <li><i class="ph ph-check-circle" aria-hidden="true"></i> Independent policy checks before publishing</li>
                 </ul>
               </section>
-              <section>
-                <p class="eyebrow">Launch limits</p>
+              <details class="journey-panel" name="bridge-support">
+                <summary><strong>Launch limits</strong></summary><div class="journey-panel__body">
                 <dl class="bridge-limits">
                   <div><dt>One file</dt><dd>10 GiB</dd></div>
                   <div><dt>One repository</dt><dd>20 GiB</dd></div>
                   <div><dt>One import</dt><dd>25 GiB</dd></div>
                   <div><dt>Concurrent jobs</dt><dd>1</dd></div>
                 </dl>
-              </section>
+                </div>
+              </details>
             </aside>
           </div>
         </Show>
@@ -310,7 +299,7 @@ const claimableOrganizations = connections.flatMap((connection) => {
       <div class="bridge-auth-gate"><h2>Account service unavailable</h2><p>Imports are unavailable while the account service is unavailable.</p></div>
     )}
   </section>
-</BaseLayout>
+</WorkspaceJourneyLayout>
 
 <script>
   const setupBridge = () => {

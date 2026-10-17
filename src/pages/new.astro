@@ -1,7 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import WorkspaceJourneyLayout from '@/layouts/WorkspaceJourneyLayout.astro';
 import CreatorEditor from '@/components/CreatorEditor.astro';
-import PageHero from '@/components/PageHero.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 
@@ -44,11 +43,15 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="New repository" description="Create a real Super ii model, dataset, or app repository." noindex>
-  <PageHero eyebrow="Publish on Super ii 🚀" title="Create a repository" description="Create your project, add its files, and run automatic publication checks." compact />
-  <section class="section shell creator-shell" style="max-width: 1200px">
-    <p>Still shaping the goal? <a href="/workspace/workrooms/new">Start a private workroom</a> and keep your source, next action and results together.</p>
-    <p>Presenting an existing robot, component, device or commercial model? <a href="/workspace/products/new">Create a company product page →</a></p>
+<WorkspaceJourneyLayout active="create" title="Create & upload" eyebrow="Models, datasets and apps" description="Add your files, shape your page and publish when it is ready." noindex>
+  <section class="shell journey-content">
     <CreatorEditor owners={owners} kind={selectedKind} />
+    <details class="journey-panel journey-alternatives">
+      <summary><i class="ph ph-compass" aria-hidden="true"></i><strong>Other ways to start</strong></summary>
+      <div class="journey-panel__body">
+        <p>Still shaping the goal? <a href="/workspace/workrooms/new">Start a private workroom</a> and keep your source, next action and results together.</p>
+        <p>Presenting an existing robot, component, device or commercial model? <a href="/workspace/products/new">Create a company product page →</a></p>
+      </div>
+    </details>
   </section>
-</BaseLayout>
+</WorkspaceJourneyLayout>

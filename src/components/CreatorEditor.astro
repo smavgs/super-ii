@@ -72,7 +72,7 @@ const sourceUrl = (repository?.provenance as { bridge?: { source_url?: string } 
     <div class="creator-panel__body">
       <fieldset disabled={!editable} class="creator-fields">
         <label>Title<input name="title" value={repository?.title ?? ''} required minlength="2" maxlength="200" autocomplete="off" placeholder="A clear name for your work" /></label>
-        {!repository && <label>Repository URL name<input name="slug" required maxlength="96" pattern="[a-z0-9](?:[a-z0-9._-]{0,94}[a-z0-9])?" placeholder="my-model" /><span>Suggested from your title. You can change it before creating.</span></label>}
+        {!repository && <label>Repository URL name<input name="slug" required maxlength="96" pattern="[a-z0-9](?:[a-z0-9._\-]{0,94}[a-z0-9])?" placeholder="my-model" /><span>Suggested from your title. You can change it before creating.</span></label>}
         <label>Summary<textarea name="summary" rows="2" maxlength="2000" placeholder="What it does, who it helps, and important limitations.">{repository?.summary ?? ''}</textarea></label>
         <details class="creator-metadata"><summary>License, task and framework</summary><div class="form-grid form-grid--two">
           <label>License<input name="license" value={repository?.license ?? ''} readonly={Boolean(repository)} maxlength="120" list="creator-licenses" placeholder="Choose or type your license" />{repository && <a href="#publication">Change license in publication details</a>}</label>
