@@ -1,0 +1,42 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import '@/styles/pixel-controls.css';
+import '@/styles/workspace-journeys.css';
+
+interface Props {
+  active: 'create' | 'bridge' | 'products' | 'agents';
+  title: string;
+  description: string;
+  eyebrow: string;
+  noindex?: boolean;
+}
+const { active, title, description, eyebrow, noindex = false } = Astro.props;
+const destinations = [
+  { id: 'workspace', href: '/account', label: 'Workspace', icon: 'arrow-left' },
+  { id: 'create', href: '/new', label: 'Create & upload', icon: 'upload-simple' },
+  { id: 'bridge', href: '/bring-my-work', label: 'Bring my work', icon: 'handshake' },
+  { id: 'products', href: '/workspace/products/new', label: 'Company and product', icon: 'package' },
+  { id: 'agents', href: '/agents', label: 'Agents', icon: 'robot' },
+];
+---
+<BaseLayout title={title} description={description} noindex={noindex} preferLight>
+  <div class="journey-skin" data-workspace-journey={active}>
+    <nav class="shell journey-nav" aria-label="Workspace tools">
+      {destinations.map(({ id, href, label, icon }) => <a href={href} aria-current={active === id ? 'page' : undefined}>
+        <i class={`ph ph-${icon}`} aria-hidden="true"></i><span>{label}</span>
+      </a>)}
+    </nav>
+    <header class="shell journey-heading">
+      <div class="journey-heading__identity">
+        <span class="journey-mascot" aria-hidden="true">👾</span>
+        <div><p>{eyebrow}</p><h1>{title}</h1></div>
+      </div>
+      <p class="journey-description">{description}</p>
+      {Astro.slots.has('actions') && <div class="button-row journey-actions"><slot name="actions" /></div>}
+    </header>
+    <slot />
+  </div>
+</BaseLayout>
+<script>
+  import '@/scripts/workspace-journeys';
+</script>

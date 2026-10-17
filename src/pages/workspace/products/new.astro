@@ -1,5 +1,5 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
+import WorkspaceJourneyLayout from "@/layouts/WorkspaceJourneyLayout.astro";
 import ProductEditor from "@/components/ProductEditor.astro";
 import { ensureAuthenticatedProfile } from "@/lib/auth";
 import { sqlClient } from "@/lib/db";
@@ -19,10 +19,7 @@ try {
 }
 ---
 
-<BaseLayout title="Company and product" noindex
-  ><ProductEditor
-    workspace={workspace}
-    signedIn={signedIn}
-    unavailable={unavailable}
-  /></BaseLayout
->
+<WorkspaceJourneyLayout active="products" title="Company and product" eyebrow="Your company. Your product." description="Help people understand it, find its resources and reach the right person." noindex>
+  <a slot="actions" class="button button--secondary" href="/workspace/products"><i class="ph ph-stack" aria-hidden="true"></i>My products</a>
+  <ProductEditor workspace={workspace} signedIn={signedIn} unavailable={unavailable} embedded />
+</WorkspaceJourneyLayout>

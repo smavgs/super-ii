@@ -1,8 +1,23 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 
 const root = path.resolve(import.meta.dirname,'..');
+// Browsers compile pattern attributes with Unicode sets; an unescaped hyphen
+// silently disables validation. Check the actual markup used in both editors.
+for (const [file, valid] of [
+  ['src/components/CreatorEditor.astro', 'my-model_1.0'],
+  ['src/components/ProductEditor.astro', 'my-company'],
+]) {
+  const pattern = readFileSync(path.join(root, file), 'utf8').match(/pattern="([^"]+)"/)?.[1];
+  assert.ok(pattern, `${file} address pattern is present`);
+  const expression = new RegExp(`^(?:${pattern})$`, 'v');
+  assert.equal(expression.test(valid), true);
+  for (const invalid of ['UPPER', 'space here', '../path', '-start', 'end-']) {
+    assert.equal(expression.test(invalid), false, `${file}: ${invalid}`);
+  }
+}
 const vite = await createServer({root, appType:'custom',server:{middlewareMode:true},resolve:{alias:{'@':path.join(root,'src')}}});
 try {
   const { readCard, uploadPath, suggestedSlug, creatorTemplate } = await vite.ssrLoadModule('/src/lib/creator-card.ts');
