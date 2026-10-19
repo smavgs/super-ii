@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
 import { getPublicBuilders } from '@/lib/builders';
 import { memberAction } from '@/lib/member-actions';
@@ -22,18 +22,8 @@ const profileAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
 if (profileAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
-<BaseLayout title="Builders" description="Discover the people publishing models, datasets, apps, posts, and proposals on Super ii." className="builders-page">
-  <header class="builders-hero">
-    <div class="shell builders-hero__inner">
-      <div>
-        <p class="eyebrow">People building in public</p>
-        <h1>Builders</h1>
-        <p>Meet the people behind Super ii’s models, datasets, apps, posts, and ideas. Open a profile to see the work and context together.</p>
-      </div>
-      <p class="builders-hero__index" aria-label={totalLabel}><strong>{result.state === 'ok' ? result.total.toLocaleString() : '—'}</strong><span>public builders</span></p>
-    </div>
-  </header>
-
+<ExploreLayout active="builders" title="Builders" eyebrow="People building in public" description="Meet the people behind the work. Open a profile to explore their models, datasets, apps, posts and ideas.">
+  <Fragment slot="actions"><a class="button explore-violet" href={profileAction.href}><i class="ph ph-user-circle" aria-hidden="true"></i>{profileAction.label}</a></Fragment>
   <section class="builders-main shell" aria-labelledby="builders-directory-title">
     <form class="builders-toolbar" method="get" action="/builders" role="search" data-builders-form>
       <label class="builders-search" for="builders-search">
@@ -79,6 +69,7 @@ if (profileAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
       <div class="empty-state builders-empty"><span class="builders-empty__mark" aria-hidden="true">⌁</span><h2>{result.query ? 'No builders match that search.' : 'The directory is ready for its first builder.'}</h2><p>{result.query ? 'Try a different name, handle, bio phrase, or interest.' : 'Public member profiles will appear here as people join.'}</p>{result.query && <a class="button button--secondary" href="/builders">Show all builders</a>}</div>
     )}
 
+    {result.builders.length > 0 && <p class="explore-hint" data-builders-empty hidden role="status">No matches on this page. Press Search to check the full directory.</p>}
     {result.state === 'ok' && result.totalPages > 1 && (
       <nav class="builders-pagination" aria-label="Builders directory pages">
         {result.page > 1 ? <a rel="prev" href={pageHref(result.page - 1)}><i class="ph ph-arrow-left" aria-hidden="true"></i> Previous</a> : <span aria-hidden="true"></span>}
@@ -88,13 +79,12 @@ if (profileAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
     )}
   </section>
 
-  <section class="builders-invitation">
-    <div class="shell builders-invitation__inner"><div><p class="eyebrow">Make your work findable</p><h2>Your public profile connects the person to the work.</h2><p>Add your story and interests, then publish models, datasets, apps, posts, or proposals under one identity.</p></div><div class="button-row"><a class="button button--yellow" href={profileAction.href}>{profileAction.label}</a>{!profileAction.signedIn && <a class="button button--secondary" href="/sign-in?redirect_url=%2Faccount%23profile">Log in</a>}</div></div>
-  </section>
-</BaseLayout>
+</ExploreLayout>
 
 <script>
   const russian = document.documentElement.lang === 'ru';
+  const chinese = document.documentElement.lang.startsWith('zh');
+  const empty = document.querySelector<HTMLElement>('[data-builders-empty]');
   const input = document.querySelector<HTMLInputElement>('[data-builders-search]');
   const entries = [...document.querySelectorAll<HTMLElement>('[data-builder]')];
   const visible = document.querySelector<HTMLElement>('[data-builders-visible]');
@@ -106,8 +96,9 @@ if (profileAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
       entry.hidden = !matches;
       if (matches) count += 1;
     });
+    if (empty) empty.hidden = count !== 0;
     if (visible) {
-      visible.textContent = russian
+      visible.textContent = chinese ? `${count} 个本页结果 · 按回车搜索整个目录` : russian
         ? query
           ? `${count} на этой странице · нажмите Enter для поиска по всему каталогу`
           : `${entries.length} на этой странице`

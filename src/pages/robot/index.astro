@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 import RobotWorkspace from '@/components/RobotWorkspace.astro';
@@ -90,61 +90,27 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
       : manufacturer;
 ---
 
-<BaseLayout
-  title="Make Robot"
-  description="Plan a source-backed Raspberry Pi or Jetson Robot, keep unknowns visible, publish versions, and let any agent use the same public interface."
-  className="robot-site"
->
-  <div data-robot-page data-signed-in={String(signedIn)} data-locale={Astro.locals.locale ?? 'en'}>
-    <section class="robot-hero">
-      <div class="shell robot-hero__grid">
-        <div class="robot-hero__copy">
-          <p class="eyebrow brand-inline"><BrandMark brand="raspberrypi" size="xs" />Super ii Robot · Raspberry Pi first</p>
-          <h1>Make a Robot.<br /><span>Know what fits.</span></h1>
-          <p class="robot-hero__lead">Start with what you want it to do. Super ii turns source-backed components, interfaces and open questions into a Robot you can inspect, version and share.</p>
-          <div class="button-row">
-            <a class="button button--dark" href="#make">Make Robot <i class="ph ph-arrow-down" aria-hidden="true"></i></a>
-            <a class="button button--secondary" href="#explore-robots">Explore Robots</a>
-            <a href="/workspace/products/new">Present an existing product →</a>
-          </div>
-          <p class="robot-hero__rule"><span>Evidence stays attached.</span> Unknown is a real result. Compatibility ranking is never pay-to-win.</p>
-        </div>
-        <div class="robot-blueprint" aria-label="Diagram of Rover One connecting a camera, compute board, power, and mobile base">
-          <div class="robot-blueprint__label">REFERENCE / ROVER ONE</div>
-          <div class="robot-blueprint__camera"><i class="ph ph-camera" aria-hidden="true"></i><span>VISION</span></div>
-          <div class="robot-blueprint__brain"><strong data-no-translate>Sii</strong><span>Pi 5 / Jetson</span></div>
-          <div class="robot-blueprint__base"><span class="wheel wheel--left"></span><i class="ph ph-cpu" aria-hidden="true"></i><span class="wheel wheel--right"></span></div>
-          <div class="robot-blueprint__line robot-blueprint__line--one"></div>
-          <div class="robot-blueprint__line robot-blueprint__line--two"></div>
-          <p>Not a finished safety claim.<br />A truthful place to begin.</p>
-        </div>
-      </div>
-    </section>
-
-    {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-robots">
+<ExploreLayout active="robot" title="Make Robot" eyebrow="Raspberry Pi first" description="Choose a job, inspect a source-backed plan, and keep every fit claim and unknown in view.">
+  <Fragment slot="actions"><a class="button button--dark" href="#make"><i class="ph ph-wrench" aria-hidden="true"></i>Make a plan</a><a class="button explore-cyan" href="/workspace/products/new"><i class="ph ph-package" aria-hidden="true"></i>Present an existing product</a></Fragment>
+  <div class="robot-site" data-robot-page data-signed-in={String(signedIn)} data-locale={Astro.locals.locale ?? 'en'}>
+    {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-robots" name="robot-area">
       <summary>My robots and hardware<small>Your saved plans, versions and private inventory.</small></summary>
       <div class="workspace-disclosure__body">
         {personalWorkUnavailable ? <p role="status">Your robot work could not be loaded. Please refresh to try again.</p> : <RobotWorkspace robots={myRobots} {hardware} organizations={myOrganizations} plan={robotPlan} {showcaseUploadsRemaining} />}
       </div>
     </details></div>}
 
-    <section class="robot-proofbar" aria-label="Robot evidence principles">
-      <div class="shell">
-        <span><JourneyLabel kind="principle" current={1} /> Official sources</span>
-        <span><JourneyLabel kind="principle" current={2} /> Explicit unknowns</span>
-        <span><JourneyLabel kind="principle" current={3} /> Versioned plans</span>
-        <span><JourneyLabel kind="principle" current={4} /> Human + agent access</span>
-      </div>
-    </section>
-
     <nav class="robot-discovery-nav shell" aria-label="Robot discovery">
       <a href="#explore-robots">🤖 Robots</a><a href="#robot-builders">🧑‍🔧 Builders</a><a href="#robot-companies">🏢 Companies</a><a href="#robot-software">💻 Software</a><a href="#components">🧩 Components</a>
     </nav>
 
-    <section class="robot-maker" id="make">
+    <div class="shell explore-robot-areas">
+    <details class="explore-panel robot-area" id="make" name="robot-area" open>
+      <summary><i class="ph ph-wrench" aria-hidden="true"></i>Plan a Robot</summary>
+      <section class="robot-maker">
       <div class="shell robot-maker__grid">
         <header class="robot-maker__intro">
-          <p class="eyebrow">Make Robot</p>
+          <p class="eyebrow brand-inline"><BrandMark brand="raspberrypi" size="xs" />Make Robot</p>
           <h2>Tell us the job.<br />Get an honest first plan.</h2>
           <p>This first path is deliberately focused: a mobile Rover built around Raspberry Pi 5, with Jetson Orin Nano Super as the advanced compute path.</p>
           <ol>
@@ -223,8 +189,11 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </details>
       </div>
     </section>
+    </details>
 
-    <section class="robot-reference">
+    <details class="explore-panel robot-area" id="reference" name="robot-area">
+      <summary><i class="ph ph-cpu" aria-hidden="true"></i>Explore the reference system</summary>
+      <section class="robot-reference">
       <div class="shell robot-reference__grid">
         <div class="robot-reference__title"><p class="eyebrow">First reference system</p><h2>{reference.title}</h2><p>{reference.summary}</p><span>CONTROLLED INDOOR START</span></div>
         <div class="robot-reference__paths">
@@ -240,8 +209,11 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </div>
       </div>
     </section>
+    </details>
 
-    <section class="robot-components" id="components">
+    <details class="explore-panel robot-area" id="components" name="robot-area">
+      <summary><i class="ph ph-puzzle-piece" aria-hidden="true"></i>Browse components</summary>
+      <section class="robot-components">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Source-backed components</p><h2>See the proof before the purchase.</h2></div><p>Super ii does not sell these parts. Profiles describe what official product pages say, when they were checked, and what remains unproven.</p></div>
         <div class="robot-component-list">
@@ -257,8 +229,11 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </div>
       </div>
     </section>
+    </details>
 
-    <section class="robot-public" id="explore-robots">
+    <details class="explore-panel robot-area" id="explore-robots" name="robot-area">
+      <summary><i class="ph ph-robot" aria-hidden="true"></i>Public Robots</summary>
+      <section class="robot-public">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Public Robots</p><h2>Versions other people—and agents—can inspect.</h2></div><a class="button button--secondary" href="/mcp/robot">Connect an agent</a></div>
         {publicRobots.length ? (
@@ -266,12 +241,15 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
             {publicRobots.map((robot) => <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><span data-no-translate>{robot.owner_display_name}</span> / v{robot.version_number}</span><strong data-no-translate>{robot.title}</strong><p data-no-translate>{robot.summary}</p><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>)}
           </div>
         ) : (
-          <div class="robot-empty"><strong>No public community Robot has been published yet.</strong><p>Rover One above is a labelled reference—not invented community activity. Your first public Robot can begin here.</p><a href="#make">Make the first one <i class="ph ph-arrow-up" aria-hidden="true"></i></a></div>
+          <div class="robot-empty"><strong>No public community Robot has been published yet.</strong><p>Rover One is a labelled reference in the reference-system panel. Your first public Robot can begin here.</p><a href="#make">Make the first one <i class="ph ph-arrow-up" aria-hidden="true"></i></a></div>
         )}
       </div>
     </section>
+    </details>
 
-    <section class="robot-community" id="robot-builders">
+    <details class="explore-panel robot-area" id="robot-builders" name="robot-area">
+      <summary><i class="ph ph-users-three" aria-hidden="true"></i>Robotics builders</summary>
+      <section class="robot-community">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Robotics community 🧑‍🔧</p><h2>Builders and studios making real Robots.</h2></div><p>Public profiles are free. Studio and company labels describe a single-owner profile; Organizations provide shared team roles.</p></div>
         {robotBuilders.length > 0 ? <div class="robot-owner-grid">{robotBuilders.map((builder) => <a href={`/people/${encodeURIComponent(builder.handle)}`}>
@@ -280,8 +258,11 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </a>)}</div> : <div class="robot-empty"><strong>The first public builder directory entry can be yours.</strong><p>Publish a public Robot to appear here automatically.</p></div>}
       </div>
     </section>
+    </details>
 
-    <section class="robot-community robot-community--soft" id="robot-companies">
+    <details class="explore-panel robot-area" id="robot-companies" name="robot-area">
+      <summary><i class="ph ph-buildings" aria-hidden="true"></i>Robotics companies</summary>
+      <section class="robot-community robot-community--soft">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Teams and companies 🏢</p><h2>Organization Robot catalogues.</h2></div><a class="button button--secondary" href="/organizations">Explore all organizations</a></div>
         {robotOrganizations.length > 0 ? <div class="robot-owner-grid">{robotOrganizations.map((organization) => <a href={`/organizations/${encodeURIComponent(organization.handle)}`}>
@@ -290,15 +271,21 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </a>)}</div> : <div class="robot-empty"><strong>No organization Robot catalogue is public yet.</strong><p>Team organizations can publish a shared Robot when they are ready.</p></div>}
       </div>
     </section>
+    </details>
 
-    <section class="robot-community" id="robot-software">
+    <details class="explore-panel robot-area" id="robot-software" name="robot-area">
+      <summary><i class="ph ph-code" aria-hidden="true"></i>Software and resources</summary>
+      <section class="robot-community">
       <div class="shell">
         <div class="robot-section-heading"><div><p class="eyebrow">Software and open resources 💻</p><h2>Follow the tools behind public Robots.</h2></div><p>Links are supplied by Robot builders and open on the original project site.</p></div>
         {robotResources.length > 0 ? <div class="robot-resource-catalog">{robotResources.map((resource) => <article><span>{resource.link_kind}</span><h3 data-no-translate>{resource.label}</h3><p>Used by <a href={`/robot/${encodeURIComponent(resource.robot_owner)}/${encodeURIComponent(resource.robot_slug)}`}><span data-no-translate>{resource.robot_title}</span></a></p><a href={resource.url} target="_blank" rel="ugc nofollow noopener noreferrer external">Open resource <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a></article>)}</div> : <div class="robot-empty"><strong>No public Robot software links yet.</strong><p>Robot owners can add source, software, docs, CAD, model, dataset, app, and video links.</p></div>}
       </div>
     </section>
+    </details>
 
-    <section class="robot-agents" id="agents">
+    <details class="explore-panel robot-area" id="agents" name="robot-area">
+      <summary><i class="ph ph-plugs-connected" aria-hidden="true"></i>Use with your agent</summary>
+      <section class="robot-agents">
       <div class="shell robot-agents__grid">
         <div><p class="eyebrow">For any compatible agent</p><h2>One Robot truth layer.<br />Human or machine.</h2><p>Public component search, compatibility checks, Robot planning and public Robot retrieval are anonymous and read-only. Governed write tools use the same human-issued, scoped, expiring Super ii agent token as the rest of the website.</p></div>
         <div class="robot-agent-endpoints">
@@ -309,8 +296,11 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
         </div>
       </div>
     </section>
+    </details>
 
-    <section class="robot-access">
+    <details class="explore-panel robot-area" id="access" name="robot-area">
+      <summary><i class="ph ph-key" aria-hidden="true"></i>Access and plans</summary>
+      <section class="robot-access">
       <div class="shell">
         <p class="eyebrow">Access that grows with the work</p>
         <div class="robot-access__rows">
@@ -319,14 +309,16 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
           <article><span>TEAM</span><h3>Shared engineering controls</h3><p>Organization Robots, private catalogs, policy and auditable agent work.</p></article>
           <article><span>COMMERCIAL</span><h3>Manufacturer maintenance</h3><p>Reviewed profile proposals and meaningful agent-discovery analytics. Payment never changes compatibility rank.</p></article>
         </div>
-        <p class="robot-access__later"><b>Later:</b> procurement. <b>Always:</b> no pay-to-win compatibility ranking.</p>
+        <p class="robot-access__later">Compatibility ranking is never pay-to-win. <b>Later:</b> procurement. <b>Always:</b> no pay-to-win compatibility ranking.</p>
       </div>
     </section>
+    </details>
+    </div>
   </div>
   <script>
     import '@/scripts/robot-page';
   </script>
-</BaseLayout>
+</ExploreLayout>
 
 <script>
   import '@/scripts/personal-work';

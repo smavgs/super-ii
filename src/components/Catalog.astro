@@ -10,6 +10,7 @@ import {
   type RepositoryKind,
 } from '@/lib/catalog';
 import { searchLinkedWork } from '@/lib/linked-work';
+import { optionalBytes } from '@/lib/explore-presentation';
 import { memberAction } from '@/lib/member-actions';
 
 interface Props {
@@ -30,16 +31,12 @@ const filters: CatalogFilters = {
   license: query.get('license') ?? undefined,
   modality: query.get('modality') ?? undefined,
   author: query.get('author') ?? undefined,
-  maxSizeBytes: query.has('max_size_gb')
-    ? Number(query.get('max_size_gb')) * 1024 ** 3
-    : query.has('max_size')
-      ? Number(query.get('max_size'))
-      : undefined,
+  maxSizeBytes: query.has('max_size_gb') ? optionalBytes(query.get('max_size_gb'), 1024 ** 3) : optionalBytes(query.get('max_size')),
   updatedAfter: query.get('updated_after') ?? undefined,
   hardware: (query.get('hardware') ?? undefined) as CatalogFilters['hardware'],
   operatingSystem: (query.get('os') ?? undefined) as CatalogFilters['operatingSystem'],
-  maxRamBytes: query.has('max_ram_gb') ? Number(query.get('max_ram_gb')) * 1024 ** 3 : undefined,
-  maxVramBytes: query.has('max_vram_gb') ? Number(query.get('max_vram_gb')) * 1024 ** 3 : undefined,
+  maxRamBytes: optionalBytes(query.get('max_ram_gb'), 1024 ** 3),
+  maxVramBytes: optionalBytes(query.get('max_vram_gb'), 1024 ** 3),
   sort: (query.get('sort') ?? undefined) as CatalogFilters['sort'],
 };
 const result = origin === 'external'
@@ -49,7 +46,8 @@ const linkedResult = origin === 'superii'
   ? { state: 'ok' as const, items: [] }
   : await searchLinkedWork(Astro.locals, repositoryKind, filters);
 const totalCount = result.items.length + linkedResult.items.length;
-const hasFilters = origin !== 'all' || Object.values(filters).some((value) => value !== undefined && value !== '');
+const hasAdvancedFilters = origin !== 'all' || Object.entries(filters).some(([key, value]) => !['query', 'sort'].includes(key) && value !== undefined && value !== '');
+const hasFilters = hasAdvancedFilters || Boolean(filters.query);
 const linkedValue = (item: (typeof linkedResult.items)[number], key: string) => {
   const value = item.source_metadata?.[key];
   return typeof value === 'string' && value ? value : null;
@@ -76,88 +74,91 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
 ---
 
 <form class="catalog-shell shell" method="get" data-catalog data-kind={kind} data-empty-default={emptyState.copy}>
-  <aside class="catalog-sidebar">
-    <div class="catalog-filter-title">
-      <span>Filter</span>
-      <span class="count-badge">{totalCount}</span>
-    </div>
-    <fieldset>
-      <legend>Source</legend>
-      <label class="catalog-field">Origin
-        <select name="origin">
-          <option value="all" selected={origin === 'all'}>All public work</option>
-          <option value="superii" selected={origin === 'superii'}>Reviewed on Super ii</option>
-          <option value="external" selected={origin === 'external'}>Linked externally</option>
-        </select>
-      </label>
-      <p class="catalog-filter-note">External cards send you to the provider. Their files are not hosted or reviewed by Super ii.</p>
-    </fieldset>
-    <fieldset>
-      <legend>Repository <InfoTip term="repository" /></legend>
-      <label class="catalog-field">Task <input name="task" value={filters.task} /></label>
-      <label class="catalog-field">Library <input name="library" value={filters.library} /></label>
-      <label class="catalog-field">License <input name="license" value={filters.license} /></label>
-      <label class="catalog-field">Modality <input name="modality" value={filters.modality} /></label>
-      <label class="catalog-field">Author <input name="author" value={filters.author} /></label>
-      <label class="catalog-field">Maximum size (GiB) <input name="max_size_gb" type="number" min="0" step="0.25" value={filters.maxSizeBytes === undefined ? undefined : filters.maxSizeBytes / 1024 ** 3} /></label>
-      <label class="catalog-field">Updated after <input name="updated_after" type="date" value={filters.updatedAfter} /></label>
-    </fieldset>
-    {repositoryKind === 'model' && (
-      <fieldset>
-        <legend>Runs on 🧠 <InfoTip term="hardwareCompatibility" /></legend>
-        <label class="catalog-field">Hardware
-          <select name="hardware">
-            <option value="">Any reviewed hardware</option>
-            <option value="apple-silicon" selected={filters.hardware === 'apple-silicon'}>Apple silicon / Metal</option>
-            <option value="nvidia" selected={filters.hardware === 'nvidia'}>NVIDIA CUDA</option>
-            <option value="amd" selected={filters.hardware === 'amd'}>AMD ROCm</option>
-            <option value="cpu" selected={filters.hardware === 'cpu'}>CPU</option>
-            <option value="browser" selected={filters.hardware === 'browser'}>Browser</option>
-            <option value="llama-cpp" selected={filters.hardware === 'llama-cpp'}>llama.cpp</option>
-          </select>
-        </label>
-        <label class="catalog-field">Operating system
-          <select name="os">
-            <option value="">Any operating system</option>
-            <option value="macos" selected={filters.operatingSystem === 'macos'}>macOS</option>
-            <option value="linux" selected={filters.operatingSystem === 'linux'}>Linux</option>
-            <option value="windows" selected={filters.operatingSystem === 'windows'}>Windows</option>
-            <option value="browser" selected={filters.operatingSystem === 'browser'}>Web browser</option>
-          </select>
-        </label>
-        <label class="catalog-field">Available RAM (GiB) <input name="max_ram_gb" type="number" min="0" step="0.25" value={filters.maxRamBytes === undefined ? undefined : filters.maxRamBytes / 1024 ** 3} /></label>
-        <label class="catalog-field">Available VRAM (GiB) <input name="max_vram_gb" type="number" min="0" step="0.25" value={filters.maxVramBytes === undefined ? undefined : filters.maxVramBytes / 1024 ** 3} /></label>
-        <p class="catalog-filter-note">Compatibility is an estimate. Publisher-provided results and Super ii-calculated results are clearly labeled.</p>
-      </fieldset>
-    )}
-    <button class="button button--secondary button--small" type="submit">Apply filters</button>
-    {hasFilters && <a class="catalog-clear" href={`/${kind}`}>Clear all</a>}
-  </aside>
+  <div class="catalog-toolbar">
+    <label class="search-control">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <span class="sr-only">Search {meta.title.toLowerCase()}</span>
+      <input
+        type="search"
+        name="q"
+        value={filters.query}
+        placeholder={meta.example}
+        autocomplete="off"
+        data-catalog-search
+      />
+    </label>
+    <button class="button button--dark" type="submit">Search</button>
+    <label class="catalog-sort"><span class="sr-only">Sort results</span><select name="sort" aria-label="Sort results">
+      <option value="trending" selected={filters.sort === 'trending' || (!filters.sort && !filters.query)}>Trending 🔥</option>
+      <option value="downloads" selected={filters.sort === 'downloads'}>Most downloaded</option>
+      <option value="likes" selected={filters.sort === 'likes'}>Most liked</option>
+      <option value="updated" selected={filters.sort === 'updated'}>Recently updated</option>
+      <option value="relevance" selected={filters.sort === 'relevance' || (!filters.sort && Boolean(filters.query))}>Best match</option>
+    </select></label>
+  </div>
 
-  <div class="catalog-main">
-    <div class="catalog-toolbar">
-      <label class="search-control">
-        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-        <span class="sr-only">Search {meta.title.toLowerCase()}</span>
-        <input
-          type="search"
-          name="q"
-          value={filters.query}
-          placeholder={meta.example}
-          autocomplete="off"
-          data-catalog-search
-        />
-        <kbd>/</kbd>
-      </label>
-      <button class="button button--dark" type="submit">Search</button>
-      <label class="catalog-sort"><span class="sr-only">Sort results</span><select name="sort" aria-label="Sort results">
-        <option value="trending" selected={filters.sort === 'trending' || (!filters.sort && !filters.query)}>Trending 🔥</option>
-        <option value="downloads" selected={filters.sort === 'downloads'}>Most downloaded</option>
-        <option value="likes" selected={filters.sort === 'likes'}>Most liked</option>
-        <option value="updated" selected={filters.sort === 'updated'}>Recently updated</option>
-        <option value="relevance" selected={filters.sort === 'relevance' || (!filters.sort && Boolean(filters.query))}>Best match</option>
-      </select></label>
+  <details class="explore-panel catalog-filters" open={hasAdvancedFilters}>
+    <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i>Filters<span class="explore-count">{hasAdvancedFilters ? 'Active' : 'Optional'}</span></summary>
+    <div class="explore-panel__body">
+      <div class="catalog-filter-grid">
+        <fieldset>
+          <legend>Source</legend>
+          <label class="catalog-field">Origin
+            <select name="origin">
+              <option value="all" selected={origin === 'all'}>All public work</option>
+              <option value="superii" selected={origin === 'superii'}>Reviewed on Super ii</option>
+              <option value="external" selected={origin === 'external'}>Linked externally</option>
+            </select>
+          </label>
+          <p class="catalog-filter-note">External cards send you to the provider. Their files are not hosted or reviewed by Super ii.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Repository <InfoTip term="repository" /></legend>
+          <label class="catalog-field">Task <input name="task" value={filters.task} /></label>
+          <label class="catalog-field">Library <input name="library" value={filters.library} /></label>
+          <label class="catalog-field">License <input name="license" value={filters.license} /></label>
+          <label class="catalog-field">Modality <input name="modality" value={filters.modality} /></label>
+          <label class="catalog-field">Author <input name="author" value={filters.author} /></label>
+          <label class="catalog-field">Maximum size (GiB) <input name="max_size_gb" type="number" min="0" step="0.25" value={filters.maxSizeBytes === undefined ? undefined : filters.maxSizeBytes / 1024 ** 3} /></label>
+          <label class="catalog-field">Updated after <input name="updated_after" type="date" value={filters.updatedAfter} /></label>
+        </fieldset>
+        {repositoryKind === 'model' && (
+          <fieldset class="catalog-hardware">
+            <legend>Runs on 🧠 <InfoTip term="hardwareCompatibility" /></legend>
+            <label class="catalog-field">Hardware
+              <select name="hardware">
+                <option value="">Any reviewed hardware</option>
+                <option value="apple-silicon" selected={filters.hardware === 'apple-silicon'}>Apple silicon / Metal</option>
+                <option value="nvidia" selected={filters.hardware === 'nvidia'}>NVIDIA CUDA</option>
+                <option value="amd" selected={filters.hardware === 'amd'}>AMD ROCm</option>
+                <option value="cpu" selected={filters.hardware === 'cpu'}>CPU</option>
+                <option value="browser" selected={filters.hardware === 'browser'}>Browser</option>
+                <option value="llama-cpp" selected={filters.hardware === 'llama-cpp'}>llama.cpp</option>
+              </select>
+            </label>
+            <label class="catalog-field">Operating system
+              <select name="os">
+                <option value="">Any operating system</option>
+                <option value="macos" selected={filters.operatingSystem === 'macos'}>macOS</option>
+                <option value="linux" selected={filters.operatingSystem === 'linux'}>Linux</option>
+                <option value="windows" selected={filters.operatingSystem === 'windows'}>Windows</option>
+                <option value="browser" selected={filters.operatingSystem === 'browser'}>Web browser</option>
+              </select>
+            </label>
+            <label class="catalog-field">Available RAM (GiB) <input name="max_ram_gb" type="number" min="0" step="0.25" value={filters.maxRamBytes === undefined ? undefined : filters.maxRamBytes / 1024 ** 3} /></label>
+            <label class="catalog-field">Available VRAM (GiB) <input name="max_vram_gb" type="number" min="0" step="0.25" value={filters.maxVramBytes === undefined ? undefined : filters.maxVramBytes / 1024 ** 3} /></label>
+            <p class="catalog-filter-note">Compatibility is an estimate. Publisher-provided results and Super ii-calculated results are clearly labeled.</p>
+          </fieldset>
+        )}
+      </div>
+      <div class="button-row catalog-filter-actions">
+        <button class="button explore-cyan" type="submit">Apply filters</button>
+        {hasFilters && <a class="button button--secondary" href={`/${kind}`}>Clear all</a>}
+      </div>
     </div>
+  </details>
+  <div class="catalog-main">
+    <p class="catalog-count">{totalCount} <span>results shown</span> · <span>Reviewed and external work are labeled separately.</span></p>
 
     {totalCount ? (
       <div class="catalog-results" aria-live="polite">
@@ -172,6 +173,7 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
               <span class="origin-badge">Reviewed on Super ii</span>
             </div>
             <h2><a class="catalog-card__title-link" href={repositoryPath(item)}><span data-no-translate>{item.title}</span></a></h2>
+            <p class="catalog-card__identifier" data-no-translate>{item.owner_handle}/{item.slug}</p>
             <p data-no-translate>{item.summary}</p>
             <div class="catalog-card__metadata">
               {item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}
@@ -182,12 +184,17 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
               <span>⬇️ {item.downloads_count}</span>
               <span>❤️ {item.likes_count}</span>
               {item.trend_score > 0 && <span>🔥 {item.trend_score}</span>}
+            </div>
+            {(item.architecture || item.quantization || item.minimum_ram_bytes != null || Number(item.minimum_vram_bytes) > 0 || item.compatibility_confidence) && <details class="catalog-card__technical">
+              <summary>Hardware &amp; technical details</summary>
+              <div class="catalog-card__metadata">
               {item.architecture && <span data-no-translate>🧠 {item.architecture}</span>}
               {item.quantization && <span data-no-translate>{item.quantization}</span>}
-              {item.minimum_ram_bytes !== null && <span>RAM ≥ {(Number(item.minimum_ram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
+              {item.minimum_ram_bytes != null && <span>RAM ≥ {(Number(item.minimum_ram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
               {item.minimum_vram_bytes !== null && Number(item.minimum_vram_bytes) > 0 && <span>VRAM ≥ {(Number(item.minimum_vram_bytes) / 1024 ** 3).toFixed(1)} GiB</span>}
               {item.compatibility_confidence && <span>{item.compatibility_confidence} compatibility</span>}
-            </div>
+              </div>
+            </details>}
             <a class="catalog-card__open" href={repositoryPath(item)} aria-label={`Open ${item.title}`}><span>Open {repositoryKind === 'space' ? 'app' : repositoryKind}</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
         ))}
@@ -215,19 +222,20 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
     ) : (
       <div class="empty-state" aria-live="polite">
         <div class="empty-state__icon"><i class:list={['ph', meta.icon]} aria-hidden="true"></i></div>
-        <p class="eyebrow">{result.state === 'error' ? 'Temporarily unavailable' : 'A clean start'}</p>
+        <p class="eyebrow">{result.state === 'error' || linkedResult.state === 'error' ? 'Temporarily unavailable' : 'A clean start'}</p>
         <div class="heading-with-help empty-state__heading">
-          <h2>{hasFilters ? `No matching ${meta.title.toLowerCase()}` : emptyState.title}</h2>
+          <h2>{result.state === 'error' || linkedResult.state === 'error' ? 'Search is temporarily unavailable.' : hasFilters ? `No matching ${meta.title.toLowerCase()}` : emptyState.title}</h2>
           {!hasFilters && result.state !== 'error' && <InfoTip term="reviewFirst" />}
         </div>
         <p data-empty-copy>
           {result.state === 'error' || linkedResult.state === 'error'
             ? 'Search is temporarily unavailable. Please try again shortly.'
             : hasFilters
-              ? 'No reviewed public repository matches every selected filter.'
+              ? 'No public work matches every selected filter. Try fewer filters or a different search.'
               : emptyState.copy}
         </p>
         <div class="button-row">
+          {hasFilters && <a class="button explore-cyan" href={`/${kind}`}>Clear all</a>}
           <a class="button button--dark" href={createAction.href}>{createAction.label}</a>
           <a class="button button--secondary" href="/docs">Read the publishing guide</a>
         </div>

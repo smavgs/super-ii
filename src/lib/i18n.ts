@@ -1,3 +1,4 @@
+import { exploreRussian, exploreChinese } from './explore-localization';
 import { journeyRussian, journeyChinese } from './workspace-journey-localization';
 import { communicationsRussian, communicationsChinese } from './communications-localization';
 import { workroomRussian, workroomChinese } from './workroom-localization';
@@ -2856,6 +2857,7 @@ export const reviewedChineseMessages: Readonly<Record<string, string>> = Object.
   ...workroomChinese,
   ...communicationsChinese,
   ...journeyChinese,
+  ...exploreChinese,
   'Agent Friendly': '对智能体友好',
   'Agent friendly': '对智能体友好',
   'Payment route': '支付路径',
@@ -2940,6 +2942,7 @@ export const reviewedRussianMessages: Readonly<Record<string, string>> = Object.
   ...workroomRussian,
   ...communicationsRussian,
   ...journeyRussian,
+  ...exploreRussian,
   ...coreRussian,
   ...pricingRussian,
   ...publicPageRussian,

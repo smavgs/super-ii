@@ -1,19 +1,13 @@
 ---
 import Catalog from '@/components/Catalog.astro';
 import HighlightsStrip from '@/components/HighlightsStrip.astro';
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
 ---
-
-<BaseLayout title="Datasets" description="Discover documented public datasets on Super ii, with licenses, schemas, previews, and version history.">
-  <PageHero
-    eyebrow="Documented data"
-    title="Datasets"
-    titleHelp="dataset"
-    description="Find and publish datasets with the information needed to understand and reuse them responsibly. See the license, schema, preview, provenance, lineage and version history in one place."
-    compact
-  />
+<ExploreLayout active="datasets" title="Datasets" titleHelp="dataset" eyebrow="Discover public work" description="Discover datasets, inspect their structure and license, and find the right data for your work.">
+  <Fragment slot="actions">
+    <a class="button button--dark" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a>
+    <a class="button explore-cyan" href="/bring-my-work"><i class="ph ph-handshake" aria-hidden="true"></i>Bring my work</a>
+  </Fragment>
   <HighlightsStrip kind="dataset" />
   <Catalog kind="datasets" />
-</BaseLayout>
+</ExploreLayout>

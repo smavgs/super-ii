@@ -1,7 +1,7 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import { memberAction } from '@/lib/member-actions';
 import CreatorLink from '@/components/CreatorLink.astro';
-import PageHero from '@/components/PageHero.astro';
 import { sqlClient } from '@/lib/db';
 
 type CollectionSummary = {
@@ -16,6 +16,8 @@ type CollectionSummary = {
   item_count: number;
 };
 
+const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', { destination: '/collections#new-collection', signedOutLabel: 'Join to create a collection', signedInLabel: 'Create collection' });
+if (createAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 const sql = sqlClient(Astro.locals);
 let collections: CollectionSummary[] = [];
 let unavailable = false;
@@ -46,22 +48,16 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="Collections" description="Curated public collections of Super ii models, datasets, and apps.">
-  <PageHero eyebrow="Community discovery" title="Collections" description="Collections group useful models, datasets and apps around a topic or goal." compact />
-  <section class="section shell">
-    <form class="discussion-form collection-create-form" data-collection-create-form>
-      <h2>Create a collection</h2>
-      <label>Title <input name="title" maxlength="200" required /></label>
-      <label>Slug <input name="slug" maxlength="96" pattern="[a-z0-9][a-z0-9._-]*[a-z0-9]|[a-z0-9]" required placeholder="local-ai-starters" data-no-translate /></label>
-      <label>Summary <textarea name="summary" maxlength="2000"></textarea></label>
-      <label>Visibility <select name="visibility"><option value="public">Public</option><option value="private">Private</option></select></label>
-      <button class="button button--dark button--small" type="submit">Create collection</button>
-      <p data-form-status aria-live="polite"></p>
-    </form>
+<ExploreLayout active="collections" title="Collections" eyebrow="Curate useful work" description="Group useful models, datasets and apps around a topic or goal. Open a collection to explore the work inside.">
+  <Fragment slot="actions"><a class="button button--dark" href="#new-collection"><i class="ph ph-plus" aria-hidden="true"></i>Create collection</a></Fragment>
+  <section class="shell explore-content" data-explore-filter>
+    <div class="explore-section-title"><h2>Public collections</h2><span class="explore-count" data-explore-count>{collections.length}</span></div>
+    {collections.length > 0 && <div class="explore-filter"><label>Filter these collections<input type="search" data-explore-search autocomplete="off" /></label><button class="button button--secondary" type="button" data-explore-reset>Clear</button></div>}
+
     {collections.length ? (
       <div class="capability-grid">
         {collections.map((collection) => (
-          <article class="capability-card collection-card">
+          <article class="capability-card collection-card" data-explore-item data-search={`${collection.title} ${collection.summary} ${collection.owner_handle} ${collection.owner_name}`}>
             <div><CreatorLink compact handle={collection.owner_handle} displayName={collection.owner_name} avatarUrl={collection.owner_avatar_url} /><p class="eyebrow">{collection.item_count} items</p><h2><a class="content-card__title-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}><span data-no-translate>{collection.title}</span></a></h2><p data-no-translate>{collection.summary}</p></div>
             <a class="card-link" href={`/collections/${encodeURIComponent(collection.owner_handle)}/${encodeURIComponent(collection.slug)}`}><span>Open collection</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
@@ -75,8 +71,27 @@ if (sql) {
         <p>{unavailable ? 'Please try again shortly.' : 'The first community-curated collection will appear here.'}</p>
       </div>
     )}
+    <p data-explore-empty hidden role="status">No matches in this list. Try a different search.</p>
   </section>
-</BaseLayout>
+  <div class="shell">
+    <details class="explore-panel" id="new-collection">
+      <summary><i class="ph ph-stack" aria-hidden="true"></i>Create a collection</summary>
+      <div class="explore-panel__body">
+        {createAction.signedIn ? <>
+          <form class="discussion-form collection-create-form" data-collection-create-form>
+            <label>Title <input name="title" maxlength="200" required /></label>
+            <label>Page address <input name="slug" maxlength="96" pattern="[a-z0-9][a-z0-9._\-]*[a-z0-9]|[a-z0-9]" required placeholder="local-ai-starters" data-no-translate /></label>
+            <p class="explore-hint">Suggested from the title. You can change it before creating.</p>
+            <label>Summary <textarea name="summary" maxlength="2000"></textarea></label>
+            <label>Visibility <select name="visibility"><option value="public">Public</option><option value="private">Private</option></select></label>
+            <button class="button button--dark button--small" type="submit">Create collection</button>
+            <p data-form-status aria-live="polite"></p>
+          </form>
+        </> : <><p>Join free or log in to create a collection under your profile.</p><div class="button-row"><a class="button button--dark" href={createAction.href}>{createAction.label}</a><a class="button button--secondary" href="/sign-in?redirect_url=%2Fcollections%23new-collection">Log in</a></div></>}
+      </div>
+    </details>
+  </div>
+</ExploreLayout>
 
 <script>
   const form = document.querySelector('[data-collection-create-form]');
