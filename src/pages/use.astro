@@ -1,5 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/tools.css';
 import BrandMark from '@/components/BrandMark.astro';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 
@@ -33,27 +34,16 @@ print(type(model).__name__, type(tokenizer).__name__)`;
 const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
 ---
 
-<BaseLayout
-  title="Use Super ii your way"
-  description="Run reviewed models locally, build with Python, or publish your work with one public link. Start where you already work."
->
-  <section class="use-way-hero">
-    <div class="shell use-way-hero__inner">
-      <div>
-        <p class="eyebrow">Run · Code · Share</p>
-        <h1>Use Super ii your way <span aria-hidden="true">😊</span></h1>
-        <p>Start where you already work.</p>
-      </div>
-      <nav class="use-path-nav" aria-label="Choose how to use Super ii">
-        <a href="#run"><JourneyLabel kind="path" current={1} total={3} />Run models locally<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
-        <a href="#code"><JourneyLabel kind="path" current={2} total={3} />Build with Python<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
-        <a href="#share"><JourneyLabel kind="path" current={3} total={3} />Share with one link<i class="ph ph-arrow-down" aria-hidden="true"></i></a>
-      </nav>
-    </div>
-  </section>
-
-  <section class="use-way-section use-way-section--run" id="run" data-use-way-section>
-    <div class="shell use-way-section__grid">
+<ExploreLayout active="use" title="Use Super ii your way" eyebrow="Run · Code · Share" description="Start where you already work.">
+  <Fragment slot="actions"><a class="button button--dark" href="/models"><i class="ph ph-cube" aria-hidden="true"></i>Find a model</a><a class="button explore-cyan" href="/bring-my-work"><i class="ph ph-arrow-square-in" aria-hidden="true"></i>Bring my work</a></Fragment>
+  <div class="shell tools-content use-paths">
+    <nav class="tools-path-nav" aria-label="Choose how to use Super ii">
+      <a href="#run"><i class="ph ph-desktop" aria-hidden="true"></i>Run models locally</a>
+      <a href="#code"><i class="ph ph-code" aria-hidden="true"></i>Build with Python</a>
+      <a href="#share"><i class="ph ph-share-network" aria-hidden="true"></i>Share with one link</a>
+    </nav>
+  <details class="explore-panel use-path" name="use-path" id="run" open><summary><i class="ph ph-desktop" aria-hidden="true"></i><span><strong>Run models locally</strong><small>Ollama, LM Studio and ComfyUI</small></span></summary>
+    <div class="explore-panel__body use-way-section__grid">
       <div class="use-way-section__number" aria-hidden="true">RUN</div>
       <div class="use-way-section__content">
         <p class="eyebrow"><JourneyLabel kind="path" current={1} total={3} /> · Local</p>
@@ -79,10 +69,10 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
         <div class="use-loop" aria-label="Local workflow"><strong>LOCAL</strong><span>Find</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Run</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Build</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Publish</span></div>
       </div>
     </div>
-  </section>
+  </details>
 
-  <section class="use-way-section use-way-section--code" id="code" data-use-way-section>
-    <div class="shell use-way-section__grid">
+  <details class="explore-panel use-path" name="use-path" id="code"><summary><i class="ph ph-code" aria-hidden="true"></i><span><strong>Build with Python</strong><small>Models, notebooks and reproducible code</small></span></summary>
+    <div class="explore-panel__body use-way-section__grid">
       <div class="use-way-section__number" aria-hidden="true">CODE</div>
       <div class="use-way-section__content">
         <p class="eyebrow"><JourneyLabel kind="path" current={2} total={3} /> · Python</p>
@@ -111,10 +101,10 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
         <div class="use-loop" aria-label="Python workflow"><strong>PYTHON</strong><span>Find</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Code</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Fine-tune</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Publish</span></div>
       </div>
     </div>
-  </section>
+  </details>
 
-  <section class="use-way-section use-way-section--share" id="share" data-use-way-section>
-    <div class="shell use-way-section__grid">
+  <details class="explore-panel use-path" name="use-path" id="share"><summary><i class="ph ph-share-network" aria-hidden="true"></i><span><strong>Share with one link</strong><small>Models, datasets, apps and research</small></span></summary>
+    <div class="explore-panel__body use-way-section__grid">
       <div class="use-way-section__number" aria-hidden="true">SHARE</div>
       <div class="use-way-section__content">
         <p class="eyebrow"><JourneyLabel kind="path" current={3} total={3} /> · Labs</p>
@@ -127,9 +117,10 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
           <i class="ph ph-arrow-down" aria-hidden="true"></i>
           <div><JourneyLabel kind="step" current={3} total={3} /><strong>You receive one public URL.</strong><small>Use the same link wherever people need your work.</small></div>
         </div>
+        <p class="tools-example-label">Example public link</p>
         <div class="use-public-link">
           <code>{publicLinkExample}</code>
-          <button class="button button--dark button--small" type="button" data-copy-use data-copy-text={publicLinkExample}>Copy public link</button>
+          <button class="button button--dark button--small" type="button" data-copy-use data-copy-text={publicLinkExample}>Copy example link</button>
         </div>
         <p class="use-share-places"><strong>Use it in:</strong><span>papers</span><span>GitHub READMEs</span><span>assignments</span><span>course material</span><span>research groups</span><span>Slack / Discord</span><span>X posts</span></p>
         <div class="button-row">
@@ -139,20 +130,21 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
         <div class="use-loop" aria-label="Labs workflow"><strong>LABS</strong><span>Upload</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Link</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Share</span><i class="ph ph-arrow-right" aria-hidden="true"></i><span>Discover</span></div>
       </div>
     </div>
-  </section>
+  </details>
 
-  <section class="use-way-finale">
-    <div class="shell use-way-finale__inner">
+  <section class="tools-next use-way-finale">
+    <div class="use-way-finale__inner">
       <p class="eyebrow">One open home</p>
       <h2>Whatever you build, give it a home.</h2>
       <p>Models. Datasets. Apps. Research.</p>
       <strong>Run it. Code it. Share it.</strong>
-      <a class="button button--yellow" href="/models">Start with Super ii 😊 <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+      <a class="button button--yellow" href="/models">Start with Super ii 👾 <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
     </div>
   </section>
 
   <p class="sr-only" data-use-copy-status aria-live="polite"></p>
-</BaseLayout>
+  </div>
+</ExploreLayout>
 
 <script>
   const status = document.querySelector('[data-use-copy-status]');
@@ -172,15 +164,4 @@ const publicLinkExample = 'https://superii.site/models/your-lab/your-model';
     });
   });
 
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
-    document.documentElement.classList.add('use-motion-ready');
-    const observer = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      }
-    }, { threshold: 0.08 });
-    document.querySelectorAll('[data-use-way-section]').forEach((section) => observer.observe(section));
-  }
 </script>

@@ -1,5 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/tools.css';
 import BuildShip from '@/components/BuildShip.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -20,6 +21,11 @@ if (requested) {
 const source=room?.repository && room.source_commit && room.repository.revision_status === 'published' && ['model','dataset'].includes(room.repository.kind)
   ? {kind:room.repository.kind,owner_handle:room.repository.owner,slug:room.repository.slug,commit_sha:room.source_commit} : undefined;
 ---
-<BaseLayout title="Build & Ship" description="Generate reproducible RAG, model API and LoRA training projects from immutable Super ii repositories.">
-  <main class="shell" style="padding-block: 2rem">{room && <p><a href={`/workspace/workrooms/${room.id}`}>← {room.document.title}</a></p>}{requested && !room && <p role="status">The requested workroom is unavailable. You can still prepare a project below.</p>}<h1>Build with a published repository</h1><p>Start here or select Build &amp; Ship on a model or dataset page. Each project keeps its source revision and produces an execution record when you run it.</p><BuildShip expanded source={source} workroomId={room?.can_edit?room.id:undefined} /></main>
-</BaseLayout>
+<ExploreLayout active="build" title="Build & Ship" eyebrow="Make a local project" description="Choose a result, connect published inputs, and prepare a project to run on your computer.">
+  <Fragment slot="actions"><a class="button explore-cyan" href="/models"><i class="ph ph-cube" aria-hidden="true"></i>Find a model</a><a class="button button--secondary" href="/docs#build-ship"><i class="ph ph-book-open" aria-hidden="true"></i>Recipe guide</a></Fragment>
+  <div class="shell tools-content">
+    {room && <p class="tools-notice"><a href={`/workspace/workrooms/${room.id}`}>← {room.document.title}</a></p>}
+    {requested && !room && <p class="tools-notice" role="status">The requested workroom is unavailable. You can still prepare a project below.</p>}
+    <BuildShip expanded standalone source={source} workroomId={room?.can_edit?room.id:undefined} />
+  </div>
+</ExploreLayout>

@@ -4,9 +4,13 @@ interface Props {
   slug: string;
   title?: string;
   revision?: string;
+  standalone?: boolean;
 }
 
-const { owner, slug, title = `${owner}/${slug}`, revision } = Astro.props;
+const { owner, slug, title = `${owner}/${slug}`, revision, standalone = false } = Astro.props;
+const controlId = `tokenizer-${owner}-${slug}`;
+const Heading = standalone ? 'h2' : 'h3';
+const TableContainer = standalone ? 'details' : 'div';
 const revisionQuery = revision ? `?revision=${encodeURIComponent(revision)}` : '';
 const fullTokenizerQuery = new URLSearchParams({ model: `${owner}/${slug}` });
 if (revision) fullTokenizerQuery.set('revision', revision);
@@ -16,25 +20,25 @@ if (revision) fullTokenizerQuery.set('revision', revision);
   <header class="tokenizer-workbench__header">
     <div>
       <p class="eyebrow">Verified tokenizer</p>
-      <h3>See exactly how this model reads your text.</h3>
+      <Heading>{standalone ? "Try the tokenizer" : "See exactly how this model reads your text."}</Heading>
       <p data-tokenizer-model>{title}</p>
     </div>
     <div class="tokenizer-workbench__trust">
       <span><i class="ph ph-seal-check" aria-hidden="true"></i> Verified pack</span>
-      <a data-tokenizer-full-link href={`/tokenizer?${fullTokenizerQuery.toString()}`}>Open full tokenizer</a>
+      {!standalone && <a data-tokenizer-full-link href={`/tokenizer?${fullTokenizerQuery.toString()}`}>Open full tokenizer</a>}
       <a data-tokenizer-manifest href={`/api/tokenizers/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}/manifest${revisionQuery}`}>Manifest</a>
     </div>
   </header>
 
   <div class="tokenizer-tabs" role="tablist" aria-label="Tokenizer operation">
-    <button type="button" role="tab" aria-selected="true" data-tokenizer-tab="encode">Encode text</button>
-    <button type="button" role="tab" aria-selected="false" data-tokenizer-tab="decode">Decode IDs</button>
+    <button type="button" role="tab" aria-selected="true" id={`${controlId}-encode-tab`} aria-controls={`${controlId}-encode`} tabindex="0" data-tokenizer-tab="encode">Encode text</button>
+    <button type="button" role="tab" aria-selected="false" id={`${controlId}-decode-tab`} aria-controls={`${controlId}-decode`} tabindex="-1" data-tokenizer-tab="decode">Decode IDs</button>
   </div>
 
-  <form class="tokenizer-form" data-tokenizer-encode>
+  <form class="tokenizer-form" role="tabpanel" id={`${controlId}-encode`} aria-labelledby={`${controlId}-encode-tab`} data-tokenizer-encode>
     <label>
       <span>Text</span>
-      <textarea name="text" maxlength="100000" required>Super ii makes AI work understandable. 🤖</textarea>
+      <textarea rows={standalone ? 6 : undefined} name="text" maxlength="100000" required>Super ii makes AI work understandable. 🤖</textarea>
     </label>
     <div class="tokenizer-form__actions">
       <label class="tokenizer-check"><input name="add_special_tokens" type="checkbox" checked /> Add model special tokens</label>
@@ -42,10 +46,10 @@ if (revision) fullTokenizerQuery.set('revision', revision);
     </div>
   </form>
 
-  <form class="tokenizer-form" data-tokenizer-decode hidden>
+  <form class="tokenizer-form" role="tabpanel" id={`${controlId}-decode`} aria-labelledby={`${controlId}-decode-tab`} data-tokenizer-decode hidden>
     <label>
       <span>Token IDs <small>Separate with commas or spaces.</small></span>
-      <textarea name="token_ids" maxlength="1200000" required placeholder="1, 450, 982"></textarea>
+      <textarea rows={standalone ? 6 : undefined} name="token_ids" maxlength="1200000" required placeholder="1, 450, 982"></textarea>
     </label>
     <div class="tokenizer-form__actions">
       <label class="tokenizer-check"><input name="skip_special_tokens" type="checkbox" /> Skip special tokens</label>
@@ -67,12 +71,15 @@ if (revision) fullTokenizerQuery.set('revision', revision);
     <div class="tokenizer-decoded" data-tokenizer-decoded hidden>
       <span>Decoded text</span><pre></pre>
     </div>
-    <div class="tokenizer-table-wrap" data-tokenizer-table-wrap hidden>
+    <TableContainer class:list={["tokenizer-table-wrap", { "explore-panel": standalone }]} data-tokenizer-table-wrap hidden>
+      {standalone && <summary><i class="ph ph-table" aria-hidden="true"></i>Token details</summary>}
+      <div class="tokenizer-table-scroll">
       <table class="tokenizer-table">
         <thead><tr><th>#</th><th>ID</th><th>Token</th><th>Piece</th><th>Characters</th><th>Bytes</th></tr></thead>
         <tbody data-tokenizer-rows></tbody>
       </table>
-    </div>
+      </div>
+    </TableContainer>
     <footer class="tokenizer-result__footer">
       <p><span data-tokenizer-engine>—</span> · revision <code data-tokenizer-revision>—</code> · pack <code data-tokenizer-pack>—</code></p>
       <div>
@@ -112,12 +119,26 @@ if (revision) fullTokenizerQuery.set('revision', revision);
     const encodeForm = root.querySelector<HTMLFormElement>('[data-tokenizer-encode]');
     const decodeForm = root.querySelector<HTMLFormElement>('[data-tokenizer-decode]');
 
-    root.querySelectorAll<HTMLButtonElement>('[data-tokenizer-tab]').forEach((tab) => {
-      tab.addEventListener('click', () => {
-        const encode = tab.dataset.tokenizerTab === 'encode';
-        encodeForm?.toggleAttribute('hidden', !encode);
-        decodeForm?.toggleAttribute('hidden', encode);
-        root.querySelectorAll<HTMLButtonElement>('[data-tokenizer-tab]').forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-tokenizer-tab]')];
+    const selectTab = (tab: HTMLButtonElement) => {
+      const encode = tab.dataset.tokenizerTab === 'encode';
+      encodeForm?.toggleAttribute('hidden', !encode);
+      decodeForm?.toggleAttribute('hidden', encode);
+      tabs.forEach(item => {
+        item.setAttribute('aria-selected', String(item === tab));
+        item.tabIndex = item === tab ? 0 : -1;
+      });
+    };
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', event => {
+        const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+          : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1;
+        if (next < 0) return;
+        event.preventDefault();
+        selectTab(tabs[next]);
+        tabs[next].focus();
       });
     });
 
