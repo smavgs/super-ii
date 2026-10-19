@@ -212,3 +212,7 @@
 .tools-skin .use-share-flow > i { transform: rotate(-90deg); }
 .tools-skin .tools-example-label { margin: .75rem 0 .3rem; font-size: .8rem; color: var(--muted); }
 @media (max-width: 48rem) { .tools-skin .use-share-flow > i { transform: none; } }
+.tools-skin .use-share-flow strong, .tools-skin .use-public-link code, .tools-skin .use-way-finale h2 { color: var(--ink); }
+.tools-skin .use-share-flow > div > span { color: var(--ws-violet-ink); }
+.tools-skin .use-share-flow > i { align-self: center; justify-self: center; margin: 0; color: var(--ws-violet-ink); }
+.tools-skin .use-way-finale__inner { padding-block: 0; }
