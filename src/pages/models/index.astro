@@ -1,19 +1,13 @@
 ---
 import Catalog from '@/components/Catalog.astro';
 import HighlightsStrip from '@/components/HighlightsStrip.astro';
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
 ---
-
-<BaseLayout title="Models" description="Discover public AI models on Super ii. The catalog begins empty and opens to reviewed community releases soon.">
-  <PageHero
-    eyebrow="Public model hub"
-    title="Models"
-    titleHelp="model"
-    description="Find, inspect, run and build on AI models. Every reviewed model can show its files, versions, license, architecture, provenance, hardware requirements and ways to use it."
-    compact
-  />
+<ExploreLayout active="models" title="Models" titleHelp="model" eyebrow="Discover public work" description="Find AI models, inspect their files and evidence, and choose a way to run them.">
+  <Fragment slot="actions">
+    <a class="button button--dark" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a>
+    <a class="button explore-cyan" href="/bring-my-work"><i class="ph ph-handshake" aria-hidden="true"></i>Bring my work</a>
+  </Fragment>
   <HighlightsStrip kind="model" />
   <Catalog kind="models" />
-</BaseLayout>
+</ExploreLayout>

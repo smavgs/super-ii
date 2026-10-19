@@ -1,5 +1,5 @@
 /* Shared tactile controls for Workspace and its connected journeys. */
-:is(.workspace-skin, .communications-skin, .journey-skin) {
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) {
   --ws-panel: #fffdf6;
   --ws-soft: #f3f0e6;
   --ws-border: #7d8a99;
@@ -20,7 +20,7 @@
   --radius-lg: 8px;
   color: var(--ink);
 }
-:root[data-theme='dark'] :is(.workspace-skin, .communications-skin, .journey-skin) {
+:root[data-theme='dark'] :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) {
   --ws-panel: #122337;
   --ws-soft: #182d43;
   --ws-border: #72859a;
@@ -37,7 +37,7 @@
   --ws-red-bg: #412431;
   --ws-red-ink: #ffb2c0;
 }
-:is(.workspace-skin, .communications-skin, .journey-skin) .button {
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button {
   border-radius: 3px;
   border: 1px solid var(--ws-strong);
   box-shadow: 2px 2px 0 var(--ws-shadow);
@@ -48,22 +48,22 @@
   text-align: center;
   transition: transform 100ms ease, box-shadow 100ms ease, background-color 100ms ease;
 }
-:root :is(.workspace-skin, .communications-skin, .journey-skin) .button.button--dark,
-:root :is(.workspace-skin, .communications-skin, .journey-skin) .button.button--yellow {
+:root :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button.button--dark,
+:root :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button.button--yellow {
   background: var(--yellow);
   color: #071a2f;
   border-color: #20344b;
 }
-:root :is(.workspace-skin, .communications-skin, .journey-skin) .button.button--secondary { background: var(--ws-panel); color: var(--ink); }
-:is(.workspace-skin, .communications-skin, .journey-skin) .button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ws-shadow); }
-:is(.workspace-skin, .communications-skin, .journey-skin) .button:active { transform: translate(2px, 2px); box-shadow: none; }
-:is(.workspace-skin, .communications-skin, .journey-skin) .button:disabled { transform: none; box-shadow: none; opacity: 0.55; cursor: not-allowed; }
-:is(.workspace-skin, .communications-skin, .journey-skin) :is(a, button, input, textarea, select, summary):focus-visible {
+:root :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button.button--secondary { background: var(--ws-panel); color: var(--ink); }
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ws-shadow); }
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button:active { transform: translate(2px, 2px); box-shadow: none; }
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button:disabled { transform: none; box-shadow: none; opacity: 0.55; cursor: not-allowed; }
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) :is(a, button, input, textarea, select, summary):focus-visible {
   outline: 3px solid var(--ws-focus);
   outline-offset: 3px;
 }
-:is(.workspace-skin, .communications-skin, .journey-skin) .text-button { min-height: 2.75rem; padding-block: 0.45rem; }
-:is(.workspace-skin, .communications-skin, .journey-skin) :is(input, textarea, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) {
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .text-button { min-height: 2.75rem; padding-block: 0.45rem; }
+:is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) :is(input, textarea, select):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']) {
   border-radius: 3px;
   border-color: var(--ws-border);
   background: var(--surface-raised);
@@ -72,8 +72,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.workspace-skin, .communications-skin, .journey-skin) .button { transition: none; }
+  :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button { transition: none; }
 }
 @media (forced-colors: active) {
-  :is(.workspace-skin, .communications-skin, .journey-skin) .button { border: 1px solid ButtonText; box-shadow: none; }
+  :is(.workspace-skin, .communications-skin, .journey-skin, .explore-skin) .button { border: 1px solid ButtonText; box-shadow: none; }
 }

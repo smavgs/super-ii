@@ -1,0 +1,50 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import InfoTip from '@/components/InfoTip.astro';
+import type { InfoHelpKey } from '@/lib/info-help';
+import '@/styles/pixel-controls.css';
+import '@/styles/explore.css';
+
+interface Props {
+  active: 'models' | 'datasets' | 'spaces' | 'transparent' | 'builders' | 'robot' | 'collections' | 'organizations';
+  title: string;
+  eyebrow: string;
+  description: string;
+  titleHelp?: InfoHelpKey;
+  image?: string;
+  imageAlt?: string;
+}
+const { active, title, eyebrow, description, titleHelp, image, imageAlt } = Astro.props;
+const destinations = [
+  { id: 'models', label: 'Models', icon: 'cube' },
+  { id: 'datasets', label: 'Datasets', icon: 'database' },
+  { id: 'spaces', label: 'Apps', icon: 'app-window' },
+  { id: 'transparent', label: 'Transparent', icon: 'scan' },
+  { id: 'builders', label: 'Builders', icon: 'users-three' },
+  { id: 'robot', label: 'Make Robot', icon: 'robot' },
+  { id: 'collections', label: 'Collections', icon: 'stack' },
+  { id: 'organizations', label: 'Organizations', icon: 'buildings' },
+];
+---
+<BaseLayout title={title} description={description} image={image} imageAlt={imageAlt} preferLight>
+  <div class="explore-skin" data-explore-page={active}>
+    <nav class="shell explore-nav" aria-label="Explore Super ii">
+      <a class="explore-workspace" href="/account"><i class="ph ph-arrow-left" aria-hidden="true"></i>Workspace</a>
+      <details class="explore-switcher" data-explore-switcher>
+        <summary><i class="ph ph-squares-four" aria-hidden="true"></i><span>Explore</span><span class="explore-current">{destinations.find(item => item.id === active)?.label}</span></summary>
+        <div class="explore-destinations">
+          {destinations.map(item => <a href={`/${item.id}`} aria-current={item.id === active ? 'page' : undefined}><i class={`ph ph-${item.icon}`} aria-hidden="true"></i>{item.label}</a>)}
+        </div>
+      </details>
+    </nav>
+    <header class="shell explore-heading">
+      <div class="explore-heading__identity"><span class="explore-mascot" aria-hidden="true">👾</span><div><p>{eyebrow}</p><div class="heading-with-help"><h1>{title}</h1>{titleHelp && <InfoTip term={titleHelp} />}</div></div></div>
+      <p class="explore-description">{description}</p>
+      {Astro.slots.has('actions') && <div class="button-row explore-actions"><slot name="actions" /></div>}
+    </header>
+    <slot />
+  </div>
+</BaseLayout>
+<script>
+  import '@/scripts/explore';
+</script>

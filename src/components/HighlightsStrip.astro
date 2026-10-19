@@ -24,14 +24,14 @@ if (sql) {
 const label = kind === 'model' ? 'models' : kind === 'dataset' ? 'datasets' : 'apps';
 ---
 
-<section class="highlights-strip shell" aria-labelledby={`highlights-${kind}`} data-highlights-strip>
-  <header class="highlights-strip__heading">
+<section class:list={["highlights-strip shell", { "highlights-strip--empty": !items.length }]} aria-labelledby={`highlights-${kind}`} data-highlights-strip>
+  {items.length > 0 && <header class="highlights-strip__heading">
     <div>
       <p class="eyebrow">Promoted · kept separate from organic ranking</p>
       <h2 id={`highlights-${kind}`}>Highlights <span aria-hidden="true">✦</span></h2>
     </div>
     <a href={`/highlights?kind=${kind}`}>See all promoted {label} <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-  </header>
+  </header>}
   {items.length ? (
     <div class="highlights-strip__rail">
       {items.map((item) => (
@@ -53,10 +53,15 @@ const label = kind === 'model' ? 'models' : kind === 'dataset' ? 'datasets' : 'a
       ))}
     </div>
   ) : (
-    <div class="highlights-strip__empty">
-      <p>No active {label} promotions yet. Reviewed public work can reserve equal rotation here.</p>
-      <a class="button button--secondary button--small" href="/highlights#promote">Highlight your work</a>
-    </div>
+    <details class="explore-panel highlights-details">
+      <summary id={`highlights-${kind}`}><i class="ph ph-sparkle" aria-hidden="true"></i>Highlights <span class="explore-count">Promoted</span></summary>
+      <div class="explore-panel__body highlights-strip__empty">
+        <p>No active {label} promotions yet. Reviewed public work can reserve equal rotation here.</p>
+        <p class="explore-hint">Promoted · kept separate from organic ranking</p>
+        <a class="button button--secondary button--small" href="/highlights#promote">Highlight your work</a>
+        <a href={`/highlights?kind=${kind}`}>See all promoted {label} <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+      </div>
+    </details>
   )}
 </section>
 

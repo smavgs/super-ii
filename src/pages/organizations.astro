@@ -1,6 +1,5 @@
 ---
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
 import { sqlClient } from '@/lib/db';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import '@/styles/workspace.css';
@@ -59,19 +58,8 @@ if (sql) {
 }
 ---
 
-<BaseLayout title="Organizations" description="Create and discover Super ii organizations for public AI collaboration.">
-  <PageHero
-    eyebrow="Build as a team 🤝"
-    title="Organizations"
-    titleHelp="organization"
-    description="Give your team one shared home for its AI work. Manage members, repositories, permissions, reviews and activity while keeping public work open to the wider community."
-  >
-    <div class="button-row">
-      <a class="button button--dark" href="/organizations/new">Create organization</a>
-      <a class="button button--secondary" href="/contact?interest=team">Discuss a team plan</a>
-    </div>
-  </PageHero>
-
+<ExploreLayout active="organizations" title="Organizations" titleHelp="organization" eyebrow="Build as a team" description="Find teams and their public work, or give your own team a shared home for products, repositories and collaboration.">
+  <Fragment slot="actions"><a class="button button--dark" href="/organizations/new"><i class="ph ph-buildings" aria-hidden="true"></i>Create organization</a></Fragment>
   {signedIn && <div class="shell"><details class="workspace-disclosure personal-work" id="my-organizations">
     <summary>My organizations<small>Your memberships and team work.</small></summary>
     <div class="workspace-disclosure__body">
@@ -82,37 +70,17 @@ if (sql) {
     </div>
   </details></div>}
 
-  <section class="section">
-    <div class="shell feature-rows">
-      <article class="feature-row">
-        <h2>Shared identity 🏢</h2>
-        <div>
-          <p>Bring models, datasets, and apps under a clear organization name. Public work remains discoverable while ownership and contributor roles stay understandable.</p>
-          <ul>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Organization profiles and public collections</li>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Owner, admin, maintainer, member, and viewer roles</li>
-            <li><i class="ph ph-check" aria-hidden="true"></i> Personal and organization workspaces</li>
-          </ul>
-        </div>
-      </article>
-      <article class="feature-row">
-        <h2>Review without friction ✅</h2>
-        <div><p>Keep discussions close to releases and preserve an activity trail. Every public release is checked before it appears on Super ii.</p></div>
-      </article>
-    </div>
-  </section>
-
-  <section class="section section--soft">
-    <div class="shell">
-      <div class="section-heading">
-        <p class="eyebrow">Community directory</p>
+  <section class="shell explore-content" data-explore-filter>
+    <div>
+      <div class="explore-section-title">
         <h2>Public organizations</h2>
-        <p>Public organizations appear here as teams create them.</p>
+        <span class="explore-count" data-explore-count>{organizations.length}</span>
       </div>
+      {organizations.length > 0 && <div class="explore-filter"><label>Filter these organizations<input type="search" data-explore-search autocomplete="off" /></label><button class="button button--secondary" type="button" data-explore-reset>Clear</button></div>}
       {organizations.length ? (
         <div class="capability-grid">
           {organizations.map((organization) => (
-            <a class="capability-card" href={`/organizations/${organization.handle}`}>
+            <a class="capability-card" data-explore-item data-search={`${organization.full_name ?? organization.name} ${organization.handle} ${organization.description ?? ''} ${organization.organization_type}`} href={`/organizations/${organization.handle}`}>
               <div>
                 {organization.logo_url && <img class="organization-logo organization-logo--small" src={organization.logo_url} alt="" loading="lazy" referrerpolicy="no-referrer" />}
                 <p class="eyebrow">{organization.organization_type}</p>
@@ -133,8 +101,32 @@ if (sql) {
         </div>
       )}
     </div>
+    <p data-explore-empty hidden role="status">No matches in this list. Try a different search.</p>
   </section>
-</BaseLayout>
+  <div class="shell"><details class="explore-panel" id="team-tools"><summary><i class="ph ph-users-three" aria-hidden="true"></i>What your team can do</summary><div class="explore-panel__body">
+
+    <div class="feature-rows">
+      <article class="feature-row">
+        <h2>Shared identity 🏢</h2>
+        <div>
+          <p>Bring models, datasets, and apps under a clear organization name. Public work remains discoverable while ownership and contributor roles stay understandable.</p>
+          <ul>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Organization profiles and public collections</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Owner, admin, maintainer, member, and viewer roles</li>
+            <li><i class="ph ph-check" aria-hidden="true"></i> Personal and organization workspaces</li>
+          </ul>
+        </div>
+      </article>
+      <article class="feature-row">
+        <h2>Review without friction ✅</h2>
+        <div><p>Keep discussions close to releases and preserve an activity trail. Every public release is checked before it appears on Super ii.</p></div>
+      </article>
+    </div>
+
+
+    <a class="button explore-cyan" href="/contact?interest=team">Discuss a team plan</a>
+  </div></details></div>
+</ExploreLayout>
 
 <script>
   import '@/scripts/personal-work';
