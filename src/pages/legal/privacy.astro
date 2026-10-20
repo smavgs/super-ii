@@ -1,20 +1,15 @@
 ---
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import GuideReader from '@/components/GuideReader.astro';
+import '@/styles/guides.css';
 
 export const prerender = false;
 const effectiveDate = 'October 9, 2026';
 ---
 
-<BaseLayout title="Privacy Policy" description="How Super ii collects, uses, shares, protects, and retains personal information." noindex>
-  <PageHero
-    eyebrow={`Legal · Effective ${effectiveDate}`}
-    title="Privacy Policy"
-    description="This policy explains the personal information Super ii uses and how to exercise your choices."
-    compact
-  />
+<ExploreLayout active="legal/privacy" title="Privacy Policy" eyebrow={`Legal · Effective ${effectiveDate}`} description="This policy explains the personal information Super ii uses and how to exercise your choices." noindex>
 
-  <div class="shell content-shell">
+  <GuideReader>
     <article class="prose">
       <h2 id="scope">1. Scope and operator</h2>
       <p>This Privacy Policy applies to the Super ii website, accounts, contact forms, organizations, and related services available through <a href="https://superii.site">superii.site</a> (the “Service”). “Super ii,” “we,” “us,” and “our” refer to the operator of the Service.</p>
@@ -113,22 +108,5 @@ const effectiveDate = 'October 9, 2026';
       <h2 id="contact">11. Contact</h2>
       <p>Submit privacy questions and requests through the <a href="/contact?interest=privacy">Super ii contact form</a>.</p>
     </article>
-
-    <aside class="prose-aside">
-      <h2>Privacy sections</h2>
-      <nav>
-        <a href="#scope">Scope and operator</a>
-        <a href="#collect">Information collected</a>
-        <a href="#use">How it is used</a>
-        <a href="#share">Disclosures</a>
-        <a href="#retention">Retention</a>
-        <a href="#choices">Your rights</a>
-        <a href="#transfers">International processing</a>
-        <a href="#security">Security</a>
-        <a href="#children">Children</a>
-        <a href="#changes">Changes</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </aside>
-  </div>
-</BaseLayout>
+  </GuideReader>
+</ExploreLayout>

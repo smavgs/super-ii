@@ -1,7 +1,7 @@
 ---
-import PageHero from '@/components/PageHero.astro';
 import InfoTip from '@/components/InfoTip.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/guides.css';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import type { InfoHelpKey } from '@/lib/info-help';
@@ -99,17 +99,12 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
 ];
 ---
 
-<BaseLayout title="Pricing" description="Start free with Super ii, then pay for privacy, control and scale when you need them.">
-  <PageHero
-    eyebrow="Simple, transparent plans"
-    title="Start free. Pay for privacy, control and scale."
-    description="Explore, publish and run open AI for free. Upgrade when you need private work, larger storage, advanced agent access, team governance or enterprise control."
-  >
-    <div class="pricing-notice">
+<ExploreLayout active="pricing" title="Pricing" eyebrow="Plans & trust · Start free" description="Explore, publish and run open AI for free. Upgrade when you need private work, larger storage, advanced agent access, team governance or enterprise control.">
+    <div class="shell pricing-notice">
       <i class="ph ph-info" aria-hidden="true"></i>
       <p><strong>Choose 30 days or prepay 12 months with 20% off. Both are one-time USDC payments with no automatic renewal.</strong> <InfoTip term="prepaidAccess" /></p>
     </div>
-  </PageHero>
+
 
   <section class="shell pricing-intro" aria-labelledby="plans-heading">
     <h2 class="sr-only" id="plans-heading">Plans</h2>
@@ -139,7 +134,7 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
         const annualUnitCents = paidPlanId ? checkoutPriceCents(paidPlanId, 1, '12_months') : null;
         const defaultSeats = plan.id === 'team' ? Math.max(2, teamOrganizations[0]?.member_count ?? 1) : 1;
         return (
-          <article class:list={['price-card', cta.featured && 'price-card--featured']}>
+          <article class:list={['price-card', `price-card--${plan.id}`, cta.featured && 'price-card--featured']}>
             <h2>{plan.name}</h2>
             <p class="price-card__summary">{plan.summary}</p>
             <div
@@ -154,12 +149,14 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
               <strong data-price-value={paidPlanId ? true : undefined}>{plan.price}</strong>
               <span data-price-unit={paidPlanId ? true : undefined}>{plan.unit}</span>
             </div>
+            <details class="plan-features"><summary>What’s included</summary>
             <ul>
               {plan.features.map((feature) => {
                 const helpTerm = featureHelp[feature];
                 return <li><i class="ph ph-check" aria-hidden="true"></i><span>{feature}</span>{helpTerm && <InfoTip term={helpTerm} />}</li>;
               })}
             </ul>
+            </details>
             {cta.href ? (
               <a class:list={['button', cta.featured ? 'button--dark' : 'button--secondary']} href={cta.href}>{cta.label}</a>
             ) : (
@@ -185,13 +182,10 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
     </div>
   </section>
 
-  <section class="pricing-detail section--soft">
-    <div class="shell">
-      <div class="section-heading">
-        <h2>Compare plans</h2>
-      </div>
+  <section class="shell guide-intro">
+    <details class="explore-panel" id="compare-plans"><summary><i class="ph ph-columns" aria-hidden="true"></i>Compare plans</summary>
 
-      <div class="comparison-scroll">
+      <div class="comparison-scroll" role="region" aria-label="Compare plans" tabindex="0">
         <table class="comparison-table">
           <thead>
             <tr>
@@ -212,36 +206,36 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
           </tbody>
         </table>
       </div>
-    </div>
+    </details>
   </section>
 
-  <section class="section">
+  <section class="guide-intro">
     <div class="shell feature-rows">
-      <article class="feature-row">
-        <h2>Use your own hardware when you want</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Use your own hardware when you want</summary>
+        <div class="explore-panel__body">
           <p>Running compatible models on your own computer or infrastructure does not use paid Super ii compute. <InfoTip term="browserLocalExecution" /></p>
         </div>
-      </article>
+      </details>
 
-      <article class="feature-row">
-        <h2>Pay only for hosted resources you choose</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Pay only for hosted resources you choose</summary>
+        <div class="explore-panel__body">
           <p>Additional storage, hosted compute and other infrastructure are priced separately from your plan.</p>
           <p>Before you use a paid resource, Super ii shows the price, what is included, your usage and your spending controls. <InfoTip term="usageInfrastructure" label="Usage based" /></p>
         </div>
-      </article>
+      </details>
 
-      <article class="feature-row">
-        <h2>Bring your own infrastructure</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Bring your own infrastructure</summary>
+        <div class="explore-panel__body">
           <p>Use your own computer, GPU server or cloud infrastructure while Super ii manages the workspace around your AI work. <InfoTip term="byocHardware" /></p>
         </div>
-      </article>
+      </details>
 
-      <article class="feature-row">
-        <h2>Storage that scales with your work</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Storage that scales with your work</summary>
+        <div class="explore-panel__body">
           <p>Every plan includes a clear hosted-storage allowance.</p>
           <ul>
             <li><i class="ph ph-check" aria-hidden="true"></i>Free: 5 GB public</li>
@@ -252,30 +246,30 @@ const comparison: Array<{ feature: string; values: string[]; helpTerm?: InfoHelp
           <p>Additional storage is available separately.</p>
           <p>Repository count and storage capacity are different: you can create unlimited public repositories while staying within your storage allowance. <InfoTip term="storage" /></p>
         </div>
-      </article>
+      </details>
 
-      <article class="feature-row">
-        <h2>Need Enterprise?</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Need Enterprise?</summary>
+        <div class="explore-panel__body">
           <p>If you need custom identity, deployment, security, support or infrastructure, we can define them in a written proposal.</p>
           <a class="button button--secondary" href="/enterprise">Explore Enterprise</a>
         </div>
-      </article>
+      </details>
 
-      <article class="feature-row">
-        <h2>Payment</h2>
-        <div>
+      <details class="explore-panel guide-faq" name="plan-details">
+        <summary>Payment</summary>
+        <div class="explore-panel__body">
           <p>Pro and Team are activated with USDC on Ethereum.</p>
           <ul>
             {['No card required', 'Choose 30 days or 12 months', 'Save 20% when you prepay 12 months', 'No automatic renewal', 'Network and processor fees may apply', 'Your plan and infrastructure usage remain separate'].map((item) => <li><i class="ph ph-check" aria-hidden="true"></i>{item}</li>)}
           </ul>
           <p><InfoTip term="usdcEthereum" /></p>
         </div>
-      </article>
+      </details>
 
     </div>
   </section>
-</BaseLayout>
+</ExploreLayout>
 
 <script>
   type BillingTerm = '30_days' | '12_months';
