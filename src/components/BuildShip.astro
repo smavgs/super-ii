@@ -2,22 +2,23 @@
 interface Props {
   source?: { kind: string; owner_handle: string; slug: string; commit_sha: string | null };
   expanded?: boolean;
+  standalone?: boolean;
   workroomId?: string;
 }
-const { source, expanded = false, workroomId } = Astro.props;
+const { source, expanded = false, standalone = false, workroomId } = Astro.props;
 const model = source?.kind === 'model';
 const dataset = source?.kind === 'dataset';
 const identity = source ? `${source.owner_handle}/${source.slug}` : '';
 ---
 <section id="build-ship" class="build-ship" data-build-ship data-workroom-id={workroomId} hidden={!expanded} aria-labelledby="build-ship-title">
-  <div class="build-ship-heading"><div><p class="eyebrow">Engineering recipes</p><h2 id="build-ship-title" tabindex="-1">Build &amp; Ship</h2></div>{!expanded && <button type="button" class="button button--small button--secondary" data-build-close>Close</button>}</div>
+  <div class="build-ship-heading"><div><p class="eyebrow">Engineering recipes</p><h2 id="build-ship-title" tabindex="-1">{standalone ? "Choose a project" : "Build & Ship"}</h2></div>{!expanded && <button type="button" class="button button--small button--secondary" data-build-close>Close</button>}</div>
   <p>Choose the result. Super ii will prepare one reproducible plan with pinned inputs, runnable code, tests and an execution record.</p>
   <form data-build-form>
     <fieldset class="build-goals"><legend>What do you want to make?</legend>
       <div class="build-goal-grid">
-        <label><input type="radio" name="outcome" value="rag" checked /><span><strong>Answer from my documents</strong><small>Build a local, source-aware RAG application.</small></span></label>
-        <label><input type="radio" name="outcome" value="api" /><span><strong>Serve this model</strong><small>Get a private local API with authentication.</small></span></label>
-        <label><input type="radio" name="outcome" value="sft" /><span><strong>Train with my data</strong><small>Create a LoRA adapter and verify the result.</small></span></label>
+        <label><input type="radio" name="outcome" value="rag" checked /><span>{standalone && <i class="ph ph-files" aria-hidden="true"></i>}<strong>Answer from my documents</strong><small>Build a local, source-aware RAG application.</small></span></label>
+        <label><input type="radio" name="outcome" value="api" /><span>{standalone && <i class="ph ph-plugs-connected" aria-hidden="true"></i>}<strong>Serve this model</strong><small>Get a private local API with authentication.</small></span></label>
+        <label><input type="radio" name="outcome" value="sft" /><span>{standalone && <i class="ph ph-graduation-cap" aria-hidden="true"></i>}<strong>Train with my data</strong><small>Create a LoRA adapter and verify the result.</small></span></label>
       </div>
     </fieldset>
     <div class="build-inputs">

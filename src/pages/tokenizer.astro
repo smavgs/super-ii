@@ -1,7 +1,7 @@
 ---
-import PageHero from '@/components/PageHero.astro';
 import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/tools.css';
 import { parseTokenizerModelReference, searchTokenizerModels } from '@/lib/tokenizer-models';
 import { resolveTokenizerModel } from '@/lib/tokenizers';
 
@@ -20,18 +20,13 @@ if (selected && requestedModel === `${selected.owner_handle}/${selected.slug}` &
 }
 ---
 
-<BaseLayout title="Tokenizer" description="See exactly how a published Super ii model reads text with its verified immutable tokenizer pack.">
-  <PageHero
-    eyebrow="Exact model text"
-    title="Tokenizer"
-    description="Search or paste a model link. See token boundaries, IDs and context use tied to one immutable model revision and tokenizer-pack hash."
-    compact
-  />
+<ExploreLayout active="tokenizer" title="Tokenizer" eyebrow="Exact model text" description="Choose a verified model, enter text or token IDs, and inspect its exact result.">
+  <Fragment slot="actions"><a class="button explore-cyan" href="/models"><i class="ph ph-cube" aria-hidden="true"></i>Browse models</a></Fragment>
   <section class="shell tokenizer-page">
     <section class="tokenizer-model-search" data-tokenizer-model-search>
       <div class="tokenizer-model-search__copy">
         <p class="eyebrow">Choose a verified model</p>
-        <h2>Find the model—never scroll a giant list.</h2>
+        <h2>Choose your model</h2>
         <p>Search by model or creator, or paste a Super ii model link. Sign-in is not required.</p>
       </div>
       <form class="tokenizer-model-search__form" role="search" data-tokenizer-search-form>
@@ -83,6 +78,7 @@ if (selected && requestedModel === `${selected.owner_handle}/${selected.slug}` &
 
     {selected ? (
       <TokenizerWorkbench
+        standalone
         owner={selected.owner_handle}
         slug={selected.slug}
         revision={selectedRevision ?? selected.revision_id}
@@ -97,7 +93,7 @@ if (selected && requestedModel === `${selected.owner_handle}/${selected.slug}` &
       </div>
     )}
   </section>
-</BaseLayout>
+</ExploreLayout>
 
 <script>
   type ModelOption = {

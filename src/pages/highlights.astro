@@ -1,6 +1,7 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/tools.css';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 import type { RepositoryKind } from '@/lib/catalog';
@@ -45,17 +46,14 @@ const remaining = (value: string) => {
 };
 ---
 
-<BaseLayout title="Highlights" description="Discover reviewed public models, datasets, and apps their creators want more people to see. Paid discovery remains separate from organic ranking." className="highlights-page">
-  <header class="highlights-hero">
-    <div class="shell highlights-hero__inner">
-      <div><p class="eyebrow">Paid discovery with a visible boundary</p><h1>Highlights <span aria-hidden="true">✦</span></h1><p>Discover models, datasets and apps their creators want more people to see.</p></div>
-      <div class="highlights-hero__prices"><p><strong>$1</strong><span>24 hours</span></p><p><strong>$15</strong><span>30 days</span></p><small>USDC on Ethereum · no bidding</small></div>
-    </div>
-  </header>
-
-  <main class="section shell">
+<ExploreLayout active="highlights" title="Highlights" eyebrow="Paid discovery · Always labeled" description="Discover reviewed models, datasets and apps their creators want more people to see.">
+  <Fragment slot="actions"><a class="button button--dark" href="#promote"><i class="ph ph-sparkle" aria-hidden="true"></i>Highlight your work</a>{owned.length > 0 && <a class="button explore-cyan" href="#statistics"><i class="ph ph-chart-bar" aria-hidden="true"></i>Your statistics</a>}</Fragment>
+  <div class="shell tools-content">
+    <div class="tools-highlight-rates"><span class="tools-promoted"><i class="ph ph-sparkle" aria-hidden="true"></i>Promoted</span><span><strong>$1</strong> / 24 hours</span><span><strong>$15</strong> / 30 days</span><small>USDC on Ethereum · no bidding</small></div>
+    <p class="explore-hint">Paid visibility stays separate from organic search and ranking.</p>
+  <section class="tools-highlight-gallery" aria-labelledby="highlights-current">
     <div class="highlights-heading">
-      <div><p class="eyebrow">Every active promotion</p><h2>Currently highlighted</h2></div>
+      <div><p class="eyebrow">Every active promotion</p><h2 id="highlights-current">Currently highlighted</h2></div>
       <nav aria-label="Highlight category">
         <a href="/highlights" aria-current={!kind ? 'page' : undefined}>All</a>
         <a href="/highlights?kind=model" aria-current={kind === 'model' ? 'page' : undefined}>Models</a>
@@ -80,10 +78,10 @@ const remaining = (value: string) => {
     ) : (
       <div class="highlights-empty"><span aria-hidden="true">✦</span><div><h2>No active {kind ? `${kindLabel(kind).toLowerCase()} ` : ''}Highlights yet.</h2><p>The page contains no paid placeholders. The first eligible creator promotion will appear here after payment confirms.</p></div><a class="button button--dark" href="#promote">Highlight your work</a></div>
     )}
-  </main>
+  </section>
 
-  <section class="section section--soft" id="promote">
-    <div class="shell highlight-purchase-layout">
+  <details class="explore-panel tools-promote" id="promote"><summary><i class="ph ph-sparkle" aria-hidden="true"></i>Highlight your work</summary>
+    <div class="explore-panel__body highlight-purchase-layout">
       <div class="highlight-purchase-copy">
         <p class="eyebrow">For creators 🚀</p>
         <h2>Give reviewed work a fair turn in front.</h2>
@@ -107,9 +105,9 @@ const remaining = (value: string) => {
         ) : <p>Account checkout is temporarily unavailable.</p>}
       </div>
     </div>
-  </section>
+  </details>
 
-  {owned.length > 0 && <section class="section shell highlight-dashboard">
+  {owned.length > 0 && <details class="explore-panel highlight-dashboard" id="statistics"><summary><i class="ph ph-chart-bar" aria-hidden="true"></i>Highlight statistics</summary><div class="explore-panel__body">
     <div class="section-heading"><p class="eyebrow">Your campaign evidence 📊</p><h2>Highlight statistics</h2><p>Daily unique signals are reported separately from every organic catalog metric.</p></div>
     <div class="highlight-campaign-list">
       {owned.map((campaign) => <article>
@@ -118,12 +116,13 @@ const remaining = (value: string) => {
         {['pending', 'scheduled'].includes(campaign.state) && <a href={`/checkout/participation/${campaign.order_id}`}>Open payment or schedule details</a>}
       </article>)}
     </div>
-  </section>}
+  </div></details>}
 
   <section class="highlight-integrity">
-    <div class="shell"><p><span>ORGANIC</span><strong>Earned relevance stays earned.</strong> Highlights are never inserted into organic results.</p><i class="ph ph-arrows-left-right" aria-hidden="true"></i><p><span>PROMOTED</span><strong>Paid visibility stays labeled.</strong> Orange framing and “Promoted” appear everywhere.</p></div>
+    <div><p><span>ORGANIC</span><strong>Earned relevance stays earned.</strong> Highlights are never inserted into organic results.</p><i class="ph ph-arrows-left-right" aria-hidden="true"></i><p><span>PROMOTED</span><strong>Paid visibility stays labeled.</strong> Orange framing and “Promoted” appear everywhere.</p></div>
   </section>
-</BaseLayout>
+  </div>
+</ExploreLayout>
 
 <script>
   const recordHighlight = (campaignId: string, eventType: string) => fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: eventType }), keepalive: true }).catch(() => undefined);
