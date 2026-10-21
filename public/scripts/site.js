@@ -7,6 +7,8 @@
   const themeButton = document.querySelector('[data-theme-toggle]');
   const menuButton = document.querySelector('[data-menu-toggle]');
   const mobileNav = document.querySelector('[data-mobile-nav]');
+  const menuBackground = [...document.querySelectorAll('main, .site-footer, .skip-link')];
+  let menuInertState = [];
 
   function activeTheme() {
     return root.dataset.theme === 'dark' ? 'dark' : 'light';
@@ -30,30 +32,45 @@
   });
   syncThemeButton();
 
-  function closeMenu() {
+  function closeMenu(restoreFocus = false) {
     if (!menuButton || !mobileNav) return;
+    const wasOpen = !mobileNav.hidden;
     menuButton.setAttribute('aria-expanded', 'false');
     menuButton.setAttribute('aria-label', 'Open navigation');
     mobileNav.hidden = true;
     body.classList.remove('menu-open');
+    menuInertState.forEach(([element, wasInert]) => { element.inert = wasInert; });
+    menuInertState = [];
     const icon = menuButton.querySelector('i');
     if (icon) icon.className = 'ph ph-list';
+    if (wasOpen && restoreFocus) menuButton.focus();
   }
 
   menuButton?.addEventListener('click', () => {
     if (!mobileNav) return;
     const opening = menuButton.getAttribute('aria-expanded') !== 'true';
+    if (!opening) { closeMenu(true); return; }
     menuButton.setAttribute('aria-expanded', String(opening));
     menuButton.setAttribute('aria-label', opening ? 'Close navigation' : 'Open navigation');
     mobileNav.hidden = !opening;
     body.classList.toggle('menu-open', opening);
     const icon = menuButton.querySelector('i');
     if (icon) icon.className = opening ? 'ph ph-x' : 'ph ph-list';
+    menuInertState = menuBackground.map((element) => [element, element.inert]);
+    menuBackground.forEach((element) => { element.inert = true; });
+    mobileNav.querySelector('details[open] > summary, summary')?.focus();
   });
 
-  mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
-  window.matchMedia('(min-width: 1321px)').addEventListener('change', (event) => {
-    if (event.matches) closeMenu();
+  mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => closeMenu()));
+  document.querySelectorAll('.header-auth a, .header-auth button').forEach((control) => control.addEventListener('click', () => closeMenu()));
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || !mobileNav || mobileNav.hidden) return;
+    const controls = [...document.querySelectorAll('.site-header a, .site-header button, [data-mobile-nav] a, [data-mobile-nav] summary')]
+      .filter((element) => element.getClientRects().length > 0 && !element.closest('details:not([open]) .directory-links'));
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   });
 
   const catalogSearch = document.querySelector('[data-catalog-search]');
@@ -217,7 +234,7 @@
       const openTrigger = infoTips
         .map((tip) => tip.querySelector('[data-info-trigger]'))
         .find((trigger) => trigger?.getAttribute('aria-expanded') === 'true');
-      closeMenu();
+      closeMenu(true);
       closeAllInfo();
       if (openTrigger instanceof HTMLElement) openTrigger.focus();
     }
