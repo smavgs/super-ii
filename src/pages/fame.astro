@@ -1,7 +1,7 @@
 ---
 import { Show, SignInButton } from '@clerk/astro/components';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import LogoMark from '@/components/LogoMark.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/guides.css';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -46,26 +46,23 @@ const checkoutOpen = viewerPlace && !['active', 'retired'].includes(viewerPlace.
 const numberLabel = (value: number) => String(value).padStart(3, '0');
 ---
 
-<BaseLayout title="Hall of Fame" description="The Super ii Hall of Fame: exactly 200 equal, permanent places for the people who supported Super ii at the beginning." className="fame-page">
-  <main class="fame-shell">
-    <header class="fame-hero shell">
-      <LogoMark size="small" priority />
-      <p class="eyebrow">Super ii</p>
-      <h1>Hall of Fame</h1>
-      <p class="fame-hero__founding">The Founding 200</p>
-      <p>The first 200 people who chose to support Super ii at the beginning.</p>
-      <div class="fame-count"><strong>{dataAvailable ? activeCount : '—'}</strong><span>of 200 historical places claimed</span></div>
-    </header>
-
-    <section class="shell fame-board" aria-labelledby="founding-board-heading">
+<ExploreLayout active="fame" title="Hall of Fame" eyebrow="About Super ii · The Founding 200" description="Exactly 200 equal, permanent places for the people who supported Super ii at the beginning.">
+  <Fragment slot="actions"><a class="button explore-violet" href="#join-fame"><i class="ph ph-star" aria-hidden="true"></i>Explore a founding place</a></Fragment>
+  <div class="shell guide-fame-stats">
+    <p><strong>{dataAvailable ? activeCount : '—'} / 200</strong><span>historical places claimed</span></p>
+    <p><strong>$200 USDC</strong><span>Ethereum · one payment</span></p>
+    <p><strong>Equal places</strong><span>No premium positions or ranking</span></p>
+  </div>
+    <section class="shell fame-board" aria-labelledby="founding-board-heading" data-explore-filter>
       <div class="fame-board__heading">
         <div><p class="eyebrow">Exactly 200 · no #201</p><h2 id="founding-board-heading">The permanent ledger</h2></div>
         <p>Every person receives the same space. There are no premium positions and no ranking.</p>
       </div>
+      {dataAvailable && <label class="guide-search"><span>Find a name or place</span><input type="search" placeholder="Name or number, e.g. 042" data-explore-search /></label>}
       {dataAvailable ? (
-        <ol class="fame-grid">
+        <div class="guide-ledger" role="region" tabindex="0" aria-label="Founding 200 ledger"><ol class="fame-grid">
           {places.map((place) => (
-            <li class:list={['fame-place', `fame-place--${place.status}`]}>
+            <li class:list={['fame-place', `fame-place--${place.status}`]} data-explore-item data-search={`${numberLabel(place.slot_number)} ${place.display_name ?? ""} ${place.handle ?? ""}`}>
               {place.status === 'active' && place.handle ? (
                 <a href={`/people/${place.handle}`} title={`${place.display_name} · Founding Supporter #${numberLabel(place.slot_number)}`}>
                   {place.avatar_url ? <img src={place.avatar_url} alt="" loading="lazy" referrerpolicy="no-referrer" /> : <span class="fame-place__avatar">{(place.display_name ?? place.handle).slice(0, 1).toUpperCase()}</span>}
@@ -79,12 +76,14 @@ const numberLabel = (value: number) => String(value).padStart(3, '0');
               )}
             </li>
           ))}
-        </ol>
+        </ol></div>
       ) : <div class="empty-state"><h2>The Hall of Fame ledger is temporarily unavailable.</h2><p>No checkout can be created until the ledger is safely reachable.</p></div>}
+      {dataAvailable && <div class="empty-state" data-explore-empty hidden><p>No places match this search.</p><button type="button" class="button button--secondary" data-explore-reset>Clear search</button></div>}
     </section>
 
-    <section class="fame-join" id="join-fame">
-      <div class="shell fame-join__inner">
+    <div class="shell guide-intro"><details class="explore-panel fame-join" id="join-fame" open={Boolean(viewerPlace)}>
+      <summary><i class="ph ph-star" aria-hidden="true"></i>Become one of the Founding 200 · $200 once</summary>
+      <div class="fame-join__inner explore-panel__body">
         <div>
           <p class="eyebrow">One payment · one equal place</p>
           <h2>Become one of the Founding 200.</h2>
@@ -107,19 +106,17 @@ const numberLabel = (value: number) => String(value).padStart(3, '0');
           ) : <p>Account checkout is temporarily unavailable.</p>}
         </div>
       </div>
-    </section>
+    </details></div>
 
-    <section class="shell fame-rules">
-      <h2>What the place means</h2>
+    <section class="shell guide-intro"><details class="explore-panel fame-rules"><summary>What the place means</summary>
       <div>
         <p><JourneyLabel kind="rule" current={1} /><strong>Linked to one account</strong>Your number and Fame badge are non-transferable and cannot be resold.</p>
         <p><JourneyLabel kind="rule" current={2} /><strong>Always equal</strong>No larger picture, preferred placement, or upgrade can be purchased.</p>
         <p><JourneyLabel kind="rule" current={3} /><strong>Your living profile</strong>Your displayed name and photograph follow your public Super ii profile updates.</p>
         <p><JourneyLabel kind="rule" current={4} /><strong>Recognition, not power</strong>Fame adds no proposal votes, organic rank, moderation authority, or product access.</p>
       </div>
-    </section>
-  </main>
-</BaseLayout>
+    </details></section>
+</ExploreLayout>
 
 <script>
   const button = document.querySelector<HTMLButtonElement>('[data-fame-checkout]');

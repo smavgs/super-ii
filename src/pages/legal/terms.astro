@@ -1,20 +1,15 @@
 ---
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import GuideReader from '@/components/GuideReader.astro';
+import '@/styles/guides.css';
 
 export const prerender = false;
 const effectiveDate = 'September 27, 2026';
 ---
 
-<BaseLayout title="Terms of Service" description="Terms governing access to and use of Super ii accounts, organizations, public content, plans, and beta services." noindex>
-  <PageHero
-    eyebrow={`Legal · Effective ${effectiveDate}`}
-    title="Terms of Service"
-    description="These terms govern access to the Super ii public-beta Service. Please read them before creating an account."
-    compact
-  />
+<ExploreLayout active="legal/terms" title="Terms of Service" eyebrow={`Legal · Effective ${effectiveDate}`} description="These terms govern access to the Super ii public-beta Service. Please read them before creating an account." noindex>
 
-  <div class="shell content-shell">
+  <GuideReader>
     <article class="prose">
       <h2 id="acceptance">1. Agreement</h2>
       <p>These Terms of Service (“Terms”) are an agreement between you and Super ii concerning the websites, accounts, organizations, APIs, and related services available through <a href="https://superii.site">superii.site</a> (the “Service”). By accessing the Service or creating an account, you agree to these Terms and the <a href="/legal/privacy">Privacy Policy</a>. If you do not agree, do not use the Service.</p>
@@ -100,29 +95,5 @@ const effectiveDate = 'September 27, 2026';
       <h2 id="contact">17. Contact</h2>
       <p>Questions about these Terms may be submitted through the <a href="/contact">Super ii contact form</a>.</p>
     </article>
-
-    <aside class="prose-aside">
-      <h2>Terms sections</h2>
-      <nav>
-        <a href="#acceptance">Agreement</a>
-        <a href="#eligibility">Eligibility</a>
-        <a href="#accounts">Accounts</a>
-        <a href="#beta">Public beta</a>
-        <a href="#content">Your content</a>
-        <a href="#ai">AI responsibilities</a>
-        <a href="#acceptable-use">Acceptable use</a>
-        <a href="#plans">Plans and billing</a>
-        <a href="#participation-products">Participation products</a>
-        <a href="#third-party">Third parties</a>
-        <a href="#ip">Super ii materials</a>
-        <a href="#moderation">Moderation</a>
-        <a href="#termination">Termination</a>
-        <a href="#disclaimers">Disclaimers</a>
-        <a href="#liability">Liability</a>
-        <a href="#changes">Changes</a>
-        <a href="#general">General</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </aside>
-  </div>
-</BaseLayout>
+  </GuideReader>
+</ExploreLayout>

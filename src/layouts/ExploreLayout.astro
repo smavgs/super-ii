@@ -6,15 +6,17 @@ import '@/styles/pixel-controls.css';
 import '@/styles/explore.css';
 
 interface Props {
-  active: 'models' | 'datasets' | 'spaces' | 'transparent' | 'builders' | 'robot' | 'collections' | 'organizations' | 'use' | 'build' | 'tokenizer' | 'highlights' | 'enterprise';
+  active: 'models' | 'datasets' | 'spaces' | 'transparent' | 'builders' | 'robot' | 'collections' | 'organizations' | 'use' | 'build' | 'tokenizer' | 'highlights' | 'enterprise' | 'docs' | 'notebooks' | 'about' | 'fame' | 'join-team' | 'pricing' | 'security' | 'legal/privacy' | 'legal/terms';
   title: string;
   eyebrow: string;
   description: string;
   titleHelp?: InfoHelpKey;
   image?: string;
   imageAlt?: string;
+  noindex?: boolean;
+  hideHeading?: boolean;
 }
-const { active, title, eyebrow, description, titleHelp, image, imageAlt } = Astro.props;
+const { active, title, eyebrow, description, titleHelp, image, imageAlt, noindex, hideHeading = false } = Astro.props;
 const exploreDestinations = [
   { id: 'models', label: 'Models', icon: 'cube' },
   { id: 'datasets', label: 'Datasets', icon: 'database' },
@@ -33,12 +35,30 @@ const toolDestinations = [
   { id: 'enterprise', label: 'Enterprise', icon: 'buildings' },
 ];
 const isTool = toolDestinations.some(item => item.id === active);
-const destinations = isTool ? toolDestinations : exploreDestinations;
-const navigationLabel = isTool ? 'Tools & services' : 'Explore';
+const guideGroups = [
+  { label: 'Learn', pages: [
+    { id: 'docs', label: 'Documentation', icon: 'book-open' },
+    { id: 'notebooks', label: 'Notebooks', icon: 'notebook' },
+  ] },
+  { label: 'About Super ii', pages: [
+    { id: 'about', label: 'About Super ii', icon: 'planet' },
+    { id: 'fame', label: 'Hall of Fame', icon: 'star' },
+    { id: 'join-team', label: 'Join Team', icon: 'handshake' },
+  ] },
+  { label: 'Plans & trust', pages: [
+    { id: 'pricing', label: 'Pricing', icon: 'tag' },
+    { id: 'security', label: 'Security', icon: 'shield-check' },
+    { id: 'legal/privacy', label: 'Privacy Policy', icon: 'lock-key' },
+    { id: 'legal/terms', label: 'Terms of Service', icon: 'file-text' },
+  ] },
+];
+const guideGroup = guideGroups.find(group => group.pages.some(page => page.id === active));
+const destinations = guideGroup?.pages ?? (isTool ? toolDestinations : exploreDestinations);
+const navigationLabel = guideGroup?.label ?? (isTool ? 'Tools & services' : 'Explore');
 ---
-<BaseLayout title={title} description={description} image={image} imageAlt={imageAlt} preferLight>
-  <div class:list={["explore-skin", { "tools-skin": isTool }]} data-explore-page={active}>
-    <nav class="shell explore-nav" aria-label={isTool ? navigationLabel : "Explore Super ii"}>
+<BaseLayout title={title} description={description} image={image} imageAlt={imageAlt} noindex={noindex} preferLight>
+  <div class:list={["explore-skin", { "tools-skin": isTool, "guide-skin": Boolean(guideGroup) }]} data-explore-page={active}>
+    <nav class="shell explore-nav" aria-label={guideGroup || isTool ? navigationLabel : "Explore Super ii"}>
       <a class="explore-workspace" href="/account"><i class="ph ph-arrow-left" aria-hidden="true"></i>Workspace</a>
       <details class="explore-switcher" data-explore-switcher>
         <summary><i class="ph ph-squares-four" aria-hidden="true"></i><span>{navigationLabel}</span><span class="explore-current">{destinations.find(item => item.id === active)?.label}</span></summary>
@@ -47,11 +67,11 @@ const navigationLabel = isTool ? 'Tools & services' : 'Explore';
         </div>
       </details>
     </nav>
-    <header class="shell explore-heading">
+    {!hideHeading && <header class="shell explore-heading">
       <div class="explore-heading__identity"><span class="explore-mascot" aria-hidden="true">👾</span><div><p>{eyebrow}</p><div class="heading-with-help"><h1>{title}</h1>{titleHelp && <InfoTip term={titleHelp} />}</div></div></div>
       <p class="explore-description">{description}</p>
       {Astro.slots.has('actions') && <div class="button-row explore-actions"><slot name="actions" /></div>}
-    </header>
+    </header>}
     <slot />
   </div>
 </BaseLayout>

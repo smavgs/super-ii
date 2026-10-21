@@ -1,5 +1,6 @@
 ---
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/guides.css';
 import NotebookDocument from '@/components/NotebookDocument.astro';
 import { getOfficialNotebook } from '@/lib/notebooks';
 
@@ -9,11 +10,10 @@ const tutorial = getOfficialNotebook(Astro.params.slug);
 if (!tutorial) Astro.response.status = 404;
 ---
 
-<BaseLayout
+<ExploreLayout active="notebooks" eyebrow="Learn · Official notebooks" hideHeading
   title={tutorial?.meta.title ?? 'Notebook unavailable'}
   description={tutorial?.meta.summary ?? 'This official Super ii notebook is unavailable.'}
   noindex={!tutorial}
-  className="notebook-page"
 >
   {tutorial ? (
     <div class="shell notebook-page__shell">
@@ -31,4 +31,4 @@ if (!tutorial) Astro.response.status = 404;
   ) : (
     <section class="section shell"><h1>Notebook unavailable</h1><p>This tutorial could not be found.</p></section>
   )}
-</BaseLayout>
+</ExploreLayout>

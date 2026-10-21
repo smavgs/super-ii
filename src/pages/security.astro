@@ -1,18 +1,13 @@
 ---
 import BrandMark from '@/components/BrandMark.astro';
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import GuideReader from '@/components/GuideReader.astro';
+import '@/styles/guides.css';
 
 export const prerender = false;
 ---
 
-<BaseLayout title="Security" description="The current Super ii security architecture, operational boundaries, reporting process, and planned controls.">
-  <PageHero
-    eyebrow="Security"
-    title="How Super ii protects your account, files and published work."
-    description="See the security controls in use today, their current limits and how to report a problem."
-    compact
-  />
+<ExploreLayout active="security" title="Security" eyebrow="Plans & trust" description="See the security controls in use today, their current limits and how to report a problem.">
 
   <section class="shell security-provider-map" aria-label="Super ii service boundaries">
     <p class="eyebrow">Named service boundaries</p>
@@ -26,7 +21,7 @@ export const prerender = false;
     <p>Each provider has one visible job. Super ii keeps authentication, data, linked sources, storage, and payment authority separate.</p>
   </section>
 
-  <div class="shell content-shell">
+  <GuideReader>
     <article class="prose">
       <h2 id="launch-controls">Launch controls</h2>
       <ul>
@@ -90,19 +85,5 @@ export const prerender = false;
       <h2 id="scope">Safe-harbor boundary</h2>
       <p>Do not access, alter, download, or retain other people’s data; disrupt availability; use social engineering; test third-party infrastructure; or continue after being asked to stop. A formal disclosure policy will be published before a public bounty or testing program begins.</p>
     </article>
-
-    <aside class="prose-aside">
-      <h2>On this page</h2>
-      <nav>
-        <a href="#launch-controls">Launch controls</a>
-        <a href="#data-boundaries">Data boundaries</a>
-        <a href="#social-controls">Social web controls</a>
-        <a href="#participation-controls">Participation integrity</a>
-        <a href="#not-yet">Current security limits</a>
-        <a href="#roadmap">Controls still being expanded</a>
-        <a href="#report">Report a vulnerability</a>
-        <a href="#scope">Testing boundary</a>
-      </nav>
-    </aside>
-  </div>
-</BaseLayout>
+  </GuideReader>
+</ExploreLayout>

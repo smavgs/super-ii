@@ -130,8 +130,11 @@ for (const endpoint of [
 
 for (const route of ['/proposals', '/fame', '/highlights']) {
   requireText('header', "href: '" + route + "'");
-  requireText('footer', 'href="' + route + '"');
   requireText('routes', '"' + route + '"');
+}
+// Participation remains in primary navigation; the shorter footer exposes group entry points.
+for (const route of ['/social', '/about', '/use', '/legal/privacy', '/legal/terms']) {
+  requireText('footer', 'href="' + route + '"');
 }
 for (const copy of ['Public roadmap 🗳️', 'The Founding 200 ✦', 'Recognition never buys power.']) {
   requireText('homepage', copy);

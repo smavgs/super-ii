@@ -1,7 +1,8 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import GuideReader from '@/components/GuideReader.astro';
+import '@/styles/guides.css';
 import { memberAction } from '@/lib/member-actions';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 
@@ -15,13 +16,10 @@ const accountAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
 if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
-<BaseLayout title="Documentation" description="Learn how Super ii accounts, repositories, publishing, MCP, hardware discovery, trusted automation, organizations, reviews, and plans work.">
-  <PageHero
-    eyebrow="Documentation"
-    title="Build with evidence."
-    description="Learn how Super ii works, what is available today, and how to use its features safely."
-    compact
-  >
+<ExploreLayout active="docs" title="Documentation" eyebrow="Learn · Build with evidence" description="Learn how Super ii works, what is available today, and how to use its features safely.">
+  <div class="shell guide-intro">
+    <details class="explore-panel" id="quick-start">
+      <summary><i class="ph ph-compass" aria-hidden="true"></i>New here? Start with these five steps</summary>
     <div class="docs-overview">
       <p class="docs-status-language">
         <span>Designed <InfoTip term="designed" /></span>
@@ -42,9 +40,10 @@ if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
         </ol>
       </div>
     </div>
-  </PageHero>
+    </details>
+  </div>
 
-  <div class="shell content-shell">
+  <GuideReader>
     <article class="prose">
       <h2 id="start">Start here</h2>
       <p>Super ii is in public beta. You can create an account, explore public work, search, discuss, follow creators, build collections and create repositories. Features that depend on additional processing are available when the required Super ii services are online.</p>
@@ -239,40 +238,5 @@ superii plan owner/model`}</code></pre>
       <h2 id="support">Get help</h2>
       <p>Use the <a href="/contact">contact form</a> for access, plan, enterprise, security, privacy, or launch questions. Please do not include secrets, credentials, private model files, or sensitive personal data.</p>
     </article>
-
-    <aside class="prose-aside">
-      <h2>On this page</h2>
-      <nav>
-        <a href="#start">Start here</a>
-        <a href="#account">Create an account</a>
-        <a href="#agent-starter">Agent Starter</a>
-        <a href="#ai-worker">AI Worker</a>
-        <a href="#frontier-ai">Frontier AI</a>
-        <a href="#skills">Skills</a>
-        <a href="#bring-my-work">Bring my work</a>
-        {!russian && <a href="#transparent">Super ii Transparent</a>}
-        <a href="#catalog">Explore the hub</a>
-        <a href="#use-superii">Use Super ii</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#use-model">Use Model</a>
-        <a href="#notebooks">Notebooks</a>
-        <a href="#social-web">Social web</a>
-        <a href="#proposals">Proposals</a>
-        <a href="#fame">Hall of Fame</a>
-        <a href="#highlights">Highlights</a>
-        <a href="#agent-native">Agent-native access</a>
-        {!russian && <a href="#robot">Super ii Robot</a>}
-        <a href="#agent-commerce">Agent commerce</a>
-        <a href="#hardware">Hardware compatibility</a>
-        <a href="#build-ship">Build &amp; Ship</a>
-        <a href="#trusted-publishing">Trusted publishing</a>
-        <a href="#capability-status">Current availability</a>
-        <a href="#publish">Publishing roadmap</a>
-        <a href="#organizations">Organizations</a>
-        <a href="#plans">Plans and usage</a>
-        <a href="#api">API status</a>
-        <a href="#support">Get help</a>
-      </nav>
-    </aside>
-  </div>
-</BaseLayout>
+  </GuideReader>
+</ExploreLayout>

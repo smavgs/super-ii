@@ -125,7 +125,8 @@ if (new Set(additionsJson.skills?.map((skill) => skill.slug)).size !== 121) erro
 if (additionsJson.skills?.some((skill) => 'source' in skill || 'collection' in skill)) errors.push('packaged Skills must not expose a separate source or collection label');
 
 requireText('header', "{ href: '/skills', label: 'Skills' }");
-requireText('footer', '<a href="/skills">Skills</a>');
+requireText('footer', '<a href="/docs">Documentation</a>');
+requireText('docs', 'id="skills"');
 for (const text of [
   '<section class="skills-home-hook">',
   'Skills · Included from Free',

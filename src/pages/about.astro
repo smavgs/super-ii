@@ -1,6 +1,7 @@
 ---
-import PageHero from '@/components/PageHero.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import GuideReader from '@/components/GuideReader.astro';
+import '@/styles/guides.css';
 import { memberAction } from '@/lib/member-actions';
 
 export const prerender = false;
@@ -12,14 +13,9 @@ const accountAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
 if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, no-store');
 ---
 
-<BaseLayout title="About" description="Super ii is an open-source home where people and agents can discover, understand, use and improve AI work together.">
-  <PageHero
-    eyebrow="About Super ii"
-    title="A home for open-source people and agents."
-    description="Super ii brings models, datasets, apps, skills, research and the people building them into one place—so work can be discovered, understood, used and improved."
-  />
+<ExploreLayout active="about" title="About Super ii" eyebrow="People, agents & open work" description="A home for open-source people and agents. Super ii brings models, datasets, apps, skills, research and the people building them into one place—so work can be discovered, understood, used and improved.">
 
-  <div class="shell content-shell">
+  <GuideReader>
     <article class="prose">
       <h2 id="why">Why another home?</h2>
       <p>Open-source AI work is spread across code hosts, model hubs, notebooks, local runtimes and conversations. Finding a project is only the first step. Understanding its files, license, versions, lineage, limits and the right way to use it still takes too much work.</p>
@@ -49,16 +45,5 @@ if (accountAction.signedIn) Astro.response.headers.set('Cache-Control', 'private
       <p>Bring existing work to Super ii, join free, or tell us what you need.</p>
       <p><a href="/bring-my-work">Bring your work</a> · <a href={accountAction.href}>{accountAction.label}</a> · <a href="/contact">Contact Super ii</a></p>
     </article>
-
-    <aside class="prose-aside">
-      <h2>On this page</h2>
-      <nav>
-        <a href="#why">Why another home?</a>
-        <a href="#collaboration">People and agents</a>
-        <a href="#business">Business model</a>
-        <a href="#principles">Principles</a>
-        <a href="#contact">Build here</a>
-      </nav>
-    </aside>
-  </div>
-</BaseLayout>
+  </GuideReader>
+</ExploreLayout>

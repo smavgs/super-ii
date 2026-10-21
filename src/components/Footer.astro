@@ -41,52 +41,28 @@ const languageHref = (targetLocale: SiteLocale) => {
       <a href="/datasets">Datasets</a>
       <a href="/spaces">Apps</a>
       <a href="/robot">Make Robot</a>
-      <a href="/transparent">Transparent 🔎</a>
-      <a href="/skills">Skills</a>
-      <a href="/builders">Builders</a>
-      <a href="/collections">Collections</a>
-      <a href="/organizations">Organizations</a>
       <a href="/social">Social web 🎡</a>
-      <a href="/proposals">Proposals</a>
-      <a href="/fame">Hall of Fame</a>
-      <a href="/highlights">Highlights</a>
     </div>
-
     <div class="footer-column">
-      <h2>Resources</h2>
+      <h2>Learn &amp; build</h2>
       <a href="/use">Use Super ii</a>
-      <a href="/build">Build &amp; Ship</a>
       <a href="/docs">Documentation</a>
       <a href="/notebooks">Notebooks</a>
-      <a href="/tokenizer">Tokenizer</a>
-      <a href="/chats">Chats</a>
-      <a href="/papers">Papers</a>
-      <a href="/posts">Posts</a>
-      <a href="/feed">Community feed</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/enterprise">Enterprise</a>
-      <a href="/status">Status</a>
-      <a href="/system-state">System state</a>
-      <a href="/docs#agent-native">MCP</a>
-      <a href="/mcp/social">Social MCP</a>
-      <a href="/mcp/robot">Robot MCP</a>
-      <a href="/mcp/transparent">Transparent MCP</a>
+      <a href="/build">Build &amp; Ship</a>
     </div>
-
     <div class="footer-column">
-      <h2>Company</h2>
+      <h2>Super ii</h2>
       <a href="/about">About</a>
+      <a href="/pricing">Pricing</a>
       <a href="/contact">Contact</a>
       <a href="/security">Security</a>
-      <a href="/legal/privacy">Privacy</a>
-      <a href="/legal/terms">Terms</a>
-      <a class="brand-inline" href="https://x.com/superiisite" rel="me external" data-no-translate><BrandMark brand="x" size="xs" label="X" />X · @superiisite</a>
       <a class="footer-join-team" href="/join-team">Join Team <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
     </div>
   </div>
 
   <div class="shell footer-bottom">
     <span>© {year} Super ii</span>
+    <nav class="footer-policy-links" aria-label="Policies and service status"><a href="/status">Status</a><a href="/legal/privacy">Privacy</a><a href="/legal/terms">Terms</a><a class="brand-inline" href="https://x.com/superiisite" rel="me external" aria-label="Super ii on X" data-no-translate><BrandMark brand="x" size="xs" label="X" />@superiisite</a></nav>
     {hasTranslation && <span class="footer-language-group" data-no-translate>
       {languageOrder[locale].map((targetLocale) => {
         const language = languageNames[targetLocale];
@@ -105,3 +81,18 @@ const languageHref = (targetLocale: SiteLocale) => {
     </span>}
   </div>
 </footer>
+
+<style>
+  .footer-grid { gap: 2rem; padding-block: 2.5rem; }
+  .footer-column { gap: .25rem; }
+  .footer-column > a { display: flex; align-items: center; min-height: 2.75rem; width: fit-content; }
+  .footer-column .footer-join-team { margin-top: .5rem; }
+  .footer-bottom { flex-wrap: wrap; gap: .6rem 1.5rem; align-items: center; padding-bottom: 5rem; }
+  .footer-policy-links { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem 1rem; }
+  .footer-policy-links a { display: inline-flex; gap: .35rem; align-items: center; min-height: 2.75rem; color: inherit; }
+  @media (max-width: 650px) {
+    .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+    .footer-intro { grid-column: 1 / -1; }
+    .footer-bottom { align-items: flex-start; flex-direction: column; }
+  }
+</style>

@@ -108,8 +108,8 @@ assert(
   'the agent logo entrance must respect reduced-motion preferences',
 );
 assert(
-  footer.indexOf('X · @superiisite') < footer.indexOf('class="footer-join-team"') && footer.includes('href="/join-team"'),
-  'the fluorescent Join Team action must follow the X account in the Company footer',
+  footer.includes('class="footer-join-team" href="/join-team"') && footer.includes('href="https://x.com/superiisite"'),
+  'the concise footer must retain the pink Join Team action and official X destination',
 );
 assert(joinTeam.includes('Build Super ii with us.') && joinTeam.includes('Join the Founding Circle'), 'the Join Team page must preserve the supplied invitation');
 assert(joinTeam.includes('/contact?interest=founding-circle') && joinTeam.includes('/contact?interest=founding-team'), 'both Join Team paths must lead to working contact choices');

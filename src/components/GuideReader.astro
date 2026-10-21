@@ -1,0 +1,21 @@
+---
+interface Props { label?: string; }
+const { label = 'Choose a section' } = Astro.props;
+---
+<div class="shell guide-reader" data-guide-reader>
+  <div class="guide-reader__controls" data-reader-controls hidden>
+    <label><span>{label}</span><select data-reader-select></select></label>
+    <div class="guide-reader__steps">
+      <button class="button button--secondary" type="button" data-reader-previous><i class="ph ph-arrow-left" aria-hidden="true"></i>Previous</button>
+      <span data-reader-position aria-live="polite"></span>
+      <button class="button explore-cyan" type="button" data-reader-next>Next<i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+    </div>
+    <button class="button button--secondary" type="button" data-reader-all aria-pressed="false">
+      <span data-reader-expand-label>Read all sections</span><span data-reader-single-label hidden>One section at a time</span>
+    </button>
+  </div>
+  <slot />
+</div>
+<script>
+  import '@/scripts/guide-reader';
+</script>
