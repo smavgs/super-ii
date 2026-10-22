@@ -1,0 +1,48 @@
+/* One directory for discovery; account actions stay within easy reach. */
+.site-header .header-inner { gap: 1rem; }
+.site-header .auth-desktop { display: flex; }
+.site-header .menu-toggle { display: inline-grid; }
+.site-header .icon-button { min-width: 2.75rem; height: 2.75rem; border: 1px solid var(--ws-border); border-radius: 3px; background: var(--ws-panel); color: var(--ink); }
+.site-header .icon-button:hover, .site-header .menu-toggle[aria-expanded='true'] { background: var(--ws-cyan); color: #071a2f; border-color: #20344b; }
+.site-header .header-profile { display: flex; margin-left: .3rem; }
+.site-directory { background: var(--ws-panel); overscroll-behavior: contain; }
+.site-directory[hidden] { display: none; }
+.menu-open .super-assistant { visibility: hidden; }
+.site-directory > nav { max-width: 50rem; gap: .75rem; padding-block: 1.25rem 2rem; }
+.directory-group { min-width: 0; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); }
+.directory-group > summary { display: flex; align-items: center; gap: .75rem; min-height: 3.5rem; padding: .75rem 1rem; list-style: none; cursor: pointer; font-weight: 700; font-size: 1.1rem; }
+.directory-group > summary::-webkit-details-marker { display: none; }
+.directory-group > summary::after { content: '+'; margin-left: auto; font-family: var(--font-mono); }
+.directory-group[open] > summary::after { content: '−'; }
+.directory-group > summary > i { display: grid; place-items: center; width: 2rem; height: 2rem; background: var(--ws-violet); color: #071a2f; border: 1px solid #20344b; border-radius: 3px; }
+.directory-group:nth-child(2) > summary > i { background: var(--ws-cyan); }
+.directory-group:nth-child(3) > summary > i { background: var(--yellow); }
+.directory-group > summary:hover, .directory-group[open] > summary { background: var(--ws-soft); }
+.directory-group[open] > summary { border-bottom: 1px solid var(--ws-border); }
+.directory-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .5rem; padding: .65rem; }
+.directory-links a { display: flex; align-items: center; gap: .65rem; min-width: 0; min-height: 2.75rem; padding: .6rem .7rem; border: 1px solid transparent; border-radius: 3px; text-decoration: none; color: var(--ink); line-height: 1.25; overflow-wrap: anywhere; }
+.directory-links a > i { color: var(--ws-violet-ink); font-size: 1.25rem; flex: none; }
+.directory-links a:hover { background: var(--ws-soft); border-color: var(--ws-border); }
+.directory-links a[aria-current='page'] { background: var(--yellow); color: #071a2f; border-color: #20344b; }
+.site-directory .mobile-auth { display: none; padding-top: .25rem; }
+.site-footer.site-chrome .footer-grid { grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); }
+.site-footer.site-chrome .footer-column { min-width: 0; }
+.site-footer.site-chrome .footer-column > a { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.site-footer.site-chrome .footer-join-team { border-radius: 3px; border: 1px solid #20344b; box-shadow: 3px 3px 0 var(--ws-shadow); }
+.site-footer.site-chrome .footer-beta { border-radius: 3px; }
+.site-footer.site-chrome .footer-column h2 { font-family: var(--font-mono); font-size: .8rem; }
+.site-footer.site-chrome .footer-bottom { border-top: 1px solid var(--ws-border); }
+@media (max-width: 640px) {
+  .site-header .header-inner { gap: .5rem; }
+  .site-header .header-actions { gap: .35rem; min-width: 0; flex-shrink: 1; }
+  .site-header .header-auth { gap: 0; min-width: 0; flex-shrink: 1; }
+  .site-header .header-sign-in, .site-header .header-profile { display: none; }
+  .site-header .button { min-width: 0; padding: .5rem .6rem; font-size: .9rem; white-space: normal; overflow-wrap: anywhere; }
+  .site-directory .mobile-auth { display: flex; }
+  .site-footer.site-chrome .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .site-footer.site-chrome .footer-intro { grid-column: 1 / -1; }
+}
+@media (max-width: 360px) {
+  .site-header .brand-lockup > span:last-child { display: none; }
+  .directory-links { grid-template-columns: minmax(0, 1fr); }
+}

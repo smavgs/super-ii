@@ -19,12 +19,12 @@ function assert(condition, message) {
 const bodyRule = css.match(/body\s*\{([^}]*)\}/)?.[1] ?? '';
 assert(!/min-width\s*:/.test(bodyRule), 'body must not force a minimum viewport width');
 assert(
-  !header.includes("href: '/robot'") && !header.includes("href: '/docs'"),
-  'Robot and Docs must stay out of the primary desktop and mobile navigation',
+  header.includes("href: '/robot'") && header.includes("href: '/docs'") && header.includes('name="site-directory"'),
+  'Robots and Docs must remain discoverable in the grouped site directory',
 );
 assert(
-  footer.includes('href="/robot"') && footer.includes('href="/docs"'),
-  'Robot and Documentation must remain discoverable in the footer',
+  footer.includes('href="/docs"') && footer.includes('href="/security"'),
+  'Documentation and Security must remain directly accessible in the help footer',
 );
 
 for (const requiredCss of [
@@ -143,7 +143,7 @@ for (const requiredMarkup of [
   assert(assistant.includes(requiredMarkup), `SuperAssistant.astro is missing ${requiredMarkup}`);
 }
 
-assert(siteScript.includes("matchMedia('(min-width: 1321px)')"), 'menu JavaScript breakpoint must match the CSS breakpoint');
+assert(siteScript.includes('menuInertState') && siteScript.includes('closeMenu(true)'), 'the directory must restore background access and keyboard focus when closed');
 assert(siteScript.includes('window.innerHeight - panelHeight - viewportPadding'), 'info popover positioning must clamp to the viewport');
 
 console.log('Responsive layout check passed: fluid pages, a horizontally safe agent handoff, a high-contrast Join Team path, a contained account workspace, reflowing Agent Starter and AI Worker controls, stable header behavior, bounded popovers, and a persistent bottom-left assistant.');

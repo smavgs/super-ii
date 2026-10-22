@@ -22,7 +22,6 @@ const [
   collectionList,
   collectionPage,
   header,
-  footer,
   siteSource,
   sitemap,
   styles,
@@ -45,7 +44,6 @@ const [
   read('src/pages/collections/index.astro'),
   read('src/pages/collections/[owner]/[slug].astro'),
   read('src/components/Header.astro'),
-  read('src/components/Footer.astro'),
   read('src/content/site.json'),
   read('public/sitemap.xml'),
   read('src/styles/global.css'),
@@ -97,7 +95,7 @@ for (const source of [catalog, repositoryPage, useModel, postList, postPage, pap
 for (const source of [header, siteSource, sitemap, machineGuide, systemState]) {
   requireText(source, '/builders', 'public navigation and documentation');
 }
-requireText(footer, 'href="/models"', 'footer public discovery entry');
+requireText(header, "href: '/models'", 'site directory public discovery entry');
 requireText(await read('src/layouts/ExploreLayout.astro'), "id: 'builders'", 'Explore group navigation');
 
 for (const marker of ['.creator-link', '.builders-hero', '.builder-entry', '.builders-pagination', '@media (max-width: 430px)', '@media (prefers-reduced-motion: no-preference)']) {

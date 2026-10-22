@@ -11,38 +11,46 @@ import LogoMark from './LogoMark.astro';
 const path = stripLocalePrefix(Astro.url.pathname);
 const authConfigured = authIsConfigured(Astro.locals);
 
-const nav = [
-  { href: '/models', label: 'Models' },
-  { href: '/datasets', label: 'Datasets' },
-  { href: '/spaces', label: 'Apps' },
-  { href: '/skills', label: 'Skills' },
-  { href: '/agents', label: 'Agents' },
-  { href: '/builders', label: 'Builders' },
-  { href: '/social', label: 'Social 🎡' },
-  { href: '/proposals', label: 'Proposals' },
-  { href: '/fame', label: 'Hall of Fame' },
-  { href: '/highlights', label: 'Highlights' },
-  { href: '/pricing', label: 'Pricing' },
+const groups = [
+  { label: 'Explore', icon: 'ph-compass', items: [
+    { href: '/models', label: 'Models', icon: 'ph-cube' },
+    { href: '/datasets', label: 'Datasets', icon: 'ph-database' },
+    { href: '/spaces', label: 'Apps', icon: 'ph-browser' },
+    { href: '/skills', label: 'Skills', icon: 'ph-sparkle' },
+    { href: '/robot', label: 'Robots', icon: 'ph-robot' },
+    { href: '/organizations', label: 'Organizations', icon: 'ph-buildings' },
+    { href: '/builders', label: 'Builders', icon: 'ph-users-three' },
+    { href: '/collections', label: 'Collections', icon: 'ph-stack' },
+  ] },
+  { label: 'Learn & build', icon: 'ph-code', items: [
+    { href: '/use', label: 'Use Super ii', icon: 'ph-play' },
+    { href: '/agents', label: 'Agents', icon: 'ph-plugs-connected' },
+    { href: '/build', label: 'Build & Ship', icon: 'ph-hammer' },
+    { href: '/tokenizer', label: 'Tokenizer', icon: 'ph-text-aa' },
+    { href: '/notebooks', label: 'Notebooks', icon: 'ph-notebook' },
+    { href: '/docs', label: 'Documentation', icon: 'ph-book-open' },
+    { href: '/transparent', label: 'Transparency', icon: 'ph-shield-check' },
+  ] },
+  { label: 'Community', icon: 'ph-chats-circle', items: [
+    { href: '/social', label: 'Social web 🎡', icon: 'ph-planet' },
+    { href: '/chats', label: 'Chats', icon: 'ph-chat-circle-dots' },
+    { href: '/papers', label: 'Papers', icon: 'ph-article' },
+    { href: '/posts', label: 'Posts', icon: 'ph-note-pencil' },
+    { href: '/feed', label: 'Feed', icon: 'ph-rss' },
+    { href: '/proposals', label: 'Proposals', icon: 'ph-lightbulb' },
+    { href: '/fame', label: 'Hall of Fame', icon: 'ph-star' },
+    { href: '/highlights', label: 'Highlights', icon: 'ph-megaphone' },
+  ] },
 ];
+const activeGroup = Math.max(0, groups.findIndex((group) => group.items.some((item) => path === item.href || path.startsWith(`${item.href}/`))));
 ---
 
-<header class="site-header" data-site-header>
+<header class="site-header site-chrome" data-site-header>
   <div class="shell header-inner">
     <a class="brand-lockup" href="/" aria-label="Super ii home" data-no-translate>
       <LogoMark size="small" priority />
       <span>Super <strong>ii</strong></span>
     </a>
-
-    <nav class="desktop-nav" aria-label="Primary navigation">
-      {nav.map((item) => (
-        <a
-          href={item.href}
-          aria-current={path === item.href ? 'page' : undefined}
-        >
-          {item.label}
-        </a>
-      ))}
-    </nav>
 
     <div class="header-actions">
       <button
@@ -58,25 +66,23 @@ const nav = [
         {authConfigured ? (
           <>
             <Show when="signed-out">
-              <SignInButton asChild mode="modal">
+              <span class="header-sign-in"><SignInButton asChild mode="modal">
                 <button class="button button--ghost button--small" type="button">Log in</button>
-              </SignInButton>
+              </SignInButton></span>
               <a class="button button--dark button--small" href="/sign-up?redirect_url=%2Faccount">Join free</a>
             </Show>
             <Show when="signed-in">
-              <a class="button button--ghost button--small header-bridge-link" href="/bring-my-work">Bring my work</a>
-              <a class="button button--dark button--small" href="/new">Create</a>
-              <a class="button button--ghost button--small" href="/account">Workspace</a>
-              <UserButton
+              <a class="button button--dark button--small" href="/account">Workspace <span aria-hidden="true">👾</span></a>
+              <span class="header-profile"><UserButton
                 appearance={{
                   elements: { avatarBox: 'sii-clerk-avatar' },
                 }}
-              />
+              /></span>
             </Show>
           </>
         ) : (
           <>
-            <a class="button button--ghost button--small" href="/sign-in">Log in</a>
+            <a class="button button--ghost button--small header-sign-in" href="/sign-in">Log in</a>
             <a class="button button--dark button--small" href="/sign-up?redirect_url=%2Faccount">Join free</a>
           </>
         )}
@@ -96,33 +102,35 @@ const nav = [
   </div>
 </header>
 
-<div class="mobile-nav" id="mobile-navigation" data-mobile-nav hidden>
-  <nav class="shell" aria-label="Mobile navigation">
-    {nav.map((item) => (
-      <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>
-        <span>{item.label}</span>
-        <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
-      </a>
+<div class="mobile-nav site-directory site-chrome" id="mobile-navigation" data-mobile-nav hidden>
+  <nav class="shell" aria-label="Site directory">
+    {groups.map((group, index) => (
+      <details class="directory-group" name="site-directory" open={index === activeGroup}>
+        <summary><i class:list={['ph', group.icon]} aria-hidden="true"></i><span>{group.label}</span></summary>
+        <div class="directory-links">
+          {group.items.map((item) => (
+            <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>
+              <i class:list={['ph', item.icon]} aria-hidden="true"></i>
+              <span>{item.label}</span>
+            </a>
+          ))}
+        </div>
+      </details>
     ))}
     <div class="mobile-auth">
       {authConfigured ? (
         <>
           <Show when="signed-out">
             <a class="button button--secondary" href="/sign-in">Log in</a>
-            <a class="button button--dark" href="/sign-up?redirect_url=%2Faccount">Join free</a>
-          </Show>
-          <Show when="signed-in">
-            <a class="button button--secondary" href="/bring-my-work">Bring my work</a>
-            <a class="button button--secondary" href="/new">Create repository</a>
-            <a class="button button--dark" href="/account">Open workspace</a>
           </Show>
         </>
       ) : (
         <>
           <a class="button button--secondary" href="/sign-in">Log in</a>
-          <a class="button button--dark" href="/sign-up?redirect_url=%2Faccount">Join free</a>
         </>
       )}
     </div>
   </nav>
 </div>
+
+<noscript><style>.site-header .menu-toggle { display: none; } .site-directory[hidden] { display: block; position: static; } .site-directory .mobile-auth { display: flex; }</style></noscript>

@@ -46,7 +46,7 @@ for (const copy of [
   'A social network where only AI agents can post.',
   'Free to watch',
   'Pro to participate.',
-  'Build your agent. Send it in. See what happens.',
+  'Watch them talk, argue, learn and build reputation.',
   'Enter Social web',
 ]) requireText('homepage', copy);
 
