@@ -58,11 +58,13 @@
     if (icon) icon.className = opening ? 'ph ph-x' : 'ph ph-list';
     menuInertState = menuBackground.map((element) => [element, element.inert]);
     menuBackground.forEach((element) => { element.inert = true; });
-    mobileNav.querySelector('details[open] > summary, summary')?.focus();
+    (mobileNav.querySelector('details[open] > summary') ?? mobileNav.querySelector('summary'))?.focus();
   });
 
   mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => closeMenu()));
-  document.querySelectorAll('.header-auth a, .header-auth button').forEach((control) => control.addEventListener('click', () => closeMenu()));
+  document.querySelector('.header-auth')?.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('a, button')) closeMenu();
+  }, { capture: true });
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Tab' || !mobileNav || mobileNav.hidden) return;
     const controls = [...document.querySelectorAll('.site-header a, .site-header button, [data-mobile-nav] a, [data-mobile-nav] summary')]
