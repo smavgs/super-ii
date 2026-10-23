@@ -40,7 +40,7 @@ sha1 = "=0.11.0"
 sha2 = "=0.11.0"
 subtle = "=2.6.1"
 thiserror = "=2.0.21"
-tokio = { version = "=1.53.1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio = { version = "=1.53.3", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
 tokio-util = { version = "=0.7.19", features = ["io"] }
 toml_edit = "=0.25.15"
 tracing = "=0.1.44"
