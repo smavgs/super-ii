@@ -463,16 +463,27 @@ const notebookBrand = (id: string) => id === 'google-colab' || id === 'colab' ? 
     root.querySelector('[data-use-model-close]')?.addEventListener('click', () => {
       root.hidden = true;
       document.querySelectorAll<HTMLButtonElement>('[data-use-model-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
+      lastUseModelOpener?.focus();
     });
   });
 
+  let lastUseModelOpener: HTMLButtonElement | null = null;
   document.querySelectorAll<HTMLButtonElement>('[data-use-model-open]').forEach((button) => {
     button.addEventListener('click', () => {
       const root = document.querySelector<HTMLElement>('[data-use-model]');
       if (!root) return;
       root.hidden = !root.hidden;
-      button.setAttribute('aria-expanded', String(!root.hidden));
-      if (!root.hidden) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      lastUseModelOpener = button;
+      document.querySelectorAll('[data-use-model-open]').forEach(opener => opener.setAttribute('aria-expanded', String(!root.hidden)));
+      if (!root.hidden) {
+        const detail = root.closest('.detail-skin');
+        const build = detail?.querySelector<HTMLElement>('[data-build-ship]');
+        if (build) build.hidden = true;
+        detail?.querySelectorAll('[data-build-ship-open]').forEach(opener => opener.setAttribute('aria-expanded', 'false'));
+        const heading = root.querySelector<HTMLElement>('h2');
+        if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+        root.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+      }
     });
   });
 </script>

@@ -6,6 +6,8 @@ import UseModel from '@/components/UseModel.astro';
 import BuildShip from '@/components/BuildShip.astro';
 import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
 import '@/styles/repository-card.css';
+import '@/styles/public-detail.css';
+import DetailNavigation from '@/components/DetailNavigation.astro';
 import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
@@ -79,6 +81,11 @@ const minimumVramLabel = repository?.compatibility?.mlx_compatible === true
   : `${(Number(repository?.compatibility?.minimum_vram_bytes ?? 0) / 1024 ** 3).toFixed(2)} GiB`;
 const notebooks = repository ? repositoryNotebooks(repository) : [];
 const notebookPaths = new Set(notebooks.map((notebook) => notebook.path));
+const detailSkin = kind !== 'space';
+const fileSize = (bytes: string) => {
+  const size = Number(bytes);
+  return size >= 1024 ** 3 ? `${(size / 1024 ** 3).toFixed(2)} GiB` : size >= 1024 ** 2 ? `${(size / 1024 ** 2).toFixed(1)} MiB` : size >= 1024 ? `${(size / 1024).toFixed(1)} KiB` : `${size} B`;
+};
 const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highlight') ?? '')
   ? Astro.url.searchParams.get('highlight')
   : null;
@@ -90,11 +97,12 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
   titleNoTranslate={Boolean(repository)}
   descriptionNoTranslate={Boolean(repository)}
   noindex={!repository}
+  className={detailSkin ? 'detail-skin' : ''}
 >
   {repository ? (
-    <main class="repository-page shell" data-highlight-campaign={highlightedBy}>
+    <main class="repository-page shell" data-highlight-campaign={highlightedBy} data-detail-sections={detailSkin || undefined} data-default-panel="overview">
       <header class="repository-header">
-        <p class="eyebrow">{repository.kind} repository</p>
+        <p class="eyebrow">{detailSkin && <span aria-hidden="true">👾 </span>}{repository.kind} repository</p>
         <div class="repository-path repository-path--creator">
           {repository.creator_handle ? (
             <CreatorLink compact handle={repository.creator_handle} displayName={repository.creator_display_name} avatarUrl={repository.creator_avatar_url} />
@@ -104,17 +112,13 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
           <span aria-hidden="true">/</span><span data-no-translate>{repository.slug}</span>
         </div>
         <h1 data-no-translate>{repository.title}</h1>
-        <p data-no-translate>{repository.summary}</p>
+        {!detailSkin && <p data-no-translate>{repository.summary}</p>}
         <div class="repository-badges">
           {repository.license ? <span data-no-translate>{repository.license}</span> : <span>License pending</span>}
           {repository.task && <span data-no-translate>{repository.task}</span>}
           {repository.library && <span data-no-translate>{repository.library}</span>}
           {repository.modality && <span data-no-translate>{repository.modality}</span>}
-          <span>revision {repository.revision_sequence}</span>
-          <span>{repository.likes_count} likes</span>
-          <span>{repository.watchers_count} watching</span>
-          <span>{repository.downloads_count} downloads</span>
-          {repository.commit_sha && <span title={repository.commit_sha}>commit {repository.commit_sha.slice(0, 10)}</span>}
+          {!detailSkin && <><span>revision {repository.revision_sequence}</span><span>{repository.likes_count} likes</span><span>{repository.watchers_count} watching</span><span>{repository.downloads_count} downloads</span>{repository.commit_sha && <span title={repository.commit_sha}>commit {repository.commit_sha.slice(0, 10)}</span>}</>}
         </div>
         <div class="repository-actions" data-repository-actions data-repository-id={repository.id}>
           {kind === 'model' && (
@@ -127,12 +131,14 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             </>
           )}
           {kind === 'dataset' && <button class="button button--secondary button--small" type="button" data-build-ship-open aria-expanded="false" aria-controls="build-ship">Build &amp; Ship</button>}
+          {detailSkin && <a class="button button--secondary button--small detail-download" href="#files"><i class="ph ph-download-simple" aria-hidden="true"></i>Files & downloads</a>}
           <button class="button button--secondary button--small" type="button" data-copy-public-link>
             <i class="ph ph-link" aria-hidden="true"></i><span>Copy public link</span>
           </button>
           <button class="button button--secondary button--small" type="button" data-like-button data-active="false">
             <i class="ph ph-heart" aria-hidden="true"></i><span>Like</span>
           </button>
+          {detailSkin ? (<details class="repository-save"><summary>Watch & collect <i class="ph ph-caret-down" aria-hidden="true"></i></summary><div class="repository-save__controls">
           <label>
             <span class="sr-only">Watch notifications</span>
             <select data-watch-level>
@@ -148,33 +154,70 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
             <select data-collection-select disabled><option value="">Add to collection…</option></select>
           </label>
           <button class="button button--secondary button--small" type="button" data-collection-button disabled>Add</button>
+          <a href="/collections">Manage collections</a></div></details>) : (<>
+          <label>
+            <span class="sr-only">Watch notifications</span>
+            <select data-watch-level>
+              <option value="releases">Watch releases</option>
+              <option value="discussions">Watch discussions</option>
+              <option value="all">Watch all</option>
+              <option value="off">Stop watching</option>
+            </select>
+          </label>
+          <button class="button button--secondary button--small" type="button" data-watch-button>Save watch</button>
+          <label>
+            <span class="sr-only">Choose a collection</span>
+            <select data-collection-select disabled><option value="">Add to collection…</option></select>
+          </label>
+          <button class="button button--secondary button--small" type="button" data-collection-button disabled>Add</button>
+          </>)}
           <p data-community-status aria-live="polite"></p>
         </div>
-        <nav class="machine-resource-links" aria-label="Machine-readable repository resources">
+
+        {!detailSkin && (<nav class="machine-resource-links" aria-label="Machine-readable repository resources">
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/README.md`}>README.md</a>
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/agents.md`}>agents.md</a>
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/manifest.json`}>manifest.json</a>
-          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.json`}>use.json</a>}
-          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.md`}>use.md</a>}
           <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/mcp`}>MCP</a>
-        </nav>
+        </nav>)}
       </header>
 
       {kind === 'model' && <UseModel repository={repository} origin={Astro.url.origin} />}
       {(kind === 'model' || kind === 'dataset') && <BuildShip source={repository} />}
 
-      <nav class="repository-tabs" aria-label="Repository sections">
+      {detailSkin ? <DetailNavigation items={[
+        { id: 'overview', label: 'Overview', icon: 'ph-squares-four' },
+        { id: 'card', label: cardTitle, icon: 'ph-article' },
+        { id: 'files', label: 'Files & versions', icon: 'ph-folder', count: repository.files.length },
+        { id: kind === 'model' ? 'model-tools' : 'analysis', label: kind === 'model' ? 'Try model' : 'Data preview', icon: kind === 'model' ? 'ph-play' : 'ph-table' },
+        { id: kind === 'model' ? 'analysis' : 'lineage', label: kind === 'model' ? 'Checks & lineage' : 'Lineage', icon: 'ph-git-branch' },
+        { id: 'community', label: 'Community', icon: 'ph-chats', count: repository.discussions.length },
+      ]} /> : (      <nav class="repository-tabs" aria-label="Repository sections">
         <a href="#card">{cardTitle}</a>
         <a href="#files">Files</a>
         {notebooks.length > 0 && <a href="#notebooks">Notebooks</a>}
         <a href="#versions">Versions</a>
         <a href="#analysis">Analysis</a>
-        {kind === 'model' && <a href="#compatibility">Compatibility</a>}
         <a href="#lineage">Lineage</a>
         <a href="#community">Community</a>
       </nav>
+)}
 
-      <section class="repository-section" id="card">
+      <div class:list={[detailSkin && 'repository-detail-layout']}>
+      <div class="repository-detail-content">
+      {detailSkin && <section class="repository-section repository-overview" id="overview" data-detail-panel="overview">
+        <p class="eyebrow"><span>Published release</span> · <span>Revision</span> {repository.revision_sequence}</p>
+        <h2>About this {kind}</h2>
+        <p class="repository-summary" data-no-translate>{repository.summary}</p>
+        <div class="detail-route-list">
+          <a href="#card"><i class="ph ph-article" aria-hidden="true"></i><span><strong>Read the {cardTitle.toLowerCase()}</strong><small>Usage, authorship, limitations and source material.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+          <a href={kind === 'model' ? '#model-tools' : '#analysis'}><i class:list={['ph', kind === 'model' ? 'ph-play' : 'ph-table']} aria-hidden="true"></i><span><strong>{kind === 'model' ? 'Try the available tools' : 'Explore the data'}</strong><small>{kind === 'model' ? 'Tokenizer and runtime options for this revision.' : 'Inspect rows, columns and schema before downloading.'}</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+          <a href="#files"><i class="ph ph-folder" aria-hidden="true"></i><span><strong>{repository.files.length} files · {fileSize(repository.total_size_bytes)}</strong><small>Downloads, checksums and version history.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="detail-evidence"><i class="ph ph-shield-check" aria-hidden="true"></i><div><strong>Publication checks passed</strong><p>Files passed the required publication checks. Read the card and evidence for the scope of testing and limitations.</p><a href={kind === 'model' ? '#analysis' : '#lineage'}>Inspect {kind === 'model' ? 'checks & lineage' : 'lineage'}</a> · <a href="/security">How checks work</a></div></div>
+      </section>}
+
+      <section class="repository-section" id="card" data-detail-panel="card">
         <div class="repository-section__heading"><div><p class="eyebrow">Documentation</p><h2>{cardTitle}</h2></div></div>
         {repository.card_markdown ? (
           <article
@@ -196,10 +239,10 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         )}
       </section>
 
-      <section class="repository-section" id="files">
+      <section class="repository-section" id="files" data-detail-panel="files">
         <div class="repository-section__heading">
           <div><p class="eyebrow">Immutable revision</p><h2>Files</h2></div>
-          <code>{repository.manifest_sha256}</code>
+          <code title={repository.manifest_sha256}>{repository.manifest_sha256}</code>
         </div>
         <div class="repository-tree-summary">
           <span><i class="ph ph-git-branch" aria-hidden="true"></i> {repository.branches.length} {repository.branches.length === 1 ? 'branch' : 'branches'}</span>
@@ -215,12 +258,12 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
                 <tr>
                   <td><code>{file.path}</code></td>
                   <td>{file.mime_type}</td>
-                  <td>{Number(file.size_bytes).toLocaleString()} B</td>
+                  <td title={`${Number(file.size_bytes).toLocaleString()} bytes`}>{detailSkin ? fileSize(file.size_bytes) : `${Number(file.size_bytes).toLocaleString()} B`}</td>
                   <td><code title={file.sha256}>{file.sha256.slice(0, 12)}…</code></td>
                   <td>
                     <span class="file-actions">
                       {notebookPaths.has(file.path) && <a href={repositoryNotebookHref(repository, file.path)}>View notebook</a>}
-                      <a href={`/api/repositories/${repository.id}/files/${file.id}`} data-highlight-download={highlightedBy}>Download</a>
+                      <a href={`/api/repositories/${repository.id}/files/${file.id}`} data-highlight-download={highlightedBy} aria-label={`Download ${file.path}`}>Download</a>
                     </span>
                   </td>
                 </tr>
@@ -232,7 +275,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
       </section>
 
       {notebooks.length > 0 && (
-        <section class="repository-section" id="notebooks" data-notebook-runtime data-repository-id={repository.id}>
+        <section class="repository-section" id="notebooks" data-detail-panel="files" data-notebook-runtime data-repository-id={repository.id}>
           <div class="repository-section__heading">
             <div><p class="eyebrow">Static reader</p><h2>Notebooks</h2></div>
             <span>{notebooks.length} validated</span>
@@ -257,7 +300,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         </section>
       )}
 
-      <section class="repository-section" id="versions">
+      <section class="repository-section" id="versions" data-detail-panel="files">
         <div class="repository-section__heading"><div><p class="eyebrow">Release history</p><h2>Versions</h2></div></div>
         <div class="branch-list" aria-label="Branches">
           {repository.branches.map((branch) => (
@@ -286,7 +329,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
       </section>
 
       {kind === 'model' && (
-        <section class="repository-section model-tools" id="model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
+        <section class="repository-section model-tools" id="model-tools" data-detail-panel="model-tools" data-model-tools data-repository-id={repository.id} data-revision-id={repository.revision_id} data-browser-model={`${repository.owner_handle}/${repository.slug}`}>
           <div class="repository-section__heading"><div><p class="eyebrow">Local tools</p><h2>Try this model</h2></div></div>
           <div class="tool-grid">
             {hasVerifiedTokenizer && (
@@ -384,13 +427,13 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         </section>
       )}
 
-      <section class="repository-section" id="analysis">
-        <div class="repository-section__heading"><div><p class="eyebrow">Offline inspection</p><h2>Analysis</h2></div></div>
+      <section class="repository-section" id="analysis" data-detail-panel="analysis">
+        <div class="repository-section__heading"><div><p class="eyebrow">Offline inspection</p><h2>{kind === 'dataset' ? 'Data preview' : 'Analysis'}</h2></div></div>
         <RepositoryAnalysis repository={repository} />
       </section>
 
       {kind === 'model' && (
-        <section class="repository-section" id="compatibility">
+        <section class="repository-section" id="compatibility" data-detail-panel="analysis">
           <div class="repository-section__heading">
             <div><p class="eyebrow">Hardware intelligence 🧠</p><h2>Compatibility</h2></div>
             {repository.compatibility && <span>{repository.compatibility.confidence}</span>}
@@ -428,7 +471,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         </section>
       )}
 
-      <section class="repository-section" id="lineage">
+      <section class="repository-section" id="lineage" data-detail-panel={kind === 'model' ? 'analysis' : 'lineage'}>
         <div class="repository-section__heading"><div><p class="eyebrow">Provenance graph</p><h2>Lineage</h2></div></div>
         {repository.relationships.length ? (
           <div class="lineage-graph" role="list" aria-label={`Provenance relationships for ${repository.title}`}>
@@ -476,7 +519,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         )}
       </section>
 
-      <section class="repository-section" id="community">
+      <section class="repository-section" id="community" data-detail-panel="community">
         <div class="repository-section__heading"><div><p class="eyebrow">Community</p><h2>Discussions</h2></div></div>
         <form class="discussion-form" data-discussion-form data-repository-id={repository.id}>
           <h3>Start a discussion</h3>
@@ -529,6 +572,30 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
           </div>
         ) : <p>No discussion has started yet.</p>}
       </section>
+      </div>
+      {detailSkin && <aside class="repository-context" aria-label="Repository details">
+        <div class="repository-context__stats"><div><strong>{repository.downloads_count.toLocaleString()}</strong><span>downloads</span></div><div><strong>{repository.likes_count}</strong><span>likes</span></div><div><strong>{repository.watchers_count}</strong><span>watching</span></div></div>
+        <h2>Release details</h2>
+        <dl class="detail-facts">
+          <div><dt>License</dt><dd data-no-translate>{repository.license ?? 'Not declared'}</dd></div>
+          <div><dt>Published</dt><dd><time datetime={repository.published_at}>{new Date(repository.published_at).toLocaleDateString(dateLocale, { dateStyle: 'medium', timeZone: 'UTC' })}</time></dd></div>
+          <div><dt>Revision</dt><dd><a href="#versions">{repository.revision_sequence} · View history</a></dd></div>
+          <div><dt>Size</dt><dd>{fileSize(repository.total_size_bytes)}</dd></div>
+          {repository.commit_sha && <div><dt>Commit</dt><dd><code title={repository.commit_sha}>{repository.commit_sha.slice(0, 12)}</code></dd></div>}
+        </dl>
+        {kind === 'model' && <a class="detail-context-link" href="#compatibility"><i class="ph ph-cpu" aria-hidden="true"></i>Check hardware compatibility<i class="ph ph-arrow-right" aria-hidden="true"></i></a>}
+        {notebooks.length > 0 && <a class="detail-context-link" href="#notebooks"><i class="ph ph-notebook" aria-hidden="true"></i>{notebooks.length} notebooks<i class="ph ph-arrow-right" aria-hidden="true"></i></a>}
+        <details class="repository-agent-resources"><summary><span aria-hidden="true">👾</span> For your AI agent</summary><p>Public, account-free resources for this release.</p>
+        <nav class="machine-resource-links" aria-label="Machine-readable repository resources">
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/README.md`}>README.md</a>
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/agents.md`}>agents.md</a>
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/manifest.json`}>manifest.json</a>
+          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.json`}>use.json</a>}
+          {kind === 'model' && <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/use.md`}>use.md</a>}
+          <a href={`/${kindPath(repository.kind)}/${encodeURIComponent(repository.owner_handle)}/${encodeURIComponent(repository.slug)}/mcp`}>MCP</a>
+        </nav></details>
+      </aside>}
+      </div>
     </main>
   ) : (
     <section class="shell unavailable-state">

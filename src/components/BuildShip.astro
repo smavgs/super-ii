@@ -124,7 +124,15 @@ const identity = source ? `${source.owner_handle}/${source.slug}` : '';
     const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
     const outcome = () => String(new FormData(form).get('outcome') ?? 'rag');
     const opener = document.querySelector<HTMLButtonElement>('[data-build-ship-open]');
-    opener?.addEventListener('click', () => { panel.hidden = false; opener.setAttribute('aria-expanded', 'true'); panel.querySelector<HTMLElement>('h2')?.focus(); });
+    opener?.addEventListener('click', () => {
+      panel.hidden = false;
+      opener.setAttribute('aria-expanded', 'true');
+      const detail = panel.closest('.detail-skin');
+      const use = detail?.querySelector<HTMLElement>('[data-use-model]');
+      if (use) use.hidden = true;
+      detail?.querySelectorAll('[data-use-model-open]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+      panel.querySelector<HTMLElement>('h2')?.focus();
+    });
     panel.querySelector('[data-build-close]')?.addEventListener('click', () => { panel.hidden = true; opener?.setAttribute('aria-expanded', 'false'); opener?.focus(); });
     function update() {
       const selected = outcome(), rag = selected === 'rag', train = selected === 'sft';

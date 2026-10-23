@@ -133,11 +133,18 @@ const filesByPath = new Map(repository.files.map((file) => [file.path, file]));
                     <p><strong>Columns:</strong> {columns.join(', ') || 'None'}</p>
                     <details><summary>Schema and types</summary><pre>{display(split.features ?? {}, 30_000)}</pre></details>
                     {rows.length > 0 && (
-                      <div class="analysis-table-wrap">
-                        <table class="analysis-table dataset-preview">
+                      <div data-dataset-preview>
+                      <div class="dataset-pager" data-dataset-pager hidden>
+                        <button class="button button--secondary button--small" type="button" data-page-previous>Previous rows</button>
+                        <p data-page-status aria-live="polite"></p>
+                        <button class="button button--secondary button--small" type="button" data-page-next>Next rows</button>
+                      </div>
+                      <div class="analysis-table-wrap" tabindex="0" role="region" aria-label={`${splitName} data preview`}>
+                        <table class="analysis-table dataset-preview" data-no-translate>
                           <thead><tr>{columns.map((column) => <th>{column}</th>)}</tr></thead>
-                          <tbody>{rows.map((row) => <tr>{columns.map((column) => <td>{display(row[column], 500)}</td>)}</tr>)}</tbody>
+                          <tbody>{rows.map((row) => <tr>{columns.map((column) => <td dir="auto">{display(row[column], 500)}</td>)}</tr>)}</tbody>
                         </table>
+                      </div>
                       </div>
                     )}
                   </details>
@@ -186,3 +193,27 @@ const filesByPath = new Map(repository.files.map((file) => [file.path, file]));
     <details class="analysis-raw"><summary>Complete machine-readable analysis</summary><pre>{display(result, 100_000)}</pre></details>
   </div>
 ) : <p>No public analysis artifact is attached to this revision.</p>}
+
+<script>
+  document.querySelectorAll<HTMLElement>('.detail-skin [data-dataset-preview]').forEach(preview => {
+    const rows = [...preview.querySelectorAll<HTMLTableRowElement>('tbody tr')];
+    const pager = preview.querySelector<HTMLElement>('[data-dataset-pager]');
+    const previous = preview.querySelector<HTMLButtonElement>('[data-page-previous]');
+    const next = preview.querySelector<HTMLButtonElement>('[data-page-next]');
+    const status = preview.querySelector<HTMLElement>('[data-page-status]');
+    let page = 0;
+    const pageSize = 10;
+    function render() {
+      rows.forEach((row, index) => { row.hidden = index < page * pageSize || index >= (page + 1) * pageSize; });
+      if (previous) previous.disabled = page === 0;
+      if (next) next.disabled = (page + 1) * pageSize >= rows.length;
+      const range = `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, rows.length)}`;
+      if (status) status.textContent = document.documentElement.lang === 'ru' ? `Строки ${range} из ${rows.length} в предпросмотре` : document.documentElement.lang.toLowerCase().startsWith('zh') ? `第 ${range} 行，共预览 ${rows.length} 行` : `Rows ${range} of ${rows.length} previewed`;
+    }
+    if (!pager || rows.length <= pageSize) return;
+    pager.hidden = false;
+    previous?.addEventListener('click', () => { page = Math.max(0, page - 1); render(); if (previous.disabled) next?.focus(); });
+    next?.addEventListener('click', () => { page = Math.min(Math.ceil(rows.length / pageSize) - 1, page + 1); render(); if (next.disabled) previous?.focus(); });
+    render();
+  });
+</script>

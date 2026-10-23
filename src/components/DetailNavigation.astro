@@ -1,0 +1,58 @@
+---
+interface Props {
+  label?: string;
+  items: { id: string; label: string; icon: string; count?: number }[];
+}
+const { label = 'Repository sections', items } = Astro.props;
+---
+<nav class="detail-navigation" data-detail-navigation aria-label={label}>
+  {items.map(item => <a href={`#${item.id}`} data-section-link={item.id}><i class:list={['ph', item.icon]} aria-hidden="true"></i><span>{item.label}</span>{item.count !== undefined && <small>{item.count}</small>}</a>)}
+</nav>
+
+<script>
+  // Real anchors and all content remain usable if JavaScript is unavailable.
+  document.querySelectorAll<HTMLElement>('[data-detail-sections]').forEach(root => {
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-detail-panel]')];
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('[data-section-link]')];
+    const defaultPanel = root.dataset.defaultPanel ?? panels[0]?.dataset.detailPanel;
+    function targetFor(hash: string) {
+      try {
+        const target = document.getElementById(decodeURIComponent(hash.replace(/^#/, '')));
+        return target && root.contains(target) ? target : null;
+      } catch { return null; }
+    }
+    function show(target: Element | null, moveFocus = false) {
+      const panel = target?.closest<HTMLElement>('[data-detail-panel]');
+      const selected = panel?.dataset.detailPanel ?? defaultPanel;
+      panels.forEach(item => { item.hidden = item.dataset.detailPanel !== selected; });
+      links.forEach(link => {
+        if (link.dataset.sectionLink === selected) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+      });
+      if (moveFocus && panel) {
+        root.querySelectorAll<HTMLElement>('[data-use-model], [data-build-ship]').forEach(tool => { tool.hidden = true; });
+        root.querySelectorAll('[data-use-model-open], [data-build-ship-open]').forEach(opener => opener.setAttribute('aria-expanded', 'false'));
+        const heading = (target === panel ? panel.querySelector<HTMLElement>('h2, h3') : target) as HTMLElement | null;
+        if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+        panel.scrollIntoView({ block: 'start', behavior: 'instant' });
+      }
+    }
+    root.addEventListener('click', event => {
+      if (!(event instanceof MouseEvent) || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+      if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+      const hash = link.getAttribute('href') ?? '';
+      const target = targetFor(hash);
+      if (!target?.closest('[data-detail-panel]')) return;
+      event.preventDefault();
+      if (location.hash !== hash) history.pushState(null, '', hash);
+      show(target, true);
+    });
+    window.addEventListener('hashchange', () => show(targetFor(location.hash), true));
+    window.addEventListener('popstate', () => show(targetFor(location.hash), false));
+    show(targetFor(location.hash));
+    if (location.hash && targetFor(location.hash)?.closest('[data-detail-panel]')) {
+      requestAnimationFrame(() => targetFor(location.hash)?.scrollIntoView({ block: 'start' }));
+    }
+  });
+</script>
