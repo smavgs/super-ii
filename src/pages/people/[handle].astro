@@ -1,4 +1,6 @@
 ---
+import '@/styles/public-detail.css';
+import DetailNavigation from '@/components/DetailNavigation.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -130,13 +132,14 @@ const socialLinks: SocialLink[] = profile ? [
 ].filter((link): link is SocialLink => Boolean(link)) : [];
 ---
 
-<BaseLayout title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} titleNoTranslate={Boolean(profile)} descriptionNoTranslate={Boolean(profile?.bio)} noindex={!profile}>
+<BaseLayout className="detail-skin" title={profile?.display_name ?? 'Profile unavailable'} description={profile?.bio ?? 'Public Super ii creator profile.'} titleNoTranslate={Boolean(profile)} descriptionNoTranslate={Boolean(profile?.bio)} noindex={!profile}>
   {profile ? (
-    <main class="shell person-page" data-profile-id={profile.id} data-highlight-campaign={highlightedBy}>
+    <main class="shell person-page" data-detail-sections data-default-panel="work" data-profile-id={profile.id} data-highlight-campaign={highlightedBy}>
+      <div class="person-home">
       <header class="person-header">
         {profile.avatar_url ? <img src={profile.avatar_url} alt="" loading="eager" referrerpolicy="no-referrer" /> : <span class="person-header__avatar" aria-hidden="true">{profile.display_name.slice(0, 1).toUpperCase()}</span>}
         <div class="person-header__identity">
-          <p class="eyebrow">{profile.profile_kind === 'company' ? 'Single-owner company profile' : profile.profile_kind === 'studio' ? 'Independent studio profile' : 'Public member profile'}</p>
+          <p class="eyebrow"><span aria-hidden="true">👾 </span>{profile.profile_kind === 'company' ? 'Single-owner company profile' : profile.profile_kind === 'studio' ? 'Independent studio profile' : 'Public member profile'}</p>
           <h1 data-no-translate>{profile.display_name}</h1>
           <p class="person-handle" data-no-translate>@{profile.handle}</p>
           {profile.bio && <p class="person-bio" data-no-translate>{profile.bio}</p>}
@@ -161,26 +164,38 @@ const socialLinks: SocialLink[] = profile ? [
               </div>}
           {socialLinks.length > 0 && <div class="person-links" aria-label="Social links">
             <span>Links</span>
-            {socialLinks.map((link) => <a href={link.href} target="_blank" rel="me nofollow noopener noreferrer" aria-label={link.label} title={link.label}><CardServiceIcon service={link.service} /></a>)}
+            {socialLinks.map((link) => <a href={link.href} target="_blank" rel="me nofollow noopener noreferrer"><CardServiceIcon service={link.service} /><span data-no-translate={link.service !== 'website' || undefined}>{link.label}</span></a>)}
           </div>}
+          <a class="person-work-jump" href="#work">Explore published work <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
           <p class="person-action-status" data-profile-action-status aria-live="polite"></p>
         </div>
       </header>
 
-      <ShowcaseGallery items={showcase} title={profile.profile_kind === 'person' ? 'Selected work' : 'What we build'} />
-
-      <LinkedWorkGrid items={linkedWork} heading="Linked work" />
-
-      <div class="person-layout">
-        <section class="repository-section">
-          <div class="repository-section__heading"><div><p class="eyebrow">Reviewed public work</p><h2>Repositories</h2></div><span>{repositories.length}</span></div>
-          {repositories.length ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" href={repositoryPath(item)}><div class="catalog-card__topline"><span>{item.kind}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}</div> : <p>No reviewed public repositories yet.</p>}
+      <div class="person-work">
+        <DetailNavigation label="Profile sections" items={[
+          { id: 'work', label: 'Published work', icon: 'ph-stack', count: repositories.length },
+          ...(showcase.length ? [{ id: 'showcase', label: 'Showcase', icon: 'ph-image', count: showcase.length }] : []),
+          ...(linkedWork.length ? [{ id: 'linked-work', label: 'Linked work', icon: 'ph-link', count: linkedWork.length }] : []),
+          { id: 'proposals', label: 'Proposals', icon: 'ph-lightbulb', count: proposals.length },
+        ]} />
+        <section class="repository-section" id="work" data-detail-panel="work">
+          <div class="repository-section__heading"><div><p class="eyebrow">Reviewed public work</p><h2>Published work</h2></div><span>{repositories.length}</span></div>
+          {repositories.length > 0 && <div class="profile-work-tools" data-profile-work-tools hidden>
+            <label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Search published work</span><input type="search" data-profile-work-search placeholder="Search this member’s work" /></label>
+            <div class="profile-kind-filters" aria-label="Filter published work">{[['all', 'All'], ['model', 'Models'], ['dataset', 'Datasets'], ['space', 'Apps']].map(([kind, label]) => <button type="button" data-profile-kind={kind} aria-pressed={kind === 'all'}>{label}<span>{kind === 'all' ? repositories.length : repositories.filter(item => item.kind === kind).length}</span></button>)}</div>
+            <p class="sr-only" data-profile-filter-status aria-live="polite"></p>
+          </div>}
+          {repositories.length ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" data-profile-work-item data-kind={item.kind} href={repositoryPath(item)}><div class="catalog-card__topline"><span class:list={['work-kind', `work-kind--${item.kind}`]}><i class:list={['ph', item.kind === 'model' ? 'ph-cube' : item.kind === 'dataset' ? 'ph-database' : 'ph-app-window']} aria-hidden="true"></i>{item.kind === 'space' ? 'App' : item.kind === 'model' ? 'Model' : 'Dataset'}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><code data-no-translate>{item.owner_handle}/{item.slug}</code><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}</div> : <p>No reviewed public repositories yet.</p>}
+          <p class="profile-filter-empty" data-profile-filter-empty hidden>No work matches these filters. Try another type or search.</p>
         </section>
-        <aside class="person-proposals">
+        {showcase.length > 0 && <section id="showcase" data-detail-panel="showcase"><ShowcaseGallery items={showcase} title={profile.profile_kind === 'person' ? 'Selected work' : 'What we build'} /></section>}
+        {linkedWork.length > 0 && <section id="linked-work" data-detail-panel="linked-work"><LinkedWorkGrid items={linkedWork} heading="Linked work" /></section>}
+        <section class="person-proposals" id="proposals" data-detail-panel="proposals">
           <p class="eyebrow">Ideas and reputation 🗳️</p><h2>Proposals</h2>
           {proposals.length ? <div>{proposals.map((proposal) => <a href={`/proposals/${proposal.slug}`}><span class:list={['proposal-status', `proposal-status--${proposal.status}`]}>{proposal.status}</span><strong data-no-translate>{proposal.title}</strong><small>👤 {proposal.human_votes} · 🤖 {proposal.agent_votes}</small></a>)}</div> : <p>No public proposals yet.</p>}
           <a class="button button--secondary button--small" href="/proposals">Open proposal board</a>
-        </aside>
+        </section>
+      </div>
       </div>
     </main>
   ) : <main class="section shell"><div class="empty-state"><h1>Profile not found</h1><p>This member profile does not exist or is not public.</p><a class="button button--secondary" href="/proposals">Browse Community Leaders</a></div></main>}
@@ -188,6 +203,27 @@ const socialLinks: SocialLink[] = profile ? [
 
 {profile && <script>
   const root = document.querySelector<HTMLElement>('[data-profile-id]');
+  const filterTools = root?.querySelector<HTMLElement>('[data-profile-work-tools]');
+  const search = root?.querySelector<HTMLInputElement>('[data-profile-work-search]');
+  const filters = [...root?.querySelectorAll<HTMLButtonElement>('[data-profile-kind]') ?? []];
+  const items = [...root?.querySelectorAll<HTMLElement>('[data-profile-work-item]') ?? []];
+  let selectedKind = 'all';
+  function filterWork() {
+    const query = (search?.value ?? '').trim().toLocaleLowerCase();
+    let visible = 0;
+    items.forEach(item => {
+      item.hidden = (selectedKind !== 'all' && item.dataset.kind !== selectedKind) || !(item.textContent ?? '').toLocaleLowerCase().includes(query);
+      if (!item.hidden) visible++;
+    });
+    filters.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.profileKind === selectedKind)));
+    const empty = root?.querySelector<HTMLElement>('[data-profile-filter-empty]');
+    if (empty) empty.hidden = visible !== 0;
+    const result = root?.querySelector<HTMLElement>('[data-profile-filter-status]');
+    if (result) result.textContent = document.documentElement.lang === 'ru' ? `Показано ${visible} из ${items.length} опубликованных проектов.` : document.documentElement.lang.toLowerCase().startsWith('zh') ? `显示 ${visible} 项，共 ${items.length} 项已发布作品。` : `${visible} of ${items.length} published works shown.`;
+  }
+  if (filterTools) filterTools.hidden = false;
+  search?.addEventListener('input', filterWork);
+  filters.forEach(button => button.addEventListener('click', () => { selectedKind = button.dataset.profileKind ?? 'all'; filterWork(); }));
   const campaignId = root?.dataset.highlightCampaign;
   if (campaignId && /^[0-9a-f-]{36}$/i.test(campaignId)) {
     void fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: 'profile_view' }), keepalive: true }).catch(() => undefined);
