@@ -3861,6 +3861,9 @@
     "Learn & build": "Учитесь и создавайте",
     "Help": "Помощь",
     "Site directory": "Разделы сайта",
-    "Robots": "Роботы"
+    "Robots": "Роботы",
+    "Quick model/dataset sharing and complete downloads": "Быстрая публикация моделей и датасетов и скачивание полного пакета",
+    "live; first member popup upload and Drive card pending": "работает; первая загрузка участника через окно и первая карточка Drive ожидаются",
+    "Gold upload dialog reuses existing quarantine, resumable transfer and automatic publication policy. Complete TAR downloads preserve paths, include exact-revision checksums and support byte-range resume through one runtime request. Optional Drive links remain explicitly external and unchecked. Migration preserved existing rows; 20 live checks across both hosts, authenticated UI inspection and an actual browser dataset download passed. See qa/QUICK-SHARE-2026-10-24.md.": "Золотое окно загрузки использует существующие карантин, возобновляемую передачу и автоматическую проверку публикации. Полный TAR сохраняет пути, содержит контрольные суммы точной ревизии и поддерживает возобновление по диапазону байтов через один запрос к runtime. Необязательные ссылки Drive явно обозначены как внешние и непроверенные. Миграция сохранила существующие записи; прошли 20 проверок доступа и скачивания на обоих доменах, проверка интерфейса после входа и реальное скачивание датасета через браузер. См. qa/QUICK-SHARE-2026-10-24.md."
   }
 }
