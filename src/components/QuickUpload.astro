@@ -1,0 +1,46 @@
+---
+import { shareText } from '@/lib/quick-share-localization';
+import '@/styles/quick-share.css';
+interface Props { profileKey?: string; kind?: string; }
+const { profileKey = '', kind = 'model' } = Astro.props;
+const locale = Astro.locals.locale ?? 'en';
+const t = (text: string) => shareText(text, locale);
+const returnUrl = `/new?quick=1&kind=${kind === 'dataset' ? 'dataset' : 'model'}`;
+---
+<div data-quick-share data-profile-key={profileKey} data-locale={locale} data-kind={kind === 'dataset' ? 'dataset' : 'model'}>
+  <a class="button quick-gold" href={profileKey ? returnUrl : `/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`} data-quick-open><span aria-hidden="true">↑</span><span>{t('Upload now')}</span><span class="quick-spark" aria-hidden="true">✦</span></a>
+  {profileKey && <dialog class="quick-dialog" aria-labelledby="quick-share-title">
+    <header><div><p class="eyebrow" aria-hidden="true">👾 SUPER II</p><h2 id="quick-share-title">{t('Share a model or dataset')}</h2></div><button type="button" class="quick-close" data-quick-close aria-label={t('Close')}>×</button></header>
+    <form data-quick-form>
+      <fieldset data-quick-fields>
+        <div class="quick-kinds" role="group" aria-label={t('Repository type')}>
+          <label><input type="radio" name="kind" value="model" checked={kind !== 'dataset'} /><span>◇ {t('Model')}</span></label>
+          <label><input type="radio" name="kind" value="dataset" checked={kind === 'dataset'} /><span>▦ {t('Dataset')}</span></label>
+        </div>
+        <div class="quick-sources"><label><input type="radio" name="source" value="computer" checked />{t('From my computer')}</label><label><input type="radio" name="source" value="drive" />{t('Use a Google Drive link')}</label></div>
+        <div data-computer-fields>
+          <div class="quick-drop" data-quick-drop><strong>{t('Drop files here, or choose a folder.')}</strong><div class="button-row">
+            <label class="button button--secondary quick-picker">{t('Choose files')}<input type="file" multiple data-quick-files /></label>
+            <label class="button button--secondary quick-picker">{t('Choose folder')}<input type="file" multiple data-quick-folder /></label>
+          </div><p data-quick-selection aria-live="polite"></p></div>
+        </div>
+        <div data-drive-fields hidden>
+          <label>{t('Google Drive share link')}<input type="url" name="drive_url" placeholder="https://drive.google.com/file/d/…/view" maxlength="2048" disabled /></label>
+          <p class="quick-hint">{t('Files stay in Drive. Super ii shares the link and does not scan or host those files.')}</p>
+          <p class="quick-hint">{t('Allow visitors to download in Drive before sharing. No Google password is needed here.')}</p>
+          <label class="quick-check"><input type="checkbox" name="drive_confirmed" disabled />{t('I checked that visitors can download using this link.')}</label>
+        </div>
+        <div class="quick-grid"><label>{t('Name')}<input name="title" required minlength="2" maxlength="200" autocomplete="off" /></label><label>{t('Format')}<select name="format" data-no-translate></select></label></div>
+        <div class="quick-grid"><label>{t('License')}<input name="license" required maxlength="120" list="quick-licenses" placeholder="apache-2.0, mit, …" /><datalist id="quick-licenses"><option value="apache-2.0" /><option value="mit" /><option value="cc-by-4.0" /><option value="cc0-1.0" /></datalist></label><label>{t('Right to share')}<select name="basis" required><option value="">{t('Choose…')}</option><option value="original">{t('My original work')}</option><option value="permission">{t('Permission from the rights holder')}</option><option value="licensed-redistribution">{t('Redistribution under the source license')}</option></select></label></div>
+        <label data-quick-origin hidden>{t('Original source URL')}<input type="url" name="source_url" maxlength="2048" disabled /></label>
+        <label class="quick-check"><input type="checkbox" name="confirmed" required />{t('I have the right to share this publicly under this license.')}</label>
+        <p class="quick-hint" data-quick-public>{t('Your files become public only after checks pass.')}</p>
+      </fieldset>
+      <div class="quick-progress" data-quick-progress hidden><strong data-quick-stage></strong><progress max="100" value="0" aria-label={t('Upload progress')}></progress><p data-quick-file-status aria-live="polite"></p><small>{t('Keep this tab open until the upload finishes.')}</small></div>
+      <p class="quick-status" data-quick-status role="status" aria-live="polite" data-no-translate></p>
+      <div class="quick-footer"><button class="button quick-gold" type="submit" data-quick-submit><span>{t('Upload & publish')}</span><span aria-hidden="true">✦</span></button><a class="text-button" href="/new" data-quick-editor>{t('Edit details instead')}</a><button type="button" class="text-button" data-quick-reset hidden>{t('Start another upload')}</button></div>
+      <div class="button-row" data-quick-result hidden><a class="button quick-gold" data-quick-result-link>{t('Open page')} ↗</a><button type="button" class="button button--secondary" data-quick-copy>{t('Copy link')}</button></div>
+    </form>
+  </dialog>}
+</div>
+<script>import { initializeQuickShare } from '@/scripts/quick-share'; initializeQuickShare();</script>

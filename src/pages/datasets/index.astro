@@ -5,7 +5,7 @@ import ExploreLayout from '@/layouts/ExploreLayout.astro';
 ---
 <ExploreLayout active="datasets" title="Datasets" titleHelp="dataset" eyebrow="Discover public work" description="Discover datasets, inspect their structure and license, and find the right data for your work.">
   <Fragment slot="actions">
-    <a class="button button--dark" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a>
+    <a class="button button--dark" href="/new?kind=dataset"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a>
     <a class="button explore-cyan" href="/bring-my-work"><i class="ph ph-handshake" aria-hidden="true"></i>Bring my work</a>
   </Fragment>
   <HighlightsStrip kind="dataset" />

@@ -1,0 +1,35 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
+import BrandMark from '@/components/BrandMark.astro';
+import { sqlClient } from '@/lib/db';
+import { canonicalDriveLink, formatLabels } from '@/lib/quick-share';
+import { shareText } from '@/lib/quick-share-localization';
+import '@/styles/public-detail.css';
+import '@/styles/quick-share.css';
+const t=(text:string)=>shareText(text,Astro.locals.locale??'en');
+const sql=sqlClient(Astro.locals);
+let item:Record<string,unknown>|null=null;
+if(sql&&/^[a-f0-9-]{36}$/.test(Astro.params.id??'')){
+  try{const rows=await sql`select item.*,profile.handle,profile.display_name,profile.avatar_url from app.external_catalog_items item
+    join app.profiles profile on profile.id=item.owner_profile_id and profile.is_public
+    where item.id=${Astro.params.id}::uuid and item.provider='google-drive' and item.status='active' limit 1`;item=rows[0]??null;}catch{Astro.response.status=503;}
+}
+const url=item?canonicalDriveLink(String(item.source_url)):null;
+if(!url)Astro.response.status=Astro.response.status===503?503:404;
+Astro.response.headers.set('cache-control','private, no-store');
+const metadata=(item?.source_metadata??{}) as Record<string,unknown>;
+---
+<BaseLayout title={`${item?.title??'Shared link'} · Super ii`} description="A member-shared external download." className="detail-skin" noindex={!url}>
+  <main class="shell" style="padding-block:36px 80px;min-height:60vh;max-width:1100px">
+    {item&&url?<>
+      <p class="eyebrow brand-inline"><BrandMark brand="google-drive" size="xs" />{t('External files · Google Drive')}</p>
+      <p>{t('Shared by')}</p><CreatorLink handle={String(item.handle)} displayName={String(item.display_name)} avatarUrl={item.avatar_url?String(item.avatar_url):null} />
+      <h1 data-no-translate style="font-size:clamp(1.8rem,4vw,3rem);line-height:1.2;overflow-wrap:anywhere">{String(item.title)}</h1>
+      <div class="repository-badges"><span>{t(item.kind==='model'?'Model':'Dataset')}</span><span data-no-translate>{formatLabels[String(metadata.format)]??String(metadata.format??'')}</span><span data-no-translate>{String(item.license??'')}</span></div>
+      <p style="max-width:700px">{t('These external files have not been checked by Super ii. Availability and access are controlled by the Drive owner.')}</p>
+      <a class="button quick-gold" href={url} target="_blank" rel="ugc nofollow noopener noreferrer external"><BrandMark brand="google-drive" size="xs" />{t('Download from Google Drive')} ↗</a>
+      <p><a href={`/people/${item.handle}#linked-work`}>{String(item.display_name)} →</a></p>
+    </>:<><h1>Shared link unavailable</h1><p>This link may have been removed or its owner may no longer have a public profile.</p><a href="/account">Workspace</a></>}
+  </main>
+</BaseLayout>

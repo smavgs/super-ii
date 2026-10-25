@@ -183,6 +183,7 @@ fi
 
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-agent-connection-flows.mjs"
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-creator-flows.mjs"
+SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-quick-share-flows.mjs"
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-product-flows.mjs"
 
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-workroom-flows.mjs"

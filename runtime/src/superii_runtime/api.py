@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib.metadata
 import json
+import re
 from asyncio import to_thread
+from contextlib import aclosing
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any
@@ -48,6 +50,7 @@ from .inspectors import (
 from .inspectors.compatibility import derive_model_compatibility
 from .inspectors.gguf import inspect_gguf
 from .notebooks import NotebookRunner
+from .packages import make_package, package_range, stream_package
 from .pipeline import (
     UploadHeld,
     UploadRejected,
@@ -1375,6 +1378,66 @@ def detokenizer_tool(
         raise HTTPException(
             status_code=422, detail="verified detokenizer request failed"
         ) from error
+
+
+@app.api_route(
+    "/v1/repositories/{repository_id}/revisions/{revision_id}/download", methods=["GET", "HEAD"]
+)
+def download_package(
+    repository_id: UUID,
+    revision_id: UUID,
+    commit: str,
+    request: Request,
+    _auth: RuntimeAuth,
+    database: RepositoryDatabase = Depends(get_database),
+) -> Response:
+    release = database.get_package_release(repository_id, revision_id, commit)
+    if release is None:
+        raise HTTPException(status_code=404, detail="published package not found")
+    try:
+        package = make_package(database.list_revision_files(revision_id), release, get_store())
+    except (ValueError, OSError) as error:
+        raise HTTPException(status_code=503, detail="complete package is unavailable") from error
+    headers = {
+        "cache-control": "private, no-store",
+        "x-content-type-options": "nosniff",
+        "content-type": "application/x-tar",
+        "accept-ranges": "bytes",
+        "etag": package.etag,
+    }
+    requested = request.headers.get("range")
+    if request.headers.get("if-range") not in (None, package.etag):
+        requested = None
+    bounds = package_range(requested, package.size)
+    if bounds is None:
+        return Response(
+            status_code=416, headers={**headers, "content-range": f"bytes */{package.size}"}
+        )
+    start, end = bounds
+    name = re.sub(r"[^a-zA-Z0-9._-]", "_", release["slug"])
+    headers["content-disposition"] = f'attachment; filename="{name}-{commit[:12]}.tar"'
+    headers["content-length"] = str(end - start + 1)
+    if requested:
+        headers["content-range"] = f"bytes {start}-{end}/{package.size}"
+    code = 206 if requested else 200
+    if request.method == "HEAD":
+        return Response(status_code=code, headers=headers)
+
+    async def delivery():
+        async with aclosing(stream_package(package, bounds)) as chunks:
+            async for chunk in chunks:
+                yield chunk
+        # A package is one download, not one event per constituent file. HEAD
+        # probes and streams that fail integrity verification never count.
+        await to_thread(
+            database.record_package_download,
+            repository_id,
+            revision_id,
+            end - start + 1,
+            request.headers.get("user-agent"),
+        )
+
+    return StreamingResponse(delivery(), status_code=code, headers=headers)
 
 
 @app.get("/v1/files/{repository_file_id}")

@@ -39,8 +39,8 @@ let bridgeSources: Array<{
 }> = [];
 let memberProfile: MemberProfile | null = null;
 let linkedWork: Array<{
-  id: string; kind: 'model' | 'dataset' | 'space'; provider: 'huggingface';
-  provider_repo_id: string; source_url: string; source_revision: string;
+  id: string; kind: 'model' | 'dataset' | 'space'; provider: 'huggingface' | 'google-drive';
+  provider_repo_id: string; source_url: string; source_revision: string | null;
   title: string; summary: string; license: string | null; updated_at: string;
 }> = [];
 let showcaseMedia: Array<{

@@ -21,6 +21,10 @@ Canonical product and operations truth for the Super ii control plane and self-h
 
 The shared Create / repository editor is implemented and locally tested. It adds folder selection, README suggestions, Markdown formatting and image preview, revision-bound presentation, and a Bridge finishing draft. Existing public cards are preserved by migration 0033. This entry does not promote the new editor to production; rollout requires the migration, runtime and Worker in that order, followed by live verification. See [creator-editor architecture](docs/architecture/creator-editor.md).
 
+## Quick sharing release candidate (2026-10-25)
+
+Gold **Upload now** actions in Workspace and Create open a compact model/dataset flow, reuse the existing quarantine, resumable transfer and automatic publication policy, and confirm the published revision before showing Ready. Complete revision downloads preserve folder paths in a deterministic TAR with checksums and byte-range resume. Optional Google Drive cards are explicitly member-declared external links; Super ii does not fetch, inspect or host their files. Local browser, restricted database, Python runtime and actual Worker proxy tests pass. This entry does not assert deployment. Rollout requires migration 0036, the runtime package route, then the Worker, followed by live checks. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
+
 ## Capability register
 
 | Capability | Status | Availability | Evidence |
