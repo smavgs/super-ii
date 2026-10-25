@@ -1,5 +1,11 @@
 import { translateCreator } from "./creator-localization";
 const messages: Array<[string, string, string]> = [
+  ["Shared link unavailable", "Ссылка недоступна", "分享链接不可用"],
+  [
+    "This link may have been removed or its owner may no longer have a public profile.",
+    "Возможно, ссылка удалена или профиль владельца больше не является публичным.",
+    "此链接可能已被移除，或所有者的个人资料已不再公开。",
+  ],
   ["1 file", "1 файл", "1 个文件"],
   [
     "Choose at most 4999 files.",

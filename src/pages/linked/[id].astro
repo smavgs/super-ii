@@ -20,8 +20,8 @@ if(!url)Astro.response.status=Astro.response.status===503?503:404;
 Astro.response.headers.set('cache-control','private, no-store');
 const metadata=(item?.source_metadata??{}) as Record<string,unknown>;
 ---
-<BaseLayout title={`${item?.title??'Shared link'} · Super ii`} description="A member-shared external download." className="detail-skin" noindex={!url}>
-  <main class="shell" style="padding-block:36px 80px;min-height:60vh;max-width:1100px">
+<BaseLayout title={String(item?.title??'Shared link')} description="A member-shared external download." className="detail-skin" noindex={!url}>
+  <main id="main-content" class="shell" style="padding-block:36px 80px;min-height:60vh;max-width:1100px">
     {item&&url?<>
       <p class="eyebrow brand-inline"><BrandMark brand="google-drive" size="xs" />{t('External files · Google Drive')}</p>
       <p>{t('Shared by')}</p><CreatorLink handle={String(item.handle)} displayName={String(item.display_name)} avatarUrl={item.avatar_url?String(item.avatar_url):null} />
@@ -30,6 +30,6 @@ const metadata=(item?.source_metadata??{}) as Record<string,unknown>;
       <p style="max-width:700px">{t('These external files have not been checked by Super ii. Availability and access are controlled by the Drive owner.')}</p>
       <a class="button quick-gold" href={url} target="_blank" rel="ugc nofollow noopener noreferrer external"><BrandMark brand="google-drive" size="xs" />{t('Download from Google Drive')} ↗</a>
       <p><a href={`/people/${item.handle}#linked-work`}>{String(item.display_name)} →</a></p>
-    </>:<><h1>Shared link unavailable</h1><p>This link may have been removed or its owner may no longer have a public profile.</p><a href="/account">Workspace</a></>}
+    </>:<><h1>{t('Shared link unavailable')}</h1><p>{t('This link may have been removed or its owner may no longer have a public profile.')}</p><a href="/account">{t('Workspace')}</a></>}
   </main>
 </BaseLayout>

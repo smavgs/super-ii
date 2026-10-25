@@ -6,7 +6,7 @@ Content plan: model/dataset choice, files or optional Drive link, essential nami
 
 Interaction thesis: a small sparkle on hover/focus, short dialog entrance, and real transfer progress; reduced motion removes decorative animation. Native dialog focus, Escape and an explicit close control remain available.
 
-Implementation and verification results will be recorded before release. This file does not assert deployment or production validation.
+The following evidence records implementation and local verification separately from deployment.
 
 ## Verification completed 2026-10-25
 
