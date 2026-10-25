@@ -2,7 +2,8 @@
 
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
-- Snapshot: 2026-10-12; quick sharing release verified 2026-10-25
+- Snapshot: 2026-10-25
+- Verification scope: this update adds quick sharing evidence; earlier capability entries retain their documented verification boundaries.
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
 - Catalog rule: no model, dataset, or app is seeded or presented as community content. The current public catalog contains two creator-published models, one creator-published dataset, and no app; every item passed the normal publication path.
