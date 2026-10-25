@@ -24,7 +24,7 @@ The shared Create / repository editor is implemented and locally tested. It adds
 
 ## Quick sharing production release (2026-10-25)
 
-PR #132, migration 0036, the runtime package route and Worker version `904a6f1a-747a-478e-ac90-e8b1b6c6cd42` are deployed. Signed-in Workspace and Create open the gold **Upload now** model/dataset dialog. Both domains pass published-package HEAD/resume and protected-route checks; a real Chrome download of the existing dataset contains all seven original files with matching checksums. Local tests cover upload/retry/publication-confirmation and optional Drive sharing. No production test upload or Drive card was created. A first member upload through the popup, multi-gigabyte public throughput and mainland/WeChat completion remain unverified. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
+PR #132 was deployed with migration 0036, the runtime package route and initial Worker version `904a6f1a-747a-478e-ac90-e8b1b6c6cd42`. Signed-in Workspace and Create open the gold **Upload now** model/dataset dialog. Both domains pass published-package HEAD/resume and protected-route checks; a real Chrome download of the existing dataset contains all seven original files with matching checksums. Local tests cover upload/retry/publication-confirmation and optional Drive sharing. No production test upload or Drive card was created. A first member upload through the popup, multi-gigabyte public throughput and mainland/WeChat completion remain unverified. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
 
 ## Capability register
 
