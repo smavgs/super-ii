@@ -5,12 +5,12 @@ import { sqlClient } from './db';
 export type LinkedWorkItem = {
   id: string;
   kind: RepositoryKind;
-  provider: 'huggingface';
+  provider: 'huggingface' | 'google-drive';
   provider_repo_id: string;
   provider_namespace: string;
   provider_slug: string;
   source_url: string;
-  source_revision: string;
+  source_revision: string | null;
   title: string;
   summary: string;
   license: string | null;
@@ -90,7 +90,7 @@ export async function searchLinkedWork(
         and (${modality} = '' or coalesce(item.source_metadata->>'modality','') ilike '%' || ${modality} || '%')
         and (${author} = '' or item.provider_namespace ilike '%' || ${author} || '%'
               or coalesce(profile.handle, organization.handle, '') ilike '%' || ${author} || '%')
-        and (${maxSizeBytes}::bigint is null or item.total_size_bytes <= ${maxSizeBytes}::bigint)
+        and (${maxSizeBytes}::bigint is null or (item.provider = 'huggingface' and item.total_size_bytes <= ${maxSizeBytes}::bigint))
         and (${updatedAfter} = '' or item.updated_at >= nullif(${updatedAfter}, '')::date)
       order by
         case when ${sort} = 'downloads' then coalesce(item.provider_downloads, 0) end desc,

@@ -626,6 +626,24 @@ class RepositoryDatabase:
             ).fetchall()
         return [RevisionFile(**row) for row in rows]
 
+    def get_package_release(
+        self, repository_id: UUID, revision_id: UUID, commit: str
+    ) -> dict[str, Any] | None:
+        """The web gateway authorizes the reader; runtime requires a sealed release."""
+        with self.connect() as connection:
+            return connection.execute(
+                """
+                select r.owner_handle, r.slug, r.kind, rr.commit_sha, rr.manifest_sha256,
+                       rr.file_count, rr.total_size_bytes
+                from app.repositories r
+                join app.repository_revisions rr on rr.repository_id = r.id
+                where r.id = %s and rr.id = %s and rr.commit_sha = %s
+                  and r.status = 'published' and rr.status = 'published'
+                  and r.kind in ('model', 'dataset')
+                """,
+                (repository_id, revision_id, commit),
+            ).fetchone()
+
     def revision_files_missing_inspections(
         self,
         revision_id: UUID,
@@ -722,6 +740,19 @@ class RepositoryDatabase:
                     (user_agent or "")[:1000] or None,
                     bytes_sent,
                 ),
+            )
+
+    def record_package_download(
+        self, repository_id: UUID, revision_id: UUID, bytes_sent: int, user_agent: str | None
+    ) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                insert into app.repository_downloads
+                  (repository_id, revision_id, bytes_sent, user_agent)
+                values (%s, %s, %s, %s)
+                """,
+                (repository_id, revision_id, bytes_sent, (user_agent or "")[:1000] or None),
             )
 
     def revision_is_ready_for_review(self, revision_id: UUID) -> bool:

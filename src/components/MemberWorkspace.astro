@@ -1,5 +1,6 @@
 ---
 import WorkroomHub from './WorkroomHub.astro';
+import QuickUpload from './QuickUpload.astro';
 import AgentStarter from './AgentStarter.astro';
 import AIWorkerStarter from './AIWorkerStarter.astro';
 import AgentWorkspace from './AgentWorkspace.astro';
@@ -18,7 +19,7 @@ interface Props {
   repositories: Array<{ id: string; kind: string; owner_handle: string; slug: string; title: string; status: string; revision_status: string; visibility: string }>;
   notifications: Array<{ id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string }>;
   bridgeSources: Array<{ repository_id: string; provider_repo_id: string; source_revision: string; source_visibility: string; imported_at: string; sync_enabled: boolean }>;
-  linkedWork: Array<{ id: string; kind: string; provider: string; provider_repo_id: string; source_url: string; source_revision: string; title: string; summary: string; license: string | null; updated_at: string }>;
+  linkedWork: Array<{ id: string; kind: string; provider: string; provider_repo_id: string; source_url: string; source_revision: string | null; title: string; summary: string; license: string | null; updated_at: string }>;
   showcaseMedia: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
   showcaseUploadsRemaining: number;
   subscriptions: Array<{ plan_id: string; status: string; current_period_end: string | null; owner_label: string }>;
@@ -60,7 +61,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
       <section data-workspace-panel="work" id="work" aria-labelledby="work-title">
         <div class="workspace-panel-heading" id="repositories">
           <div><h2 class="workspace-panel-title" id="work-title" tabindex="-1">Your work</h2><p>Resume a workroom, open a repository or start something new.</p></div>
-          <div class="button-row"><a class="button button--dark button--small" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a><a class="button button--secondary button--small workspace-connect" href="/bring-my-work"><i class="ph ph-plugs-connected" aria-hidden="true"></i>Bring my work</a></div>
+          <div class="button-row"><QuickUpload profileKey={memberProfile?.id} /><a class="button button--secondary button--small" href="/new"><i class="ph ph-plus" aria-hidden="true"></i>Create &amp; upload</a><a class="button button--secondary button--small workspace-connect" href="/bring-my-work"><i class="ph ph-plugs-connected" aria-hidden="true"></i>Bring my work</a></div>
         </div>
         <WorkroomHub />
         <h3 class="workspace-section-title"><i class="ph ph-stack" aria-hidden="true"></i>Your repositories</h3>
@@ -106,8 +107,8 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
           <div class="workspace-disclosure__body">
             <div class="account-list account-list--static linked-work-list">
               {linkedWork.map((item) => <div data-linked-work-item={item.id}>
-                <span><strong>{item.title}</strong><small>{item.kind} · External · Hugging Face · {item.provider_repo_id}</small></span>
-                <span class="linked-work-list__actions"><a class="button button--secondary button--small" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external"><BrandMark brand="huggingface" size="xs" />View source</a><button class="text-button" type="button" data-unlink-work={item.id}>Remove</button></span>
+                <span><strong>{item.title}</strong><small>{item.kind} · External · <span data-no-translate>{item.provider === 'google-drive' ? 'Google Drive' : 'Hugging Face'}</span></small></span>
+                <span class="linked-work-list__actions"><a class="button button--secondary button--small" href={item.provider === 'google-drive' ? `/linked/${item.id}` : item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external"><BrandMark brand={item.provider} size="xs" />View source</a><button class="text-button" type="button" data-unlink-work={item.id}>Remove</button></span>
               </div>)}
             </div>
             <p class="form-status" data-linked-work-status aria-live="polite"></p>

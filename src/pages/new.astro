@@ -1,6 +1,7 @@
 ---
 import WorkspaceJourneyLayout from '@/layouts/WorkspaceJourneyLayout.astro';
 import CreatorEditor from '@/components/CreatorEditor.astro';
+import QuickUpload from '@/components/QuickUpload.astro';
 import { ensureAuthenticatedProfile } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
 
@@ -9,10 +10,12 @@ const sql = sqlClient(Astro.locals);
 const requestedKind = Astro.url.searchParams.get('kind');
 const selectedKind = requestedKind === 'dataset' || requestedKind === 'space' ? requestedKind : 'model';
 let owners: OwnerOption[] = [];
+let profileKey = '';
 if (sql) {
   try {
     const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
     if (profile) {
+      profileKey = profile.profileId;
       const profileRows = await sql`select handle, display_name from app.profiles where id = ${profile.profileId}::uuid`;
       if (profileRows[0]) {
         owners.push({
@@ -45,6 +48,7 @@ if (sql) {
 
 <WorkspaceJourneyLayout active="create" title="Create & upload" eyebrow="Models, datasets and apps" description="Add your files, shape your page and publish when it is ready." noindex>
   <section class="shell journey-content">
+    <div style="margin-bottom:24px"><QuickUpload profileKey={profileKey} kind={selectedKind} /></div>
     <CreatorEditor owners={owners} kind={selectedKind} />
     <details class="journey-panel journey-alternatives">
       <summary><i class="ph ph-compass" aria-hidden="true"></i><strong>Other ways to start</strong></summary>

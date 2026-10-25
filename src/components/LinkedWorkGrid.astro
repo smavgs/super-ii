@@ -2,6 +2,7 @@
 import CreatorLink from '@/components/CreatorLink.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import type { LinkedWorkItem } from '@/lib/linked-work';
+import { shareText } from '@/lib/quick-share-localization';
 
 interface Props {
   items: LinkedWorkItem[];
@@ -9,6 +10,7 @@ interface Props {
   showOwner?: boolean;
 }
 const { items, heading, showOwner = false } = Astro.props;
+const t = (text: string) => shareText(text, Astro.locals.locale ?? 'en');
 const value = (item: LinkedWorkItem, key: string) => {
   const candidate = item.source_metadata?.[key];
   return typeof candidate === 'string' && candidate ? candidate : null;
@@ -16,17 +18,17 @@ const value = (item: LinkedWorkItem, key: string) => {
 ---
 
 {items.length > 0 && <section class="linked-work-section">
-  {heading && <div class="repository-section__heading"><div><p class="eyebrow brand-inline"><BrandMark brand="huggingface" size="xs" />External · Hugging Face</p><h2>{heading}</h2></div><span>{items.length}</span></div>}
+  {heading && <div class="repository-section__heading"><div><p class="eyebrow">External work</p><h2>{heading}</h2></div><span>{items.length}</span></div>}
   <div class="catalog-results linked-work-grid">
     {items.map((item) => <article class="catalog-card catalog-card--external">
       <div class="catalog-card__topline">
         {showOwner
           ? <CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} />
-          : <span data-no-translate>{item.provider_repo_id}</span>}
-        <span class="origin-badge origin-badge--external"><BrandMark brand="huggingface" size="xs" />External · Hugging Face</span>
+          : <span data-no-translate>{item.provider === 'google-drive' ? item.owner_display_name : item.provider_repo_id}</span>}
+        <span class="origin-badge origin-badge--external"><BrandMark brand={item.provider} size="xs" /><span data-no-translate>External · {item.provider === 'google-drive' ? 'Google Drive' : 'Hugging Face'}</span></span>
       </div>
       <h3 data-no-translate>{item.title}</h3>
-      <p data-no-translate>{item.summary || `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`}</p>
+      <p data-no-translate>{item.summary || (item.provider === 'google-drive' ? t('Files stay in Drive. Super ii shares the link and does not scan or host those files.') : `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`)}</p>
       <div class="catalog-card__metadata">
         <span>{item.kind}</span>
         {item.license && <span data-no-translate>{item.license}</span>}
@@ -36,8 +38,8 @@ const value = (item: LinkedWorkItem, key: string) => {
         {item.provider_downloads !== null && <span title="Downloads reported by Hugging Face">HF ⬇️ {Number(item.provider_downloads).toLocaleString()}</span>}
         {item.provider_likes !== null && <span title="Likes reported by Hugging Face">HF ❤️ {Number(item.provider_likes).toLocaleString()}</span>}
       </div>
-      <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}>
-        <span><BrandMark brand="huggingface" size="xs" />Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+      <a class="catalog-card__open" href={item.provider === 'google-drive' ? `/linked/${item.id}` : item.source_url} target={item.provider === 'google-drive' ? undefined : '_blank'} rel="ugc nofollow noopener noreferrer" aria-label={item.provider === 'google-drive' ? `${t('Open shared page')}: ${item.title}` : `Open ${item.title} on Hugging Face`}>
+        <span><BrandMark brand={item.provider} size="xs" />{item.provider === 'google-drive' ? t('Open shared page') : 'Open on Hugging Face'}</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i>
       </a>
     </article>)}
   </div>

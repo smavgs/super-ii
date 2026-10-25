@@ -8,6 +8,8 @@ import TokenizerWorkbench from '@/components/TokenizerWorkbench.astro';
 import '@/styles/repository-card.css';
 import '@/styles/public-detail.css';
 import DetailNavigation from '@/components/DetailNavigation.astro';
+import '@/styles/quick-share.css';
+import { shareText } from '@/lib/quick-share-localization';
 import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
 import { repositoryNotebookHref, repositoryNotebooks } from '@/lib/notebooks';
 import { getPublicRepository, kindPath, type RepositoryBundle } from '@/lib/repository';
@@ -121,6 +123,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
           {!detailSkin && <><span>revision {repository.revision_sequence}</span><span>{repository.likes_count} likes</span><span>{repository.watchers_count} watching</span><span>{repository.downloads_count} downloads</span>{repository.commit_sha && <span title={repository.commit_sha}>commit {repository.commit_sha.slice(0, 10)}</span>}</>}
         </div>
         <div class="repository-actions" data-repository-actions data-repository-id={repository.id}>
+          {detailSkin && repository.commit_sha && repository.files.length > 0 && <a class="button quick-gold" href={`/api/repositories/${repository.id}/download?revision=${repository.commit_sha}`} download title={shareText('Complete package', Astro.locals.locale ?? 'en')}><span aria-hidden="true">↓</span><span>{shareText('Download', Astro.locals.locale ?? 'en')}</span><small data-no-translate>· {fileSize(String(repository.files.reduce((total,file)=>total+Number(file.size_bytes),0)))}</small><span class="quick-spark" aria-hidden="true">✦</span></a>}
           {kind === 'model' && (
             <>
               <button class="button button--yellow button--small" type="button" data-use-model-open aria-expanded="false" aria-controls="use-model">
