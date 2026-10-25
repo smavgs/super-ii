@@ -18,7 +18,7 @@ The following evidence records implementation and local verification separately 
 - Native dialog focus/return focus and Escape; conditional Drive/source fields; 320/390 px layouts without horizontal page overflow; dark contrast; English, Russian and Chinese labels. Existing detailed editor remains available.
 - Browser file-selection permission prevented automated OS picker completion. A test-only local selection button supplied a known disposable File to the real change handler. This proves transfer/recovery behavior, not an independent real-device picker journey or production upload. The fixture control is absent from production source.
 
-Evidence folder: `/Users/apple/Documents/superii-quick-share-release-2026-10-25`.
+Evidence folder: `~/Documents/superii-quick-share-release-2026-10-25`.
 
 ## Release boundary
 
