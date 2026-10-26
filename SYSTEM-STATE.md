@@ -2,7 +2,8 @@
 
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
-- Snapshot: 2026-10-12
+- Snapshot: 2026-10-25
+- Verification scope: this update adds quick sharing evidence; earlier capability entries retain their documented verification boundaries.
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
 - Catalog rule: no model, dataset, or app is seeded or presented as community content. The current public catalog contains two creator-published models, one creator-published dataset, and no app; every item passed the normal publication path.
@@ -21,14 +22,15 @@ Canonical product and operations truth for the Super ii control plane and self-h
 
 The shared Create / repository editor is implemented and locally tested. It adds folder selection, README suggestions, Markdown formatting and image preview, revision-bound presentation, and a Bridge finishing draft. Existing public cards are preserved by migration 0033. This entry does not promote the new editor to production; rollout requires the migration, runtime and Worker in that order, followed by live verification. See [creator-editor architecture](docs/architecture/creator-editor.md).
 
-## Quick sharing release candidate (2026-10-25)
+## Quick sharing production release (2026-10-25)
 
-Gold **Upload now** actions in Workspace and Create open a compact model/dataset flow, reuse the existing quarantine, resumable transfer and automatic publication policy, and confirm the published revision before showing Ready. Complete revision downloads preserve folder paths in a deterministic TAR with checksums and byte-range resume. Optional Google Drive cards are explicitly member-declared external links; Super ii does not fetch, inspect or host their files. Local browser, restricted database, Python runtime and actual Worker proxy tests pass. This entry does not assert deployment. Rollout requires migration 0036, the runtime package route, then the Worker, followed by live checks. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
+PR #132 was deployed with migration 0036, the runtime package route and initial Worker version `904a6f1a-747a-478e-ac90-e8b1b6c6cd42`. Signed-in Workspace and Create open the gold **Upload now** model/dataset dialog. Both domains pass published-package HEAD/resume and protected-route checks; a real Chrome download of the existing dataset contains all seven original files with matching checksums. Local tests cover upload/retry/publication-confirmation and optional Drive sharing. No production test upload or Drive card was created. A first member upload through the popup, multi-gigabyte public throughput and mainland/WeChat completion remain unverified. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
 
 ## Capability register
 
 | Capability | Status | Availability | Evidence |
 | --- | --- | --- | --- |
+| Quick model/dataset sharing and complete downloads | production | live; first member popup upload and Drive card pending | Gold upload dialog reuses existing quarantine, resumable transfer and automatic publication policy. Complete TAR downloads preserve paths, include exact-revision checksums and support byte-range resume through one runtime request. Optional Drive links remain explicitly external and unchecked. Migration preserved existing rows; 20 live checks across both hosts, authenticated UI inspection and an actual browser dataset download passed. See qa/QUICK-SHARE-2026-10-24.md. |
 | Astro and Cloudflare public control plane | production | live | Server-rendered routes, security headers, health checks, and the canonical domains are deployed. |
 | English, Russian, and Simplified Chinese product editions | production | English, Russian, and Simplified Chinese live | English remains the canonical default edition. Simplified Chinese `/zh-cn` is live alongside the existing English and Russian product editions, with translated server-rendered and dynamic UI, localized Clerk authentication and dates, locale-aware internal navigation, persistent explicit language choice, canonical and `hreflang` metadata, locale-specific social metadata, and matching sitemap coverage. API, MCP, A2A, well-known, file, and code contracts retain their stable English machine representation. User-published content remains in its source language. Static catalogue and numeric-token coverage, type checks, desktop and mobile browser checks, production builds, English and Russian root regression checks, all 52 localized routes, real Tokenizer catalog and search states, and live requests passed before the Chinese edition was recorded as live. |
 | Email, Google, and GitHub authentication | production | live | Clerk-backed sign-in and sign-up use the production application and same-origin server routes. |

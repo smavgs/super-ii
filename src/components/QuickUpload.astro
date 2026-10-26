@@ -8,7 +8,10 @@ const t = (text: string) => shareText(text, locale);
 const returnUrl = `/new?quick=1&kind=${kind === 'dataset' ? 'dataset' : 'model'}`;
 ---
 <div data-quick-share data-profile-key={profileKey} data-locale={locale} data-kind={kind === 'dataset' ? 'dataset' : 'model'}>
-  <a class="button quick-gold" href={profileKey ? returnUrl : `/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`} data-quick-open><span aria-hidden="true">↑</span><span>{t('Upload now')}</span><span class="quick-spark" aria-hidden="true">✦</span></a>
+  <a class="button quick-gold quick-gold--upload" href={profileKey ? returnUrl : `/sign-in?redirect_url=${encodeURIComponent(returnUrl)}`} data-quick-open aria-label={t('Upload now')}>
+    <span class="quick-ascii-label"><span aria-hidden="true">[</span><span>{t('Upload now')}</span><span aria-hidden="true">]</span></span>
+    <span class="quick-upload-sparks" aria-hidden="true"><span>*</span><span>+</span></span>
+  </a>
   {profileKey && <dialog class="quick-dialog" aria-labelledby="quick-share-title">
     <header><div><p class="eyebrow" aria-hidden="true">👾 SUPER II</p><h2 id="quick-share-title">{t('Share a model or dataset')}</h2></div><button type="button" class="quick-close" data-quick-close aria-label={t('Close')}>×</button></header>
     <form data-quick-form>

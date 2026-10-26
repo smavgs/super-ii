@@ -5435,6 +5435,9 @@
     "Find, understand and share datasets.": "发现、了解并分享数据集。",
     "Learn & build": "学习与构建",
     "Help": "帮助",
-    "Site directory": "网站导航"
+    "Site directory": "网站导航",
+    "Quick model/dataset sharing and complete downloads": "快速分享模型和数据集及完整下载",
+    "live; first member popup upload and Drive card pending": "已上线；首位成员通过弹窗上传及首张 Drive 卡片尚待验证",
+    "Gold upload dialog reuses existing quarantine, resumable transfer and automatic publication policy. Complete TAR downloads preserve paths, include exact-revision checksums and support byte-range resume through one runtime request. Optional Drive links remain explicitly external and unchecked. Migration preserved existing rows; 20 live checks across both hosts, authenticated UI inspection and an actual browser dataset download passed. See qa/QUICK-SHARE-2026-10-24.md.": "金色上传弹窗复用现有隔离、可续传传输和自动发布策略。完整 TAR 保留文件路径，包含精确修订版的校验和，并通过一次 runtime 请求支持字节范围续传。可选 Drive 链接明确标为外部且未经检查。迁移保留了现有记录；两个域名上的 20 项在线检查、登录后的界面检查和真实浏览器数据集下载均已通过。参见 qa/QUICK-SHARE-2026-10-24.md。"
   }
 }
