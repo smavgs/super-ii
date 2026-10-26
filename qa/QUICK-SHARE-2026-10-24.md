@@ -35,3 +35,10 @@ Twenty live checks across both domains passed: all three complete-package HEADs 
 Signed-in production Workspace and Create both open the popup; Dataset and Drive choices show the correct fields, formats and required declarations. The existing editor remains accessible. Public model/dataset layouts show the gold download action.
 
 No claim of multi-gigabyte public throughput, hardware compatibility, mainland/WeChat completion or successful first member upload/Drive publication is made.
+
+
+## Button finish (2026-10-26)
+
+The Upload now entry uses a gold gradient, uppercase monospace `[ UPLOAD NOW ]` lettering, decorative ASCII `*` and `+` sparkles, and a gentle repeating glint. Decorative characters are hidden from assistive technology; the accessible name remains Upload now. Reduced-motion preference disables the glint and twinkle. This is a presentation change to the existing action; the dialog and transfer/publication behavior are unchanged.
+
+Browser checks confirmed the gold gradient, monospace uppercase lettering and active glint/sparkle animations, zero horizontal overflow with the Russian label at 320 px, and popup access. Emulated reduced motion changed every decorative animation to none; the temporary emulation and viewport were reset.

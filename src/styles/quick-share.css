@@ -29,6 +29,56 @@
   transform: translate(2px, 2px);
   box-shadow: 1px 1px 0 #263746 !important;
 }
+.quick-gold--upload {
+  isolation: isolate;
+  overflow: hidden;
+  max-width: 100%;
+  background: linear-gradient(120deg, #ffe58a, #ffd247 55%, #efb72d) !important;
+}
+.quick-ascii-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font: inherit;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.quick-gold--upload::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: -50% auto -50% -45%;
+  width: 28%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 235 / 0.65),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: quick-gold-glint 5s ease-in-out infinite;
+}
+.quick-upload-sparks {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 1.2em;
+  height: 1.2em;
+}
+.quick-upload-sparks span {
+  position: absolute;
+  inset: 0 auto auto 0;
+  font-size: 1.15em;
+  line-height: 1;
+  animation: quick-ascii-spark 2.6s steps(4, end) infinite;
+}
+.quick-upload-sparks span + span {
+  inset: auto 0 0 auto;
+  font-size: 0.7em;
+  animation-delay: -1.3s;
+}
 .quick-spark {
   display: inline-block;
 }
@@ -245,6 +295,27 @@
     opacity: 0.55;
   }
 }
+@keyframes quick-gold-glint {
+  0%,
+  60% {
+    left: -45%;
+  }
+  85%,
+  100% {
+    left: 120%;
+  }
+}
+@keyframes quick-ascii-spark {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
 @keyframes quick-enter {
   from {
     opacity: 0;
@@ -274,6 +345,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .quick-gold,
+  .quick-gold--upload::after,
+  .quick-upload-sparks span,
   .quick-dialog[open],
   .quick-spark {
     animation: none !important;
