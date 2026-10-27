@@ -19,7 +19,7 @@ Interaction thesis: card hover/focus indicates opening; one restrained dialog en
 - [x] Add explicit community publication with project stage. Saving a new plan is private until its creator publishes it.
 - [x] Support maintainable galleries and complete specifications with bounded input/storage, retaining a three-active-upload allowance rather than unlimited storage.
 - [x] Add EN/RU/ZH interface labels, keyboard/focus/error handling and responsive browser verification.
-- [ ] Run appropriate PostgreSQL, API, build, security and rendered-browser checks with disposable local data. Merge, deploy additive changes, inspect live read/access boundaries, and wait for completed final CI.
+- [x] Run PostgreSQL, API, build, security and rendered-browser checks with disposable local data. Merge and deploy the initial release, then inspect live read/access boundaries. Release-specific CI and deployment evidence is recorded in the verification report and local release directory.
 
 ## Trust and data boundaries
 

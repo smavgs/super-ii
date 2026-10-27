@@ -19,7 +19,7 @@ function initialize(root:HTMLElement){
   function safeLink(value:string){try{const u=new URL(value,location.origin);return (u.protocol==='https:'||u.origin===location.origin)&&!u.username&&!u.password?u.href:'';}catch{return '';}}
   function link(label:string,href:string,className=''){const a=el('a',label,className);const valid=safeLink(href);if(valid){a.href=valid;if(new URL(valid).origin!==location.origin){a.target='_blank';a.rel='noopener noreferrer';}}return a;}
   function image(url:string,alt:string){const i=el('img');i.src=safeLink(url);i.alt=alt;i.loading='lazy';i.decoding='async';i.referrerPolicy='no-referrer';i.addEventListener('error',()=>{i.dataset.failed='true';i.hidden=true;});return i;}
-  function imageFailures(scope:HTMLElement){for(const i of scope.querySelectorAll<HTMLImageElement>('img')){i.addEventListener('error',()=>{i.dataset.failed='true';i.hidden=true;});if(i.complete&&!i.naturalWidth){i.dataset.failed='true';i.hidden=true;}}}
+  function imageFailures(scope:HTMLElement){for(const i of scope.querySelectorAll<HTMLImageElement>('img')){i.addEventListener('error',()=>{i.dataset.failed='true';i.hidden=true;});if(i.getAttribute('src')&&i.complete&&!i.naturalWidth){i.dataset.failed='true';i.hidden=true;}}}
   function responsibility(item:ExplorerCard){return t(item.source==='company'?'Company maintained':item.source==='community'?'Community build':'Super ii reference');}
   function card(item:ExplorerCard){
     const company=item.record_type==='company';const a=link('',localPath(`/robots?${company?'company':'product'}=${item.id}`),'robot-explorer-card'+(company?' robot-company-tile':''));
@@ -99,7 +99,7 @@ function initialize(root:HTMLElement){
   window.addEventListener('popstate',()=>{const u=new URL(location.href);const id=u.searchParams.get('product')||u.searchParams.get('company');if(id)void open(id,false);else close(false);});
   for(const button of root.querySelectorAll<HTMLButtonElement>('[data-detail-tab]'))button.addEventListener('click',()=>{tab=button.dataset.detailTab!;void render();});
   $('[data-detail-copy]').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);$('[data-detail-status]').textContent=t('Link copied');}catch{$('[data-detail-status]').textContent=t('Copy failed. Copy the page address instead.');}});
-  $('[data-detail-qr]').addEventListener('click',()=>{if(!current)return;const box=$('[data-detail-qr-box]');const img=box.querySelector('img')!;img.src=`/api/robots/qr.svg?id=${current.id}`;box.hidden=!box.hidden;});
+  $('[data-detail-qr]').addEventListener('click',()=>{if(!current)return;const box=$('[data-detail-qr-box]');const img=box.querySelector('img')!;img.hidden=false;delete img.dataset.failed;img.src=`/api/robots/qr.svg?id=${current.id}`;box.hidden=!box.hidden;});
 
   function linksFor(resources:NonNullable<Detail['resources']>){const links=el('div','','robot-detail-links');for(const r of resources){if(!safeLink(r.url))continue;const host=new URL(safeLink(r.url)).hostname;const badge=host==='github.com'?'GitHub · ':host==='huggingface.co'?'🤗 Hugging Face · ':'';append(links,link(badge+r.label,r.url,badge?'robot-link-brand':''));}return links;}
   function gallery(d:Detail){

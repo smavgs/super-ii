@@ -34,14 +34,14 @@ positions. Uploads follow this sequence:
 5. the immutable UUID object is written to the private `SHOWCASE_MEDIA` R2
    binding; and
 6. a narrow Postgres function rechecks the global ceiling, verifies the owner,
-   enforces three successful uploads for the lifetime of the member account,
+   enforces three active images across the member account,
    and atomically allocates a display position.
 
 If metadata persistence fails, the Worker deletes the just-written object.
 Removing a showcase first resolves an owner-authorized target, requires the R2
 deletion to succeed and then marks its scrubbed database record removed. The
-record keeps only the accounting evidence needed to ensure removal never
-restores an upload. Public reads never accept a raw R2 key: the
+record retains minimal accounting evidence; removed images no longer count
+toward the three-active-image allowance, so removal frees a slot. Public reads never accept a raw R2 key: the
 image route asks `resolve_public_showcase_media`, which returns a key only while
 the owning profile/organization is public or the owning Robot is both public
 and published.
@@ -69,8 +69,8 @@ never bypassed.
   through the public image gateway.
 
 The migration smoke test exercises verified and rejected namespaces, the
-three-upload lifetime member ceiling across profile and Robot scopes, refusal
-to restore an upload after removal, collision-safe reordering, fail-closed
+three-active-image member ceiling across profile and Robot scopes, restored
+upload capacity after removal, collision-safe reordering, fail-closed
 public resolution, Robot metadata/links, unlinking and deletion under the
 least-privilege web role. Static contracts, TypeScript/Astro checks and the
 production build are also release requirements.
