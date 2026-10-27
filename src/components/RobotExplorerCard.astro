@@ -1,0 +1,21 @@
+---
+import {countryLabel,explorerName,type ExplorerCard} from '@/lib/robot-explorer';
+import {robotExplorerText} from '@/lib/robot-explorer-localization';
+const {item}=Astro.props as {item:ExplorerCard};
+const locale=Astro.locals.locale??'en';const t=(s:string)=>robotExplorerText(s,locale);
+const label=explorerName(item,locale);const company=item.record_type==='company';
+const state=item.source==='company'?'Company maintained':item.source==='community'?'Community build':'Super ii reference';
+---
+<a class:list={['robot-explorer-card',{'robot-company-tile':company}]} href={`/robots?${company?'company':'product'}=${item.id}`} data-explorer-open={item.id} data-explorer-type={item.record_type} aria-label={`${label} · ${t('Open details')}`} data-no-translate>
+  <div class="robot-card-image">
+    {(company?item.logo:item.cover)&&<img src={company?item.logo:item.cover} alt={company?`${label} logo`:label} loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
+    <span class="robot-photo-fallback" aria-hidden="true">{company?label.slice(0,2).toUpperCase():'◇'}<small>{t(company?'Logo not supplied':'Photo not yet available')}</small></span>
+  </div>
+  <div class="robot-card-copy">
+    {!company&&<span class="robot-card-maker">{item.logo&&<img src={item.logo} alt="" loading="lazy" referrerpolicy="no-referrer"/>}{item.company_name}</span>}
+    <strong>{item.family_name||label}</strong>
+    <span class="robot-card-country">{countryLabel(item.country??'',locale)}{!company&&item.source==='community'&&` · ${t(item.stage==='production'?'Built':item.stage==='prototype'||item.stage==='testing'?'Prototype':'Concept')}`}</span>
+    {!company&&<div class="robot-card-facts">{(item.highlights??[]).slice(0,2).map(f=><span title={f.label}>{t(f.label)}: {f.value}</span>)}</div>}
+    {!company&&<span class={`robot-responsibility robot-responsibility--${item.source}`}>{t(state)}{item.family_id&&` · ${t('Family')}`}</span>}
+  </div>
+</a>

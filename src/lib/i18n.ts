@@ -76,6 +76,7 @@ const localizableRoots = new Set([
   'repositories',
   'review',
   'robot',
+  'robots',
   'security',
   'sign-in',
   'sign-up',

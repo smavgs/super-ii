@@ -11,7 +11,8 @@ Super ii Robot connects Robot components, source evidence, compatibility claims,
 
 ## Public access
 
-- Human interface: https://superii.site/robot
+- Make Robot interface: https://superii.site/robot
+- Manufacturer catalogue: https://superii.site/robots (machine guide: /robots/agents.md)
 - Robot MCP: https://superii.site/mcp/robot
 - Robot A2A Agent Card: https://superii.site/.well-known/robot-agent-card.json
 - Robot A2A base: https://superii.site/a2a/robot/v1

@@ -116,7 +116,7 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
           <ol>
             <li><JourneyLabel kind="step" current={1} total={3} />Choose a goal and constraints.</li>
             <li><JourneyLabel kind="step" current={2} total={3} />Read every fit claim and unknown.</li>
-            <li><JourneyLabel kind="step" current={3} total={3} />Save a public or private version.</li>
+            <li><JourneyLabel kind="step" current={3} total={3} />Save a private draft. Publish when ready.</li>
           </ol>
         </header>
 
@@ -175,14 +175,14 @@ const manufacturerBrand = (manufacturer: string) => manufacturer === 'Raspberry 
           <section class="robot-result__wide"><h3>Open requirements</h3><ul data-plan-unknowns></ul><p class="robot-safety-note" data-plan-safety></p></section>
         </div>
         <details class="robot-save">
-          <summary>Save and share this Robot</summary>
+          <summary>Save this Robot draft</summary>
           <form data-robot-save>
             {organizationOwners.length > 0 && <label>Owner <select name="organization_id"><option value="" data-handle="you">Personal</option>{organizationOwners.map((organization) => <option value={organization.id} data-handle={organization.handle} data-no-translate>{organization.name}</option>)}</select></label>}
             <label>Robot title <input name="title" minlength="2" maxlength="160" required /></label>
             <label>Public URL name <span class="robot-field-prefix" data-robot-owner-prefix>superii.site/robot/you/</span><input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="96" required /></label>
             <label>Short summary <textarea name="summary" minlength="10" maxlength="2000" rows="3" required></textarea></label>
             <label>Who is it for? <input name="audience" maxlength="160" value="Makers learning mobile robotics" required /></label>
-            <fieldset><legend>Visibility</legend><label><input type="radio" name="visibility" value="public" checked /> Public · Free</label><label><input type="radio" name="visibility" value="private" /> Private · Pro</label></fieldset>
+            <p>Saving does not publish. Use Publish to Robots in Workspace when ready.</p><fieldset><legend>Publication preference</legend><label><input type="radio" name="visibility" value="public" checked /> Public · Free</label><label><input type="radio" name="visibility" value="private" /> Private · Pro</label></fieldset>
             <button class="button pixel-action" type="submit"><span class="pixel-action__copy"><JourneyLabel kind="step" current={3} total={3} /><strong>Save version 1</strong></span><i class="ph ph-arrow-right pixel-action__arrow" aria-hidden="true"></i></button>
             <p data-robot-save-status role="status" aria-live="polite">{signedIn ? 'Ready to save.' : 'You will be asked to join or log in before saving.'}</p>
           </form>

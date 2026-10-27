@@ -4,7 +4,7 @@ import { robotCatalog } from '@/lib/robot';
 interface Props {
   robots: Array<{
     id: string; owner_handle: string; owner_organization_id: string | null; slug: string;
-    title: string; summary: string; visibility: string; version_number: number; updated_at: string;
+    title: string; summary: string; visibility: string; status: string; version_number: number; updated_at: string;
     project_stage: string; capabilities: string[]; software_summary: string;
     showcase_links: Array<{ id: string; kind: string; label: string; url: string; position: number }>;
     showcase_media: Array<{ id: string; title: string; caption: string; alt_text: string; link_url: string | null; position: number; width: number; height: number }>;
@@ -24,12 +24,17 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
     <div><p class="eyebrow">Super ii Robot 🤖</p><h2>My Robots</h2></div>
     <a class="button button--dark button--small" href="/robot#make">Make Robot</a>
   </div>
-  <p>Keep the plan, its source evidence and every immutable version together. Public Robots are Free; private work uses your eligible plan.</p>
+  <p>Keep the plan, its source evidence and every immutable version together. Saved plans begin as private drafts. Publish a Robot free when you are ready.</p>
   {robots.length ? (
     <div class="account-list robot-workspace__robots">
       {robots.map((robot) => (
         <div class="robot-workspace__robot">
-          <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><strong data-no-translate>{robot.title}</strong><small>@<span data-no-translate>{robot.owner_handle}/{robot.slug}</span> · {robot.visibility} · v{robot.version_number}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <a href={`/robot/${encodeURIComponent(robot.owner_handle)}/${encodeURIComponent(robot.slug)}`}><span><strong data-no-translate>{robot.title}</strong><small>@<span data-no-translate>{robot.owner_handle}/{robot.slug}</span> · {robot.status === 'draft' ? 'Private draft' : robot.visibility} · v{robot.version_number}</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <form data-robot-publication={robot.id}>
+            <p>{robot.status === 'published' ? 'Visitors and agents can discover this published Robot.' : 'This saved plan is private until you choose to publish it.'}</p>
+            <label>Build stage<select name="stage">{[['concept','Concept'],['prototype','Prototype'],['testing','Prototype · testing'],['production','Built'],['research','Research']].map(([value,label])=><option value={value} selected={robot.project_stage===value}>{label}</option>)}</select></label>
+            <button type="submit" class="button button--dark button--small" data-publish={robot.status !== 'published'}>{robot.status === 'published' ? 'Unpublish from Robots' : 'Publish to Robots'}</button><p role="status" aria-live="polite"></p>
+          </form>
           <details>
             <summary>Make a new version</summary>
             <form data-robot-version={robot.id}>
@@ -93,7 +98,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
         </div>
       ))}
     </div>
-  ) : <div class="robot-workspace__empty"><p>You have not saved a Robot yet.</p><a href="/robot#make">Make your first public Robot free.</a></div>}
+  ) : <div class="robot-workspace__empty"><p>You have not saved a Robot yet.</p><a href="/robot#make">Make your first Robot free.</a></div>}
 
   <div class="robot-workspace__section" id="hardware">
     <div><p class="eyebrow">Private inventory · {canUsePrivate ? 'available' : 'Pro'}</p><h3>My Hardware</h3></div>
@@ -134,6 +139,10 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
 
 <script>
   const workspace = document.querySelector('[data-robot-workspace]');
+  workspace?.querySelectorAll<HTMLFormElement>('[data-robot-publication]').forEach(form=>form.addEventListener('submit',async event=>{
+    event.preventDefault();const button=form.querySelector<HTMLButtonElement>('button')!;const status=form.querySelector<HTMLElement>('[role=status]')!;button.disabled=true;status.textContent='Saving publication choice…';
+    try{const response=await fetch('/api/robots/publication',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({robot_id:form.dataset.robotPublication,publish:button.dataset.publish==='true',stage:new FormData(form).get('stage')})});const payload=await response.json() as {error?:string};if(!response.ok)throw new Error(payload.error);location.reload();}catch(error){status.textContent=error instanceof Error?error.message:'Please try again.';button.disabled=false;}
+  }));
   workspace?.querySelectorAll('form[data-robot-version]').forEach((form) => form.addEventListener('submit', async (event) => {
     event.preventDefault(); if (!(form instanceof HTMLFormElement)) return;
     const status = form.querySelector('[role=status]'); const data = new FormData(form);
@@ -247,7 +256,7 @@ const canUseTeam = plan === 'team' || plan === 'enterprise';
     const payload = await response.json() as { error?: string }; if (status) status.textContent = response.ok ? 'Image details saved.' : payload.error ?? 'Image details could not be saved.';
   }));
   workspace?.querySelectorAll<HTMLButtonElement>('[data-remove-robot-media]').forEach((button) => button.addEventListener('click', async () => {
-    const article = button.closest<HTMLElement>('[data-robot-media-id]'); if (!article || !confirm('Remove this public Robot image? Removing it does not restore an upload.')) return; button.disabled = true;
+    const article = button.closest<HTMLElement>('[data-robot-media-id]'); if (!article || !confirm('Remove this public Robot image? Removing it frees an upload slot.')) return; button.disabled = true;
     const response = await fetch(`/api/showcase/media/${article.dataset.robotMediaId}`, { method: 'DELETE' }); if (response.ok) location.reload(); else button.disabled = false;
   }));
 </script>

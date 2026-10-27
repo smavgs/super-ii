@@ -1,0 +1,11 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import {ensureAuthenticatedProfile} from '@/lib/auth';
+import {sqlClient} from '@/lib/db';
+import '@/styles/robots-explorer.css';
+import '@/styles/pixel-controls.css';
+Astro.response.headers.set('Cache-Control','private, no-store');
+let items:Array<{id:string;name:string;can_manage:boolean;pending:number}>=[];let failed=false;
+try{const sql=sqlClient(Astro.locals);if(!sql)throw new Error('unavailable');if(!(await ensureAuthenticatedProfile(Astro.locals,sql)))return Astro.redirect('/sign-in?redirect_url=%2Fworkspace%2Frobots');const rows=await sql`select value from app.robot_claim_workspaces() as value`;items=rows.map(r=>r.value);}catch{failed=true;Astro.response.status=503;}
+---
+<BaseLayout title="Robot companies" noindex preferLight><section class="shell robot-company-workspace workspace-skin"><a href="/workspace/products">← Company and products</a><p class="eyebrow">👾 ROBOTS / WORKSPACE</p><h1>Your robot companies</h1><p>Resume a company claim, manage products, or review requests for team access.</p><div class="robot-claim-products">{items.map(item=><div><strong data-no-translate>{item.name}</strong><a class="button button--secondary" href={`/workspace/robots/companies/${item.id}`}>{item.can_manage?'Manage company':'Open request'} · {item.pending} pending</a></div>)}</div>{failed?<p>Company requests are temporarily unavailable. Try again.</p>:!items.length&&<p>Find your company in Explore robots to start a claim.</p>}<a class="button button--dark" href="/robots">Explore robots →</a></section></BaseLayout>

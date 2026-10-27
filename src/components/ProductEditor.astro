@@ -11,6 +11,7 @@ import {
 import type { companyWorkspace } from "@/lib/product-store";
 import JourneyLabel from '@/components/JourneyLabel.astro';
 import "@/styles/products.css";
+import "@/styles/pixel-controls.css";
 interface Props {
   draft?: ProductDraft | null;
   workspace?: Awaited<ReturnType<typeof companyWorkspace>>;
@@ -48,7 +49,7 @@ const productFields = [
 ---
 
 <section
-  class="shell product-editor"
+  class="shell product-editor workspace-skin"
   data-product-editor
   data-signed-in={String(signedIn)}
   data-initial={JSON.stringify({ draft, workspace })}
@@ -257,8 +258,7 @@ const productFields = [
             upload.
           </p><div data-product-media class="product-media-options"></div>
           <p data-image-quota>
-            Three successful Showcase uploads per member account, for its
-            lifetime. Removing an image does not restore an upload.
+            Three active Showcase uploads per member account. Removing an image frees an upload slot.
           </p>
           <p>
             Company images are public whenever the company page is public,
@@ -288,6 +288,8 @@ const productFields = [
             type="button"
             data-image-upload>Save and upload image</button
           >
+          <h3>Gallery links</h3><p>Keep original manufacturer photographs with their source. Up to twelve images in total, including uploaded images.</p>
+          <div data-external-images></div><button type="button" class="text-button" data-add-external>Add a photograph link</button>
         </div>
       </details>
       <details name="product-editor-section">
@@ -466,6 +468,7 @@ const productFields = [
       </div><p>Company-provided information. Preview updates as you type.</p>
     </aside>
   </div>
+  <template data-external-template><fieldset><label>Public image URL<input type="url" data-field="url" maxlength="2048" required data-no-translate /></label><label>Image description<input data-field="alt" maxlength="500" data-no-translate /></label><label>Source page<input type="url" data-field="source_url" maxlength="2048" data-no-translate /></label><button type="button" class="text-button" data-remove-row>Remove</button></fieldset></template>
   <template data-spec-template
     ><fieldset class="product-repeat">
       <legend>Specification</legend><label

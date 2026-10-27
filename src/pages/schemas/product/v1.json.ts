@@ -32,12 +32,12 @@ const product = object({
   source_url: url,
   specs: {
     type: "array",
-    maxItems: 20,
+    maxItems: 256,
     items: object({
       label: text(100),
       label_zh: text(100),
-      value: text(500),
-      value_zh: text(500),
+      value: text(2000),
+      value_zh: text(2000),
       source_url: url,
     }),
   },
@@ -61,6 +61,7 @@ const product = object({
       url,
     }),
   },
+  external_images: {type:"array",maxItems:12,items:object({url,alt:text(500),source_url:url})},
   image_ids: {
     type: "array",
     maxItems: 3,
@@ -85,10 +86,10 @@ const schema = {
     product,
     images: {
       type: "array",
-      maxItems: 3,
+      maxItems: 12,
       items: object({
-        id: { type: "string", format: "uuid" },
-        alt_text: text(240),
+        id: { type: "string", pattern: "^(?:[0-9a-f-]{36}|external-[0-9]+)$" },
+        alt_text: text(500),
         title: text(200),
         caption: text(2000),
         image_url: url,
