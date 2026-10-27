@@ -5,6 +5,7 @@ export type InfoHelpEntry = {
 };
 
 export const infoHelp = {
+  robot: {label:'Robots',text:'Explore documented robots, their manufacturers and components. Reference pages identify their sources; company-maintained pages come from the company workspace. A listing is not a Super ii hardware test.',learnMore:'/robots'},
   agentFriendly: {
     label: 'Agent friendly',
     text: 'People can use Super ii on the website. AI agents can read public resources through documented files, APIs and MCP. Private or write actions need clear permission.',

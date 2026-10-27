@@ -114,13 +114,13 @@ export const productDocumentSchema = z
           .object({
             label: z.string().trim().min(1).max(100),
             label_zh: text(100),
-            value: z.string().trim().min(1).max(500),
-            value_zh: text(500),
+            value: z.string().trim().min(1).max(2000),
+            value_zh: text(2000),
             source_url: url,
           })
           .strict(),
       )
-      .max(20)
+      .max(256)
       .default([]),
     resources: z
       .array(
@@ -135,13 +135,18 @@ export const productDocumentSchema = z
       )
       .max(12)
       .default([]),
+    external_images: z.array(z.object({
+      url: url.refine(Boolean, "Add a public image link."),
+      alt: text(500),
+      source_url: url,
+    }).strict()).max(12).default([]),
     image_ids: z
       .array(z.uuid())
       .max(3)
       .refine((ids) => new Set(ids).size === ids.length)
       .default([]),
   })
-  .strict();
+  .strict().refine(doc => doc.external_images.length + doc.image_ids.length <= 12, {message:"Choose up to twelve gallery images.",path:["external_images"]});
 
 export type CompanyDocument = z.infer<typeof companyDocumentSchema>;
 export type ProductDocument = z.infer<typeof productDocumentSchema>;

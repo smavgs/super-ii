@@ -44,7 +44,7 @@ begin
     raise exception 'oversized Showcase upload passed the storage guard';
   end if;
   if app.showcase_uploads_remaining() <> 3 then
-    raise exception 'new member did not receive exactly three lifetime Showcase uploads';
+    raise exception 'new member did not receive exactly three active Showcase uploads';
   end if;
 end
 $storage_guard$;
@@ -148,9 +148,9 @@ begin
     );
   exception when check_violation then rejected := true;
   end;
-  if not rejected then raise exception 'fourth lifetime Showcase upload was accepted'; end if;
+  if not rejected then raise exception 'fourth active Showcase upload was accepted'; end if;
   if app.showcase_uploads_remaining() <> 0 then
-    raise exception 'three successful uploads did not exhaust the lifetime allowance';
+    raise exception 'three successful uploads did not exhaust the active allowance';
   end if;
 end
 $showcase_limit$;
@@ -192,8 +192,8 @@ begin
     or (select alt_text from app.showcase_media where id = current_setting('linked_showcase.media_two_id')::uuid) <> 'Removed image' then
     raise exception 'removed Showcase metadata was not safely retained and scrubbed';
   end if;
-  if app.showcase_uploads_remaining() <> 0 then
-    raise exception 'removing an image restored a lifetime upload';
+  if app.showcase_uploads_remaining() <> 1 then
+    raise exception 'removing an image did not free an active slot';
   end if;
   begin
     perform * from app.create_showcase_media(
@@ -203,7 +203,7 @@ begin
     );
   exception when check_violation then replacement_rejected := true;
   end;
-  if not replacement_rejected then raise exception 'removed Showcase image was replaced'; end if;
+  if replacement_rejected then raise exception 'replacement Showcase image was rejected'; end if;
 end
 $cleanup_contract$;
 

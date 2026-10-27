@@ -490,7 +490,7 @@ try {
     await productPreview(root, r, locals);
   }
   console.log(
-    "OK: company product creation/retry, private drafts, publication/pause, stale company and product edits, exact website binding, Card revocation, cross-company media, lifetime quota, real MCP and A2A published reads",
+    "OK: company product creation/retry, private drafts, publication/pause, stale company and product edits, exact website binding, Card revocation, cross-company media, active quota, real MCP and A2A published reads",
   );
 } finally {
   for (const org of organizations)

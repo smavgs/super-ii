@@ -19,6 +19,12 @@ const document = `# Super ii machine guide
 
 Super ii is a public AI collaboration hub for reviewed models, datasets, apps, notebooks, papers, collections, community activity, and their provenance. Public discovery is anonymous and read-only. Repository work is authenticated, scope-limited, receipt-producing, and uses an independent automatic publication policy.
 
+## Robots explorer
+
+- Human catalogue: https://superii.site/robots; public machine guide: https://superii.site/robots/agents.md.
+- Search /api/robots/explore?category=robot and read /api/robots/explore?id={uuid}. Sources distinguish Super ii reference, company maintained and community build. Missing evidence remains not disclosed.
+- Reference specifications are source assertions, not independent hardware tests. Claims and unpublished drafts stay private. Existing Make Robot engineering tools remain at /robot.
+
 ## Company product discovery
 
 - Directory: https://superii.site/products

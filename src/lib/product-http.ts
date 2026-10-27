@@ -118,7 +118,9 @@ export async function productPublicRate(
 
 export function productError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
-  const [status, text] = /version_conflict/u.test(message)
+  const [status, text] = /company_claim_required/u.test(message)
+    ? [403, "Verify your company claim before publishing this reference product."]
+    : /version_conflict/u.test(message)
     ? [409, "This draft changed in another tab. Reload it before saving."]
     : /permission_denied|reference_denied/u.test(message)
       ? [403, "This company, image or Card is not available to you."]

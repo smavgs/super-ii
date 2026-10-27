@@ -1,0 +1,10 @@
+{
+  "source": "https://www.robots.com/",
+  "source_date": "2026-10-21T09:30:23.727164+00:00",
+  "source_sha256": "d69b11708166363f7546d909aacff817508ed70b587c411bf2242adefbe61809",
+  "companies": 329,
+  "products": 1217,
+  "specifications": 15190,
+  "media_note": "External manufacturer images only; original collection links retained as source_images.",
+  "relationship_evidence": "/robot-library/relationships.json"
+}

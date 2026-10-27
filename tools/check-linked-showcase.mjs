@@ -93,4 +93,4 @@ for (const marker of ['Все публичные проекты', 'Внешни�
   requireText('src/lib/i18n.ts', marker);
 }
 
-console.log('Linked work and showcase check passed: verified provider links, public R2 media, three lifetime member uploads, profile portfolios, and Robot discovery are securely wired.');
+console.log('Linked work and showcase check passed: verified provider links, public R2 media, three active member uploads, profile portfolios, and Robot discovery are securely wired.');

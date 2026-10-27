@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import RobotExplorerCard from '@/components/RobotExplorerCard.astro';
+import {explorerQuery,searchRobotExplorer,type ExplorerSearch} from '@/lib/robot-explorer';
+import {robotExplorerText} from '@/lib/robot-explorer-localization';
+import '@/styles/pixel-controls.css';
+import '@/styles/robots-explorer.css';
+const locale=Astro.locals.locale??'en';const t=(s:string)=>robotExplorerText(s,locale);
+let query;try{query=explorerQuery(Astro.url.searchParams);}catch{query=explorerQuery(new URLSearchParams());}
+query.record_type='product';query.limit=6;
+let products:ExplorerSearch={items:[],total:0,offset:0,limit:6};let companies:ExplorerSearch={items:[],total:0,offset:0,limit:12};let unavailable=false;
+try{[products,companies]=await Promise.all([searchRobotExplorer(Astro.locals,query),searchRobotExplorer(Astro.locals,explorerQuery(new URLSearchParams({view:'companies',category:'all'})))]);}catch{unavailable=true;}
+Astro.response.headers.set('Cache-Control','no-store');
+---
+<BaseLayout title="Explore robots" description="Discover robots, their manufacturers, documented components and technical resources." preferLight>
+  <section class="shell robots-explorer" data-robots-explorer data-locale={locale} data-initial={JSON.stringify({products,companies,query,unavailable})} data-no-translate>
+    <header class="robot-explorer-heading">
+      <div><p class="eyebrow">👾 SUPER II / ROBOTS</p><h1>{t('Explore robots')}</h1><p>{t('Robots, people and the parts behind them.')}</p></div>
+      <div class="button-row"><a class="button robot-explorer-gold" href="/robot#make"><i class="ph ph-wrench" aria-hidden="true"></i>{t('Make Robot')}</a><a class="button button--secondary" href="/workspace/products/new">{t('Present a product')} ↗</a></div>
+    </header>
+    <form class="robot-explorer-search" data-robot-search action="/robots">
+      <label class="robot-search-box"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">{t('Search robots, companies and components')}</span><input type="search" name="q" maxlength="120" placeholder={t('Search robots, companies and components')} value={query.q}/></label>
+      <label><span class="sr-only">{t('All products')}</span><select name="category">{[['robot','Robots'],['all','All products'],['hand','Hands'],['component','Components']].map(([v,l])=><option value={v} selected={query.category===v}>{t(l)}</option>)}</select></label>
+      <label><span class="sr-only">{t('Source')}</span><select name="source">{[['all','All sources'],['reference','Super ii reference'],['company','Company maintained'],['community','Community build']].map(([v,l])=><option value={v} selected={query.source===v}>{t(l)}</option>)}</select></label>
+      <button class="button button--secondary" type="submit">{t('Search')}</button>
+    </form>
+    <div class="robot-result-bar"><p data-products-count role="status" aria-live="polite">{products.total} {t('results')}</p><div class="robot-page-controls"><button type="button" data-products-prev disabled={products.offset===0} aria-label={t('Previous')}>←</button><span data-products-page>1</span><button type="button" data-products-next disabled={products.offset+products.limit>=products.total} aria-label={t('Next')}>→</button></div></div>
+    <p class="robot-explorer-error" data-explorer-error role="status" hidden={!unavailable}>{t('The catalogue is temporarily unavailable. Try again.')}</p>
+    <div class="robot-explorer-gallery" data-robot-gallery>{products.items.map(item=><RobotExplorerCard {item}/>)}</div>
+    <p data-products-empty hidden={products.items.length>0||unavailable}>{t('No matching products. Try another search or filter.')}</p>
+    <section class="robot-company-directory" aria-labelledby="company-directory-title">
+      <div class="robot-company-heading"><h2 id="company-directory-title">{t('Companies')}</h2><form data-company-search><label><span class="sr-only">{t('Find a company')}</span><input name="q" type="search" placeholder={t('Find a company')} maxlength="120"/></label><label><span class="sr-only">{t('Any letter')}</span><select name="letter"><option value="">A–Z</option>{'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').map(c=><option>{c}</option>)}</select></label><button type="submit" class="button button--secondary">{t('Search')}</button></form><div class="robot-page-controls"><button type="button" data-companies-prev disabled aria-label={`${t('Companies')} · ${t('Previous')}`}>←</button><span data-companies-page>1</span><button type="button" data-companies-next disabled={companies.total<=companies.limit} aria-label={`${t('Companies')} · ${t('Next')}`}>→</button></div></div>
+      <div class="robot-company-grid" data-company-grid>{companies.items.map(item=><RobotExplorerCard {item}/>)}</div>
+      <p data-companies-empty hidden={companies.items.length>0||unavailable}>{t('No matching companies.')}</p>
+      <small class="robot-collection-note">{t('Current reference collection: China. More companies can publish their own products.')}</small>
+    </section>
+    <dialog class="robot-detail-panel" data-robot-detail aria-labelledby="robot-detail-title">
+      <header class="robot-detail-toolbar"><button type="button" data-detail-back class="text-button">← {t('Back')}</button><span data-detail-trail></span><button type="button" data-detail-close aria-label={t('Close')}>×</button></header>
+      <div class="robot-detail-heading"><div><p class="robot-responsibility" data-detail-responsibility></p><h2 id="robot-detail-title" tabindex="-1"></h2><p data-detail-maker></p></div><div class="robot-share-actions"><button type="button" data-detail-copy>{t('Copy link')}</button><button type="button" data-detail-qr>{t('QR code')}</button></div></div>
+      <p data-detail-status role="status" aria-live="polite"></p>
+      <div class="robot-detail-qr" data-detail-qr-box hidden><img width="180" height="180" alt={t('Share this view')}/></div>
+      <nav class="robot-detail-tabs" aria-label={t('Open details')}><button type="button" data-detail-tab="overview" aria-pressed="true">{t('Overview')}</button><button type="button" data-detail-tab="inside" aria-pressed="false">{t("What's inside")}</button><button type="button" data-detail-tab="specs" aria-pressed="false">{t('Specs & files')}</button></nav>
+      <div class="robot-detail-body" data-detail-body></div>
+    </dialog>
+  </section>
+</BaseLayout>
+<script>import '@/scripts/robots-explorer';</script>

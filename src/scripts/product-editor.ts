@@ -58,9 +58,9 @@ function initialize(root: HTMLElement) {
       if (input && typeof text === "string") input.value = text;
     }
   }
-  function rows(kind: "spec" | "resource") {
+  function rows(kind: "spec" | "resource" | "external") {
     return Array.from(
-      $(`[data-${kind === "spec" ? "specs" : "resources"}]`).querySelectorAll(
+      $(`[data-${kind === "spec" ? "specs" : kind === "external" ? "external-images" : "resources"}]`).querySelectorAll(
         "fieldset",
       ),
     ).map((row) =>
@@ -82,6 +82,7 @@ function initialize(root: HTMLElement) {
     product.specs = rows("spec");
     product.resources = rows("resource");
     product.image_ids = [...selected];
+    product.external_images = rows("external");
     return { company, product };
   }
   function validated() {
@@ -171,7 +172,8 @@ function initialize(root: HTMLElement) {
       }
     } catch {}
     const image = $<HTMLImageElement>("[data-preview-image]");
-    const first = media.find((item) => item.id === selected[0]);
+    const external = rows("external")[0];
+    const first = media.find((item) => item.id === selected[0]) ?? (external?.url ? {image_url:external.url,alt_text:external.alt} : null);
     image.hidden = !first;
     if (first) {
       image.src = first.image_url;
@@ -193,11 +195,11 @@ function initialize(root: HTMLElement) {
     }
   }
   function addRow(
-    kind: "spec" | "resource",
+    kind: "spec" | "resource" | "external",
     value: Record<string, unknown> = {},
   ) {
-    const holder = $(`[data-${kind === "spec" ? "specs" : "resources"}]`);
-    if (holder.children.length >= (kind === "spec" ? 20 : 12)) return;
+    const holder = $(`[data-${kind === "spec" ? "specs" : kind === "external" ? "external-images" : "resources"}]`);
+    if (holder.children.length >= (kind === "spec" ? 256 : 12)) return;
     const fragment = $<HTMLTemplateElement>(
       `[data-${kind}-template]`,
     ).content.cloneNode(true) as DocumentFragment;
@@ -250,6 +252,7 @@ function initialize(root: HTMLElement) {
     field(name)?.addEventListener("input", () => {
       field(name)!.dataset.manual = "true";
     });
+  for (const photo of draft?.product.external_images ?? []) addRow("external", photo);
   for (const spec of draft?.product.specs ?? []) addRow("spec", spec);
   for (const resource of draft?.product.resources ?? [])
     addRow("resource", resource);
@@ -262,6 +265,7 @@ function initialize(root: HTMLElement) {
         creationKey = saved.creationKey || creationKey;
         if (field("handle")) field("handle")!.value = saved.handle ?? "";
         if (field("slug")) field("slug")!.value = saved.slug ?? "";
+        for (const photo of saved.product?.external_images ?? []) addRow("external", photo);
         for (const spec of saved.product?.specs ?? []) addRow("spec", spec);
         for (const resource of saved.product?.resources ?? [])
           addRow("resource", resource);
@@ -405,6 +409,7 @@ function initialize(root: HTMLElement) {
       await save();
     });
   });
+  $("[data-add-external]").addEventListener("click", () => { addRow("external"); changed(); });
   $("[data-add-spec]").addEventListener("click", () => {
     addRow("spec");
     changed();
@@ -512,6 +517,14 @@ function initialize(root: HTMLElement) {
       });
       wrapper.appendChild(label);
       wrapper.appendChild(logo);
+      const remove = document.createElement("button"); remove.type="button"; remove.className="text-button"; remove.textContent=t("Remove image");
+      remove.onclick=async()=>{
+        if(!confirm(t("Remove this image from every page using it? This frees an upload slot."))) return;
+        remove.disabled=true;
+        try { await api(`/api/showcase/media/${item.id}`, {method:"DELETE"}); selected=selected.filter(id=>id!==item.id); if(field("company.logo_url")?.value.endsWith(`/showcase-images/${item.id}.jpg`))field("company.logo_url")!.value=""; await loadMedia(); changed(); }
+        catch(error){message(error instanceof Error?error.message:"Image could not be removed.",true);remove.disabled=false;}
+      };
+      wrapper.appendChild(remove);
       holder.appendChild(wrapper);
       check.addEventListener("change", () => {
         if (check.checked) {
@@ -536,7 +549,7 @@ function initialize(root: HTMLElement) {
     if (org !== requestedOrg) return;
     media = data.items;
     $("[data-image-quota]").textContent =
-      `${t("Uploads remaining")}: ${data.remaining}. ${t("Three successful Showcase uploads per member account, for its lifetime. Removing an image does not restore an upload.")}`;
+      `${t("Uploads remaining")}: ${data.remaining}. ${t("Three active Showcase uploads per member account. Removing an image frees an upload slot.")}`;
     renderMedia();
   }
   $<HTMLInputElement>("[data-image-file]").addEventListener(

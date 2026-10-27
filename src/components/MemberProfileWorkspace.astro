@@ -215,7 +215,7 @@ const emptySlots = Math.max(0, Math.min(3 - showcase.length, uploadsRemaining));
 
   showcaseEditor?.querySelectorAll<HTMLButtonElement>('[data-remove-showcase]').forEach((button) => button.addEventListener('click', async () => {
     const article = button.closest<HTMLElement>('[data-showcase-id]'); const itemStatus = article?.querySelector<HTMLElement>('[role=status]');
-    if (!article || !confirm('Remove this public Showcase image? Removing it does not restore an upload.')) return;
+    if (!article || !confirm('Remove this public Showcase image? Removing it frees an upload slot.')) return;
     button.disabled = true; if (itemStatus) itemStatus.textContent = 'Removing image…';
     const response = await fetch(`/api/showcase/media/${article.dataset.showcaseId}`, { method: 'DELETE' });
     if (response.ok) location.reload(); else { if (itemStatus) itemStatus.textContent = 'Image could not be removed.'; button.disabled = false; }

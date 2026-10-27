@@ -1,0 +1,11 @@
+[
+  {
+    "from": "7db14f2d-e355-4d4c-aef2-1c8495fc6c57",
+    "to": "743e1877-6659-5563-afe8-0b5c6008e72c",
+    "relationship": "compatible-option",
+    "variant": "G1 EDU; optional configuration",
+    "description": "Unitree lists Dex3-1 as an optional three-finger hand for G1 EDU. It is not standard equipment on the base G1.",
+    "sources": ["https://www.unitree.com/g1/", "https://www.unitree.com/Dex3-1/"],
+    "checked_at": "2026-10-26"
+  }
+]

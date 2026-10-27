@@ -158,9 +158,9 @@ export async function getAccessibleRobot(
      left join app.organizations organization on organization.id = robot.owner_organization_id
      where lower(coalesce(profile.handle, organization.handle)) = lower($1)
        and lower(robot.slug) = lower($2)
-       and robot.status = 'published'
+       and robot.status in ('draft','published')
        and (
-         robot.visibility = 'public'
+         (robot.visibility = 'public' and robot.status = 'published')
          or robot.owner_profile_id = $3::uuid
          or exists (select 1 from app.organization_members member where member.organization_id = robot.owner_organization_id and member.profile_id = $3::uuid)
        )
