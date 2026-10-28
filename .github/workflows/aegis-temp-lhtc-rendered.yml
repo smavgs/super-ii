@@ -1,0 +1,191 @@
+name: Aegis temporary LH-TC rendered image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lhtc-rendered.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0 playwright==1.55.0
+      - name: Ensure Chromium
+        shell: bash
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "Using $(command -v google-chrome)"
+          elif command -v chromium >/dev/null 2>&1; then
+            echo "Using $(command -v chromium)"
+          else
+            python -m playwright install chromium
+          fi
+      - name: Render official LH-TC pages and recover exact model images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64, io, json, pathlib, re, shutil, warnings
+          from urllib.parse import urljoin,urlparse
+          from PIL import Image
+          from playwright.sync_api import sync_playwright
+          warnings.filterwarnings("ignore")
+
+          root=pathlib.Path("."); out=root/"lhtc-rendered"; out.mkdir(exist_ok=True)
+          all_entries=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]
+          entries=[x for x in all_entries if x.get("manufacturer")=="LH-TC"]
+          BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","contact","banner","header","footer","menu","search","home","about","news","service","tel","phone","map","code","default")
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s);return s[:100].strip(' .-')
+          def urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            a=list(dict.fromkeys(a))
+            a.sort(key=lambda u:(0 if re.search(r'(product_show|ltc-|mrt-|ltfd-|gripper|compensation)',u,re.I) else 1,len(u)))
+            return a
+          # enrich entries with records/pages
+          jobs=[]
+          for it in entries:
+            try:rec=json.loads((root/"public/robot-library/records"/f"{it['id']}.json").read_text())
+            except:continue
+            us=urls(rec)
+            if us:jobs.append((it,rec,us[0]))
+          grouped={}
+          for it,rec,u in jobs:grouped.setdefault(u,[]).append((it,rec))
+
+          chrome=shutil.which("google-chrome") or shutil.which("chromium")
+          results=[]
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True,executable_path=chrome if chrome else None,args=["--no-sandbox","--disable-dev-shm-usage"])
+            context=browser.new_context(viewport={"width":1440,"height":1200},user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36")
+            page=context.new_page()
+
+            def image_bytes(u,ref):
+              if u.startswith("data:image/"):
+                try:
+                  head,data=u.split(",",1)
+                  return base64.b64decode(data) if ";base64" in head else data.encode()
+                except:return None,u
+              try:
+                rr=context.request.get(u,headers={"Referer":ref},timeout=12000)
+                if not rr.ok:return None,u
+                return rr.body(),u
+              except:return None,u
+            def valid(b):
+              if not b or len(b)<1200:return None
+              try:
+                im=Image.open(io.BytesIO(b));im.load()
+                if im.width<100 or im.height<80:return None
+                return im.width,im.height,im.format
+              except:return None
+            def ext(u,fmt):
+              e=pathlib.Path(urlparse(u).path).suffix.lower()
+              if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+              f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+
+            for page_url,pairs in grouped.items():
+              network=[]
+              def onresp(resp):
+                try:
+                  if resp.request.resource_type=="image":network.append(resp.url)
+                except:pass
+              page.on("response",onresp)
+              try:
+                page.goto(page_url,wait_until="domcontentloaded",timeout=30000)
+                page.wait_for_timeout(1200)
+                page.evaluate("""async()=>{for(let y=0;y<document.body.scrollHeight;y+=700){window.scrollTo(0,y);await new Promise(r=>setTimeout(r,80));}window.scrollTo(0,0);}""")
+                page.wait_for_timeout(1000)
+              except Exception as e:
+                for it,rec in pairs:results.append({"index":it["index"],"name":it["name"],"ok":False,"error":f"goto:{type(e).__name__}","page":page_url})
+                page.remove_listener("response",onresp);continue
+              for it,rec in pairs:
+                idx,name=it["index"],it["name"]
+                try:
+                  cand=page.evaluate("""(name)=>{
+                    const N=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+                    const target=N(name);
+                    const els=[...document.querySelectorAll('body *')].filter(e=>{
+                      const t=N(e.innerText||e.textContent||'');
+                      return target && t.includes(target) && t.length<Math.max(target.length*8,220);
+                    }).sort((a,b)=>(a.innerText||a.textContent||'').length-(b.innerText||b.textContent||'').length).slice(0,12);
+                    const urls=[];
+                    function addFrom(root,bonus,why){
+                      if(!root)return;
+                      const nodes=[root,...root.querySelectorAll('*')];
+                      for(const e of nodes){
+                        if(e.tagName==='IMG'){
+                          const u=e.currentSrc||e.src||e.getAttribute('data-src')||e.getAttribute('data-original')||'';
+                          if(u)urls.push({u,bonus,why});
+                        }
+                        if(e.tagName==='SOURCE'){
+                          const u=e.srcset||e.getAttribute('data-srcset')||'';
+                          if(u)urls.push({u:u.split(',')[0].trim().split(/\s+/)[0],bonus,why});
+                        }
+                        const bg=getComputedStyle(e).backgroundImage||'';
+                        const m=bg.match(/url\(["']?(.*?)["']?\)/);
+                        if(m&&m[1])urls.push({u:m[1],bonus:bonus-5,why:why+'-bg'});
+                      }
+                    }
+                    for(const e of els){
+                      const tr=e.closest('tr');
+                      if(tr){
+                        addFrom(tr,160,'exact-row');
+                        let p=tr.previousElementSibling;
+                        for(let d=1;d<=3&&p;d++,p=p.previousElementSibling)addFrom(p,155-d*7,'previous-row');
+                        let n=tr.nextElementSibling;if(n)addFrom(n,135,'next-row');
+                      }
+                      let a=e;
+                      for(let d=0;d<4&&a;d++,a=a.parentElement)addFrom(a,145-d*10,'exact-block');
+                    }
+                    if(!urls.length){
+                      const title=N(document.title);
+                      if(title.includes(target)){
+                        for(const im of [...document.images].slice(0,30)){
+                          const u=im.currentSrc||im.src||'';if(u)urls.push({u,bonus:90,why:'exact-page'});
+                        }
+                      }
+                    }
+                    const seen=new Set();return urls.filter(x=>x.u&&!seen.has(x.u)&&(seen.add(x.u),true));
+                  }""",name)
+                except Exception as e:cand=[]
+                scored=[]
+                for x in cand[:60]:
+                  u=urljoin(page.url,x.get("u",""))
+                  un=norm(u)
+                  if any(b in un for b in BAD):continue
+                  b,final=image_bytes(u,page.url);v=valid(b)
+                  if not v:continue
+                  w,h,fmt=v;ratio=max(w/h,h/w)
+                  if ratio>5:continue
+                  score=float(x.get("bonus",0))+min(w*h/12000,80)+min(len(b)/15000,30)
+                  scored.append((score,b,final,w,h,fmt,x.get("why")))
+                if scored:
+                  scored.sort(key=lambda x:x[0],reverse=True)
+                  sc,b,u,w,h,fmt,why=scored[0]
+                  fn=f"{idx:03d} - LH-TC - {clean(name)}{ext(u,fmt)}";(out/fn).write_bytes(b)
+                  results.append({"index":idx,"name":name,"ok":True,"file":fn,"source":u,"page":page_url,"dimensions":[w,h],"score":round(sc,2),"evidence":"rendered-"+str(why)})
+                else:
+                  results.append({"index":idx,"name":name,"ok":False,"page":page_url,"error":"no-rendered-model-image","network_images":len(set(network))})
+              page.remove_listener("response",onresp)
+            browser.close()
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_lhtc-rendered-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          for r in results:print(json.dumps(r,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lhtc-rendered
+          path: lhtc-rendered/
+          if-no-files-found: error
+          retention-days: 1
