@@ -1,0 +1,94 @@
+name: Aegis temporary LENFOR frontend image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lenfor-frontend.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact LENFOR model images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,warnings
+          from urllib.parse import urljoin,urlparse,quote
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          warnings.filterwarnings("ignore")
+          root=pathlib.Path(".");out=root/"lenfor-frontend";out.mkdir(exist_ok=True)
+          entries=[x for x in json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"] if x.get("manufacturer")=="LENFOR"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 Chrome/155 Safari/537.36","Accept-Language":"zh-CN,zh;q=0.9,en;q=0.8"})
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip()[:100]
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return (im.width,im.height,im.format) if len(b)>=1200 and im.width>=100 and im.height>=80 else None
+            except:return None
+          def ext(u,fmt):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+            f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+          results=[]
+          for it in entries:
+            model=it["name"];url="https://www.lenfortech.com/products/model/"+quote(model,safe="-_.")
+            try:r=S.get(url,timeout=20);r.raise_for_status()
+            except Exception as e:
+              results.append({"index":it["index"],"name":model,"ok":False,"error":"page:"+type(e).__name__});continue
+            soup=BeautifulSoup(r.text,"html.parser");cand=[]
+            for tag in soup.find_all(["img","source"]):
+              lab=norm((tag.get("alt") or "")+" "+(tag.get("title") or ""))
+              vals=[]
+              for a in ("src","data-src","data-original","data-lazy-src"):
+                v=tag.get(a)
+                if isinstance(v,str) and v:vals.append(v)
+              ss=tag.get("srcset") or tag.get("data-srcset")
+              if isinstance(ss,str):vals += [x.strip().split()[0] for x in ss.split(",") if x.strip()]
+              for v in vals:
+                u=urljoin(r.url,v)
+                score=0
+                if norm(model) in lab:score=300
+                elif norm(model) in norm(u):score=260
+                elif "product" in norm(u):score=120
+                if score:cand.append((score,u))
+            # Next/Vue page source may contain escaped asset URLs near exact model
+            raw=r.text
+            for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)(?:"|')''',raw,re.I):
+              u=urljoin(r.url,m.group(1).replace("\\/","/"));pos=m.start();win=norm(raw[max(0,pos-2500):pos+2500])
+              if norm(model) in win:cand.append((240,u))
+            uniq={}
+            for sc,u in cand:
+              if u not in uniq or sc>uniq[u]:uniq[u]=sc
+            best=None
+            for u,base in uniq.items():
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15);ir.raise_for_status();v=valid(ir.content)
+              except:continue
+              if not v:continue
+              w,h,fmt=v;ratio=max(w/h,h/w)
+              if ratio>5:continue
+              score=base+min(w*h/10000,100)+min(len(ir.content)/15000,40)
+              if best is None or score>best[0]:best=(score,ir,w,h,fmt)
+            if best:
+              sc,ir,w,h,fmt=best;fn=f"{it['index']:03d} - LENFOR - {clean(model)}{ext(ir.url,fmt)}";(out/fn).write_bytes(ir.content)
+              results.append({"index":it["index"],"name":model,"ok":True,"file":fn,"source":ir.url,"page":url,"dimensions":[w,h],"score":round(sc,2)})
+            else:
+              results.append({"index":it["index"],"name":model,"ok":False,"page":url,"candidates":len(uniq)})
+          ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_lenfor-frontend-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(json.dumps(results,ensure_ascii=False,indent=2));print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lenfor-frontend
+          path: lenfor-frontend/
+          retention-days: 1
