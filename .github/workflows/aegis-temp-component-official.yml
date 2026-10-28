@@ -1,0 +1,198 @@
+name: Aegis temporary official component image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-component-official.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Recover exact images from official manufacturer product pages
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, html, json, pathlib, re, urllib.request, urllib.error
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin, urlparse
+
+          root=pathlib.Path(".")
+          out=root/"component-official-images"
+          out.mkdir(exist_ok=True)
+          entries=json.loads((root/".aegis-temp/component-images-missing.json").read_text())["missing"]
+
+          aliases={
+            "Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS",
+            "DH-Robotics Technology Co., Ltd.":"DH-Robotics",
+            "Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars",
+            "Mech-Mind Robotics":"Mech-Mind",
+          }
+          BAD=("logo","banner","icon","favicon","wechat","weixin","qr","avatar","loading","placeholder","sprite","footer","header")
+
+          def norm(s):
+            return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip()
+            s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def valid(data,ctype):
+            if not data or len(data)<800: return False
+            if data.startswith(b"\xff\xd8\xff"): return True
+            if data.startswith(b"\x89PNG\r\n\x1a\n"): return True
+            if len(data)>=12 and data[:4]==b"RIFF" and data[8:12]==b"WEBP": return True
+            if data.startswith((b"GIF87a",b"GIF89a")): return True
+            h=data[:512].lstrip().lower()
+            return b"<svg" in h and "image/svg" in (ctype or "").lower()
+          def ext_for(url,ctype,data):
+            p=pathlib.Path(urlparse(url).path).suffix.lower()
+            if p in {".jpg",".jpeg",".png",".webp",".gif",".svg"}: return ".jpg" if p==".jpeg" else p
+            c=(ctype or "").lower()
+            if "jpeg" in c:return ".jpg"
+            if "png" in c:return ".png"
+            if "webp" in c:return ".webp"
+            if "gif" in c:return ".gif"
+            if "svg" in c:return ".svg"
+            if data.startswith(b"\xff\xd8\xff"):return ".jpg"
+            if data.startswith(b"\x89PNG"):return ".png"
+            if len(data)>=12 and data[:4]==b"RIFF" and data[8:12]==b"WEBP":return ".webp"
+            return ""
+
+          class P(HTMLParser):
+            def __init__(self):
+              super().__init__(); self.meta=[]; self.img=[]; self.links=[]; self.scripts=[]; self._ld=False; self._buf=[]; self.title=[]; self._title=False
+            def handle_starttag(self,tag,attrs):
+              d=dict(attrs)
+              if tag=="meta": self.meta.append(d)
+              elif tag=="img": self.img.append(d)
+              elif tag=="link": self.links.append(d)
+              elif tag=="script" and "ld+json" in d.get("type","").lower(): self._ld=True; self._buf=[]
+              elif tag=="title": self._title=True
+            def handle_endtag(self,tag):
+              if tag=="script" and self._ld:
+                self.scripts.append("".join(self._buf)); self._ld=False; self._buf=[]
+              elif tag=="title": self._title=False
+            def handle_data(self,data):
+              if self._ld:self._buf.append(data)
+              if self._title:self.title.append(data)
+
+          def walk_ld(x, modeln, outc):
+            if isinstance(x,dict):
+              typ=str(x.get("@type","")).lower()
+              nm=norm(x.get("name",""))
+              if ("product" in typ or (modeln and modeln==nm)) and x.get("image"):
+                im=x["image"]
+                if isinstance(im,str): outc.append((120,im,"jsonld"))
+                elif isinstance(im,list):
+                  for u in im:
+                    if isinstance(u,str): outc.append((120,u,"jsonld"))
+                    elif isinstance(u,dict) and isinstance(u.get("url"),str): outc.append((120,u["url"],"jsonld"))
+                elif isinstance(im,dict) and isinstance(im.get("url"),str): outc.append((120,im["url"],"jsonld"))
+              for v in x.values(): walk_ld(v,modeln,outc)
+            elif isinstance(x,list):
+              for v in x: walk_ld(v,modeln,outc)
+
+          def fetch(url, headers, timeout=10):
+            req=urllib.request.Request(url,headers=headers)
+            with urllib.request.urlopen(req,timeout=timeout) as r:
+              return r.read(),r.headers.get("Content-Type",""),r.geturl()
+
+          def one(item):
+            idx,rid=item["index"],item["id"]
+            try: rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"id":rid,"ok":False,"stage":"record","error":str(e)}
+            name=rec.get("name") or rid; modeln=norm(name)
+            maker=((rec.get("makers") or [{}])[0].get("name") or "Unknown")
+            page=rec.get("website") or ((rec.get("resources") or [{}])[0].get("url") if rec.get("resources") else "") or ((rec.get("seed") or {}).get("source_url") or "")
+            if not page or not page.startswith("http") or "robots.com/" in page:
+              return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"page","error":"no exact official product page","page":page}
+            headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,application/xhtml+xml,*/*;q=0.8","Accept-Language":"en-US,en;q=0.8"}
+            try:
+              body,ctype,final=fetch(page,headers,10)
+              text=body.decode("utf-8","ignore")
+            except Exception as e:
+              return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"page","error":str(e),"page":page}
+            p=P()
+            try:p.feed(text)
+            except Exception:pass
+            title=html.unescape(" ".join(p.title))
+            page_has_name = bool(modeln and (modeln in norm(title) or modeln in norm(text[:200000])))
+            cand=[]
+            walk_ld_many=[]
+            for s in p.scripts:
+              try: walk_ld(json.loads(s),modeln,cand)
+              except Exception: pass
+            for m in p.meta:
+              key=(m.get("property") or m.get("name") or "").lower()
+              u=m.get("content","")
+              if key in {"og:image","og:image:url","twitter:image","twitter:image:src"} and u:
+                cand.append((70 if page_has_name else 35,u,key))
+            for l in p.links:
+              if "image_src" in (l.get("rel") or "") and l.get("href"):
+                cand.append((65 if page_has_name else 30,l["href"],"image_src"))
+            for im in p.img:
+              u=im.get("src") or im.get("data-src") or im.get("data-original") or im.get("data-lazy-src") or ""
+              if not u: continue
+              label=" ".join([im.get("alt",""),im.get("title","")])
+              un=norm(u); ln=norm(label)
+              score=0
+              if modeln and modeln in ln: score=115
+              elif modeln and len(modeln)>=4 and modeln in un: score=105
+              elif page_has_name and not any(b in un for b in BAD): score=45
+              if score:cand.append((score,u,"img"))
+            uniq={}
+            for score,u,why in cand:
+              try: full=urljoin(final,u)
+              except: continue
+              if not full.startswith("http"):continue
+              un=norm(full)
+              if any(b in un for b in BAD): continue
+              if full not in uniq or score>uniq[full][0]:uniq[full]=(score,why)
+            ordered=sorted(((s,u,w) for u,(s,w) in uniq.items()),reverse=True)
+            strong=[x for x in ordered if x[0]>=70]
+            if not strong:
+              return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"candidate","error":"no high-confidence product image","page":final,"candidates":len(ordered)}
+            ih={"User-Agent":headers["User-Agent"],"Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8","Referer":final}
+            last=""
+            for score,u,why in strong[:6]:
+              try:
+                data,ict,iu=fetch(u,ih,10)
+                if not valid(data,ict): raise ValueError(f"not-image {ict} {len(data)}")
+                ex=ext_for(iu,ict,data)
+                if not ex: raise ValueError("unknown image format")
+                fam=((rec.get("family") or {}).get("name") or "")
+                mm=aliases.get(maker,maker)
+                parts=[f"{idx:03d}",clean(mm)]
+                if fam and norm(fam)!=modeln:parts.append(clean(fam))
+                parts.append(clean(name))
+                fn=" - ".join(parts)+ex
+                (out/fn).write_bytes(data)
+                return {"index":idx,"id":rid,"name":name,"ok":True,"file":fn,"bytes":len(data),"page":final,"source":iu,"score":score,"evidence":why}
+              except Exception as e:last=str(e)
+            return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"image","error":last,"page":final,"candidates":len(strong)}
+
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=64) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for n,f in enumerate(concurrent.futures.as_completed(fs),1):
+              r=f.result();results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+              if n%25==0:print(f"PROGRESS {n}/{len(entries)}",flush=True)
+          results.sort(key=lambda x:x["index"])
+          ok=sum(bool(x.get("ok")) for x in results)
+          report={"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results}
+          (out/"_official-recovery-report.json").write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - name: Upload official originals
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-official-originals
+          path: component-official-images/
+          if-no-files-found: error
+          retention-days: 1
