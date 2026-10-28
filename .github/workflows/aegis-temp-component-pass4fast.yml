@@ -28,7 +28,8 @@ jobs:
           warnings.filterwarnings("ignore")
 
           root=pathlib.Path("."); out=root/"component-pass4fast"; out.mkdir(exist_ok=True)
-          entries=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]\n          entries=[x for x in entries if x.get("manufacturer")!="LH-TC"]
+          entries=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]
+          entries=[x for x in entries if x.get("manufacturer")!="LH-TC"]
           aliases={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars","Mech-Mind Robotics":"Mech-Mind"}
           BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","contact","banner","header","footer","menu","search","language","facebook","linkedin","youtube","loading","placeholder","sprite","home.","home_","about","news","service","tel","phone","map","code.png","default")
           IMGEXT=(".jpg",".jpeg",".png",".webp",".gif",".bmp")
