@@ -96,7 +96,7 @@ jobs:
             for im in p.img:
               u=im.get("src") or im.get("data-src") or im.get("data-original") or im.get("data-lazy-src") or ""
               if not u:continue
-              ln=norm((im.get("alt","")+" "+im.get("title",""))); un=norm(u);s=0
+              ln=norm(str(im.get("alt") or "")+" "+str(im.get("title") or "")); un=norm(u);s=0
               if m and m in ln:s=115
               elif m and len(m)>=4 and m in un:s=105
               elif has and not any(b in un for b in BAD):s=45
