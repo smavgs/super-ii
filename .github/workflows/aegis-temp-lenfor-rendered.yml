@@ -1,0 +1,101 @@
+name: Aegis temporary LENFOR rendered image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lenfor-rendered.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet playwright==1.55.0 pillow==12.0.0
+      - run: |
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then python -m playwright install chromium; fi
+      - name: Recover rendered LENFOR model images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,shutil
+          from urllib.parse import quote,urlparse
+          from PIL import Image
+          from playwright.sync_api import sync_playwright
+          root=pathlib.Path(".");out=root/"lenfor-rendered";out.mkdir(exist_ok=True)
+          entries=[x for x in json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"] if x.get("manufacturer")=="LENFOR"]
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip()[:100]
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return (im.width,im.height,im.format) if len(b)>=1200 and im.width>=100 and im.height>=80 else None
+            except:return None
+          def ext(u,fmt):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+            f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+          results=[]
+          chrome=shutil.which("google-chrome") or shutil.which("chromium")
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True,executable_path=chrome if chrome else None,args=["--no-sandbox"])
+            ctx=browser.new_context(viewport={"width":1440,"height":1000},user_agent="Mozilla/5.0 Chrome/155 Safari/537.36")
+            page=ctx.new_page()
+            for it in entries:
+              model=it["name"];url="https://www.lenfortech.com/products/model/"+quote(model,safe="-_.")
+              try:
+                page.goto(url,wait_until="networkidle",timeout=30000)
+              except:
+                try:page.goto(url,wait_until="domcontentloaded",timeout=30000);page.wait_for_timeout(1800)
+                except Exception as e:
+                  results.append({"index":it["index"],"name":model,"ok":False,"error":"goto"});continue
+              cand=page.evaluate("""(model)=>{
+                const n=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+                const t=n(model), out=[];
+                for(const im of document.querySelectorAll('img')){
+                  const label=n((im.alt||'')+' '+(im.title||''));
+                  const u=im.currentSrc||im.src||im.getAttribute('data-src')||'';
+                  if(!u)continue;
+                  let score=0;
+                  if(label.includes(t))score=300;
+                  else if(n(u).includes(t))score=270;
+                  else {
+                    const p=n(im.parentElement?.innerText||'');
+                    if(p.includes(t))score=220;
+                  }
+                  if(score)out.push({u,score,alt:im.alt||''});
+                }
+                for(const s of document.querySelectorAll('source')){
+                  const u=(s.srcset||'').split(',')[0].trim().split(/\s+/)[0];
+                  if(u&&n(u).includes(t))out.push({u,score:260,alt:''});
+                }
+                return out;
+              }""",model)
+              best=None
+              for c in cand:
+                u=c["u"]
+                try:
+                  rr=ctx.request.get(u,headers={"Referer":page.url},timeout=15000)
+                  if not rr.ok:continue
+                  b=rr.body();v=valid(b)
+                except:continue
+                if not v:continue
+                w,h,fmt=v;ratio=max(w/h,h/w)
+                if ratio>5:continue
+                score=c["score"]+min(w*h/10000,100)+min(len(b)/15000,40)
+                if best is None or score>best[0]:best=(score,b,u,w,h,fmt,c.get("alt",""))
+              if best:
+                sc,b,u,w,h,fmt,alt=best;fn=f"{it['index']:03d} - LENFOR - {clean(model)}{ext(u,fmt)}";(out/fn).write_bytes(b)
+                results.append({"index":it["index"],"name":model,"ok":True,"file":fn,"source":u,"page":url,"dimensions":[w,h],"score":round(sc,2),"alt":alt})
+              else:results.append({"index":it["index"],"name":model,"ok":False,"page":url,"candidates":cand})
+            browser.close()
+          ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_lenfor-rendered-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(json.dumps(results,ensure_ascii=False,indent=2));print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lenfor-rendered
+          path: lenfor-rendered/
+          retention-days: 1
