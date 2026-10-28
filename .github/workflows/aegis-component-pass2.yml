@@ -1,0 +1,160 @@
+name: Aegis component recovery pass 2
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-component-pass2.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Recover exact manufacturer images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, json, pathlib, re, urllib.parse, urllib.request
+          from html.parser import HTMLParser
+
+          ROOT=pathlib.Path(".")
+          OUT=ROOT/"component-pass2"; OUT.mkdir(exist_ok=True)
+          entries=json.loads((ROOT/".aegis-temp/component-images-missing-2.json").read_text())["missing"]
+          BAD=("logo","icon","favicon","banner","wechat","weixin","qr","avatar","loading","placeholder","sprite")
+          EXTS=(".jpg",".jpeg",".png",".webp",".gif")
+          ALIAS={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars","Mech-Mind Robotics":"Mech-Mind"}
+
+          def norm(s): return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip()
+            return re.sub(r'\s+',' ',s)[:100].strip(' .-') or "Unknown"
+          def toks(s): return [x.lower() for x in re.findall(r"[A-Za-z0-9]+",str(s or "")) if len(x)>=3]
+          def fetch(u,accept="*/*",ref=None,timeout=10):
+            h={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":accept,"Accept-Language":"en-US,en;q=0.8"}
+            if ref:h["Referer"]=ref
+            q=urllib.request.Request(u,headers=h)
+            with urllib.request.urlopen(q,timeout=timeout) as r: return r.read(),r.headers.get("Content-Type",""),r.geturl()
+          def valid(d,c):
+            return bool(d and len(d)>800 and (d.startswith(b"\xff\xd8\xff") or d.startswith(b"\x89PNG\r\n\x1a\n") or (len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP") or d.startswith((b"GIF87a",b"GIF89a"))))
+          def ext(u,c,d):
+            e=pathlib.Path(urllib.parse.urlparse(u).path).suffix.lower()
+            if e in EXTS:return ".jpg" if e==".jpeg" else e
+            c=(c or "").lower()
+            if "jpeg" in c or d.startswith(b"\xff\xd8\xff"):return ".jpg"
+            if "png" in c or d.startswith(b"\x89PNG"):return ".png"
+            if "webp" in c or (len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP"):return ".webp"
+            if "gif" in c:return ".gif"
+            return ""
+          def fname(rec,idx,e):
+            maker=((rec.get("makers") or [{}])[0].get("name") or "Unknown"); maker=ALIAS.get(maker,maker)
+            fam=((rec.get("family") or {}).get("name") or ""); name=rec.get("name") or rec.get("model") or rec["id"]
+            p=[f"{idx:03d}",clean(maker)]
+            if fam and norm(fam)!=norm(name):p.append(clean(fam))
+            p.append(clean(name))
+            return " - ".join(p)+e
+          def save(rec,idx,u,why,ref=None):
+            if not isinstance(u,str) or not u.startswith(("http://","https://")):return None
+            if any(b in norm(u) for b in BAD):return None
+            try:
+              d,c,final=fetch(u,"image/avif,image/webp,image/apng,image/*,*/*;q=0.8",ref,10)
+              if not valid(d,c):return None
+              e=ext(final,c,d)
+              if not e:return None
+              fn=fname(rec,idx,e); (OUT/fn).write_bytes(d)
+              return {"index":idx,"id":rec["id"],"name":rec.get("name"),"ok":True,"file":fn,"source":final,"evidence":why,"bytes":len(d)}
+            except Exception:return None
+
+          class P(HTMLParser):
+            def __init__(self): super().__init__(); self.attrs=[]; self.text=[]
+            def handle_starttag(self,t,a): self.attrs.append((t,{k:(v or "") for k,v in a}))
+            def handle_data(self,d): self.text.append(d)
+
+          def score(u,label,name,page_exact):
+            if any(b in norm(u) for b in BAD):return -1
+            N=norm(name); U=norm(urllib.parse.unquote(u)); L=norm(label); ts=toks(name)
+            s=0
+            if N and N in U:s+=140
+            if N and N in L:s+=140
+            hits=sum(1 for t in ts if t in u.lower() or t in str(label).lower())
+            if ts and hits==len(ts):s+=100
+            elif hits>=2:s+=70
+            elif hits==1 and any(any(ch.isdigit() for ch in t) for t in ts):s+=45
+            if page_exact:s+=25
+            return s
+
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            try: rec=json.loads((ROOT/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"id":rid,"ok":False,"error":"record "+str(e)}
+            name=rec.get("name") or rec.get("model") or rid
+            pages=[]
+            for u in [rec.get("website"),*((x.get("url") for x in (rec.get("resources") or []))),((rec.get("seed") or {}).get("source_url"))]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u and u not in pages: pages.append(u)
+            if not pages:return {"index":idx,"id":rid,"name":name,"ok":False,"error":"no official page"}
+
+            # Direct official image URLs first.
+            for page in pages:
+              if pathlib.Path(urllib.parse.urlparse(page).path).suffix.lower() in EXTS:
+                r=save(rec,idx,page,"official direct image")
+                if r:return r
+
+            best=[]
+            for page in pages[:4]:
+              try:
+                body,ct,final=fetch(page,"text/html,application/xhtml+xml,*/*;q=0.8",None,10)
+              except Exception: continue
+              if "pdf" in (ct or "").lower() or final.lower().split("?")[0].endswith(".pdf"): continue
+              txt=body.decode("utf-8","ignore")
+              pp=P()
+              try: pp.feed(txt)
+              except Exception: pass
+              page_exact=norm(name) in norm(" ".join(pp.text[:5000]))
+              # attributes incl lazy-load/srcset/href
+              for tag,a in pp.attrs:
+                label=" ".join([a.get("alt",""),a.get("title",""),a.get("aria-label","")])
+                for k in ("src","data-src","data-original","data-lazy-src","href","content","poster"):
+                  u=a.get(k,"")
+                  if not u: continue
+                  for part in re.split(r"\s*,\s*",u):
+                    raw=part.strip().split(" ")[0]
+                    if not raw: continue
+                    full=urllib.parse.urljoin(final,raw)
+                    sc=score(full,label,name,page_exact)
+                    if sc>=90:best.append((sc,full,final,"html:"+k))
+              # JS/JSON/CSS absolute or relative image strings.
+              for m in re.finditer(r'''(?P<u>(?:https?:)?//[^"'<>\s]+?\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"'<>\s]*)?|/[A-Za-z0-9_./%+?=&-]+?\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"'<>\s]*)?)''',txt,re.I):
+                raw=m.group("u")
+                if raw.startswith("//"): raw="https:"+raw
+                full=urllib.parse.urljoin(final,raw)
+                sc=score(full,"",name,page_exact)
+                if sc>=90:best.append((sc,full,final,"embedded"))
+            seen=set()
+            for sc,u,ref,why in sorted(best,reverse=True):
+              if u in seen: continue
+              seen.add(u)
+              r=save(rec,idx,u,f"{why} score={sc}",ref)
+              if r:return r
+            return {"index":idx,"id":rid,"name":name,"ok":False,"error":"no exact manufacturer asset","pages":pages[:4],"candidates":len(best)}
+
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=48) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for n,f in enumerate(concurrent.futures.as_completed(fs),1):
+              try:r=f.result()
+              except Exception as e:r={"index":-1,"ok":False,"error":str(e)}
+              results.append(r); print(json.dumps(r,ensure_ascii=False),flush=True)
+              if n%25==0:print(f"PROGRESS {n}/{len(entries)}",flush=True)
+          results.sort(key=lambda x:x.get("index",-1))
+          ok=sum(1 for x in results if x.get("ok"))
+          (OUT/"_pass2-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - name: Upload recovered originals
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-pass2
+          path: component-pass2/
+          if-no-files-found: error
+          retention-days: 1
