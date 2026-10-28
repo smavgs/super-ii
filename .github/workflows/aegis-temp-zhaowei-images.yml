@@ -1,0 +1,118 @@
+name: Aegis temporary ZHAOWEI candidate recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-zhaowei-images.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet playwright==1.55.0 pillow==12.0.0
+      - run: |
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then python -m playwright install chromium; fi
+      - name: Capture exact-page ZHAOWEI original candidates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,shutil
+          from urllib.parse import urlparse
+          from PIL import Image,ImageStat
+          from playwright.sync_api import sync_playwright
+          root=pathlib.Path(".");out=root/"zhaowei-candidates";out.mkdir(exist_ok=True)
+          entries=[x for x in json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"] if x.get("manufacturer")=="ZHAOWEI"]
+          BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","banner","header","footer","menu","search","home","about","news","service","tel","phone","map","gycn","default","loading")
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return (im.width,im.height,im.format) if len(b)>=1800 and im.width>=160 and im.height>=120 else None
+            except:return None
+          def ext(u,fmt):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+            f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+          def color_score(b):
+            try:
+              im=Image.open(io.BytesIO(b)).convert("RGB").resize((80,80))
+              px=list(im.getdata()); chrom=sum(1 for r,g,b in px if max(r,g,b)-min(r,g,b)>15)
+              return chrom/len(px)
+            except:return 0
+          recs={}
+          for it in entries:
+            rec=json.loads((root/"public/robot-library/records"/f"{it['id']}.json").read_text())
+            us=[x.get("url") for x in (rec.get("resources") or []) if x.get("url")]
+            if rec.get("website"):us.insert(0,rec["website"])
+            recs[it["index"]]=(it,rec,next((u for u in us if "zwgear.com" in u),""))
+          chrome=shutil.which("google-chrome") or shutil.which("chromium")
+          results=[]
+          with sync_playwright() as p:
+            browser=p.chromium.launch(headless=True,executable_path=chrome if chrome else None,args=["--no-sandbox"])
+            ctx=browser.new_context(viewport={"width":1440,"height":1200},user_agent="Mozilla/5.0 Chrome/155 Safari/537.36")
+            page=ctx.new_page()
+            for idx,(it,rec,url) in recs.items():
+              if not url:
+                results.append({"index":idx,"name":it["name"],"ok":False,"error":"no-page"});continue
+              try:
+                page.goto(url,wait_until="domcontentloaded",timeout=30000);page.wait_for_timeout(1200)
+                page.evaluate("""async()=>{for(let y=0;y<document.body.scrollHeight;y+=800){window.scrollTo(0,y);await new Promise(r=>setTimeout(r,60));}window.scrollTo(0,0);}""");page.wait_for_timeout(500)
+              except Exception as e:
+                results.append({"index":idx,"name":it["name"],"ok":False,"error":"goto"});continue
+              cand=page.evaluate("""(model)=>{
+                const n=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+                const target=n(model), arr=[];
+                for(const im of document.images){
+                  const u=im.currentSrc||im.src||'';
+                  if(!u)continue;
+                  const alt=n((im.alt||'')+' '+(im.title||''));
+                  const rect=im.getBoundingClientRect();
+                  let near=0;
+                  let e=im;
+                  for(let d=0;d<5&&e;d++,e=e.parentElement){
+                    const t=n(e.innerText||'');
+                    if(t.includes(target)){near=Math.max(near,160-d*20);break;}
+                  }
+                  if(alt.includes(target))near=Math.max(near,260);
+                  if(n(u).includes(target))near=Math.max(near,250);
+                  arr.push({u,alt:im.alt||'',near,w:im.naturalWidth||rect.width,h:im.naturalHeight||rect.height});
+                }
+                return arr;
+              }""",it["name"])
+              scored=[]
+              seen=set()
+              for c in cand:
+                u=c["u"];un=norm(u)
+                if u in seen or any(b in un for b in BAD):continue
+                seen.add(u)
+                try:
+                  rr=ctx.request.get(u,headers={"Referer":page.url},timeout=12000)
+                  if not rr.ok:continue
+                  b=rr.body();v=valid(b)
+                except:continue
+                if not v:continue
+                w,h,fmt=v;ratio=max(w/h,h/w)
+                if ratio>5:continue
+                chrom=color_score(b)
+                score=c["near"]+min(w*h/12000,80)+min(len(b)/20000,25)+chrom*30
+                if "product" in un or "upload" in un:score+=15
+                scored.append((score,b,u,w,h,fmt,c.get("alt",""),chrom))
+              scored.sort(key=lambda x:x[0],reverse=True)
+              saved=[]
+              for n,(sc,b,u,w,h,fmt,alt,chrom) in enumerate(scored[:3],1):
+                fn=f"{idx:03d}__{n}{ext(u,fmt)}";(out/fn).write_bytes(b)
+                saved.append({"file":fn,"source":u,"dimensions":[w,h],"score":round(sc,2),"alt":alt,"chroma":round(chrom,3)})
+              results.append({"index":idx,"name":it["name"],"ok":bool(saved),"page":url,"candidates":saved})
+            browser.close()
+          (out/"_zhaowei-report.json").write_text(json.dumps({"results":results},ensure_ascii=False,indent=2))
+          print(json.dumps(results,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-zhaowei-candidates
+          path: zhaowei-candidates/
+          retention-days: 1
