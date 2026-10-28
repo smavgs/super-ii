@@ -1,0 +1,163 @@
+name: Aegis temporary LH-TC exact-row image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lhtc-images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover LH-TC module images from exact model rows
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, io, json, pathlib, re, warnings
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          warnings.filterwarnings("ignore")
+          root=pathlib.Path("."); out=root/"lhtc-exact"; out.mkdir(exist_ok=True)
+          all_entries=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]
+          entries=[x for x in all_entries if x.get("manufacturer")=="LH-TC"]
+          S=requests.Session(); S.headers.update({"User-Agent":"Mozilla/5.0 Chrome/155 Safari/537.36","Accept-Language":"zh-CN,zh;q=0.9,en;q=0.6"})
+          BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","contact","banner","header","footer","menu","search","home","about","news","service","tel","phone","map","code","default")
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s);return s[:100].strip(' .-')
+          def get(u,ref=None,t=12):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=t,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return len(b)>=1200 and im.width>=100 and im.height>=90
+            except:return False
+          def ext(u,b):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http"):a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http"):a.append(u)
+            return list(dict.fromkeys(a))
+          def imgurls(tag,base):
+            out=[]
+            for el in tag.find_all(["img","source","a"]) if hasattr(tag,"find_all") else []:
+              for a in ("src","data-src","data-original","data-lazy-src","href"):
+                v=el.get(a)
+                if isinstance(v,str) and v.strip():
+                  u=urljoin(base,v.strip()); un=norm(u)
+                  if not any(b in un for b in BAD) and re.search(r'\.(?:png|jpe?g|webp|gif)(?:\?|$)',u,re.I):out.append(u)
+              for a in ("srcset","data-srcset"):
+                v=el.get(a)
+                if isinstance(v,str):
+                  for z in v.split(","):
+                    q=z.strip().split()[0] if z.strip() else ""
+                    if q:
+                      u=urljoin(base,q);un=norm(u)
+                      if not any(b in un for b in BAD):out.append(u)
+            return list(dict.fromkeys(out))
+          def score_image(u,base,bonus):
+            try:
+              r=get(u,ref=base,t=10)
+              if not valid(r.content):return None
+              im=Image.open(io.BytesIO(r.content));w,h=im.size
+              area=w*h;ratio=max(w/h,h/w)
+              if ratio>5:return None
+              score=bonus+min(area/10000,80)+min(len(r.content)/15000,30)
+              return score,r,w,h
+            except:return None
+          def near_model_candidates(soup,base,name):
+            modeln=norm(name); cand=[]
+            nodes=[]
+            for s in soup.find_all(string=True):
+              if modeln and modeln in norm(str(s)):nodes.append(s)
+            for node in nodes[:30]:
+              # table row: images usually in preceding appearance row
+              tr=node.find_parent("tr")
+              if tr:
+                targets=[(tr,130)]
+                prev=tr
+                for d in range(1,4):
+                  prev=prev.find_previous_sibling("tr") if prev else None
+                  if prev:targets.append((prev,135-d*5))
+                nxt=tr.find_next_sibling("tr")
+                if nxt:targets.append((nxt,115))
+                table=tr.find_parent("table")
+                if table:targets.append((table,60))
+                for t,b in targets:
+                  for u in imgurls(t,base):cand.append((b,u,"model-table-near"))
+              # generic local block
+              p=node.parent
+              for d in range(4):
+                if not p:break
+                for u in imgurls(p,base):cand.append((120-d*8,u,"model-block-near"))
+                p=p.parent
+            # exact product heading case: main page images before details
+            title=norm((soup.title.get_text(" ",strip=True) if soup.title else ""))
+            if modeln and modeln in title:
+              for tag in soup.find_all(["img","source"],limit=25):
+                for u in imgurls(tag.parent or soup,base):cand.append((85,u,"exact-page-main"))
+            uniq={}
+            for b,u,w in cand:
+              if u not in uniq or b>uniq[u][0]:uniq[u]=(b,w)
+            return [(b,u,w) for u,(b,w) in uniq.items()]
+          def one(it):
+            idx,rid,name=it["index"],it["id"],it["name"]
+            try:rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"record:{e}"}
+            errors=[]
+            for page in urls(rec)[:5]:
+              if "robots.com/" in page:continue
+              try:r=get(page,t=14)
+              except Exception as e:errors.append(f"{page}:GET");continue
+              soup=BeautifulSoup(r.text,"html.parser")
+              cand=near_model_candidates(soup,r.url,name)
+              scored=[]
+              for bonus,u,why in cand[:50]:
+                z=score_image(u,r.url,bonus)
+                if z:
+                  sc,ir,w,h=z;scored.append((sc,ir,w,h,why))
+              if scored:
+                scored.sort(key=lambda x:x[0],reverse=True)
+                sc,ir,w,h,why=scored[0]
+                fn=f"{idx:03d} - LH-TC - {clean(name)}{ext(ir.url,ir.content)}"
+                (out/fn).write_bytes(ir.content)
+                return {"index":idx,"name":name,"ok":True,"file":fn,"source":ir.url,"page":page,"dimensions":[w,h],"score":round(sc,2),"evidence":why}
+              errors.append(f"{page}:no-near-image")
+            return {"index":idx,"name":name,"ok":False,"error":" | ".join(errors)}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for f in concurrent.futures.as_completed(fs):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_lhtc-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lhtc-exact
+          path: lhtc-exact/
+          if-no-files-found: error
+          retention-days: 1
