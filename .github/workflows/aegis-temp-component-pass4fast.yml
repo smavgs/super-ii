@@ -1,0 +1,217 @@
+name: Aegis temporary component recovery pass 4 fast
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-component-pass4fast.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0 pymupdf==1.26.5
+      - name: Recover exact product-page originals
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, io, json, pathlib, re, warnings
+          from urllib.parse import urljoin,urlparse
+          import requests, fitz
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          warnings.filterwarnings("ignore")
+
+          root=pathlib.Path("."); out=root/"component-pass4fast"; out.mkdir(exist_ok=True)
+          entries=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]\n          entries=[x for x in entries if x.get("manufacturer")!="LH-TC"]
+          aliases={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars","Mech-Mind Robotics":"Mech-Mind"}
+          BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","contact","banner","header","footer","menu","search","language","facebook","linkedin","youtube","loading","placeholder","sprite","home.","home_","about","news","service","tel","phone","map","code.png","default")
+          IMGEXT=(".jpg",".jpeg",".png",".webp",".gif",".bmp")
+          S=requests.Session(); S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,application/xhtml+xml,application/json,image/avif,image/webp,image/*,*/*;q=0.8","Accept-Language":"en-US,en;q=0.8,zh-CN;q=0.7"})
+
+          def norm(x): return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip(); s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def fname(rec,idx,ext):
+            maker=((rec.get("makers") or [{}])[0].get("name") or "Unknown"); maker=aliases.get(maker,maker)
+            name=rec.get("name") or rec.get("model") or rec.get("id"); fam=((rec.get("family") or {}).get("name") or "")
+            p=[f"{idx:03d}",clean(maker)]
+            if fam and norm(fam)!=norm(name): p.append(clean(fam))
+            p.append(clean(name)); return " - ".join(p)+ext
+          def get(u,ref=None,t=16):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=t,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=False)
+            r.raise_for_status(); return r
+          def rec_urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            # most specific product-looking first
+            a=list(dict.fromkeys(a))
+            a.sort(key=lambda u:(0 if re.search(r'(product|detail|show|goods|item|camera|motor|joint|sensor|gripper)',u,re.I) else 1,len(u)))
+            return a
+          def valid_img(b):
+            if not b or len(b)<1500:return False
+            try:
+              im=Image.open(io.BytesIO(b)); im.load()
+              return im.width>=140 and im.height>=120
+            except:return False
+          def inspect_img(b):
+            im=Image.open(io.BytesIO(b)); return im.width,im.height,im.format
+          def ext_for(u,ct,b):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in IMGEXT:return ".jpg" if e==".jpeg" else e
+            try:
+              fmt=Image.open(io.BytesIO(b)).format.lower()
+              return ".jpg" if fmt=="jpeg" else "."+fmt
+            except:return ".jpg"
+          def save(rec,idx,b,u,ct,why,score):
+            if not valid_img(b): raise ValueError("invalid-image")
+            ex=ext_for(u,ct,b); fn=fname(rec,idx,ex); (out/fn).write_bytes(b)
+            w,h,_=inspect_img(b)
+            return {"ok":True,"file":fn,"source":u,"bytes":len(b),"dimensions":[w,h],"evidence":why,"score":score}
+
+          def image_urls(soup,text,base,modeln):
+            c=[]
+            # DOM sources
+            for tag in soup.find_all(["img","source","a","video"]):
+              vals=[]
+              for a in ("src","data-src","data-original","data-lazy-src","data-url","href","poster"):
+                v=tag.get(a)
+                if isinstance(v,str) and v.strip():vals.append(v.strip())
+              for a in ("srcset","data-srcset"):
+                v=tag.get(a)
+                if isinstance(v,str):
+                  vals += [x.strip().split()[0] for x in v.split(",") if x.strip()]
+              style=tag.get("style") or ""
+              vals += [x.strip(" '\"") for x in re.findall(r"url\(([^)]+)\)",style,re.I)]
+              label=norm((tag.get("alt") or "")+" "+(tag.get("title") or ""))
+              for v in vals:
+                u=urljoin(base,v.replace("\\/","/"))
+                un=norm(u)
+                if any(b in un for b in BAD):continue
+                boost=0
+                why="page-image"
+                if modeln and modeln in label:boost=100;why="alt-model"
+                elif modeln and modeln in un:boost=90;why="url-model"
+                c.append((boost,u,why))
+            # raw CSS/JS URLs
+            for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp|gif)(?:\?[^"'<>\\ ]*)?)(?:"|')''',text,re.I):
+              u=urljoin(base,m.group(1).replace("\\/","/")); un=norm(u)
+              if any(b in un for b in BAD):continue
+              a=max(0,m.start()-3000);b=min(len(text),m.end()+3000)
+              boost=70 if modeln and modeln in norm(text[a:b]) else (80 if modeln and modeln in un else 0)
+              c.append((boost,u,"raw-model-near" if boost else "raw-image"))
+            # CSS url()
+            for v in re.findall(r"url\(([^)]+)\)",text,re.I):
+              v=v.strip(" '\"")
+              if not re.search(r'\.(?:png|jpe?g|webp|gif)(?:\?|$)',v,re.I):continue
+              u=urljoin(base,v);un=norm(u)
+              if any(b in un for b in BAD):continue
+              c.append((0,u,"css-image"))
+            uniq={}
+            for b,u,w in c:
+              if u not in uniq or b>uniq[u][0]:uniq[u]=(b,w)
+            return [(b,u,w) for u,(b,w) in uniq.items()]
+
+          def choose_page_image(rec,idx,r,source_url,modeln):
+            text=r.text; soup=BeautifulSoup(text,"html.parser"); base=r.url
+            body=soup.get_text(" ",strip=True)
+            page_has=bool(modeln and modeln in norm(body))
+            path=urlparse(base).path.lower()
+            exact_page=page_has or bool(re.search(r'(product_show|product-detail|product_details|products?/|detail/|goods/|item/)',path))
+            if not exact_page:return None,"not-exact-page"
+            cand=image_urls(soup,text,base,modeln)
+            scored=[]
+            for boost,u,why in cand[:12]:
+              try:
+                ir=get(u,ref=base,t=5)
+                if not valid_img(ir.content):continue
+                w,h,_=inspect_img(ir.content); area=w*h
+                ratio=max(w/h,h/w)
+                if ratio>6:continue
+                # favor real product-sized imagery; reject tiny chrome
+                score=boost + min(area/12000,80) + min(len(ir.content)/20000,35)
+                un=norm(ir.url)
+                if any(k in un for k in ("product","upload","goods","pro","camera","motor","sensor","joint","gripper")):score+=15
+                if w>=400 and h>=300:score+=10
+                scored.append((score,ir,why,w,h))
+              except Exception:pass
+            if not scored:return None,"no-valid-images"
+            scored.sort(key=lambda z:z[0],reverse=True)
+            score,ir,why,w,h=scored[0]
+            if score<45:return None,"low-score"
+            return save(rec,idx,ir.content,ir.url,ir.headers.get("Content-Type",""),"largest-exact-page:"+why,round(score,2)),None
+
+          def pdf_image(rec,idx,r,u,modeln):
+            try:d=fitz.open(stream=r.content,filetype="pdf")
+            except:return None
+            hits=[]
+            for p in range(len(d)):
+              try:t=d[p].get_text("text")
+              except:t=""
+              if modeln and modeln in norm(t):hits.append(p)
+            best=None
+            for p in hits[:8]:
+              for im in d[p].get_images(full=True):
+                try:
+                  z=d.extract_image(im[0]); b=z["image"]; w=z.get("width",0);h=z.get("height",0)
+                  if len(b)<2500 or w<140 or h<120:continue
+                  area=w*h
+                  if best is None or area>best[0]:best=(area,b,z.get("ext","jpg"),p,w,h)
+                except:pass
+            if not best:return None
+            _,b,e,p,w,h=best; fn=fname(rec,idx,"."+("jpg" if e=="jpeg" else e));(out/fn).write_bytes(b)
+            return {"ok":True,"file":fn,"source":u+f"#page={p+1}","bytes":len(b),"dimensions":[w,h],"evidence":"pdf-exact-model-page","score":200}
+
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            try:rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"ok":False,"error":f"record:{e}"}
+            name=rec.get("name") or rec.get("model") or rid; modeln=norm(name);errs=[]
+            us=rec_urls(rec)
+            if not us:return {"index":idx,"name":name,"ok":False,"error":"no-official-url"}
+            for u in us[:3]:
+              try:r=get(u,t=8)
+              except Exception as e:errs.append(f"{u}:GET:{type(e).__name__}");continue
+              ct=(r.headers.get("Content-Type") or "").lower()
+              if "image/" in ct or r.url.lower().split("?")[0].endswith(IMGEXT):
+                try:return {"index":idx,"name":name,"page":u,**save(rec,idx,r.content,r.url,ct,"direct-official-image",250)}
+                except Exception as e:errs.append(f"{u}:direct:{e}")
+              if "pdf" in ct or r.url.lower().split("?")[0].endswith(".pdf"):
+                z=pdf_image(rec,idx,r,r.url,modeln)
+                if z:return {"index":idx,"name":name,"page":u,**z}
+                errs.append(f"{u}:pdf-no-match");continue
+              z,err=choose_page_image(rec,idx,r,u,modeln)
+              if z:return {"index":idx,"name":name,"page":u,**z}
+              errs.append(f"{u}:{err}")
+            return {"index":idx,"name":name,"ok":False,"error":" | ".join(errs)[-3000:]}
+
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=24) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for n,f in enumerate(concurrent.futures.as_completed(fs),1):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":f"worker:{e}"}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+              if n%20==0:print(f"PROGRESS {n}/{len(entries)}",flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_pass4fast-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-pass4fast
+          path: component-pass4fast/
+          if-no-files-found: error
+          retention-days: 1
