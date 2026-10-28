@@ -74,7 +74,7 @@ jobs:
               if u.startswith("data:image/"):
                 try:
                   head,data=u.split(",",1)
-                  return base64.b64decode(data) if ";base64" in head else data.encode()
+                  return (base64.b64decode(data) if ";base64" in head else data.encode()),u
                 except:return None,u
               try:
                 rr=context.request.get(u,headers={"Referer":ref},timeout=12000)
