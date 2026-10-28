@@ -97,7 +97,14 @@ jobs:
             if best:
               score,ir,w,h,fmt=best;fn=f"{it['index']:03d} - LENFOR - {clean(name)}{ext(ir.url,fmt)}";(out/fn).write_bytes(ir.content)
               results.append({"index":it["index"],"name":name,"ok":True,"file":fn,"source":ir.url,"dimensions":[w,h],"score":round(score,2),"matches":len(matches),"candidate_count":len(candidates)})
-            else:results.append({"index":it["index"],"name":name,"ok":False,"matches":len(matches),"candidate_count":len(candidates)})
+            else:
+              probe=[]
+              for bonus,u in candidates[:8]:
+                try:
+                  pr=S.get(u,headers={"Referer":"https://lenfortech.com/"},timeout=10,allow_redirects=True)
+                  probe.append({"url":u,"status":pr.status_code,"content_type":pr.headers.get("Content-Type",""),"final":pr.url,"bytes":len(pr.content)})
+                except Exception as e:probe.append({"url":u,"error":type(e).__name__+":"+str(e)})
+              results.append({"index":it["index"],"name":name,"ok":False,"matches":len(matches),"candidate_count":len(candidates),"candidate_urls":[u for _,u in candidates[:8]],"probe":probe})
           ok=sum(bool(x.get("ok")) for x in results)
           (out/"_lenfor-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
           print(json.dumps(results,ensure_ascii=False,indent=2));print(f"SUMMARY success={ok} failed={len(entries)-ok}")
