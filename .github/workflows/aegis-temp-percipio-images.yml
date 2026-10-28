@@ -1,0 +1,94 @@
+name: Aegis temporary Percipio datasheet image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-percipio-images.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 pillow==12.0.0
+      - name: Extract manufacturer images from exact Percipio datasheets/pages
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,warnings
+          import requests,fitz
+          from PIL import Image
+          from urllib.parse import urlparse,urljoin
+          warnings.filterwarnings("ignore")
+          root=pathlib.Path(".");out=root/"percipio-images";out.mkdir(exist_ok=True)
+          manifest=json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"]
+          entries=[x for x in manifest if x.get("manufacturer")=="Percipio"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 Chrome/155 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip()[:100]
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              if len(b)<2000 or im.width<120 or im.height<90:return None
+              return im.width,im.height,im.format
+            except:return None
+          def eext(fmt):f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+          results=[]
+          for it in entries:
+            rec=json.loads((root/"public/robot-library/records"/f"{it['id']}.json").read_text())
+            urls=[]
+            if rec.get("website"):urls.append(rec["website"])
+            urls += [x.get("url") for x in (rec.get("resources") or []) if x.get("url")]
+            urls=list(dict.fromkeys(u for u in urls if u and "robots.com/" not in u))
+            best=None;errs=[]
+            for u in urls:
+              try:r=S.get(u,timeout=20,allow_redirects=True);r.raise_for_status()
+              except Exception as e:errs.append(type(e).__name__);continue
+              ct=(r.headers.get("Content-Type") or "").lower()
+              if "pdf" in ct or r.url.lower().split("?")[0].endswith(".pdf"):
+                try:d=fitz.open(stream=r.content,filetype="pdf")
+                except:continue
+                target=norm(it["name"]); pages=[]
+                for p in range(min(len(d),8)):
+                  try:t=d[p].get_text("text")
+                  except:t=""
+                  if target in norm(t) or p==0:pages.append(p)
+                for p in pages:
+                  for im in d[p].get_images(full=True):
+                    try:
+                      z=d.extract_image(im[0]);b=z["image"];v=valid(b)
+                      if not v:continue
+                      w,h,fmt=v;ratio=max(w/h,h/w)
+                      if ratio>5:continue
+                      area=w*h
+                      score=area + len(b)*5 + (20_000_000 if target in norm(d[p].get_text("text")) else 0)
+                      if best is None or score>best[0]:best=(score,b,fmt,u,p,w,h,"pdf-embedded")
+                    except:pass
+              else:
+                # exact Percipio product page: image URLs usually expose model name
+                txt=r.text
+                for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)(?:"|')''',txt,re.I):
+                  iu=urljoin(r.url,m.group(1).replace("\\/","/"))
+                  if norm(it["name"]) not in norm(iu):continue
+                  try:ir=S.get(iu,headers={"Referer":r.url},timeout=12);ir.raise_for_status();v=valid(ir.content)
+                  except:continue
+                  if not v:continue
+                  w,h,fmt=v;score=w*h+len(ir.content)*5+30_000_000
+                  if best is None or score>best[0]:best=(score,ir.content,fmt,ir.url,0,w,h,"page-model-url")
+            if best:
+              sc,b,fmt,u,p,w,h,why=best
+              fn=f"{it['index']:03d} - Percipio - {clean(it['name'])}{eext(fmt)}";(out/fn).write_bytes(b)
+              results.append({"index":it["index"],"name":it["name"],"ok":True,"file":fn,"source":u,"page":p+1,"dimensions":[w,h],"bytes":len(b),"evidence":why})
+            else:results.append({"index":it["index"],"name":it["name"],"ok":False,"errors":errs})
+          ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_percipio-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(json.dumps(results,ensure_ascii=False,indent=2));print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-percipio-images
+          path: percipio-images/
+          retention-days: 1
