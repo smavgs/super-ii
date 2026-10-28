@@ -139,7 +139,7 @@ jobs:
             for im in p.img:
               u=im.get("src") or im.get("data-src") or im.get("data-original") or im.get("data-lazy-src") or ""
               if not u: continue
-              label=" ".join([im.get("alt",""),im.get("title","")])
+              label=" ".join([(im.get("alt") or ""),(im.get("title") or "")])
               un=norm(u); ln=norm(label)
               score=0
               if modeln and modeln in ln: score=115
