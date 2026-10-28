@@ -86,14 +86,14 @@ jobs:
               parts.append(clean(name))
               stem = " - ".join(parts)
               last = None
-              for attempt in range(3):
+              for attempt in range(1):
                   try:
                       req = urllib.request.Request(url, headers={
                           "User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36",
                           "Accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
                           "Referer":"https://www.robots.com/",
                       })
-                      with urllib.request.urlopen(req, timeout=25) as resp:
+                      with urllib.request.urlopen(req, timeout=8) as resp:
                           data = resp.read()
                           ctype = resp.headers.get("Content-Type","")
                       if not valid(data, ctype):
@@ -106,11 +106,11 @@ jobs:
                       return {"index":idx,"id":rid,"name":name,"ok":True,"file":fn,"bytes":len(data),"source":url}
                   except Exception as e:
                       last = str(e)
-                      time.sleep(1.0 + attempt)
+                      pass
               return {"index":idx,"id":rid,"name":name,"ok":False,"error":last,"source":url}
 
           results = []
-          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
+          with concurrent.futures.ThreadPoolExecutor(max_workers=64) as ex:
               futures = [ex.submit(one, x) for x in entries]
               for n, f in enumerate(concurrent.futures.as_completed(futures), 1):
                   r = f.result()
