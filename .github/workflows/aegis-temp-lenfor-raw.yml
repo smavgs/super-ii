@@ -1,0 +1,46 @@
+name: Aegis temporary LENFOR raw API inspect
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lenfor-raw.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: |
+          python3 - <<'PY'
+          import json,re,urllib.request,pathlib
+          root=pathlib.Path("."); out=root/"lenfor-raw"; out.mkdir(exist_ok=True)
+          entries=[x for x in json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"] if x.get("manufacturer")=="LENFOR"]
+          req=urllib.request.Request("https://api.lenfortech.com/api/products?with_details=true",headers={"User-Agent":"Mozilla/5.0","Accept":"application/json"})
+          data=json.load(urllib.request.urlopen(req,timeout=30))
+          dicts=[]
+          def walk(x):
+            if isinstance(x,dict):
+              dicts.append(x)
+              for v in x.values():walk(v)
+            elif isinstance(x,list):
+              for v in x:walk(v)
+          walk(data)
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          rows=[]
+          for it in entries:
+            nn=norm(it["name"]); matches=[]
+            for d in dicts:
+              scalar=" ".join(str(v) for v in d.values() if isinstance(v,(str,int,float,bool)))
+              if nn and nn in norm(scalar):matches.append(d)
+            rows.append({"index":it["index"],"name":it["name"],"matches":matches})
+          (out/"raw-matches.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          print(json.dumps([{"index":x["index"],"name":x["name"],"matches":len(x["matches"])} for x in rows],ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lenfor-raw
+          path: lenfor-raw/
+          retention-days: 1
