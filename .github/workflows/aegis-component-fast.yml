@@ -1,0 +1,108 @@
+name: Aegis component fast exact recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-component-fast.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Fast exact manufacturer recovery
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,json,pathlib,re,subprocess,tempfile,urllib.parse,os
+          R=pathlib.Path("."); O=R/"component-fast"; O.mkdir(exist_ok=True)
+          E=json.loads((R/".aegis-temp/component-images-missing-2.json").read_text())["missing"]
+          BAD=("logo","icon","favicon","banner","wechat","weixin","qr","avatar","loading","placeholder","sprite")
+          EXT=(".jpg",".jpeg",".png",".webp",".gif")
+          A={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars","Mech-Mind Robotics":"Mech-Mind"}
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();return re.sub(r'\s+',' ',s)[:100].strip(' .-') or "Unknown"
+          def toks(s):return [x.lower() for x in re.findall(r"[A-Za-z0-9]+",str(s or "")) if len(x)>=3]
+          def curl(u,binary=False,ref=None):
+            cmd=["curl","-L","--fail","--silent","--show-error","--connect-timeout","3","--max-time","6","-A","Mozilla/5.0 Chrome/155 Safari/537.36"]
+            if ref:cmd+=["-e",ref]
+            cmd += [u]
+            p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=8)
+            return p.stdout
+          def valid(d):
+            return len(d)>800 and (d.startswith(b"\xff\xd8\xff") or d.startswith(b"\x89PNG\r\n\x1a\n") or (len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP") or d.startswith((b"GIF87a",b"GIF89a")))
+          def iext(u,d):
+            e=pathlib.Path(urllib.parse.urlparse(u).path).suffix.lower()
+            if e in EXT:return ".jpg" if e==".jpeg" else e
+            if d.startswith(b"\xff\xd8\xff"):return ".jpg"
+            if d.startswith(b"\x89PNG"):return ".png"
+            if len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP":return ".webp"
+            if d.startswith((b"GIF87a",b"GIF89a")):return ".gif"
+            return ""
+          def fn(rec,i,e):
+            m=((rec.get("makers") or [{}])[0].get("name") or "Unknown");m=A.get(m,m);fam=((rec.get("family") or {}).get("name") or "");n=rec.get("name") or rec.get("model") or rec["id"]
+            q=[f"{i:03d}",clean(m)]
+            if fam and norm(fam)!=norm(n):q.append(clean(fam))
+            q.append(clean(n));return " - ".join(q)+e
+          def save(rec,i,u,why,ref=None):
+            try:
+              if any(b in norm(u) for b in BAD):return None
+              d=curl(u,True,ref)
+              if not valid(d):return None
+              e=iext(u,d)
+              if not e:return None
+              f=fn(rec,i,e);(O/f).write_bytes(d);return {"index":i,"id":rec["id"],"name":rec.get("name"),"ok":True,"file":f,"source":u,"evidence":why,"bytes":len(d)}
+            except:return None
+          def one(it):
+            i,rid=it["index"],it["id"]
+            try:rec=json.loads((R/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":i,"id":rid,"ok":False,"error":str(e)}
+            n=rec.get("name") or rec.get("model") or rid;N=norm(n);T=toks(n)
+            pages=[]
+            for u in [rec.get("website"),*((x.get("url") for x in rec.get("resources",[]))),((rec.get("seed") or {}).get("source_url"))]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u and u not in pages:pages.append(u)
+            for p in pages[:3]:
+              if pathlib.Path(urllib.parse.urlparse(p).path).suffix.lower() in EXT:
+                x=save(rec,i,p,"official direct image")
+                if x:return x
+              try:h=curl(p).decode("utf-8","ignore")
+              except:continue
+              cand=[]
+              for m in re.finditer(r'''(?P<u>(?:https?:)?//[^"'<>\s]+?\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"'<>\s]*)?|/[A-Za-z0-9_./%+?=&-]+?\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"'<>\s]*)?)''',h,re.I):
+                raw=m.group("u");u=("https:"+raw if raw.startswith("//") else urllib.parse.urljoin(p,raw))
+                if any(b in norm(u) for b in BAD):continue
+                ctx=h[max(0,m.start()-350):min(len(h),m.end()+350)]
+                U=norm(urllib.parse.unquote(u));C=norm(ctx);s=0
+                if N and N in U:s+=160
+                if N and N in C:s+=140
+                hits=sum(1 for t in T if t in u.lower() or t in ctx.lower())
+                if T and hits==len(T):s+=100
+                elif hits>=2:s+=70
+                elif hits==1 and any(any(ch.isdigit() for ch in t) for t in T):s+=45
+                if s>=120:cand.append((s,u))
+              seen=set()
+              for s,u in sorted(cand,reverse=True)[:8]:
+                if u in seen:continue
+                seen.add(u);x=save(rec,i,u,f"exact page context score={s}",p)
+                if x:return x
+            return {"index":i,"id":rid,"name":n,"ok":False,"error":"no exact fast asset"}
+          res=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=96) as ex:
+            fs=[ex.submit(one,x) for x in E]
+            for f in concurrent.futures.as_completed(fs):
+              try:x=f.result()
+              except Exception as e:x={"index":-1,"ok":False,"error":str(e)}
+              res.append(x);print(json.dumps(x,ensure_ascii=False),flush=True)
+          res.sort(key=lambda x:x.get("index",-1));ok=sum(x.get("ok",False) for x in res)
+          (O/"_fast-report.json").write_text(json.dumps({"requested":len(E),"success":ok,"failed":len(E)-ok,"results":res},ensure_ascii=False,indent=2))
+          print("SUMMARY",ok,len(E)-ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-fast
+          path: component-fast/
+          if-no-files-found: error
+          retention-days: 1
