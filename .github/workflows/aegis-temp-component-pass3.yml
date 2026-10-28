@@ -83,7 +83,7 @@ jobs:
               if isinstance(v,str):
                 res += [x.strip().split()[0] for x in v.split(",") if x.strip()]
             style=tag.get("style") or ""
-            res += [x.strip(" \'\\\"") for x in re.findall(r"url\\(([^)]+)\\)",style,re.I)]
+            res += [part.split(")",1)[0].strip(" \'\\\"") for part in style.split("url(")[1:]]
             href=tag.get("href")
             if isinstance(href,str) and href.lower().split("?")[0].endswith(IMGEXT):res.append(href)
             return [urljoin(base,u.replace("\\/","/")) for u in res]
@@ -146,7 +146,7 @@ jobs:
                 imgs=[]
                 for tag in parent.find_all(["img","source","a","video"],limit=30):
                   imgs += all_image_urls(tag,base)
-                styleurls=[x.strip(" \'\\\"") for x in re.findall(r"url\\(([^)]+)\\)",str(parent),re.I)]
+                styleurls=[part.split(")",1)[0].strip(" \'\\\"") for part in str(parent).split("url(")[1:]]
                 imgs += [urljoin(base,u) for u in styleurls]
                 for u in imgs:
                   if any(b in norm(u) for b in BAD):continue
