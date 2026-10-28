@@ -1,0 +1,160 @@
+name: Aegis temporary fast component recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-component-fast.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0 pymupdf==1.26.5
+      - name: Recover fast exact-page candidates
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, io, json, pathlib, re, warnings
+          from urllib.parse import urljoin,urlparse
+          import requests,fitz
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          warnings.filterwarnings("ignore")
+          root=pathlib.Path(".");out=root/"component-fast";out.mkdir(exist_ok=True)
+          entries=[x for x in json.loads((root/".aegis-temp/component-images-missing-4.json").read_text())["missing"] if x.get("manufacturer")!="LH-TC"]
+          aliases={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Mech-Mind Robotics":"Mech-Mind"}
+          BAD=("logo","icon","favicon","wechat","weixin","qr","qrcode","erweima","contact","banner","header","footer","menu","search","home.","home_","about","news","service","tel","phone","map","code","default","footbj","generic/system/style")
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 Chrome/155 Safari/537.36","Accept-Language":"en-US,en;q=0.8,zh-CN;q=0.6"})
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s);return s[:100].strip(' .-')
+          def get(u,ref=None,t=7):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=t,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            if not b or len(b)<1200:return None
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              if im.width<120 or im.height<90:return None
+              return im.width,im.height,im.format
+            except:return None
+          def ext(u,fmt):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp",".gif"):return ".jpg" if e==".jpeg" else e
+            f=(fmt or "JPEG").lower();return ".jpg" if f=="jpeg" else "."+f
+          def fname(rec,idx,e):
+            maker=((rec.get("makers") or [{}])[0].get("name") or "Unknown");maker=aliases.get(maker,maker)
+            name=rec.get("name") or rec.get("model") or rec.get("id");fam=((rec.get("family") or {}).get("name") or "")
+            p=[f"{idx:03d}",clean(maker)]
+            if fam and norm(fam)!=norm(name):p.append(clean(fam))
+            p.append(clean(name));return " - ".join(p)+e
+          def urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            a=list(dict.fromkeys(a));a.sort(key=lambda u:(0 if re.search(r'(product|detail|show|goods|item|camera|motor|joint|sensor|gripper)',u,re.I) else 1,len(u)));return a
+          def save(rec,idx,rr,why,score,page):
+            v=valid(rr.content)
+            if not v:raise ValueError("bad")
+            w,h,fmt=v;e=ext(rr.url,fmt);fn=fname(rec,idx,e);(out/fn).write_bytes(rr.content)
+            return {"ok":True,"file":fn,"source":rr.url,"page":page,"dimensions":[w,h],"bytes":len(rr.content),"evidence":why,"score":round(score,2)}
+          def pdf(rec,idx,r,u,modeln):
+            try:d=fitz.open(stream=r.content,filetype="pdf")
+            except:return None
+            best=None
+            for p in range(len(d)):
+              try:t=d[p].get_text("text")
+              except:t=""
+              if modeln not in norm(t):continue
+              for im in d[p].get_images(full=True):
+                try:
+                  z=d.extract_image(im[0]);b=z["image"];w=z.get("width",0);h=z.get("height",0)
+                  if len(b)<2000 or w<120 or h<90:continue
+                  area=w*h
+                  if best is None or area>best[0]:best=(area,b,z.get("ext","jpg"),p,w,h)
+                except:pass
+            if not best:return None
+            _,b,e,p,w,h=best;fn=fname(rec,idx,"."+("jpg" if e=="jpeg" else e));(out/fn).write_bytes(b)
+            return {"ok":True,"file":fn,"source":u+f"#page={p+1}","page":u,"dimensions":[w,h],"bytes":len(b),"evidence":"pdf-exact-model","score":250}
+          def one(it):
+            idx,rid,name=it["index"],it["id"],it["name"];modeln=norm(name)
+            try:rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":"record"}
+            errs=[]
+            for page in urls(rec)[:5]:
+              try:r=get(page,t=8)
+              except Exception as e:errs.append("GET");continue
+              ct=(r.headers.get("Content-Type") or "").lower()
+              if "image/" in ct:
+                try:return {"index":idx,"name":name,**save(rec,idx,r,"direct-official-image",300,page)}
+                except:pass
+              if "pdf" in ct or r.url.lower().split("?")[0].endswith(".pdf"):
+                z=pdf(rec,idx,r,r.url,modeln)
+                if z:return {"index":idx,"name":name,**z}
+                continue
+              soup=BeautifulSoup(r.text,"html.parser");body=soup.get_text(" ",strip=True);title=soup.title.get_text(" ",strip=True) if soup.title else ""
+              exact=bool(modeln and (modeln in norm(body) or modeln in norm(title))) or bool(re.search(r'(product|detail|show|goods|item)',urlparse(r.url).path,re.I))
+              if not exact:continue
+              cand=[]
+              for m in soup.find_all("meta"):
+                k=(m.get("property") or m.get("name") or "").lower();u=m.get("content")
+                if u and k in ("og:image","og:image:url","twitter:image","twitter:image:src"):
+                  cand.append((180,urljoin(r.url,u),"meta"))
+              for tag in soup.find_all("img"):
+                vals=[tag.get(a) for a in ("src","data-src","data-original","data-lazy-src") if tag.get(a)]
+                lab=norm((tag.get("alt") or "")+" "+(tag.get("title") or ""))
+                for v0 in vals:
+                  u=urljoin(r.url,v0);un=norm(u)
+                  if any(b in un for b in BAD):continue
+                  sc=0;why="exact-page-image"
+                  if modeln and modeln in lab:sc=260;why="alt-model"
+                  elif modeln and modeln in un:sc=250;why="url-model"
+                  elif any(k in un for k in ("product","upload","goods","camera","motor","joint","sensor","gripper")):sc=150
+                  else:sc=110
+                  cand.append((sc,u,why))
+              uniq={}
+              for sc,u,w in cand:
+                if any(b in norm(u) for b in BAD):continue
+                if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,w)
+              scored=[]
+              for u,(base,why) in list(uniq.items())[:12]:
+                try:
+                  ir=get(u,ref=r.url,t=5);v=valid(ir.content)
+                  if not v:continue
+                  w,h,fmt=v;ratio=max(w/h,h/w)
+                  if ratio>5:continue
+                  score=base+min(w*h/15000,70)+min(len(ir.content)/20000,25)
+                  scored.append((score,ir,why))
+                except:pass
+              if scored:
+                scored.sort(key=lambda x:x[0],reverse=True);score,ir,why=scored[0]
+                try:return {"index":idx,"name":name,**save(rec,idx,ir,why,score,page)}
+                except:pass
+            return {"index":idx,"name":name,"ok":False,"error":";".join(errs)}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=40) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for f in concurrent.futures.as_completed(fs):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_fast-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-fast
+          path: component-fast/
+          if-no-files-found: error
+          retention-days: 1
