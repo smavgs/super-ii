@@ -1,6 +1,6 @@
 {
   "generated": "2026-10-28",
-  "saved": 367,
+  "saved": 369,
   "total": 516,
   "missing": [
     {
@@ -776,18 +776,6 @@
       "id": "327fa9a9-2dae-43e1-9f66-4b2f7a1a08e1",
       "name": "Steel spot-welding-to-gripper tool-change assembly",
       "manufacturer": "LH-TC"
-    },
-    {
-      "index": 449,
-      "id": "bf98a3f1-1864-46b3-bc42-76d373e5cdec",
-      "name": "STL-06N",
-      "manufacturer": "LDROBOT"
-    },
-    {
-      "index": 452,
-      "id": "8fa2c1ab-488d-40b4-bc6f-8c3c2f84af75",
-      "name": "STL-27L",
-      "manufacturer": "LDROBOT"
     },
     {
       "index": 459,
