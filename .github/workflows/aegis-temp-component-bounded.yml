@@ -1,0 +1,134 @@
+name: Aegis bounded official component image recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-component-bounded.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Bounded exact manufacturer recovery
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures, json, pathlib, re, subprocess
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin,urlparse
+          root=pathlib.Path("."); out=root/"component-bounded-images"; out.mkdir(exist_ok=True)
+          entries=json.loads((root/".aegis-temp/component-images-missing.json").read_text())["missing"]
+          aliases={"Jiangsu DINGS' Intelligent Control Technology Co., Ltd.":"DINGS","DH-Robotics Technology Co., Ltd.":"DH-Robotics","Nanchang Kude Intelligent Technology Co., Ltd.":"CubeMars","Mech-Mind Robotics":"Mech-Mind"}
+          BAD=("logo","banner","icon","favicon","wechat","weixin","qr","avatar","loading","placeholder","sprite","footer","header")
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def curl(url,referer=None):
+            cmd=["curl","-L","-sS","--fail","--connect-timeout","4","--max-time","7","-A","Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36"]
+            if referer:cmd+=["-e",referer]
+            cmd+=[url]
+            p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=9)
+            if p.returncode:raise RuntimeError(p.stderr.decode("utf-8","ignore")[-240:] or f"curl {p.returncode}")
+            return p.stdout
+          def valid(d):
+            if len(d)<800:return False
+            return d.startswith(b"\xff\xd8\xff") or d.startswith(b"\x89PNG\r\n\x1a\n") or (len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP") or d.startswith((b"GIF87a",b"GIF89a")) or b"<svg" in d[:512].lstrip().lower()
+          def ext(u,d):
+            p=pathlib.Path(urlparse(u).path).suffix.lower()
+            if p in {".jpg",".jpeg",".png",".webp",".gif",".svg"}:return ".jpg" if p==".jpeg" else p
+            if d.startswith(b"\xff\xd8\xff"):return ".jpg"
+            if d.startswith(b"\x89PNG"):return ".png"
+            if len(d)>=12 and d[:4]==b"RIFF" and d[8:12]==b"WEBP":return ".webp"
+            if d.startswith((b"GIF87a",b"GIF89a")):return ".gif"
+            if b"<svg" in d[:512].lstrip().lower():return ".svg"
+            return ""
+          class P(HTMLParser):
+            def __init__(self):super().__init__();self.meta=[];self.img=[];self.links=[];self.title=[];self._t=False;self._ld=False;self._b=[];self.ld=[]
+            def handle_starttag(self,t,a):
+              d=dict(a)
+              if t=="meta":self.meta.append(d)
+              elif t=="img":self.img.append(d)
+              elif t=="link":self.links.append(d)
+              elif t=="title":self._t=True
+              elif t=="script" and "ld+json" in d.get("type","").lower():self._ld=True;self._b=[]
+            def handle_endtag(self,t):
+              if t=="title":self._t=False
+              elif t=="script" and self._ld:self.ld.append("".join(self._b));self._ld=False;self._b=[]
+            def handle_data(self,d):
+              if self._t:self.title.append(d)
+              if self._ld:self._b.append(d)
+          def walk(x,m,c):
+            if isinstance(x,dict):
+              typ=str(x.get("@type","")).lower(); nm=norm(x.get("name",""))
+              if ("product" in typ or nm==m) and x.get("image"):
+                z=x["image"]; arr=z if isinstance(z,list) else [z]
+                for q in arr:
+                  if isinstance(q,str):c.append((120,q,"jsonld"))
+                  elif isinstance(q,dict) and isinstance(q.get("url"),str):c.append((120,q["url"],"jsonld"))
+              for v in x.values():walk(v,m,c)
+            elif isinstance(x,list):
+              for v in x:walk(v,m,c)
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            try:r=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"id":rid,"ok":False,"error":"record "+str(e)}
+            name=r.get("name") or rid;m=norm(name);maker=((r.get("makers") or [{}])[0].get("name") or "Unknown")
+            page=r.get("website") or (((r.get("resources") or [{}])[0]).get("url") if r.get("resources") else "") or ((r.get("seed") or {}).get("source_url") or "")
+            if not page.startswith("http") or "robots.com/" in page:return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"page","error":"no exact official product page","page":page}
+            try:raw=curl(page); txt=raw.decode("utf-8","ignore")
+            except Exception as e:return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"page","error":str(e),"page":page}
+            p=P()
+            try:p.feed(txt)
+            except:pass
+            has=bool(m and (m in norm(" ".join(p.title)) or m in norm(txt[:200000])))
+            cand=[]
+            for s in p.ld:
+              try:walk(json.loads(s),m,cand)
+              except:pass
+            for q in p.meta:
+              k=(q.get("property") or q.get("name") or "").lower();u=q.get("content","")
+              if k in {"og:image","og:image:url","twitter:image","twitter:image:src"} and u:cand.append((70 if has else 35,u,k))
+            for im in p.img:
+              u=im.get("src") or im.get("data-src") or im.get("data-original") or im.get("data-lazy-src") or ""
+              if not u:continue
+              ln=norm((im.get("alt","")+" "+im.get("title",""))); un=norm(u);s=0
+              if m and m in ln:s=115
+              elif m and len(m)>=4 and m in un:s=105
+              elif has and not any(b in un for b in BAD):s=45
+              if s:cand.append((s,u,"img"))
+            seen={}
+            for s,u,w in cand:
+              full=urljoin(page,u);un=norm(full)
+              if full.startswith("http") and not any(b in un for b in BAD) and (full not in seen or s>seen[full][0]):seen[full]=(s,w)
+            strong=sorted(((s,u,w) for u,(s,w) in seen.items() if s>=70),reverse=True)
+            if not strong:return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"candidate","error":"no high-confidence product image","page":page}
+            s,u,w=strong[0]
+            try:d=curl(u,page)
+            except Exception as e:return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"image","error":str(e),"page":page,"source":u}
+            if not valid(d):return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"image","error":f"invalid bytes {len(d)}","page":page,"source":u}
+            ex=ext(u,d)
+            if not ex:return {"index":idx,"id":rid,"name":name,"ok":False,"stage":"image","error":"unknown image","page":page,"source":u}
+            fam=((r.get("family") or {}).get("name") or ""); mm=aliases.get(maker,maker);parts=[f"{idx:03d}",clean(mm)]
+            if fam and norm(fam)!=m:parts.append(clean(fam))
+            parts.append(clean(name));fn=" - ".join(parts)+ex;(out/fn).write_bytes(d)
+            return {"index":idx,"id":rid,"name":name,"ok":True,"file":fn,"bytes":len(d),"page":page,"source":u,"score":s,"evidence":w}
+          res=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=64) as ex:
+            for n,r in enumerate(ex.map(one,entries),1):
+              res.append(r)
+              if n%25==0:print("PROGRESS",n,len(entries),flush=True)
+          res.sort(key=lambda x:x["index"]);ok=sum(x.get("ok",False) for x in res)
+          (out/"_bounded-report.json").write_text(json.dumps({"requested":len(res),"success":ok,"failed":len(res)-ok,"results":res},ensure_ascii=False,indent=2))
+          print("SUMMARY",ok,len(res)-ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-component-bounded-originals
+          path: component-bounded-images/
+          if-no-files-found: error
+          retention-days: 1
