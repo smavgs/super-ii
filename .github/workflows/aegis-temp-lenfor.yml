@@ -41,19 +41,22 @@ jobs:
               text=" ".join(str(v) for v in o.values() if not isinstance(v,(dict,list)))
               if nn and nn in n(text):matches.append(o)
             urls=[]
-            for o in matches:
-              for k,v in o.items():
-                if isinstance(v,str) and any(z in k.lower() for z in ("image","img","photo","picture","cover","thumbnail")):
-                  if v.startswith(("http","/")):urls.append(v)
-                elif isinstance(v,list):
-                  for q in v:
-                    if isinstance(q,str) and q.startswith(("http","/")) and re.search(r'\.(?:png|jpe?g|webp)(?:\?|$)',q,re.I):urls.append(q)
-            # scan exact matched object's values for raw URLs
-            for o in matches:
-              for v in o.values():
-                if isinstance(v,str):
-                  urls += re.findall(r'https?://[^\s"\']+\.(?:png|jpe?g|webp)(?:\?[^\s"\']*)?',v,re.I)
+            def scan(v):
+              if isinstance(v,dict):
+                for q in v.values(): scan(q)
+              elif isinstance(v,list):
+                for q in v: scan(q)
+              elif isinstance(v,str):
+                # explicit and relative image paths anywhere inside the exact matched product object
+                for q in re.findall(r'https?://[^\s"\']+\.(?:png|jpe?g|webp)(?:\?[^\s"\']*)?',v,re.I): urls.append(q)
+                if re.search(r'\.(?:png|jpe?g|webp)(?:\?|$)',v,re.I):
+                  if v.startswith("http"): urls.append(v)
+                  elif v.startswith("/"): urls.append("https://api.lenfortech.com"+v)
+                  else: urls.append("https://api.lenfortech.com/"+v.lstrip("./"))
+            for o in matches: scan(o)
             urls=list(dict.fromkeys(urls))
+            print("MATCHOBJ",name,json.dumps(matches[:2],ensure_ascii=False)[:12000],flush=True)
+            print("IMAGEURLS",name,urls[:30],flush=True)
             best=None
             for u in urls[:20]:
               try:
