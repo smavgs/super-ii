@@ -68,35 +68,25 @@ jobs:
                 # named application pages can have translated English record name; accept exact product detail path
                 if not re.search(r'(product_show/|ltc-|mrt-|ltfd-|compensation-|gripper-)',r.url,re.I):
                   errs.append("not-exact");continue
+              gallery=soup.select_one("#bigImg .gallery-top") or soup.select_one(".gallery-top") or soup.select_one("#bigImg")
+              if not gallery:
+                errs.append("no-gallery");continue
               imgs=[]
-              for i,tag in enumerate(soup.find_all("img")):
-                src=tag.get("src")
-                if not src:continue
-                u=urljoin(r.url,src)
-                p=urlparse(u).path.lower()
-                # exact product gallery on LH-TC detail pages lives in /images/...; ignore site chrome and option-module gallery
-                if "/static/index/" in p:continue
-                pref=0
-                if "/images/" in p:pref=100
-                elif "/uploads/" in p:pref=40
-                else:continue
-                # images before product-option modules are preferred
-                if i<14:pref+=30
-                imgs.append((pref,i,u))
-              imgs.sort(key=lambda z:(-z[0],z[1]))
-              for score,i,u in imgs[:8]:
+              for tag in gallery.find_all("img"):
+                src=tag.get("src") or tag.get("data-src")
+                if src: imgs.append(urljoin(r.url,src))
+              for u in imgs:
                 try:
                   ir=S.get(u,headers={"Referer":r.url},timeout=20);ir.raise_for_status();b=ir.content
                   if not valid(b):continue
                   im=Image.open(io.BytesIO(b))
-                  # avoid ultra-wide banners / QR-like square tiny assets
                   ratio=max(im.width/im.height,im.height/im.width)
                   if ratio>4:continue
                   fn=f"{idx:03d} - LH-TC - {clean(name)}{ext(u,b)}"
                   (out/fn).write_bytes(b)
-                  return {"index":idx,"name":name,"ok":True,"file":fn,"page":r.url,"source":u,"img_order":i,"score":score,"dimensions":[im.width,im.height]}
+                  return {"index":idx,"name":name,"ok":True,"file":fn,"page":r.url,"source":u,"evidence":"exact-gallery-first-image","dimensions":[im.width,im.height]}
                 except Exception as e:errs.append(f"IMG {type(e).__name__}")
-              errs.append(f"none:{len(imgs)}")
+              errs.append(f"gallery-none:{len(imgs)}")
             return {"index":idx,"name":name,"ok":False,"error":" | ".join(errs)[-1500:]}
           results=[]
           with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
