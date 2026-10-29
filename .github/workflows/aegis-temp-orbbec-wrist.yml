@@ -1,0 +1,48 @@
+name: Aegis Orbbec Wrist exact image
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-orbbec-wrist.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,requests,re
+          from urllib.parse import urljoin
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path("orbbec-wrist");out.mkdir(exist_ok=True)
+          page="https://www.orbbec.com/robot-free-data-collection/"
+          r=requests.get(page,headers={"User-Agent":"Mozilla/5.0"},timeout=30);r.raise_for_status()
+          s=BeautifulSoup(r.text,"html.parser");rows=[]
+          cand=[]
+          for i,tag in enumerate(s.find_all("img")):
+            alt=(tag.get("alt") or "").strip()
+            vals=[tag.get(k) for k in ("src","data-src","data-original","data-lazy-src") if tag.get(k)]
+            ss=tag.get("srcset")
+            if ss: vals += [x.strip().split()[0] for x in ss.split(",") if x.strip()]
+            if "wrist-1" in alt.lower() or ("wrist" in alt.lower() and "orbbec" in alt.lower()):
+              for v in vals:cand.append((i,alt,urljoin(r.url,v)))
+          row={"index":495,"name":"WristCam","candidates":[{"i":i,"alt":a,"url":u} for i,a,u in cand],"ok":False}
+          for i,alt,u in cand:
+            try:
+              ir=requests.get(u,headers={"User-Agent":"Mozilla/5.0","Referer":r.url},timeout=20);ir.raise_for_status();b=ir.content
+              im=Image.open(io.BytesIO(b));im.load()
+              if len(b)<1500 or im.width<140 or im.height<90:continue
+              ext="."+im.format.lower().replace("jpeg","jpg")
+              fn="495 - Orbbec - WristCam"+ext;(out/fn).write_bytes(b)
+              row.update({"ok":True,"file":fn,"source":ir.url,"dimensions":[im.width,im.height],"alt":alt});break
+            except Exception as e:row.setdefault("errors",[]).append(repr(e))
+          (out/"_report.json").write_text(json.dumps(row,ensure_ascii=False,indent=2));print(json.dumps(row,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-orbbec-wrist
+          path: orbbec-wrist/
+          retention-days: 1
