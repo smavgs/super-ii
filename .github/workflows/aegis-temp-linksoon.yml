@@ -1,0 +1,74 @@
+name: Aegis Linksoon exact bundle recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-linksoon.yml"]
+permissions: {contents: read}
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,re,pathlib,io,requests
+          from urllib.parse import urljoin,urlparse
+          from PIL import Image
+          out=pathlib.Path("linksoon");out.mkdir(exist_ok=True)
+          T=[(189,"LC14"),(213,"LH14"),(253,"LSH14"),(254,"LSP100")]
+          urls=["https://lssd-sz.com/_nuxt/Ccrh0RXe.js","https://lssd-sz.com/_locales/general/zh-CN/data.json?v=1791856800747"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"*/*"})
+          texts=[]
+          for u in urls:
+            try:r=S.get(u,timeout=25);r.raise_for_status();texts.append((r.url,r.text))
+            except Exception as e:print("SOURCEERR",u,e,flush=True)
+          def n(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def good(b):
+            try:im=Image.open(io.BytesIO(b));im.load();return len(b)>2500 and im.width>=160 and im.height>=120
+            except:return False
+          def ext(b,u):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          R=[]
+          imgpat=re.compile(r'''(?:https?:)?//[^"'\s]+\.(?:png|jpe?g|webp)(?:\?[^"'\s]*)?|/[^"'\s]+\.(?:png|jpe?g|webp)(?:\?[^"'\s]*)?''',re.I)
+          for idx,name in T:
+            nn=n(name);cand=[]
+            for base,text in texts:
+              # all occurrences of model; image URLs in local windows
+              lower=text.lower()
+              for m in re.finditer(re.escape(name.lower()),lower):
+                a=max(0,m.start()-5000);b=min(len(text),m.end()+5000);win=text[a:b]
+                for im in imgpat.finditer(win):
+                  raw=im.group(0)
+                  if raw.startswith("//"):u="https:"+raw
+                  else:u=urljoin(base,raw)
+                  lu=u.lower()
+                  if any(z in lu for z in ("logo","icon","avatar","banner","favicon")):continue
+                  dist=abs((a+im.start())-m.start())
+                  score=100000-dist
+                  if nn in n(u):score+=100000
+                  cand.append((score,u,base))
+            # dedupe
+            uniq={}
+            for sc,u,b in cand:
+              if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,b)
+            best=None
+            for u,(sc,b) in sorted(uniq.items(),key=lambda z:z[1][0],reverse=True)[:20]:
+              try:
+                ir=S.get(u,headers={"Referer":"https://lssd-sz.com/"},timeout=15);ir.raise_for_status();bb=ir.content
+                if not good(bb):continue
+                im=Image.open(io.BytesIO(bb));w,h=im.size
+                if max(w/h,h/w)>5:continue
+                s2=sc*10000000+w*h+len(bb)
+                if best is None or s2>best[0]:best=(s2,bb,ir.url,w,h,sc)
+              except:pass
+            if not best:
+              x={"index":idx,"name":name,"ok":False,"candidates":len(uniq)};R.append(x);print(json.dumps(x),flush=True);continue
+            _,bb,u,w,h,sc=best;fn=f"{idx:03d} - Linksoon - {name}{ext(bb,u)}";(out/fn).write_bytes(bb)
+            x={"index":idx,"name":name,"ok":True,"file":fn,"source":u,"dimensions":[w,h],"context_score":sc};R.append(x);print(json.dumps(x),flush=True)
+          ok=sum(x.get("ok",False) for x in R);(out/"_report.json").write_text(json.dumps({"success":ok,"results":R},indent=2));print("SUMMARY",ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with: {name: superii-linksoon, path: "linksoon/", retention-days: 1}
