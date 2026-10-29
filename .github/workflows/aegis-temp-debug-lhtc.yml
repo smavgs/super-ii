@@ -1,0 +1,35 @@
+name: Aegis debug LH-TC product image
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-debug-lhtc.yml"
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect exact LH-TC product page
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests,re
+          from bs4 import BeautifulSoup
+          u="https://www.zzlhjqr.com/ltc-36.html"
+          h={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36"}
+          r=requests.get(u,headers=h,timeout=20); print("STATUS",r.status_code,r.url,r.headers.get("content-type"),len(r.content))
+          print("TITLE",re.search(r"<title[^>]*>(.*?)</title>",r.text,re.I|re.S).group(1)[:300])
+          s=BeautifulSoup(r.text,"html.parser")
+          print("IMGS",len(s.find_all("img")))
+          for i,tag in enumerate(s.find_all("img")[:100]):
+            print("IMG",i,{k:tag.get(k) for k in ["src","data-src","data-original","data-lazy-src","alt","title","class","width","height"]})
+          print("SOURCES",len(s.find_all("source")))
+          for i,tag in enumerate(s.find_all("source")[:40]):
+            print("SOURCE",i,{k:tag.get(k) for k in ["src","srcset","data-srcset","type"]})
+          print("BACKGROUND candidates")
+          for x in re.findall(r'url\\(([^)]+)\\)',r.text,re.I)[:100]: print("BG",x)
+          print("Around model")
+          p=r.text.lower().find("ltc-0010e")
+          print(r.text[max(0,p-5000):p+8000])
+          PY
