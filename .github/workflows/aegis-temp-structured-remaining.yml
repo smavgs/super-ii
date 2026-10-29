@@ -1,0 +1,189 @@
+name: Aegis exact structured remaining recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-structured-remaining.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact structured-source images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path('structured-remaining');out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36','Accept':'*/*','Accept-Language':'en-US,en;q=0.9,zh-CN;q=0.8'})
+          results=[]
+          BAD=('logo','icon','favicon','banner','header','footer','wechat','weixin','qr','qrcode','avatar','arrow','search','menu','language','tel','phone','map','service')
+          def norm(s):return re.sub(r'[^a-z0-9]+','',str(s or '').lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or 'Unknown'
+          def get(u,ref=None,t=25,verify=True):
+            h={'Referer':ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=verify)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load();return len(b)>1800 and im.width>=140 and im.height>=100
+            except:return False
+          def ext(b,u):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return '.jpg' if f=='jpeg' else '.'+f
+            except:
+              e=pathlib.Path(urlparse(u).path).suffix.lower();return '.jpg' if e not in ('.jpg','.jpeg','.png','.webp') else ('.jpg' if e=='.jpeg' else e)
+          def save(idx,maker,name,b,u,evidence):
+            if not valid(b):raise ValueError('invalid-image')
+            im=Image.open(io.BytesIO(b));fn=f'{idx:03d} - {maker} - {clean(name)}{ext(b,u)}';(out/fn).write_bytes(b)
+            return {'index':idx,'name':name,'ok':True,'file':fn,'source':u,'dimensions':[im.width,im.height],'evidence':evidence}
+          def urls_in_obj(obj, name, base=''):
+            n=norm(name);found=[]
+            def walk(x,context=False):
+              if isinstance(x,dict):
+                vals=' '.join(str(v) for v in x.values() if not isinstance(v,(dict,list)))
+                here=context or (n and n in norm(vals))
+                for k,v in x.items():
+                  kl=str(k).lower()
+                  if isinstance(v,str) and any(t in kl for t in ('image','img','photo','pic','cover','thumb','url','src')) and (v.startswith(('http','/')) or re.search(r'\.(?:png|jpe?g|webp)(?:\?|$)',v,re.I)):
+                    if here or n in norm(v):found.append((5000 if here else 4000,urljoin(base,v),f'json:{k}'))
+                  elif isinstance(v,(dict,list)):walk(v,here)
+              elif isinstance(x,list):
+                for v in x:walk(v,context)
+            walk(obj);return found
+          def js_candidates(text,name,base):
+            n=norm(name);found=[]
+            pat=re.compile(r'''["']([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)["']''',re.I)
+            for m in pat.finditer(text):
+              u=urljoin(base,m.group(1).replace('\\/','/'));un=norm(u)
+              if any(b in un for b in BAD):continue
+              a=max(0,m.start()-5000);b=min(len(text),m.end()+5000);win=norm(text[a:b])
+              if n in win:found.append((4500,u,'js-near-model'))
+              elif n in un:found.append((5000,u,'js-url-model'))
+            return found
+          def page_candidates(r,name,selector=None):
+            n=norm(name);s=BeautifulSoup(r.text,'html.parser');cand=[]
+            if selector:
+              root=s.select_one(selector)
+              if root:
+                for tag in root.find_all('img'):
+                  src=tag.get('src') or tag.get('data-src')
+                  if src:cand.append((7000,urljoin(r.url,src),'exact-gallery'))
+            for tag in s.find_all('img'):
+              vals=[tag.get(k) for k in ('src','data-src','data-original','data-lazy-src') if tag.get(k)]
+              label=(tag.get('alt') or '')+' '+(tag.get('title') or '')
+              for v in vals:
+                u=urljoin(r.url,v);un=norm(u)
+                if any(b in un for b in BAD):continue
+                if n in norm(label):cand.append((6500,u,'alt-model'))
+                elif n in un:cand.append((6200,u,'url-model'))
+            for st in s.find_all(string=True):
+              if n and n in norm(st):
+                p=st.parent
+                for depth in range(6):
+                  if not p:break
+                  arr=[]
+                  for tag in p.find_all('img',limit=20):
+                    src=tag.get('src') or tag.get('data-src') or tag.get('data-original')
+                    if src:arr.append(urljoin(r.url,src))
+                  for u in arr:
+                    if not any(b in norm(u) for b in BAD):cand.append((5500-depth*250,u,'same-model-block'))
+                  if arr:break
+                  p=p.parent
+            return cand
+          def pick(idx,maker,name,cand,ref):
+            uniq={}
+            for score,u,why in cand:
+              if u not in uniq or score>uniq[u][0]:uniq[u]=(score,why)
+            best=None
+            for u,(score,why) in uniq.items():
+              try:
+                ir=get(u,ref,15);b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b));w,h=im.size;ratio=max(w/h,h/w)
+                if ratio>5:continue
+                s2=score*10000000+w*h+min(len(b),1000000)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,why)
+              except:pass
+            if not best:return {'index':idx,'name':name,'ok':False,'error':f'no-valid-image from {len(uniq)} candidates'}
+            _,b,u,why=best;return save(idx,maker,name,b,u,why)
+
+          try:
+            r=get('https://api.lenfortech.com/api/products?with_details=true');obj=r.json()
+            for idx,name in [(206,'LF-MERG34-15-35-RR'),(207,'LF-MFGF29-26-100-SR-DD'),(208,'LF-MSEC35-100-50-DR-DB'),(209,'LF-RH1X-1L')]:
+              results.append(pick(idx,'LENFOR',name,urls_in_obj(obj,name,'https://api.lenfortech.com/'),r.url))
+          except Exception as e:
+            for idx,name in [(206,'LF-MERG34-15-35-RR'),(207,'LF-MFGF29-26-100-SR-DD'),(208,'LF-MSEC35-100-50-DR-DB'),(209,'LF-RH1X-1L')]:results.append({'index':idx,'name':name,'ok':False,'error':'LENFOR '+repr(e)})
+
+          try:
+            js=get('https://lssd-sz.com/_nuxt/Ccrh0RXe.js')
+            try:loc=get('https://lssd-sz.com/_locales/general/zh-CN/data.json?v=1791856800747')
+            except:loc=None
+            for idx,name in [(189,'LC14'),(213,'LH14'),(253,'LSH14'),(254,'LSP100')]:
+              cand=js_candidates(js.text,name,js.url)
+              if loc:
+                try:cand+=urls_in_obj(loc.json(),name,loc.url)
+                except:cand+=js_candidates(loc.text,name,loc.url)
+              results.append(pick(idx,'Linksoon',name,cand,js.url))
+          except Exception as e:
+            for idx,name in [(189,'LC14'),(213,'LH14'),(253,'LSH14'),(254,'LSP100')]:results.append({'index':idx,'name':name,'ok':False,'error':'Linksoon '+repr(e)})
+
+          try:
+            r=get('https://www.agiletact.com/assets/index-BVwTaxXE.js')
+            results.append(pick(59,'AgileTact','Data Capture Gloves',js_candidates(r.text,'Data Capture Gloves',r.url),r.url))
+          except Exception as e:results.append({'index':59,'name':'Data Capture Gloves','ok':False,'error':'AgileTact '+repr(e)})
+
+          for idx,name,page in [(263,'LT-F31C','https://www.zzlhjqr.com/ltfd-7.html'),(265,'LT-FEC-PM72-S60','https://www.zzlhjqr.com/ltfd-11.html')]:
+            try:
+              r=get(page);results.append(pick(idx,'LH-TC',name,page_candidates(r,name,'#bigImg .gallery-top'),r.url))
+            except Exception as e:results.append({'index':idx,'name':name,'ok':False,'error':'LH-TC '+repr(e)})
+
+          try:
+            r=get('https://www.tech-wedali.com/zlwskxbxt/27');cand=page_candidates(r,'ECH Series')
+            if norm('ECH Series') in norm(BeautifulSoup(r.text,'html.parser').get_text(' ',strip=True)) and not cand:
+              s=BeautifulSoup(r.text,'html.parser')
+              for i,tag in enumerate(s.find_all('img')[:30]):
+                src=tag.get('src') or tag.get('data-src')
+                if src and not any(b in norm(src) for b in BAD):cand.append((3000-i*10,urljoin(r.url,src),'exact-detail-page'))
+            results.append(pick(66,'TechWedali','ECH Series',cand,r.url))
+          except Exception as e:results.append({'index':66,'name':'ECH Series','ok':False,'error':'TechWedali '+repr(e)})
+
+          try:
+            r=get('https://www.finemotion.com.cn/home/Index/product?id=7',verify=False)
+            results.append(pick(431,'Fine-Motion','SHPR-10C',page_candidates(r,'SHPR-10C'),r.url))
+          except Exception as e:results.append({'index':431,'name':'SHPR-10C','ok':False,'error':'FineMotion '+repr(e)})
+
+          try:
+            r=get('https://www.orbbec.com.cn/index/Product/info.html?cate=38&id=78');cand=page_candidates(r,'WristCam')
+            s=BeautifulSoup(r.text,'html.parser')
+            for tag in s.find_all('img'):
+              lab=(tag.get('alt') or '')+' '+(tag.get('title') or '');src=tag.get('src') or tag.get('data-src')
+              if src and ('wrist' in lab.lower() or 'wrist' in src.lower()):cand.append((6800,urljoin(r.url,src),'wrist-labelled-official'))
+            results.append(pick(495,'Orbbec','WristCam',cand,r.url))
+          except Exception as e:results.append({'index':495,'name':'WristCam','ok':False,'error':'Orbbec '+repr(e)})
+
+          z=None
+          for page in ['https://docs.mech-mind.net/en/inline-measurement-manual/latest/software-manual/metrics.html','https://downloads.mech-mind.com/data/md&html_files/md/metrics/1.3.1.md']:
+            try:
+              r=get(page);z=pick(324,'Mech-Mind','Mech-Metrics',page_candidates(r,'Mech-Metrics')+js_candidates(r.text,'Mech-Metrics',r.url),r.url)
+              if z.get('ok'):break
+            except Exception as e:z={'index':324,'name':'Mech-Metrics','ok':False,'error':repr(e)}
+          results.append(z or {'index':324,'name':'Mech-Metrics','ok':False,'error':'no-source'})
+
+          results.sort(key=lambda x:x.get('index',9999));ok=sum(bool(x.get('ok')) for x in results)
+          (out/'_report.json').write_text(json.dumps({'requested':len(results),'success':ok,'failed':len(results)-ok,'results':results},ensure_ascii=False,indent=2))
+          print(json.dumps(results,ensure_ascii=False,indent=2));print('SUMMARY',ok,len(results)-ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-structured-remaining
+          path: structured-remaining/
+          retention-days: 1
