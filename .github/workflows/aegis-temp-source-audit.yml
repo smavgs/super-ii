@@ -1,0 +1,42 @@
+name: Aegis remaining component source audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-source-audit.yml"
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path(".")
+          m=json.loads((root/".aegis-temp/component-images-missing-6.json").read_text())
+          rows=[]
+          for it in m["missing"]:
+            p=root/"public/robot-library/records"/f"{it['id']}.json"
+            try:r=json.loads(p.read_text())
+            except Exception as e:
+              rows.append({**it,"error":str(e)});continue
+            rows.append({
+              **it,
+              "website":r.get("website"),
+              "resources":r.get("resources"),
+              "seed":r.get("seed"),
+              "source_images":r.get("source_images"),
+              "family":r.get("family"),
+              "makers":r.get("makers"),
+            })
+          pathlib.Path("remaining-source-audit.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          print(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-remaining-source-audit
+          path: remaining-source-audit.json
+          retention-days: 1
