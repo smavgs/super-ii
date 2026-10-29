@@ -1,0 +1,57 @@
+name: Aegis Linksoon exact series images
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-linksoon-images.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin
+          from PIL import Image
+          out=pathlib.Path("linksoon-images");out.mkdir(exist_ok=True)
+          jsurl="https://lssd-sz.com/_nuxt/Ccrh0RXe.js"
+          r=requests.get(jsurl,headers={"User-Agent":"Mozilla/5.0"},timeout=30);r.raise_for_status();s=r.text
+          # Map imported variable names to exact asset paths.
+          imports={}
+          patterns=[
+            r'import\s+([A-Za-z_$][\w$]*)\s+from\s*["\']([^"\']+\.(?:png|jpe?g|webp|avif))["\']',
+            r'import\s+([A-Za-z_$][\w$]*)\s+from\s*["\']([^"\']+)["\']'
+          ]
+          for pat in patterns:
+            for m in re.finditer(pat,s,re.I):
+              if re.search(r'\.(?:png|jpe?g|webp|avif)(?:\?|$)',m.group(2),re.I):imports[m.group(1)]=urljoin(jsurl,m.group(2))
+          # Nuxt can emit const a="/_nuxt/x.webp" instead of imports.
+          for m in re.finditer(r'\b([A-Za-z_$][\w$]*)\s*=\s*["\']([^"\']+\.(?:png|jpe?g|webp|avif))["\']',s,re.I):
+            imports.setdefault(m.group(1),urljoin(jsurl,m.group(2)))
+          # Extract Q objects and their coverDetail variables.
+          series={}
+          for sid,model,idx in [("04","LC14",189),("03","LH14",213),("01","LSH14",253),("02","LSP100",254)]:
+            m=re.search(r'\{id:"'+sid+r'".{0,2500}?coverDetail:([A-Za-z_$][\w$]*)',s,re.S)
+            var=m.group(1) if m else None
+            url=imports.get(var)
+            series[model]={"id":sid,"var":var,"url":url}
+            if not url:continue
+            try:
+              ir=requests.get(url,headers={"User-Agent":"Mozilla/5.0","Referer":jsurl},timeout=20);ir.raise_for_status();b=ir.content
+              im=Image.open(io.BytesIO(b));im.load()
+              ext="."+im.format.lower().replace("jpeg","jpg")
+              fn=f"{idx:03d} - Linksoon - {model}{ext}";(out/fn).write_bytes(b)
+              series[model].update({"file":fn,"dimensions":[im.width,im.height],"bytes":len(b),"ok":True})
+            except Exception as e:series[model].update({"ok":False,"error":repr(e)})
+          (out/"_report.json").write_text(json.dumps({"imports_count":len(imports),"series":series},ensure_ascii=False,indent=2))
+          print(json.dumps({"imports_count":len(imports),"series":series},ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-linksoon-images
+          path: linksoon-images/
+          retention-days: 1
