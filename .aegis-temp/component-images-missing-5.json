@@ -1,20 +1,8 @@
 {
   "generated": "2026-10-29",
-  "saved": 391,
+  "saved": 425,
   "total": 516,
   "missing": [
-    {
-      "index": 17,
-      "id": "d5aa356e-e8fe-4f69-b9f3-976b8917d50d",
-      "name": "Aluminum spot-welding-to-gripper tool-change assembly",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 18,
-      "id": "e176de38-a79d-4fc4-8caf-e41d9f54cce6",
-      "name": "Aluminum spot-welding-to-SPR tool-change assembly",
-      "manufacturer": "LH-TC"
-    },
     {
       "index": 36,
       "id": "83f52d1b-28e8-4139-9898-711f071cee58",
@@ -238,12 +226,6 @@
       "manufacturer": "LH-TC"
     },
     {
-      "index": 218,
-      "id": "a863ac28-1848-44d1-8f2e-c7b718c627db",
-      "name": "LMO-C31-SM03C",
-      "manufacturer": "LH-TC"
-    },
-    {
       "index": 222,
       "id": "827e8fde-919d-4590-8982-31a2dd1d4ecf",
       "name": "LMO-C53B-SM22-MS12- SM02C-BI01",
@@ -256,87 +238,9 @@
       "manufacturer": "LH-TC"
     },
     {
-      "index": 225,
-      "id": "9097cac7-ded4-4d30-a68f-a08eae5c60c5",
-      "name": "LMO-E03F",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 226,
-      "id": "1c5a8f5e-a001-464e-908e-adc21a2947e7",
-      "name": "LMO-E04",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 229,
-      "id": "e00f34c3-3396-49a7-bf5d-a2047ede7cfe",
-      "name": "LMO-E13-SM10B",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 230,
-      "id": "592d046e-0b90-4604-b801-9b8e656843eb",
-      "name": "LMO-E13-U02A-U02A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 231,
-      "id": "17a7dd1c-4760-4d28-b76e-dfc90e9923aa",
-      "name": "LMO-E16-MS07A-AF01",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 233,
-      "id": "5cc4b5e7-af4b-4a11-8315-72281537a95a",
-      "name": "LMO-F22-E06A-E06A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 238,
-      "id": "ac0d1b4b-98ef-4720-950e-49f82d6ae763",
-      "name": "LMO-L01B",
-      "manufacturer": "LH-TC"
-    },
-    {
       "index": 239,
       "id": "a2e299f7-08bd-440b-a38a-1a74b54ad4e2",
       "name": "LMO-L03N-03",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 241,
-      "id": "777afd35-073a-40a2-87fb-edb5e05039f3",
-      "name": "LMO-S06-RJ45C",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 243,
-      "id": "7097a7a4-da2e-4de1-ab27-6be6d1524a14",
-      "name": "LMO-S08B",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 246,
-      "id": "ed0ef52d-b495-47a3-bec2-6e42d50bca3a",
-      "name": "LMO-SM20B",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 248,
-      "id": "6fa980b5-9693-434a-80e2-251530de2d0e",
-      "name": "LMO-U02D",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 249,
-      "id": "935a7190-0d10-474d-9da5-800472dddd9f",
-      "name": "LMO-U04A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 250,
-      "id": "7b36568a-6503-430e-839c-8e378237ccd4",
-      "name": "LMO-XZ-01",
       "manufacturer": "LH-TC"
     },
     {
@@ -350,96 +254,6 @@
       "id": "36cb9924-8fe1-4bc6-baaf-66bd622a783b",
       "name": "LSP100",
       "manufacturer": "Linksoon"
-    },
-    {
-      "index": 270,
-      "id": "66b4ab76-b4a1-42e8-850e-a1598282f777",
-      "name": "LT-PG2-100A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 271,
-      "id": "c381c22b-9bb1-4a93-ae0e-0e64d237cc51",
-      "name": "LT-PG3-100A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 272,
-      "id": "9beb6c40-662d-41bd-b0b5-329e8e9e8436",
-      "name": "LT-TG2-40A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 273,
-      "id": "5bf68854-b185-4e0b-8eb7-bab369fac2f1",
-      "name": "LT-TG3-40A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 279,
-      "id": "98c128d1-d60e-42db-bc82-124e9764c631",
-      "name": "LTC-0040A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 280,
-      "id": "5cc610d4-dd5a-4b11-a5ad-2db0b11c4154",
-      "name": "LTC-0040TK",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 281,
-      "id": "88d777a8-1e27-4d47-8d33-b2fe2494c15b",
-      "name": "LTC-0070A",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 282,
-      "id": "3809fa82-a841-4625-8f8c-5419831c9e05",
-      "name": "LTC-0070B",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 283,
-      "id": "29c89957-ffc6-481c-9037-821c2387962f",
-      "name": "LTC-0120C",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 284,
-      "id": "927729e6-c722-4588-b8c9-5e95b09ae5da",
-      "name": "LTC-0120D",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 285,
-      "id": "3d3ef2e4-1ca6-47f2-9273-da7878ba5d8e",
-      "name": "LTC-0200D",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 286,
-      "id": "41672aa8-9220-4790-8bc2-9f6d89b63268",
-      "name": "LTC-0200E",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 287,
-      "id": "8049cd11-d1f9-4b8b-8a37-01d4dbf24d7e",
-      "name": "LTC-0200F",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 288,
-      "id": "889b7669-6c19-479f-b518-fb8faa5d72fe",
-      "name": "LTC-0300G",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 292,
-      "id": "c836ecc4-0c7b-41b0-a7cc-a096873b7a1d",
-      "name": "LTC-AF100C-L",
-      "manufacturer": "LH-TC"
     },
     {
       "index": 301,
@@ -610,12 +424,6 @@
       "manufacturer": "LDROBOT"
     },
     {
-      "index": 414,
-      "id": "99b0f96e-58e4-48e6-96a5-0276a39b96d1",
-      "name": "Safety docking assembly-2",
-      "manufacturer": "LH-TC"
-    },
-    {
       "index": 415,
       "id": "c386a9ac-7671-4265-b57d-f143317f66aa",
       "name": "Safety docking assembly-3",
@@ -632,18 +440,6 @@
       "id": "49fbae62-d108-478d-8487-09085c9f6795",
       "name": "SLAM CLEANPACK_LD05",
       "manufacturer": "LDROBOT"
-    },
-    {
-      "index": 443,
-      "id": "04c45d9a-3e65-48dd-81c4-9b69ef210d4a",
-      "name": "SPR-to-FDS tool-change assembly",
-      "manufacturer": "LH-TC"
-    },
-    {
-      "index": 448,
-      "id": "327fa9a9-2dae-43e1-9f66-4b2f7a1a08e1",
-      "name": "Steel spot-welding-to-gripper tool-change assembly",
-      "manufacturer": "LH-TC"
     },
     {
       "index": 459,
