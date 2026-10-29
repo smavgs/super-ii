@@ -119,19 +119,25 @@ jobs:
             idx,rid=it["index"],it["id"]
             rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
             name=rec.get("name") or it.get("name") or rid
+            errs=[]
+            u=PAGE_MAP.get(name)
+            # MC1028 and ZWSMD008008 PDFs expose mask layers; force exact product-page imagery.
+            if name in ("MC1028","ZWSMD008008") and u:
+              try:
+                z=page_image(name,idx,u)
+                if z:return z
+              except Exception as e:errs.append(f"page:{type(e).__name__}:{e}")
             pdfs=[]
             if name=="ZWSMD008008":
-              pdfs=["https://www.zwgearbox.com/uploads/2502/zwsmd008008-e.pdf"]
+              pdfs=[]
             else:
               pdfs=[f"https://www.zwgearbox.com/uploads/2512/{name.lower()}.pdf"]
-            errs=[]
-            for u in pdfs:
+            for pu in pdfs:
               try:
-                z=extract_pdf(name,idx,u)
+                z=extract_pdf(name,idx,pu)
                 if z:return z
               except Exception as e:errs.append(f"pdf:{type(e).__name__}:{e}")
-            u=PAGE_MAP.get(name)
-            if u:
+            if u and name not in ("MC1028","ZWSMD008008"):
               try:
                 z=page_image(name,idx,u)
                 if z:return z
