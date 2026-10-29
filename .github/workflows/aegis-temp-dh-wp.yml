@@ -1,0 +1,109 @@
+name: Aegis DH-Robotics WordPress exact media
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-dh-wp.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path("dh-wp");out.mkdir(exist_ok=True)
+          T=[(362,"PGC-140-50"),(363,"PGE-5-26"),(364,"PGEA-100-26"),(365,"PGHL-400-80"),(367,"PGSE-15-7")]
+          base="https://en.dh-robotics.com"
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"application/json,text/html,image/*,*/*"})
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def good(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load();return len(b)>2000 and im.width>=160 and im.height>=100
+            except:return False
+          def ext(b,u):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          rows=[]
+          for idx,name in T:
+            row={"index":idx,"name":name,"ok":False,"search":[]}
+            try:
+              q=S.get(base+"/wp-json/wp/v2/search",params={"search":name,"per_page":20},timeout=25);q.raise_for_status();res=q.json()
+              row["search"]=[{"id":x.get("id"),"title":x.get("title"),"url":x.get("url"),"subtype":x.get("subtype")} for x in res]
+              cand=[]
+              for x in res:
+                title=str(x.get("title") or "")
+                url=str(x.get("url") or "")
+                if norm(name) not in norm(title+" "+url):continue
+                subtype=x.get("subtype");pid=x.get("id")
+                if subtype and pid:
+                  endpoints=[f"{base}/wp-json/wp/v2/{subtype}/{pid}"]
+                else:endpoints=[]
+                for ep in endpoints:
+                  try:
+                    p=S.get(ep,timeout=20);p.raise_for_status();obj=p.json()
+                  except:continue
+                  fm=obj.get("featured_media")
+                  if fm:
+                    try:
+                      m=S.get(f"{base}/wp-json/wp/v2/media/{fm}",timeout=20);m.raise_for_status();mo=m.json()
+                      u=mo.get("source_url")
+                      if u:cand.append((10000,u,"featured-media",url))
+                    except:pass
+                  html=""
+                  for k in ("content","excerpt"):
+                    v=obj.get(k)
+                    if isinstance(v,dict):html+=" "+str(v.get("rendered") or "")
+                  soup=BeautifulSoup(html,"html.parser")
+                  for tag in soup.find_all("img"):
+                    u=tag.get("src") or tag.get("data-src") or tag.get("data-lazy-src")
+                    lab=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+                    if not u:continue
+                    score=8000 if norm(name) in norm(lab+" "+u) else 3000
+                    cand.append((score,urljoin(base,u),lab or "content-image",url))
+              # fallback: scrape exact archive URL returned by search
+              for x in res:
+                u=x.get("url")
+                if not u or norm(name) not in norm((x.get("title") or "")+" "+u):continue
+                try:
+                  p=S.get(u,timeout=20);p.raise_for_status();s=BeautifulSoup(p.text,"html.parser")
+                  for tag in s.find_all("img"):
+                    src=tag.get("src") or tag.get("data-src") or tag.get("data-lazy-src")
+                    lab=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+                    if not src:continue
+                    score=7000 if norm(name) in norm(lab+" "+src) else 1500
+                    cand.append((score,urljoin(p.url,src),lab or "archive-image",p.url))
+                except:pass
+              uniq={}
+              for s,u,w,p in cand:
+                if u not in uniq or s>uniq[u][0]:uniq[u]=(s,w,p)
+              best=None
+              for u,(score,why,page) in uniq.items():
+                if any(z in u.lower() for z in ("logo","icon","favicon","banner","qr","wechat","avatar")):continue
+                try:
+                  ir=S.get(u,headers={"Referer":page},timeout=15);ir.raise_for_status();b=ir.content
+                  if not good(b):continue
+                  im=Image.open(io.BytesIO(b));w,h=im.size
+                  if max(w/h,h/w)>5:continue
+                  s2=score*10000000+w*h+len(b)
+                  if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,why,page,score)
+                except:pass
+              if not best:raise ValueError(f"no image from {len(res)} search results / {len(uniq)} candidates")
+              _,b,u,w,h,why,page,score=best
+              fn=f"{idx:03d} - DH-Robotics - {name}{ext(b,u)}";(out/fn).write_bytes(b)
+              row.update({"ok":True,"file":fn,"source":u,"page":page,"dimensions":[w,h],"evidence":why,"score":score})
+            except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+            rows.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-dh-wp
+          path: dh-wp/
+          retention-days: 1
