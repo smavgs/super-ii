@@ -1,0 +1,32 @@
+name: Aegis debug D-Robotics product images
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-debug-drobotics.yml"]
+permissions: {contents: read}
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          pages=[
+            ("X3","https://developer.d-robotics.cc/en/rdkx3"),
+            ("X5","https://developer.d-robotics.cc/en/rdkx5"),
+            ("S600","https://developer.d-robotics.cc/rdk_s_doc/en/01_Quick_start/01_hardware_introduction/02_rdk_s600/01_rdk_s600_kit"),
+          ]
+          for tag,u in pages:
+            print("\n===",tag,u)
+            try:r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=25);print("HTTP",r.status_code,r.url,len(r.content));r.raise_for_status()
+            except Exception as e:print("ERR",e);continue
+            s=BeautifulSoup(r.text,"html.parser")
+            for i,im in enumerate(s.find_all("img")):
+              src=im.get("src") or im.get("data-src") or im.get("data-original")
+              if src:print("IMG",i,{"src":urljoin(r.url,src),"alt":im.get("alt"),"title":im.get("title"),"class":im.get("class")})
+          PY
