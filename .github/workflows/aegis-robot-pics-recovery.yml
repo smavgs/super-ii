@@ -106,8 +106,7 @@ jobs:
               rr=next((r for r in records if r["id"]==did),None)
               if rr: print("DIAG",did,mirror_candidates(rr)[:3],flush=True)
 
-          def one(rec):
-              # 1) reviewed/direct manufacturer asset attached to exact record.
+          def one(rec):\n              # Independent replacement for one known duplicate mirror mapping.\n              if rec["id"]=="cb767984-c777-48ae-8f6d-43583b2aa140":\n                  u="https://smcos.cdmgiml.com/tx/test/others/201/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_2025-09-24_192710_371-1758713442254_transcode.jpg"\n                  x=save(rec,u,"independent-exact-product-photo","https://news.chengdu.cn/2025/0924/68d3d5e8d8cb1a1ec0279644.shtml")\n                  if x:return x\n              # 1) reviewed/direct manufacturer asset attached to exact record.
               for im in rec.get("images") or []:
                   if not isinstance(im,dict):continue
                   u=im.get("url") or ""
