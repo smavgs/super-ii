@@ -1,6 +1,6 @@
 {
   "generated": "2026-10-29",
-  "saved": 425,
+  "saved": 382,
   "total": 516,
   "missing": [
     {
@@ -86,6 +86,30 @@
       "id": "e079317f-b971-4b63-a6a0-9eaee9510efb",
       "name": "HR",
       "manufacturer": "HCFA"
+    },
+    {
+      "index": 149,
+      "id": "11063c34-ce8e-468a-b1a1-c13b694db431",
+      "name": "HSG/HS-C-H",
+      "manufacturer": "TC Drive"
+    },
+    {
+      "index": 150,
+      "id": "9ce76bc8-de18-4000-a75c-4ec2143dcc48",
+      "name": "HSG/HS-C-J",
+      "manufacturer": "TC Drive"
+    },
+    {
+      "index": 151,
+      "id": "c5daea71-78bf-49a5-b368-7826cc255a87",
+      "name": "HSG/HS-S-C",
+      "manufacturer": "TC Drive"
+    },
+    {
+      "index": 152,
+      "id": "a821cff7-b04a-42d2-85e5-042ba146c251",
+      "name": "HSG/HS-S-H",
+      "manufacturer": "TC Drive"
     },
     {
       "index": 155,
@@ -220,27 +244,111 @@
       "manufacturer": "Linksoon"
     },
     {
-      "index": 217,
-      "id": "086c96cf-6b02-4553-bf88-c45d0bd18f92",
-      "name": "LMO-C28-BM01-AF03",
+      "index": 216,
+      "id": "eb3dc569-9e5e-43f6-817d-a21a93299272",
+      "name": "LMO-630F-PE",
       "manufacturer": "LH-TC"
     },
     {
-      "index": 222,
-      "id": "827e8fde-919d-4590-8982-31a2dd1d4ecf",
-      "name": "LMO-C53B-SM22-MS12- SM02C-BI01",
+      "index": 219,
+      "id": "d517f250-c679-4e11-9585-c725b1a0ebea",
+      "name": "LMO-C33-SM01C-MS10",
       "manufacturer": "LH-TC"
     },
     {
-      "index": 224,
-      "id": "d79e553f-c170-4323-8e12-d91bc4a28f8b",
-      "name": "LMO-E01F",
+      "index": 220,
+      "id": "49ddb377-9004-4c7e-b896-2ce63cbda9b2",
+      "name": "LMO-C41-SM03C-SM03C",
       "manufacturer": "LH-TC"
     },
     {
-      "index": 239,
-      "id": "a2e299f7-08bd-440b-a38a-1a74b54ad4e2",
-      "name": "LMO-L03N-03",
+      "index": 221,
+      "id": "ecd53dd6-9cd8-407d-a398-18b2249bf219",
+      "name": "LMO-C53-SM22C-MS12-SM02C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 223,
+      "id": "34583243-357d-49fb-8045-e5ce00908d9b",
+      "name": "LMO-DS01-A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 227,
+      "id": "fcc1f5af-0672-4f97-b331-944dd61625de",
+      "name": "LMO-E11-BI02-AF01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 228,
+      "id": "c785c2ba-d954-486e-844b-4cb7aca17a7a",
+      "name": "LMO-E12-BI01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 232,
+      "id": "fef09e17-4288-432e-b2a7-131c40e6d854",
+      "name": "LMO-F21-E06A-S15-AF01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 234,
+      "id": "32710fa4-4a52-4ce5-9936-c313213a0d79",
+      "name": "LMO-GC01E",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 235,
+      "id": "6e6e6c66-b1a1-468f-9ece-0fad91200886",
+      "name": "LMO-GD01C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 236,
+      "id": "09d3c382-012e-41f4-8129-f09b8c3680be",
+      "name": "LMO-GS01A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 237,
+      "id": "9fcfc5d1-9f92-4cf1-8877-f6b484ef889e",
+      "name": "LMO-GZK020A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 240,
+      "id": "09e1093b-c1ab-4076-997a-886f20be217b",
+      "name": "LMO-L05F-05",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 242,
+      "id": "8dda5558-d3d5-46cd-b807-23808625ffdd",
+      "name": "LMO-S08A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 244,
+      "id": "54babb57-d026-40f5-a858-c68dd92cf682",
+      "name": "LMO-S12A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 245,
+      "id": "73020934-3e8e-409a-a9d2-fe73c4b22bbb",
+      "name": "LMO-S14A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 247,
+      "id": "f259881a-9ef7-47c7-b646-5d3846ef327e",
+      "name": "LMO-SOL-A6-S12-C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 251,
+      "id": "73cde48d-fd80-42ee-ae52-216431c7c2a6",
+      "name": "LMO-YL02A",
       "manufacturer": "LH-TC"
     },
     {
@@ -254,6 +362,108 @@
       "id": "36cb9924-8fe1-4bc6-baaf-66bd622a783b",
       "name": "LSP100",
       "manufacturer": "Linksoon"
+    },
+    {
+      "index": 258,
+      "id": "4cea6aa1-7da8-4831-9e0f-aeacb5584e9c",
+      "name": "LT-6000",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 259,
+      "id": "7b947fe6-2bd4-4b27-a37d-e8701b12b5b4",
+      "name": "LT-AF300B",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 260,
+      "id": "202d9f4f-5e2f-42ca-8099-b90f049751e5",
+      "name": "LT-COMP-100XY",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 261,
+      "id": "76e35de9-5f1e-4fae-9c38-1723131f1511",
+      "name": "LT-F24-0201-LA05+LT-FEC-PM72-S60+5XLH-L01BH",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 262,
+      "id": "1a9c71ac-d252-403d-aa67-6d05963f82f3",
+      "name": "LT-F31-BI11",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 263,
+      "id": "dd0fe26c-12e4-4909-9341-4207c6260f72",
+      "name": "LT-F31C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 264,
+      "id": "565f3614-e043-4019-9001-96f6468a7a2b",
+      "name": "LT-F41",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 265,
+      "id": "c0f6d8ca-9517-45ba-95aa-fa65c18aa435",
+      "name": "LT-FEC-PM72-S60",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 266,
+      "id": "7e11ec91-3644-47c5-88c2-587744009fa4",
+      "name": "LT-FR020A-20-S6000",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 267,
+      "id": "2166053d-0940-414e-9f63-4a3bbb6ae6b7",
+      "name": "LT-FRC030B-3030T-J",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 268,
+      "id": "7415f2b1-c61d-44c1-befb-094f04b76b32",
+      "name": "LT-JQC-100SKA",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 269,
+      "id": "faea1c3f-b773-42b4-8579-c29b23d6e950",
+      "name": "LT-JQC-100SKB",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 276,
+      "id": "6379886a-75b4-4dd6-998b-f19129639496",
+      "name": "LTC-0010F",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 277,
+      "id": "a4cef7d8-bb5d-4742-8133-b5bb49a0bf1d",
+      "name": "LTC-0020D",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 278,
+      "id": "6359a01a-7330-48a9-b69f-3dee0bb8cdef",
+      "name": "LTC-0020E",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 290,
+      "id": "8f077e7a-ddf6-4385-bc33-a50bbe0b7b65",
+      "name": "LTC-1300A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 291,
+      "id": "354d870d-07e8-4889-a2fa-21e93362f2dc",
+      "name": "LTC-3000A",
+      "manufacturer": "LH-TC"
     },
     {
       "index": 301,
@@ -424,10 +634,34 @@
       "manufacturer": "LDROBOT"
     },
     {
-      "index": 415,
-      "id": "c386a9ac-7671-4265-b57d-f143317f66aa",
-      "name": "Safety docking assembly-3",
-      "manufacturer": "LH-TC"
+      "index": 395,
+      "id": "fb898d47-94cf-4f8d-9511-9d00e6f9e147",
+      "name": "RDK S100",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 396,
+      "id": "a64c6b5b-0431-42a4-8882-12d1db9eb422",
+      "name": "RDK S600",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 397,
+      "id": "708b99d0-ac43-4def-8bf6-b6833aaf8ff7",
+      "name": "RDK X3",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 398,
+      "id": "dff50f95-a0f0-4ef1-b6a5-c7b533fd9431",
+      "name": "RDK X3 Module",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 399,
+      "id": "35374722-8d3d-4c13-9e3a-16b7344d4dcf",
+      "name": "RDK X5",
+      "manufacturer": "D-Robotics"
     },
     {
       "index": 431,
@@ -452,6 +686,30 @@
       "id": "3e4a57b3-ec48-41f9-a932-0ad101d9cbd5",
       "name": "SV-D5",
       "manufacturer": "HCFA"
+    },
+    {
+      "index": 461,
+      "id": "8af0d147-4436-4adb-85fe-a16c62e46a1c",
+      "name": "SV660",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 462,
+      "id": "265dce04-ca16-4c69-9c17-cd83b02646c4",
+      "name": "SV660ND",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 463,
+      "id": "b82177a9-2b46-4194-8bfe-c972734665f9",
+      "name": "SV670",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 464,
+      "id": "12a114bf-006f-4f3c-9575-f021b6dbc8b4",
+      "name": "SV680",
+      "manufacturer": "Inovance"
     },
     {
       "index": 465,
