@@ -1,0 +1,70 @@
+name: Aegis Percipio datasheet image candidates
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-percipio-pdf.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 pillow==12.0.0
+      - name: Extract exact Percipio datasheet images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,requests,fitz
+          from PIL import Image
+          items={
+            104:("FM811-TIX","https://doc.percipio.xyz/cam/datasheet/en/FM811-TIX_Specifications.pdf"),
+            106:("FM854-E1","https://doc.percipio.xyz/cam/datasheet/en/FM854-E1_Specifications.pdf"),
+            109:("FS820-E1","https://doc.percipio.xyz/cam/datasheet/en/FS820-E1_Specifications.pdf"),
+            372:("PM805-E1","https://doc.percipio.xyz/cam/datasheet/en/PM805-E1_Specifications.pdf"),
+            378:("PS801-E1","https://doc.percipio.xyz/cam/datasheet/en/PS801_Series_Specifications.pdf"),
+            379:("PS801-N-E1","https://doc.percipio.xyz/cam/datasheet/en/PS801_Series_Specifications.pdf"),
+            471:("TL430-E1","https://doc.percipio.xyz/cam/datasheet/en/TL430-E1_Specifications.pdf"),
+            472:("TL460-S1-E1","https://doc.percipio.xyz/cam/datasheet/en/TL460-S1-E1_Specifications.pdf"),
+            473:("TM260-E1","https://doc.percipio.xyz/cam/datasheet/en/TM260-E1_Specifications.pdf"),
+            476:("TM421-E1","https://doc.percipio.xyz/cam/datasheet/en/TM421-E1_Specifications.pdf"),
+            477:("TM461-E2","https://doc.percipio.xyz/cam/datasheet/en/TM461-E2_Specifications.pdf"),
+          }
+          out=pathlib.Path("percipio-pdf");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 Chrome/155 Safari/537.36"})
+          rows=[]
+          for idx,(model,url) in items.items():
+            try:
+              r=S.get(url,timeout=30,allow_redirects=True);r.raise_for_status()
+              d=fitz.open(stream=r.content,filetype="pdf")
+              pages=[]
+              mn=model.lower().replace("-","").replace(" ","")
+              for p in range(min(len(d),5)):
+                txt=d[p].get_text("text").lower().replace("-","").replace(" ","")
+                if mn in txt: pages.append(p)
+              if not pages:pages=[0]
+              saved=[]
+              seen=set()
+              for p in pages[:2]:
+                for j,imref in enumerate(d[p].get_images(full=True),1):
+                  xref=imref[0]
+                  if xref in seen:continue
+                  seen.add(xref)
+                  z=d.extract_image(xref);b=z["image"];w=z.get("width",0);h=z.get("height",0);ext=z.get("ext","png")
+                  if len(b)<1200 or w<120 or h<100:continue
+                  if max(w/h,h/w)>8:continue
+                  fn=f"{idx:03d}_{model}_{p+1}_{j}_{w}x{h}.{ext}"
+                  (out/fn).write_bytes(b); saved.append(fn)
+              row={"index":idx,"model":model,"ok":bool(saved),"pdf":r.url,"pages":[p+1 for p in pages],"files":saved}
+            except Exception as e:
+              row={"index":idx,"model":model,"ok":False,"pdf":url,"error":str(e),"files":[]}
+            rows.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          print("SUMMARY",sum(1 for x in rows if x["ok"]),len(rows))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-percipio-pdf
+          path: percipio-pdf/
+          retention-days: 1
