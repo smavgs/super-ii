@@ -1,0 +1,39 @@
+name: Aegis D-Robotics final exact assets
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-drobotics-final.yml"]
+permissions: {contents: read}
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64,json,pathlib,re,requests
+          from urllib.parse import urljoin
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path("drobotics-final");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"text/html,image/*,*/*;q=.8"})
+          def save_url(name,u,ref):
+            r=S.get(u,headers={"Referer":ref},timeout=20);r.raise_for_status();(out/name).write_bytes(r.content);print(name,u,len(r.content))
+          # S600 exact official developer kit photo
+          save_url("396 - D-Robotics - RDK S600.png","https://rdk-doc.oss-cn-beijing.aliyuncs.com/doc/img/01_Quick_start/image/hardware_interface/RDK_S600_Kit_Axonometric%20Front%20Right%2045.png","https://developer.d-robotics.cc/rdk_s_doc/en/01_Quick_start/01_hardware_introduction/02_rdk_s600/01_rdk_s600_kit")
+          # X5 exact hero from official page
+          save_url("399 - D-Robotics - RDK X5.png","https://developer.d-robotics.cc/en/_next/static/images/rdkx5_banner-40303db90e0aaea2bc335e1e6897c44c.png","https://developer.d-robotics.cc/en/rdkx5")
+          # X3 candidates: embedded hero and official kit-combination photo
+          r=S.get("https://developer.d-robotics.cc/en/rdkx3",timeout=20);r.raise_for_status();s=BeautifulSoup(r.text,"html.parser");imgs=s.find_all("img")
+          for pos,label in [(3,"397-X3-candidate-embedded.png"),(4,"397-X3-candidate-kit.png")]:
+            src=imgs[pos].get("src")
+            if src.startswith("data:image/"):
+              head,b64=src.split(",",1);(out/label).write_bytes(base64.b64decode(b64))
+            else:
+              u=urljoin(r.url,src);save_url(label,u,r.url)
+            print("X3",pos,imgs[pos].get("alt"),src[:160])
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with: {name: superii-drobotics-final, path: "drobotics-final/", retention-days: 1}
