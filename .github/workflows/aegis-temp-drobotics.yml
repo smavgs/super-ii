@@ -1,0 +1,100 @@
+name: Aegis D-Robotics exact official recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-drobotics.yml"]
+permissions: {contents: read}
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path("drobotics");out.mkdir(exist_ok=True)
+          T=[
+           (395,"RDK S100","https://developer.d-robotics.cc/en/rdks100"),
+           (396,"RDK S600","https://developer.d-robotics.cc/en/rdks600"),
+           (397,"RDK X3","https://developer.d-robotics.cc/en/rdkx3"),
+           (398,"RDK X3 Module","https://developer.d-robotics.cc/en/rdkx3"),
+           (399,"RDK X5","https://developer.d-robotics.cc/en/rdkx5")
+          ]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"text/html,image/*,*/*;q=.8"})
+          def n(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def good(b):
+            try:im=Image.open(io.BytesIO(b));im.load();return len(b)>3000 and im.width>=180 and im.height>=120
+            except:return False
+          def ext(b,u):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def one(t):
+            idx,name,page=t;nn=n(name)
+            try:r=S.get(page,timeout=25);r.raise_for_status()
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"page:{type(e).__name__}:{e}"}
+            soup=BeautifulSoup(r.text,"html.parser")
+            txt=soup.get_text(" ",strip=True)
+            if nn not in n(txt):return {"index":idx,"name":name,"ok":False,"error":"model absent"}
+            cand=[]
+            # exact alt / url
+            for tag in soup.find_all("img"):
+              src=tag.get("src") or tag.get("data-src") or tag.get("data-original") or tag.get("data-lazy-src")
+              if not src:continue
+              u=urljoin(r.url,src);lu=u.lower();label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              if any(x in lu for x in ("logo","icon","favicon","footer","header","arrow")):continue
+              score=0
+              if nn in n(label):score=4000
+              elif nn in n(u):score=3500
+              cand.append((score,u,label))
+            # local DOM blocks containing exact model text
+            for node in soup.find_all(string=True):
+              if nn not in n(node):continue
+              p=node.parent
+              for depth in range(5):
+                if not p:break
+                for tag in p.find_all("img",limit=12):
+                  src=tag.get("src") or tag.get("data-src")
+                  if src:
+                    u=urljoin(r.url,src);lu=u.lower()
+                    if not any(x in lu for x in ("logo","icon","favicon","footer","header","arrow")):
+                      cand.append((3000-depth*300,u,"model-dom"))
+                p=p.parent
+            # raw source image URLs near model
+            raw=r.text
+            for m in re.finditer(re.escape(name),raw,re.I):
+              a=max(0,m.start()-6000);b=min(len(raw),m.end()+6000);win=raw[a:b]
+              for im in re.finditer(r'''["']([^"'<> ]+\.(?:png|jpe?g|webp|svg)(?:\?[^"'<> ]*)?)["']''',win,re.I):
+                u=urljoin(r.url,im.group(1).replace("\\/","/"));lu=u.lower()
+                if any(x in lu for x in ("logo","icon","favicon","footer","header","arrow")):continue
+                dist=abs((a+im.start())-m.start());cand.append((2500-max(0,dist//10),u,"raw-near-model"))
+            uniq={}
+            for sc,u,l in cand:
+              if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,l)
+            best=None
+            for u,(sc,l) in sorted(uniq.items(),key=lambda x:x[1][0],reverse=True)[:30]:
+              if sc<500:continue
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15);ir.raise_for_status();bb=ir.content
+                if not good(bb):continue
+                im=Image.open(io.BytesIO(bb));w,h=im.size
+                if max(w/h,h/w)>5:continue
+                score=sc*10000000+w*h+len(bb)
+                if best is None or score>best[0]:best=(score,bb,ir.url,w,h,l,sc)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"no image {len(uniq)}"}
+            _,bb,u,w,h,l,sc=best;fn=f"{idx:03d} - D-Robotics - {name}{ext(bb,u)}";(out/fn).write_bytes(bb)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"source":u,"dimensions":[w,h],"evidence":l,"score":sc}
+          R=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+            for f in concurrent.futures.as_completed([ex.submit(one,t) for t in T]):
+              x=f.result();R.append(x);print(json.dumps(x),flush=True)
+          R.sort(key=lambda x:x["index"]);ok=sum(x.get("ok",False) for x in R);(out/"_report.json").write_text(json.dumps({"success":ok,"results":R},indent=2));print("SUMMARY",ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with: {name: superii-drobotics, path: "drobotics/", retention-days: 1}
