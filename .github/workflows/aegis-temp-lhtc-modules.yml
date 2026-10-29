@@ -1,0 +1,162 @@
+name: Aegis LH-TC module exact-page recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lhtc-modules.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Resolve exact LH-TC module pages and recover product gallery image
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse,quote
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+
+          root=pathlib.Path(".");out=root/"lhtc-modules";out.mkdir(exist_ok=True)
+          manifest=json.loads((root/".aegis-temp/component-images-missing-6.json").read_text())["missing"]
+          entries=[x for x in manifest if x.get("manufacturer")=="LH-TC"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def get(u,ref=None):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=20,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=20,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return im.width>=180 and im.height>=140 and max(im.width/im.height,im.height/im.width)<5
+            except:return False
+          def ext(u,b):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp"):return ".jpg" if e==".jpeg" else e
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def rec_urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            return list(dict.fromkeys(a))
+          def exact_page_candidates(rec,name):
+            modeln=norm(name);c=[]
+            # existing official URLs, plus new-domain rewrites
+            for u in rec_urls(rec):
+              c.append(u)
+              if "lhrtc.com/" in u:
+                c.append(u.replace("www.lhrtc.com/","www.zzlhjqr.com/").replace("product_show/","ltc-"))
+            # crawl each supplied parent page and follow anchors whose local block contains exact model
+            discovered=[]
+            for parent in list(dict.fromkeys(c))[:8]:
+              try:r=get(parent);s=BeautifulSoup(r.text,"html.parser")
+              except:continue
+              for a in s.find_all("a",href=True):
+                txt=a.get_text(" ",strip=True)
+                block=txt
+                p=a.parent
+                for _ in range(2):
+                  if p is not None:
+                    block+=" "+p.get_text(" ",strip=True)
+                    p=p.parent
+                if modeln and modeln in norm(block):
+                  u=urljoin(r.url,a["href"])
+                  if "zzlhjqr.com" in urlparse(u).netloc or "lhrtc.com" in urlparse(u).netloc:
+                    discovered.append(u)
+            # manufacturer site search as fallback
+            for base in ("https://www.zzlhjqr.com/search.html?keyword=","https://www.lhrtc.com/search.html?keyword="):
+              try:
+                r=get(base+quote(name));s=BeautifulSoup(r.text,"html.parser")
+                for a in s.find_all("a",href=True):
+                  if modeln in norm(a.get_text(" ",strip=True)):
+                    discovered.append(urljoin(r.url,a["href"]))
+              except:pass
+            out=[]
+            for u in discovered+c:
+              if u not in out:out.append(u)
+            # prefer module / dedicated pages
+            out.sort(key=lambda u:(0 if re.search(r'/(module|ltc|product_show|mrt|gripper|ltfd|compensation)-?\d+',u,re.I) else 1,len(u)))
+            return out
+          def choose_gallery(page,name):
+            modeln=norm(name)
+            r=get(page);s=BeautifulSoup(r.text,"html.parser")
+            title=s.title.get_text(" ",strip=True) if s.title else ""
+            body=s.get_text(" ",strip=True)
+            # require exact model on the destination page itself
+            if modeln not in norm(title+" "+body):
+              return None,"model-not-on-page"
+            imgs=[]
+            for i,t in enumerate(s.find_all("img")):
+              src=t.get("src")
+              if not src:continue
+              u=urljoin(r.url,src);p=urlparse(u).path.lower()
+              if "/static/index/" in p:continue
+              if any(x in p for x in ("logo","erwe","qr","banner","call","phone","top_")):continue
+              score=0
+              if "/images/" in p:score=100
+              elif "/uploads/" in p:score=50
+              else:continue
+              # product gallery is near top of dedicated detail pages
+              if i<14:score+=40
+              alt=norm((t.get("alt") or "")+" "+(t.get("title") or ""))
+              if modeln in alt:score+=80
+              imgs.append((score,i,u))
+            imgs.sort(key=lambda z:(-z[0],z[1]))
+            for score,i,u in imgs[:10]:
+              try:
+                ir=get(u,r.url);b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b))
+                return (b,ir.url,[im.width,im.height],score,r.url),None
+              except:continue
+            return None,"no-valid-gallery"
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            try:rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"ok":False,"error":f"record:{e}"}
+            name=rec.get("name") or rid;errs=[]
+            for page in exact_page_candidates(rec,name)[:15]:
+              try:
+                z,err=choose_gallery(page,name)
+              except Exception as e:
+                errs.append(f"{page}:{type(e).__name__}");continue
+              if z:
+                b,src,dims,score,final=z
+                fn=f"{idx:03d} - LH-TC - {clean(name)}{ext(src,b)}"
+                (out/fn).write_bytes(b)
+                return {"index":idx,"name":name,"ok":True,"file":fn,"page":final,"source":src,"dimensions":dims,"score":score}
+              errs.append(f"{page}:{err}")
+            return {"index":idx,"name":name,"ok":False,"error":" | ".join(errs)[-2500:]}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for f in concurrent.futures.as_completed(fs):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_modules-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lhtc-modules
+          path: lhtc-modules/
+          retention-days: 1
