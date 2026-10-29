@@ -60,7 +60,7 @@ jobs:
             best=None
             for u in urls[:20]:
               try:
-                ir=S.get(u,timeout=15);ir.raise_for_status();b=ir.content
+                ir=S.get(requests.utils.requote_uri(u),timeout=15);ir.raise_for_status();b=ir.content
                 if not good(b):continue
                 im=Image.open(io.BytesIO(b));w,h=im.size
                 if max(w/h,h/w)>5:continue
