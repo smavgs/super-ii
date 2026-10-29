@@ -1,0 +1,95 @@
+name: Aegis DH-Robotics exact official recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-dh-exact.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact DH-Robotics model images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+
+          out=pathlib.Path("dh-exact"); out.mkdir(exist_ok=True)
+          targets=[
+            (362,"PGC-140-50","https://en.dh-robotics.com/dh_product_model/pgc-140-50-en"),
+            (363,"PGE-5-26","https://en.dh-robotics.com/dh_product_model/pge-5-26-en"),
+            (364,"PGEA-100-26","https://en.dh-robotics.com/dh_product_model/pgea-100-26-en"),
+            (365,"PGHL-400-80","https://en.dh-robotics.com/dh_product_model/pghl-400-80-en"),
+            (367,"PGSE-15-7","https://en.dh-robotics.com/dh_product_model/pgse-15-7-en"),
+          ]
+          S=requests.Session(); S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b)); im.load()
+              return len(b)>2500 and im.width>=180 and im.height>=120
+            except:return False
+          def ext(b,u):
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower(); return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def one(t):
+            idx,name,page=t;n=norm(name)
+            try:r=S.get(page,timeout=25);r.raise_for_status()
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"page:{type(e).__name__}:{e}"}
+            soup=BeautifulSoup(r.text,"html.parser");title=soup.title.get_text(" ",strip=True) if soup.title else ""
+            text=soup.get_text(" ",strip=True)
+            if n not in norm(title+" "+text):return {"index":idx,"name":name,"ok":False,"error":"model absent"}
+            cand=[]
+            for tag in soup.find_all("img"):
+              src=tag.get("src") or tag.get("data-src") or tag.get("data-original") or tag.get("data-lazy-src")
+              if not src:continue
+              u=urljoin(r.url,src);lu=u.lower();label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              if any(x in lu for x in ("logo","icon","avatar","favicon","wechat","qr","footer","header")):continue
+              score=0
+              if n in norm(label):score=2000
+              elif n in norm(u):score=1800
+              elif "product" in lu or "upload" in lu:score=300
+              cand.append((score,u,label))
+            for tag in soup.find_all("meta"):
+              key=(tag.get("property") or tag.get("name") or "").lower()
+              if key in ("og:image","og:image:url","twitter:image") and tag.get("content"):
+                cand.append((900,urljoin(r.url,tag["content"]),"meta"))
+            best=None
+            for score,u,label in sorted(cand,reverse=True)[:30]:
+              if score<250:continue
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15);ir.raise_for_status();b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b));w,h=im.size;ratio=max(w/h,h/w)
+                if ratio>5:continue
+                s2=score*10000000+w*h+len(b)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,label,score)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"no usable candidate ({len(cand)})"}
+            _,b,u,w,h,label,score=best
+            fn=f"{idx:03d} - DH-Robotics - {name}{ext(b,u)}";(out/fn).write_bytes(b)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"page":page,"source":u,"dimensions":[w,h],"label":label,"score":score}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as ex:
+            for f in concurrent.futures.as_completed([ex.submit(one,t) for t in targets]):
+              try:x=f.result()
+              except Exception as e:x={"ok":False,"error":str(e)}
+              results.append(x);print(json.dumps(x,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_report.json").write_text(json.dumps({"requested":5,"success":ok,"failed":5-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={5-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-dh-exact
+          path: dh-exact/
+          retention-days: 1
