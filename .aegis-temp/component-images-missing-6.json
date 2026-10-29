@@ -1,0 +1,649 @@
+{
+  "generated": "2026-10-29",
+  "saved": 409,
+  "total": 516,
+  "missing": [
+    {
+      "index": 36,
+      "id": "83f52d1b-28e8-4139-9898-711f071cee58",
+      "name": "CE6G-0.2",
+      "manufacturer": "SCATECH"
+    },
+    {
+      "index": 37,
+      "id": "826a9a05-f1e3-4c5d-b84d-e8dc3d4f3628",
+      "name": "CE6M-0.2",
+      "manufacturer": "SCATECH"
+    },
+    {
+      "index": 59,
+      "id": "0b2f8cfc-8880-4a9b-be6f-06f9f8f089e9",
+      "name": "Data Capture Gloves",
+      "manufacturer": "AgileTact"
+    },
+    {
+      "index": 66,
+      "id": "7493dbbd-3996-4adf-96cd-bc04b1e38d3b",
+      "name": "ECH Series",
+      "manufacturer": "TechWedali"
+    },
+    {
+      "index": 79,
+      "id": "de5dae03-9a1d-4ca4-b47f-5fb597172f08",
+      "name": "eRob to PC Connector",
+      "manufacturer": "ZeroErr"
+    },
+    {
+      "index": 104,
+      "id": "b8f29314-e4cc-41c9-a8ba-855f1642c6f4",
+      "name": "FM811-TIX",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 106,
+      "id": "ae2a7e28-8973-4d91-b712-cd1883acb3c1",
+      "name": "FM854-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 109,
+      "id": "0a748198-bc60-4e3e-9506-3cb38c7b9198",
+      "name": "FS820-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 135,
+      "id": "09bc7491-24f7-439d-8835-338e904791fe",
+      "name": "GSE-20",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 136,
+      "id": "b890e672-06f8-4449-ad5a-b6dc146a29eb",
+      "name": "GSRE-6",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 137,
+      "id": "0bf6fe23-30f7-4856-8c5c-8eebacac14b7",
+      "name": "GTE-25",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 138,
+      "id": "469e4a48-658e-434a-bac9-7d493995115d",
+      "name": "GTRE-12",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 140,
+      "id": "f7e06457-89ef-401d-8fc2-4683195f0916",
+      "name": "HC20",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 145,
+      "id": "e079317f-b971-4b63-a6a0-9eaee9510efb",
+      "name": "HR",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 155,
+      "id": "93517256-aa8f-4cde-9845-1153b628f02f",
+      "name": "Hu-ECU",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 156,
+      "id": "8405adde-7a6d-4991-b44b-310c6c4fc0e4",
+      "name": "Hu-GRS",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 157,
+      "id": "153aea92-c949-4d4b-9dd4-eb8a430601d5",
+      "name": "Hu-MDB",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 158,
+      "id": "93088b3c-ade0-4e91-989a-dc5f7466c471",
+      "name": "Hu-MLS",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 159,
+      "id": "041474bf-45e7-4104-ad66-6786359c0183",
+      "name": "Hu-MRS",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 162,
+      "id": "27b0b9ad-bfa6-40e7-8089-2b450332c0d4",
+      "name": "I/O Adapter Board",
+      "manufacturer": "ZeroErr"
+    },
+    {
+      "index": 177,
+      "id": "e5fb66ba-4c14-4c80-b068-b5bc8ea90de2",
+      "name": "IS810",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 189,
+      "id": "7044504a-d082-409d-9f14-2c30c10005f7",
+      "name": "LC14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 193,
+      "id": "6fcd3e7f-9c79-4c17-817e-08224687ee93",
+      "name": "LD00",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 195,
+      "id": "03e5685b-7ab4-4de4-b64b-b4433cbe7104",
+      "name": "LD06 Raspberry Pi Development Kit",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 199,
+      "id": "cf467388-548e-408d-bfaf-2886ffca73b2",
+      "name": "LF-LEAGF46-65-15-SR-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 200,
+      "id": "aa9c0bb1-f63c-470c-b385-59f9dba0569c",
+      "name": "LF-LEGF-140-1000-SR-BD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 201,
+      "id": "c7164e03-c4ad-4374-b5f7-1aa983e742bd",
+      "name": "LF-MEA12-10-30-RCA-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 202,
+      "id": "5e51243c-ad45-40d1-a5af-deb20889fff4",
+      "name": "LF-MEA15-08-400-RAA-DD-T",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 203,
+      "id": "1da639c9-3bc6-475f-8732-bdfa928c029a",
+      "name": "LF-MEA25-08-400-RAA-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 204,
+      "id": "d445aebf-e9b7-499d-adaa-6a9b28d2e8c7",
+      "name": "LF-MEAF30-15-150-RBC-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 205,
+      "id": "b19a6ae0-637b-4bfe-8360-ddc272bcb7d9",
+      "name": "LF-MEGF18-15-003-SR-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 206,
+      "id": "a59327b0-3f55-4277-8ee8-593128cccf60",
+      "name": "LF-MERG34-15-35-RR",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 207,
+      "id": "6f2f4991-999a-4648-b8d1-4f902534ce88",
+      "name": "LF-MFGF29-26-100-SR-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 208,
+      "id": "e8821f64-9f73-43fe-8c8b-f444410aea2d",
+      "name": "LF-MSEC35-100-50-DR-DB",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 209,
+      "id": "8283452d-04eb-4e95-8891-295a9fe8db2d",
+      "name": "LF-RH1X-1L",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 213,
+      "id": "374c2703-7b15-4781-97e1-fd19c65024b8",
+      "name": "LH14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 217,
+      "id": "086c96cf-6b02-4553-bf88-c45d0bd18f92",
+      "name": "LMO-C28-BM01-AF03",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 218,
+      "id": "a863ac28-1848-44d1-8f2e-c7b718c627db",
+      "name": "LMO-C31-SM03C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 222,
+      "id": "827e8fde-919d-4590-8982-31a2dd1d4ecf",
+      "name": "LMO-C53B-SM22-MS12- SM02C-BI01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 224,
+      "id": "d79e553f-c170-4323-8e12-d91bc4a28f8b",
+      "name": "LMO-E01F",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 225,
+      "id": "9097cac7-ded4-4d30-a68f-a08eae5c60c5",
+      "name": "LMO-E03F",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 226,
+      "id": "1c5a8f5e-a001-464e-908e-adc21a2947e7",
+      "name": "LMO-E04",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 229,
+      "id": "e00f34c3-3396-49a7-bf5d-a2047ede7cfe",
+      "name": "LMO-E13-SM10B",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 230,
+      "id": "592d046e-0b90-4604-b801-9b8e656843eb",
+      "name": "LMO-E13-U02A-U02A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 231,
+      "id": "17a7dd1c-4760-4d28-b76e-dfc90e9923aa",
+      "name": "LMO-E16-MS07A-AF01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 233,
+      "id": "5cc4b5e7-af4b-4a11-8315-72281537a95a",
+      "name": "LMO-F22-E06A-E06A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 238,
+      "id": "ac0d1b4b-98ef-4720-950e-49f82d6ae763",
+      "name": "LMO-L01B",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 239,
+      "id": "a2e299f7-08bd-440b-a38a-1a74b54ad4e2",
+      "name": "LMO-L03N-03",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 241,
+      "id": "777afd35-073a-40a2-87fb-edb5e05039f3",
+      "name": "LMO-S06-RJ45C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 243,
+      "id": "7097a7a4-da2e-4de1-ab27-6be6d1524a14",
+      "name": "LMO-S08B",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 246,
+      "id": "ed0ef52d-b495-47a3-bec2-6e42d50bca3a",
+      "name": "LMO-SM20B",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 248,
+      "id": "6fa980b5-9693-434a-80e2-251530de2d0e",
+      "name": "LMO-U02D",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 249,
+      "id": "935a7190-0d10-474d-9da5-800472dddd9f",
+      "name": "LMO-U04A",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 250,
+      "id": "7b36568a-6503-430e-839c-8e378237ccd4",
+      "name": "LMO-XZ-01",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 253,
+      "id": "1995e0ed-b2e2-4a98-9482-7b92ed7a6e1f",
+      "name": "LSH14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 254,
+      "id": "36cb9924-8fe1-4bc6-baaf-66bd622a783b",
+      "name": "LSP100",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 280,
+      "id": "5cc610d4-dd5a-4b11-a5ad-2db0b11c4154",
+      "name": "LTC-0040TK",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 301,
+      "id": "12645005-f9b1-4614-95fe-503bb8b6aed4",
+      "name": "MC0623",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 302,
+      "id": "bb435461-7449-4466-b1ba-da1d39d6a613",
+      "name": "MC0818",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 304,
+      "id": "3821a8cd-7ae2-4748-bb8b-22cf47f91e34",
+      "name": "MC0824",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 306,
+      "id": "63ee7522-2e91-4e96-b3a4-89e36447a8ed",
+      "name": "MC1028",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 307,
+      "id": "35a009d5-937e-45a9-929e-b14089f625f0",
+      "name": "MC1214",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 308,
+      "id": "08c2430b-f48d-4b8b-b0fb-627ce05a9bbd",
+      "name": "MC1223",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 309,
+      "id": "fa033986-99aa-4172-969a-3e3e7d4a0026",
+      "name": "MC1226",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 310,
+      "id": "f02fc89b-69ae-4141-9aaf-1388cb7e65bc",
+      "name": "MC1237",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 311,
+      "id": "fb4985cb-92b6-4fa2-b2b7-866b3d82a353",
+      "name": "MC1625",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 314,
+      "id": "aa0eea99-ddf1-48f5-8697-f3dd392f769c",
+      "name": "MC2232",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 315,
+      "id": "3d30d9bc-6d24-4c90-9a50-341d3994c8ef",
+      "name": "MC2250",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 316,
+      "id": "b3c6a55a-b0b3-4ebb-980f-ed689fd739ab",
+      "name": "MC2643",
+      "manufacturer": "ZHAOWEI"
+    },
+    {
+      "index": 324,
+      "id": "8d0c5e34-8f68-45ff-ae08-0821c13f90a6",
+      "name": "Mech-Metrics",
+      "manufacturer": "Mech-Mind Robotics"
+    },
+    {
+      "index": 328,
+      "id": "94feed06-ecfe-491c-8d9e-f99ec081fe51",
+      "name": "MS1-A3",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 329,
+      "id": "92970e67-6180-4771-a3fd-22814d58ae7a",
+      "name": "MS1-A6",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 330,
+      "id": "ff8afd28-35a8-4212-ba67-c5c2f2f77783",
+      "name": "MS1-S6",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 331,
+      "id": "2a2ebdaf-2a73-4cc5-a4fe-559f6e76f5e4",
+      "name": "MS1-V3",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 332,
+      "id": "161c980a-e449-4a4f-94fb-e2bdf0c41800",
+      "name": "MS1-V6",
+      "manufacturer": "Inovance"
+    },
+    {
+      "index": 339,
+      "id": "fa7576ff-43ee-4223-8ce8-7a38f1fc496d",
+      "name": "MTHE4-100",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 362,
+      "id": "4e0c3b32-96d6-4109-a241-c12bbc23ae58",
+      "name": "PGC-140-50",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 363,
+      "id": "17196728-88c0-4cdd-83a1-f7d26fcbfed8",
+      "name": "PGE-5-26",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 364,
+      "id": "bee3a7b7-8790-436d-bacd-ba7ed00c36bf",
+      "name": "PGEA-100-26",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 365,
+      "id": "2da4df72-3e2c-4c3d-be87-3bad242ed5bf",
+      "name": "PGHL-400-80",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 367,
+      "id": "d212600f-0ea4-4419-b6f5-b6c91f1070b4",
+      "name": "PGSE-15-7",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 372,
+      "id": "413bb18a-bdd8-4608-9f44-daa7a4856571",
+      "name": "PM805-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 378,
+      "id": "e14345af-c412-4ed9-b8f6-034c60bb83e4",
+      "name": "PS801-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 379,
+      "id": "42b8d907-9737-4d39-aa85-7d2f3e4b9e00",
+      "name": "PS801-N-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 390,
+      "id": "6d22d764-6ff5-436e-9dc1-cbca0ade7ce9",
+      "name": "Quad-Eye Matrix Sensor",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 414,
+      "id": "99b0f96e-58e4-48e6-96a5-0276a39b96d1",
+      "name": "Safety docking assembly-2",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 415,
+      "id": "c386a9ac-7671-4265-b57d-f143317f66aa",
+      "name": "Safety docking assembly-3",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 431,
+      "id": "96d2bf65-8a38-4bd9-80bc-bd5bbeb17673",
+      "name": "SHPR-10C",
+      "manufacturer": "Zhejiang Fine-Motion Robot Joint Technology"
+    },
+    {
+      "index": 435,
+      "id": "49fbae62-d108-478d-8487-09085c9f6795",
+      "name": "SLAM CLEANPACK_LD05",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 459,
+      "id": "d4ec60d3-7ca3-45c4-8ba9-759f01f0f49d",
+      "name": "SV-D3",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 460,
+      "id": "3e4a57b3-ec48-41f9-a932-0ad101d9cbd5",
+      "name": "SV-D5",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 465,
+      "id": "93e73093-16b7-43be-8c44-1e4bc16f165b",
+      "name": "SV730",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 466,
+      "id": "9771ecc7-891b-4c68-9878-f2e2e93cd75c",
+      "name": "SV730W",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 467,
+      "id": "8cd67682-9ff9-4d8c-ab5b-d3cd9a82637d",
+      "name": "SV760",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 468,
+      "id": "d2645afc-f186-4b75-92c9-755f44374915",
+      "name": "SV760W",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 471,
+      "id": "12761937-76bf-41f2-81f1-dd3845f68bae",
+      "name": "TL430-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 472,
+      "id": "19a81343-3a3e-426b-b766-77fba5015626",
+      "name": "TL460-S1-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 473,
+      "id": "6a75d2b8-245d-450d-9461-607c1cefe927",
+      "name": "TM260-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 476,
+      "id": "bb8a156e-c6b1-457d-bdf6-813076cf6174",
+      "name": "TM421-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 477,
+      "id": "7657bd85-56a4-465f-a966-c6446439f770",
+      "name": "TM461-E2",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 494,
+      "id": "f4cf0cc3-08e6-42af-8608-aee9fafe6491",
+      "name": "VZRE-5-100",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 495,
+      "id": "c79d4522-5d6f-4339-b391-72cdc699d562",
+      "name": "WristCam",
+      "manufacturer": "Orbbec Inc."
+    },
+    {
+      "index": 504,
+      "id": "7a022827-82bf-4c4e-9f6f-4d440b124375",
+      "name": "X2",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 505,
+      "id": "8361847b-75db-45a3-a650-72b4a2affd8b",
+      "name": "X6MN",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 506,
+      "id": "53dfe068-0010-45e1-a522-3296c387c5d5",
+      "name": "X7",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 507,
+      "id": "cd8e4e01-607a-4c0f-9888-5775c4d7035e",
+      "name": "XCP-040",
+      "manufacturer": "Unisunbot"
+    },
+    {
+      "index": 516,
+      "id": "78e6242a-c2f9-43ae-8dd4-fb066cba4608",
+      "name": "ZWSMD008008",
+      "manufacturer": "ZHAOWEI"
+    }
+  ]
+}
