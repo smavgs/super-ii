@@ -1,0 +1,36 @@
+name: Aegis verify LH-TC gallery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-verify-lhtc.yml"
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet beautifulsoup4==4.14.2 requests==2.32.5
+      - name: Download first product gallery
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,requests
+          from bs4 import BeautifulSoup
+          u="https://www.zzlhjqr.com/ltc-36.html"
+          h={"User-Agent":"Mozilla/5.0"}
+          r=requests.get(u,headers=h,timeout=20);r.raise_for_status()
+          s=BeautifulSoup(r.text,"html.parser")
+          imgs=[x.get("src") for x in s.find_all("img") if x.get("src")]
+          keep=[x for x in imgs if "/images/" in x and "/static/index/" not in x][:3]
+          out=pathlib.Path("verify-lhtc");out.mkdir(exist_ok=True)
+          for i,x in enumerate(keep,1):
+            b=requests.get(x,headers={**h,"Referer":u},timeout=20).content
+            (out/f"{i}.jpg").write_bytes(b)
+            print(i,x,len(b))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: verify-lhtc
+          path: verify-lhtc/
+          retention-days: 1
