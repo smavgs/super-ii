@@ -1,0 +1,61 @@
+name: Aegis Vieta link discovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-vieta-links.yml"]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,re,requests,urllib3
+          from urllib.parse import urljoin
+          from bs4 import BeautifulSoup
+          urllib3.disable_warnings()
+          out=pathlib.Path("vieta-links");out.mkdir(exist_ok=True)
+          T=["GSE-20","GSRE-6","GTE-25","GTRE-12","MTHE4-100","VZRE-5-100"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0"})
+          rows={x:[] for x in T}
+          seen=set()
+          seeds=["https://www.vieta-tech.com/","https://www.vieta-tech.com/list_6/"]
+          for seed in seeds:
+            try:
+              r=S.get(seed,timeout=25,verify=False);r.raise_for_status()
+              s=BeautifulSoup(r.text,"html.parser")
+              for a in s.find_all("a",href=True):
+                href=urljoin(r.url,a["href"]);text=a.get_text(" ",strip=True)
+                block=(a.parent.get_text(" ",strip=True) if a.parent else text)
+                for name in T:
+                  if name.lower() in (text+" "+block+" "+href).lower():
+                    rows[name].append({"page":r.url,"href":href,"text":text,"block":block[:1000]})
+                if "/list_6/" in href and href not in seen:seen.add(href)
+              # follow only the product links found on index pages, max 60
+              for href in list(seen)[:60]:
+                try:
+                  q=S.get(href,timeout=15,verify=False);q.raise_for_status()
+                  txt=BeautifulSoup(q.text,"html.parser").get_text(" ",strip=True)
+                  for name in T:
+                    if name.lower() in txt.lower():
+                      rows[name].append({"page":q.url,"href":q.url,"text":"page contains exact model","block":txt[:1200]})
+                except:pass
+            except Exception as e:
+              print("SEEDERR",seed,repr(e))
+          for k in rows:
+            uniq=[];seen2=set()
+            for x in rows[k]:
+              key=x["href"]
+              if key not in seen2:seen2.add(key);uniq.append(x)
+            rows[k]=uniq
+          (out/"links.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          print(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-vieta-links
+          path: vieta-links/
+          retention-days: 1
