@@ -1,0 +1,116 @@
+name: Aegis LH-TC exact gallery recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lhtc-gallery.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover LH-TC exact product gallery originals
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          root=pathlib.Path(".");out=root/"lhtc-gallery";out.mkdir(exist_ok=True)
+          manifest=json.loads((root/".aegis-temp/component-images-missing-5.json").read_text())["missing"]
+          entries=[x for x in manifest if x.get("manufacturer")=="LH-TC"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return im.width>=250 and im.height>=180
+            except:return False
+          def ext(u,b):
+            e=pathlib.Path(urlparse(u).path).suffix.lower()
+            if e in (".jpg",".jpeg",".png",".webp"):return ".jpg" if e==".jpeg" else e
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            # exact detail pages first
+            a=list(dict.fromkeys(a))
+            a.sort(key=lambda u:(0 if re.search(r'(product_show/|ltc-|mrt-|ltfd-|compensation-|gripper-)',u,re.I) else 1,len(u)))
+            return a
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            name=rec.get("name") or rid; modeln=norm(name)
+            errs=[]
+            for page in urls(rec)[:6]:
+              try:
+                r=S.get(page,timeout=20);r.raise_for_status()
+              except Exception as e:errs.append(f"GET {type(e).__name__}");continue
+              soup=BeautifulSoup(r.text,"html.parser")
+              title=(soup.title.get_text(" ",strip=True) if soup.title else "")
+              txt=soup.get_text(" ",strip=True)
+              if not (modeln in norm(title) or modeln in norm(txt)):
+                # named application pages can have translated English record name; accept exact product detail path
+                if not re.search(r'(product_show/|ltc-|mrt-|ltfd-|compensation-|gripper-)',r.url,re.I):
+                  errs.append("not-exact");continue
+              imgs=[]
+              for i,tag in enumerate(soup.find_all("img")):
+                src=tag.get("src")
+                if not src:continue
+                u=urljoin(r.url,src)
+                p=urlparse(u).path.lower()
+                # exact product gallery on LH-TC detail pages lives in /images/...; ignore site chrome and option-module gallery
+                if "/static/index/" in p:continue
+                pref=0
+                if "/images/" in p:pref=100
+                elif "/uploads/" in p:pref=40
+                else:continue
+                # images before product-option modules are preferred
+                if i<14:pref+=30
+                imgs.append((pref,i,u))
+              imgs.sort(key=lambda z:(-z[0],z[1]))
+              for score,i,u in imgs[:8]:
+                try:
+                  ir=S.get(u,headers={"Referer":r.url},timeout=20);ir.raise_for_status();b=ir.content
+                  if not valid(b):continue
+                  im=Image.open(io.BytesIO(b))
+                  # avoid ultra-wide banners / QR-like square tiny assets
+                  ratio=max(im.width/im.height,im.height/im.width)
+                  if ratio>4:continue
+                  fn=f"{idx:03d} - LH-TC - {clean(name)}{ext(u,b)}"
+                  (out/fn).write_bytes(b)
+                  return {"index":idx,"name":name,"ok":True,"file":fn,"page":r.url,"source":u,"img_order":i,"score":score,"dimensions":[im.width,im.height]}
+                except Exception as e:errs.append(f"IMG {type(e).__name__}")
+              errs.append(f"none:{len(imgs)}")
+            return {"index":idx,"name":name,"ok":False,"error":" | ".join(errs)[-1500:]}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for f in concurrent.futures.as_completed(fs):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_lhtc-report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lhtc-gallery
+          path: lhtc-gallery/
+          retention-days: 1
