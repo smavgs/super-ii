@@ -1,0 +1,68 @@
+name: Aegis LH-TC corrected four modules
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-lhtc-correct-four.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Download exact four module originals
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,pathlib,re,requests,json
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin,urlparse
+          from PIL import Image
+          items={
+            217:("LMO-C28-BM01-AF03","https://www.zzlhjqr.com/module-166.html"),
+            222:("LMO-C53B-SM22-MS12- SM02C-BI01","https://www.zzlhjqr.com/module-175.html"),
+            224:("LMO-E01F","https://www.zzlhjqr.com/module-160.html"),
+            239:("LMO-L03N-03","https://www.zzlhjqr.com/module-169.html"),
+          }
+          out=pathlib.Path("lhtc-correct-four");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36"})
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',s).strip()
+          results=[]
+          for idx,(name,page) in items.items():
+            r=S.get(page,timeout=20);r.raise_for_status();s=BeautifulSoup(r.text,"html.parser")
+            imgs=[]
+            for i,t in enumerate(s.find_all("img")):
+              src=t.get("src")
+              if not src:continue
+              u=urljoin(r.url,src);p=urlparse(u).path.lower()
+              if "/static/index/" in p or any(z in p for z in ("logo","banner","qr","erwe","call","phone","top_")):continue
+              if "/images/" in p:score=150
+              elif "/uploads/" in p:score=120
+              else:continue
+              if i<12:score+=30
+              imgs.append((score,i,u))
+            imgs.sort(key=lambda z:(-z[0],z[1]))
+            chosen=None
+            for score,i,u in imgs[:8]:
+              ir=S.get(u,headers={"Referer":r.url},timeout=20);ir.raise_for_status();b=ir.content
+              try:
+                im=Image.open(io.BytesIO(b));im.load()
+                if im.width<160 or im.height<120 or max(im.width/im.height,im.height/im.width)>5:continue
+              except:continue
+              e=pathlib.Path(urlparse(ir.url).path).suffix.lower()
+              if e==".jpeg":e=".jpg"
+              if e not in (".jpg",".png",".webp"):e=".jpg"
+              fn=f"{idx:03d} - LH-TC - {clean(name)}{e}"
+              (out/fn).write_bytes(b)
+              chosen={"index":idx,"name":name,"ok":True,"file":fn,"page":r.url,"source":ir.url,"dimensions":[im.width,im.height],"score":score,"img_order":i}
+              break
+            if not chosen:chosen={"index":idx,"name":name,"ok":False,"page":r.url}
+            results.append(chosen);print(json.dumps(chosen,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lhtc-correct-four
+          path: lhtc-correct-four/
+          retention-days: 1
