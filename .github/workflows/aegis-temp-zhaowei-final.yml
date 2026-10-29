@@ -1,0 +1,116 @@
+name: Aegis ZHAOWEI exact product originals
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-zhaowei-final.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact ZHAOWEI product-page originals
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          items={
+            301:("MC0623","https://www.zwgear.com/products/6mmwskxbdj.html"),
+            302:("MC0818","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A6-8mm-%E6%97%A0%E5%88%B7%E7%A9%BA%E5%BF%83%E6%9D%AF%E7%94%B5%E6%9C%BA.html"),
+            304:("MC0824","https://www.zwgear.com/products/8mmwskxbdj.html"),
+            306:("MC1028","https://www.zwgear.com/products/10mmwskxbdj.html"),
+            307:("MC1214","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A6-12mm-%E6%97%A0%E5%88%B7%E7%A9%BA%E5%BF%83%E6%9D%AF%E7%94%B5%E6%9C%BAmc1214.html"),
+            308:("MC1223","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A612mmwskxbdjmc1223.html"),
+            309:("MC1226","https://www.zwgear.com/products/12mmwskxbdj.html"),
+            310:("MC1237","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A612mmwskxbdjmc1237.html"),
+            311:("MC1625","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A616mm-wskxbdjsjcjmc1625.html"),
+            314:("MC2232","https://www.zwgear.com/products/micromotor/blesshcmotor/%CE%A622mmwskxbdjmc2232.html"),
+            315:("MC2250","https://www.zwgear.com/products/%CE%A622mmwskxbdjmc2250.html"),
+            316:("MC2643","https://www.zwgear.com/uncategorized/%CE%A6-26mm-%E6%97%A0%E5%88%B7%E7%A9%BA%E5%BF%83%E6%9D%AF%E7%94%B5%E6%9C%BAmc2643.html"),
+            516:("ZWSMD008008","https://www.zwgear.com/products/8mmxxclx.html"),
+          }
+          out=pathlib.Path("zhaowei-final");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          BAD=("logo","banner","icon","footer","header","qr","qrcode","wechat","weixin","contact","avatar","loading","placeholder","sprite")
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',s).strip()
+          def get(u,ref=None):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=22,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=22,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return im.width>=180 and im.height>=140 and max(im.width/im.height,im.height/im.width)<6
+            except:return False
+          results=[]
+          for idx,(model,page) in items.items():
+            try:r=get(page)
+            except Exception as e:
+              results.append({"index":idx,"name":model,"ok":False,"error":"page:"+str(e)});continue
+            s=BeautifulSoup(r.text,"html.parser");mn=norm(model);cand=[]
+            title=s.title.get_text(" ",strip=True) if s.title else ""
+            for t in s.find_all("meta"):
+              k=(t.get("property") or t.get("name") or "").lower();u=t.get("content")
+              if u and k in ("og:image","og:image:url","twitter:image"):cand.append((170,urljoin(r.url,u),"meta"))
+            for i,t in enumerate(s.find_all("img")):
+              vals=[]
+              for a in ("src","data-src","data-original","data-lazy-src"):
+                v=t.get(a)
+                if v:vals.append(v)
+              for a in ("srcset","data-srcset"):
+                v=t.get(a)
+                if v:vals += [x.strip().split()[0] for x in v.split(",") if x.strip()]
+              lab=norm((t.get("alt") or "")+" "+(t.get("title") or ""))
+              for v in vals:
+                u=urljoin(r.url,v);un=norm(u)
+                if any(b in un for b in BAD):continue
+                score=90
+                if mn in lab:score=240
+                elif mn in un:score=225
+                if any(x in urlparse(u).path.lower() for x in ("/uploads/","/wp-content/","/upload/")):score+=25
+                if i<25:score+=15
+                cand.append((score,u,"img"))
+            raw=r.text
+            for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)(?:"|')''',raw,re.I):
+              u=urljoin(r.url,m.group(1).replace("\\/","/"));un=norm(u)
+              if any(b in un for b in BAD):continue
+              a=max(0,m.start()-5000);b=min(len(raw),m.end()+5000)
+              score=190 if mn in norm(raw[a:b]) else 70
+              cand.append((score,u,"raw"))
+            uniq={}
+            for sc,u,w in cand:
+              if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,w)
+            evals=[]
+            for u,(base,why) in uniq.items():
+              try:
+                ir=get(u,r.url);b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b));area=im.width*im.height
+                score=base+min(area/15000,90)+min(len(b)/20000,35)
+                evals.append((score,ir,b,im.width,im.height,why))
+              except:pass
+            evals.sort(key=lambda z:z[0],reverse=True)
+            if not evals:
+              results.append({"index":idx,"name":model,"ok":False,"page":r.url,"title":title,"error":"no valid image"});continue
+            score,ir,b,w,h,why=evals[0]
+            fmt=Image.open(io.BytesIO(b)).format.lower();ext=".jpg" if fmt=="jpeg" else "."+fmt
+            fn=f"{idx:03d} - ZHAOWEI - {clean(model)}{ext}"
+            (out/fn).write_bytes(b)
+            row={"index":idx,"name":model,"ok":True,"file":fn,"page":r.url,"source":ir.url,"dimensions":[w,h],"score":round(score,2),"evidence":why}
+            results.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          print("SUMMARY",sum(bool(x.get("ok")) for x in results),len(results))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-zhaowei-final
+          path: zhaowei-final/
+          retention-days: 1
