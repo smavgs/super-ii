@@ -1,0 +1,45 @@
+name: Aegis AgileTact and Linksoon direct images
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-agile-linksoon.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,requests
+          from PIL import Image
+          out=pathlib.Path("agile-linksoon");out.mkdir(exist_ok=True)
+          T=[
+            (59,"AgileTact","Data Capture Gloves","https://material-image.wanwang.xin/1013327379855162/public/bf8598ff-1432-42d5-ae1b-666b4b489a00.png"),
+            (189,"Linksoon","LC14","https://lssd-sz.com/_nuxt/coverDetail.BYgD1otT.webp"),
+            (213,"Linksoon","LH14","https://lssd-sz.com/_nuxt/coverDetail.CEf57qcQ.webp"),
+            (253,"Linksoon","LSH14","https://lssd-sz.com/_nuxt/coverDetail.BmRivmVW.webp"),
+            (254,"Linksoon","LSP100","https://lssd-sz.com/_nuxt/coverDetail.D7hOGXXv.webp"),
+          ]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"image/avif,image/webp,image/*,*/*;q=0.8"})
+          rows=[]
+          for idx,maker,name,u in T:
+            row={"index":idx,"maker":maker,"name":name,"url":u,"ok":False}
+            try:
+              r=S.get(u,timeout=25);r.raise_for_status();b=r.content
+              im=Image.open(io.BytesIO(b));im.load()
+              if len(b)<1800 or im.width<150 or im.height<100:raise ValueError("small-invalid")
+              ext="."+im.format.lower().replace("jpeg","jpg")
+              fn=f"{idx:03d} - {maker} - {name}{ext}";(out/fn).write_bytes(b)
+              row.update({"ok":True,"file":fn,"source":r.url,"dimensions":[im.width,im.height],"bytes":len(b)})
+            except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+            rows.append(row);print(json.dumps(row,ensure_ascii=False))
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-agile-linksoon
+          path: agile-linksoon/
+          retention-days: 1
