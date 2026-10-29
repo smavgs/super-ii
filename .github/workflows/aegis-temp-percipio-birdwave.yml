@@ -1,0 +1,108 @@
+name: Aegis Percipio exact model-page recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-percipio-birdwave.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact Percipio model images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+
+          root=pathlib.Path(".");out=root/"percipio-birdwave";out.mkdir(exist_ok=True)
+          manifest=json.loads((root/".aegis-temp/component-images-missing-5.json").read_text())["missing"]
+          entries=[x for x in manifest if x.get("manufacturer")=="Percipio"]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def slug(name):
+            return re.sub(r'[^a-z0-9]+','-',name.lower()).strip('-')
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return len(b)>2500 and im.width>=180 and im.height>=120
+            except:return False
+          def ext(b,u):
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:
+              e=pathlib.Path(urlparse(u).path).suffix.lower()
+              return e if e in (".jpg",".jpeg",".png",".webp") else ".jpg"
+          def one(it):
+            idx,rid=it["index"],it["id"]
+            rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            name=rec.get("name") or it.get("name") or rid
+            page=f"https://market.birdwave.io/products/percipio-{slug(name)}"
+            try:
+              r=S.get(page,timeout=25);r.raise_for_status()
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"page:{type(e).__name__}:{e}"}
+            soup=BeautifulSoup(r.text,"html.parser")
+            text=soup.get_text(" ",strip=True)
+            if norm(name) not in norm(text):
+              return {"index":idx,"name":name,"ok":False,"error":"exact model absent from page"}
+            cand=[]
+            for tag in soup.find_all("img"):
+              src=tag.get("src") or tag.get("data-src") or tag.get("data-original")
+              if not src:continue
+              alt=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              u=urljoin(r.url,src)
+              if any(x in u.lower() for x in ("logo","icon","avatar","favicon")):continue
+              score=0
+              if norm(name) in norm(alt):score+=1000
+              if norm(name) in norm(u):score+=500
+              if "percipio" in norm(alt+u):score+=100
+              cand.append((score,u,alt))
+            # OG image only if model page text is exact
+            for tag in soup.find_all("meta"):
+              key=(tag.get("property") or tag.get("name") or "").lower()
+              if key in ("og:image","twitter:image") and tag.get("content"):
+                cand.append((300,urljoin(r.url,tag["content"]),"meta"))
+            cand.sort(reverse=True,key=lambda x:x[0])
+            best=None
+            for score,u,alt in cand[:20]:
+              if score<100:continue
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15);ir.raise_for_status();b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b));w,h=im.size
+                ratio=max(w/h,h/w)
+                if ratio>4:continue
+                # exact-alt candidates dominate, then resolution
+                s2=score*1000000+w*h+len(b)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,alt)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"no valid exact image candidates ({len(cand)})"}
+            _,b,u,w,h,alt=best
+            fn=f"{idx:03d} - Percipio - {clean(name)}{ext(b,u)}";(out/fn).write_bytes(b)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"page":page,"source":u,"dimensions":[w,h],"alt":alt,"evidence":"exact-model Birdwave catalogue image"}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+            for f in concurrent.futures.as_completed([ex.submit(one,x) for x in entries]):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-percipio-birdwave
+          path: percipio-birdwave/
+          retention-days: 1
