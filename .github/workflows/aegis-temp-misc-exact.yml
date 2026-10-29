@@ -1,0 +1,145 @@
+name: Aegis misc exact-source recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-misc-exact.yml"]
+permissions: {contents: read}
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0 pymupdf==1.26.5
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests,fitz
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image,ImageStat
+          out=pathlib.Path("misc-exact");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"*/*"})
+          targets=[
+           (36,"SCATECH","CE6G-0.2","pdf","https://scatech.com.cn/downloads/catalogs/scatech-product-catalog-2026.pdf"),
+           (37,"SCATECH","CE6M-0.2","pdf","https://scatech.com.cn/downloads/catalogs/scatech-product-catalog-2026.pdf"),
+           (79,"ZeroErr","eRob to PC Connector","pdf","https://www.zeroerr.cn/d/file/download/eRob%E8%B0%83%E8%AF%95%E5%99%A8%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E%E4%B9%A6_v1.1.pdf"),
+           (162,"ZeroErr","I-O Adapter Board","pdf","https://www.zeroerr.cn/d/img/epower/IO%E8%BD%AC%E6%8E%A5%E6%A8%A1%E5%9D%97%E7%94%A8%E6%88%B7%E6%89%8B%E5%86%8C_V1.0.pdf"),
+           (66,"TechWedali","ECH Series","html","https://www.tech-wedali.com/zlwskxbxt/27"),
+           (59,"AgileTact","Data Capture Gloves","js","https://www.agiletact.com/assets/index-BVwTaxXE.js"),
+           (158,"HCFA","Hu-MLS","html","https://www.hcfa.cn/product/detail/id/158.html"),
+           (431,"Fine-Motion","SHPR-10C","html","https://www.finemotion.com.cn/home/Index/product?id=7"),
+           (495,"Orbbec Inc.","WristCam","html","https://www.orbbec.com.cn/index/Product/info.html?cate=38&id=78"),
+           (507,"Unisunbot","XCP-040","pdf","https://omo-oss-file110.thefastfile.com/portal-saas/pg2025081217220218067/cms/file/xc%E4%BD%8E%E5%8A%9F%E7%8E%87%E4%BC%BA%E6%9C%8D%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf")
+          ]
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s);return s[:100].strip(' .-')
+          def good(b):
+            try:im=Image.open(io.BytesIO(b));im.load();return len(b)>2000 and im.width>=130 and im.height>=100
+            except:return False
+          def ext(b,u=""):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          def photoscore(b,w,h):
+            try:
+              im=Image.open(io.BytesIO(b)).convert("RGB");im.thumbnail((100,100));st=ImageStat.Stat(im)
+              return w*h+len(b)*4+sum(st.var)*100
+            except:return w*h+len(b)
+          cache={}
+          def pdf_one(idx,maker,name,u):
+            try:
+              if u not in cache:
+                r=S.get(u,timeout=35);r.raise_for_status()
+                if not r.content.startswith(b"%PDF"):raise ValueError(f"not-pdf {r.headers.get('content-type')} {len(r.content)}")
+                cache[u]=fitz.open(stream=r.content,filetype="pdf")
+              d=cache[u];nn=norm(name);pages=[]
+              for p in range(len(d)):
+                try:t=d[p].get_text("text")
+                except:t=""
+                nt=norm(t)
+                # accept exact model or significant words
+                if nn and nn in nt:pages.append(p)
+              if not pages:
+                toks=[norm(x) for x in re.findall(r"[A-Za-z0-9][A-Za-z0-9+_.-]{2,}",name) if len(norm(x))>=4]
+                for p in range(len(d)):
+                  try:nt=norm(d[p].get_text("text"))
+                  except:nt=""
+                  if toks and all(t in nt for t in toks[:2]):pages.append(p)
+              best=None
+              for p in pages[:10]:
+                for im in d[p].get_images(full=True):
+                  try:
+                    z=d.extract_image(im[0]);b=z["image"];w=z.get("width",0);h=z.get("height",0)
+                    if not good(b):continue
+                    if max(w/h,h/w)>6:continue
+                    sc=photoscore(b,w,h)
+                    if best is None or sc>best[0]:best=(sc,b,p,w,h)
+                  except:pass
+              if not best:return {"index":idx,"name":name,"ok":False,"error":f"pdf no image; pages={pages[:10]}"}
+              _,b,p,w,h=best;fn=f"{idx:03d} - {maker} - {clean(name)}{ext(b)}";(out/fn).write_bytes(b)
+              return {"index":idx,"name":name,"ok":True,"file":fn,"source":u+f"#page={p+1}","dimensions":[w,h],"evidence":"exact-model official PDF"}
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"pdf:{type(e).__name__}:{e}"}
+          def html_one(idx,maker,name,u):
+            try:r=S.get(u,timeout=25);r.raise_for_status()
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"page:{type(e).__name__}:{e}"}
+            soup=BeautifulSoup(r.text,"html.parser");nn=norm(name);text=soup.get_text(" ",strip=True)
+            cand=[]
+            for i,tag in enumerate(soup.find_all("img")):
+              src=tag.get("src") or tag.get("data-src") or tag.get("data-original") or tag.get("data-lazy-src")
+              if not src:continue
+              iu=urljoin(r.url,src);lu=iu.lower();label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              if any(x in lu for x in ("logo","icon","favicon","banner","footer","header","qr","wechat","arrow")):continue
+              score=0
+              if nn in norm(label):score=3000
+              elif nn in norm(iu):score=2500
+              elif i<20:score=800-i
+              cand.append((score,iu,label))
+            for tag in soup.find_all("meta"):
+              key=(tag.get("property") or tag.get("name") or "").lower()
+              if key in ("og:image","twitter:image") and tag.get("content"):cand.append((1400,urljoin(r.url,tag["content"]),"meta"))
+            best=None
+            for score,iu,label in sorted(cand,reverse=True)[:30]:
+              if score<500:continue
+              try:
+                ir=S.get(iu,headers={"Referer":r.url},timeout=15);ir.raise_for_status();b=ir.content
+                if not good(b):continue
+                im=Image.open(io.BytesIO(b));w,h=im.size
+                if max(w/h,h/w)>6:continue
+                s2=score*10000000+photoscore(b,w,h)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,label,score)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"html no image {len(cand)}"}
+            _,b,iu,w,h,label,score=best;fn=f"{idx:03d} - {maker} - {clean(name)}{ext(b,iu)}";(out/fn).write_bytes(b)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"source":iu,"dimensions":[w,h],"label":label,"score":score}
+          def js_one(idx,maker,name,u):
+            try:r=S.get(u,timeout=25);r.raise_for_status();text=r.text
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":str(e)}
+            pos=[m.start() for m in re.finditer(re.escape(name),text,re.I)]
+            cand=[]
+            pat=re.compile(r'''(?:https?:)?//[^"'\s]+\.(?:png|jpe?g|webp)(?:\?[^"'\s]*)?|/[^"'\s]+\.(?:png|jpe?g|webp)(?:\?[^"'\s]*)?''',re.I)
+            for p in pos:
+              win=text[max(0,p-7000):min(len(text),p+7000)]
+              for m in pat.finditer(win):
+                raw=m.group(0);iu=("https:"+raw if raw.startswith("//") else urljoin(u,raw));dist=abs((max(0,p-7000)+m.start())-p)
+                cand.append((100000-dist,iu))
+            best=None
+            for score,iu in sorted(cand,reverse=True)[:30]:
+              try:
+                ir=S.get(iu,headers={"Referer":"https://www.agiletact.com/"},timeout=15);ir.raise_for_status();b=ir.content
+                if not good(b):continue
+                im=Image.open(io.BytesIO(b));w,h=im.size
+                if max(w/h,h/w)>6:continue
+                s2=score*1000000+photoscore(b,w,h)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,w,h)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"js no image; pos={len(pos)} cand={len(cand)}"}
+            _,b,iu,w,h=best;fn=f"{idx:03d} - {maker} - {clean(name)}{ext(b,iu)}";(out/fn).write_bytes(b)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"source":iu,"dimensions":[w,h],"evidence":"image nearest exact model in official site bundle"}
+          R=[]
+          for idx,maker,name,typ,u in targets:
+            x=pdf_one(idx,maker,name,u) if typ=="pdf" else (html_one(idx,maker,name,u) if typ=="html" else js_one(idx,maker,name,u))
+            R.append(x);print(json.dumps(x,ensure_ascii=False),flush=True)
+          ok=sum(x.get("ok",False) for x in R);(out/"_report.json").write_text(json.dumps({"success":ok,"results":R},ensure_ascii=False,indent=2));print("SUMMARY",ok)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with: {name: superii-misc-exact, path: "misc-exact/", retention-days: 1}
