@@ -1,0 +1,313 @@
+{
+  "generated": "2026-10-29",
+  "saved": 465,
+  "total": 516,
+  "missing": [
+    {
+      "index": 36,
+      "id": "83f52d1b-28e8-4139-9898-711f071cee58",
+      "name": "CE6G-0.2",
+      "manufacturer": "SCATECH"
+    },
+    {
+      "index": 37,
+      "id": "826a9a05-f1e3-4c5d-b84d-e8dc3d4f3628",
+      "name": "CE6M-0.2",
+      "manufacturer": "SCATECH"
+    },
+    {
+      "index": 59,
+      "id": "0b2f8cfc-8880-4a9b-be6f-06f9f8f089e9",
+      "name": "Data Capture Gloves",
+      "manufacturer": "AgileTact"
+    },
+    {
+      "index": 66,
+      "id": "7493dbbd-3996-4adf-96cd-bc04b1e38d3b",
+      "name": "ECH Series",
+      "manufacturer": "TechWedali"
+    },
+    {
+      "index": 79,
+      "id": "de5dae03-9a1d-4ca4-b47f-5fb597172f08",
+      "name": "eRob to PC Connector",
+      "manufacturer": "ZeroErr"
+    },
+    {
+      "index": 104,
+      "id": "b8f29314-e4cc-41c9-a8ba-855f1642c6f4",
+      "name": "FM811-TIX",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 109,
+      "id": "0a748198-bc60-4e3e-9506-3cb38c7b9198",
+      "name": "FS820-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 135,
+      "id": "09bc7491-24f7-439d-8835-338e904791fe",
+      "name": "GSE-20",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 136,
+      "id": "b890e672-06f8-4449-ad5a-b6dc146a29eb",
+      "name": "GSRE-6",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 137,
+      "id": "0bf6fe23-30f7-4856-8c5c-8eebacac14b7",
+      "name": "GTE-25",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 138,
+      "id": "469e4a48-658e-434a-bac9-7d493995115d",
+      "name": "GTRE-12",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 158,
+      "id": "93088b3c-ade0-4e91-989a-dc5f7466c471",
+      "name": "Hu-MLS",
+      "manufacturer": "HCFA"
+    },
+    {
+      "index": 162,
+      "id": "27b0b9ad-bfa6-40e7-8089-2b450332c0d4",
+      "name": "I/O Adapter Board",
+      "manufacturer": "ZeroErr"
+    },
+    {
+      "index": 189,
+      "id": "7044504a-d082-409d-9f14-2c30c10005f7",
+      "name": "LC14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 193,
+      "id": "6fcd3e7f-9c79-4c17-817e-08224687ee93",
+      "name": "LD00",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 195,
+      "id": "03e5685b-7ab4-4de4-b64b-b4433cbe7104",
+      "name": "LD06 Raspberry Pi Development Kit",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 206,
+      "id": "a59327b0-3f55-4277-8ee8-593128cccf60",
+      "name": "LF-MERG34-15-35-RR",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 207,
+      "id": "6f2f4991-999a-4648-b8d1-4f902534ce88",
+      "name": "LF-MFGF29-26-100-SR-DD",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 208,
+      "id": "e8821f64-9f73-43fe-8c8b-f444410aea2d",
+      "name": "LF-MSEC35-100-50-DR-DB",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 209,
+      "id": "8283452d-04eb-4e95-8891-295a9fe8db2d",
+      "name": "LF-RH1X-1L",
+      "manufacturer": "LENFOR"
+    },
+    {
+      "index": 213,
+      "id": "374c2703-7b15-4781-97e1-fd19c65024b8",
+      "name": "LH14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 253,
+      "id": "1995e0ed-b2e2-4a98-9482-7b92ed7a6e1f",
+      "name": "LSH14",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 254,
+      "id": "36cb9924-8fe1-4bc6-baaf-66bd622a783b",
+      "name": "LSP100",
+      "manufacturer": "Linksoon"
+    },
+    {
+      "index": 263,
+      "id": "dd0fe26c-12e4-4909-9341-4207c6260f72",
+      "name": "LT-F31C",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 265,
+      "id": "c0f6d8ca-9517-45ba-95aa-fa65c18aa435",
+      "name": "LT-FEC-PM72-S60",
+      "manufacturer": "LH-TC"
+    },
+    {
+      "index": 324,
+      "id": "8d0c5e34-8f68-45ff-ae08-0821c13f90a6",
+      "name": "Mech-Metrics",
+      "manufacturer": "Mech-Mind Robotics"
+    },
+    {
+      "index": 339,
+      "id": "fa7576ff-43ee-4223-8ce8-7a38f1fc496d",
+      "name": "MTHE4-100",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 362,
+      "id": "4e0c3b32-96d6-4109-a241-c12bbc23ae58",
+      "name": "PGC-140-50",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 363,
+      "id": "17196728-88c0-4cdd-83a1-f7d26fcbfed8",
+      "name": "PGE-5-26",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 364,
+      "id": "bee3a7b7-8790-436d-bacd-ba7ed00c36bf",
+      "name": "PGEA-100-26",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 365,
+      "id": "2da4df72-3e2c-4c3d-be87-3bad242ed5bf",
+      "name": "PGHL-400-80",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 367,
+      "id": "d212600f-0ea4-4419-b6f5-b6c91f1070b4",
+      "name": "PGSE-15-7",
+      "manufacturer": "DH-Robotics Technology Co., Ltd."
+    },
+    {
+      "index": 372,
+      "id": "413bb18a-bdd8-4608-9f44-daa7a4856571",
+      "name": "PM805-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 378,
+      "id": "e14345af-c412-4ed9-b8f6-034c60bb83e4",
+      "name": "PS801-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 379,
+      "id": "42b8d907-9737-4d39-aa85-7d2f3e4b9e00",
+      "name": "PS801-N-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 390,
+      "id": "6d22d764-6ff5-436e-9dc1-cbca0ade7ce9",
+      "name": "Quad-Eye Matrix Sensor",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 395,
+      "id": "fb898d47-94cf-4f8d-9511-9d00e6f9e147",
+      "name": "RDK S100",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 396,
+      "id": "a64c6b5b-0431-42a4-8882-12d1db9eb422",
+      "name": "RDK S600",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 397,
+      "id": "708b99d0-ac43-4def-8bf6-b6833aaf8ff7",
+      "name": "RDK X3",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 398,
+      "id": "dff50f95-a0f0-4ef1-b6a5-c7b533fd9431",
+      "name": "RDK X3 Module",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 399,
+      "id": "35374722-8d3d-4c13-9e3a-16b7344d4dcf",
+      "name": "RDK X5",
+      "manufacturer": "D-Robotics"
+    },
+    {
+      "index": 431,
+      "id": "96d2bf65-8a38-4bd9-80bc-bd5bbeb17673",
+      "name": "SHPR-10C",
+      "manufacturer": "Zhejiang Fine-Motion Robot Joint Technology"
+    },
+    {
+      "index": 435,
+      "id": "49fbae62-d108-478d-8487-09085c9f6795",
+      "name": "SLAM CLEANPACK_LD05",
+      "manufacturer": "LDROBOT"
+    },
+    {
+      "index": 471,
+      "id": "12761937-76bf-41f2-81f1-dd3845f68bae",
+      "name": "TL430-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 472,
+      "id": "19a81343-3a3e-426b-b766-77fba5015626",
+      "name": "TL460-S1-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 473,
+      "id": "6a75d2b8-245d-450d-9461-607c1cefe927",
+      "name": "TM260-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 476,
+      "id": "bb8a156e-c6b1-457d-bdf6-813076cf6174",
+      "name": "TM421-E1",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 477,
+      "id": "7657bd85-56a4-465f-a966-c6446439f770",
+      "name": "TM461-E2",
+      "manufacturer": "Percipio"
+    },
+    {
+      "index": 494,
+      "id": "f4cf0cc3-08e6-42af-8608-aee9fafe6491",
+      "name": "VZRE-5-100",
+      "manufacturer": "Vieta"
+    },
+    {
+      "index": 495,
+      "id": "c79d4522-5d6f-4339-b391-72cdc699d562",
+      "name": "WristCam",
+      "manufacturer": "Orbbec Inc."
+    },
+    {
+      "index": 507,
+      "id": "cd8e4e01-607a-4c0f-9888-5775c4d7035e",
+      "name": "XCP-040",
+      "manufacturer": "Unisunbot"
+    }
+  ]
+}
