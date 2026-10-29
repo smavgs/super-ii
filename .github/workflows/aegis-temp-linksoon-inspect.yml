@@ -1,0 +1,38 @@
+name: Aegis Linksoon source inspect
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-linksoon-inspect.yml"]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests,re,json,pathlib
+          out=pathlib.Path("linksoon-inspect");out.mkdir(exist_ok=True)
+          urls=["https://lssd-sz.com/_nuxt/Ccrh0RXe.js","https://lssd-sz.com/_locales/general/zh-CN/data.json?v=1791856800747"]
+          text=""
+          for u in urls:
+            try:
+              r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=30);r.raise_for_status()
+              text+="\nSOURCE "+u+"\n"+r.text
+            except Exception as e:print("ERR",u,e)
+          rows={}
+          for name in ["LC14","LH14","LSH14","LSP100"]:
+            p=text.find(name)
+            if p<0:p=text.lower().find(name.lower())
+            snip=text[max(0,p-6000):p+6000] if p>=0 else ""
+            rows[name]={"pos":p,"snippet":snip}
+            print("\nMODEL",name,"POS",p,"\n",snip)
+          (out/"snippets.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-linksoon-inspect
+          path: linksoon-inspect/
+          retention-days: 1
