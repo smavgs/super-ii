@@ -1,0 +1,42 @@
+name: Aegis debug four LH-TC module links
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-debug-four-lhtc.yml"
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2
+      - name: Resolve closest module anchors
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests,re,json
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          u="https://www.zzlhjqr.com/ltc-44.html"
+          r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=20);r.raise_for_status()
+          s=BeautifulSoup(r.text,"html.parser")
+          models=["LMO-C28-BM01-AF03","LMO-C53B-SM22-MS12- SM02C-BI01","LMO-E01F","LMO-L03N-03"]
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          for model in models:
+            mn=norm(model); found=[]
+            for node in s.find_all(string=True):
+              if mn not in norm(node):continue
+              p=node.parent
+              for depth in range(1,8):
+                if p is None:break
+                links=[a for a in p.find_all("a",href=True) if re.search(r"/module-\d+\.html",urljoin(r.url,a["href"]))]
+                if links:
+                  txt=p.get_text(" ",strip=True)
+                  if mn in norm(txt):
+                    found.append({"depth":depth,"tag":p.name,"classes":p.get("class"),"text":txt[:600],"links":[urljoin(r.url,a["href"]) for a in links]})
+                    break
+                p=p.parent
+            print("MODEL",model)
+            print(json.dumps(found[:5],ensure_ascii=False,indent=2))
+          PY
