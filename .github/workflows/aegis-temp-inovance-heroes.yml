@@ -1,0 +1,100 @@
+name: Aegis Inovance exact series heroes
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-inovance-heroes.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact Inovance series hero images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          items={
+            177:("IS810","IS810 Series","https://www.inovance.com/global/content/details_815_403232.html"),
+            328:("MS1-A3","MS1-A3 Series","https://www.inovance.com/global/content/details_815_403231.html"),
+            329:("MS1-A6","MS1-A6 Series","https://www.inovance.com/global/content/details_815_403235.html"),
+            330:("MS1-S6","MS1-S6 Series","https://www.inovance.com/global/content/details_815_403234.html"),
+            331:("MS1-V3","MS1-V3 Series","https://www.inovance.com/global/content/details_815_595794.html"),
+            332:("MS1-V6","MS1-V6 Series","https://www.inovance.com/global/content/details_815_595697.html"),
+            461:("SV660","SV660 Series","https://www.inovance.com/global/content/details_815_403229.html"),
+            462:("SV660ND","SV660ND Series","https://www.inovance.com/global/content/details_815_449957.html"),
+            463:("SV670","SV670 Series","https://www.inovance.com/global/content/details_815_403230.html"),
+            464:("SV680","SV680 Series","https://www.inovance.com/global/content/details_815_557127.html"),
+          }
+          out=pathlib.Path("inovance-heroes");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept-Language":"en-US,en;q=0.9"})
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def fetch(u,ref=None):
+            h={"Referer":ref} if ref else {}
+            r=S.get(u,headers=h,timeout=22,allow_redirects=True);r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return im.width>=150 and im.height>=120 and max(im.width/im.height,im.height/im.width)<7
+            except:return False
+          rows=[]
+          for idx,(model,label,page) in items.items():
+            row={"index":idx,"model":model,"page":page,"ok":False}
+            try:
+              r=fetch(page); soup=BeautifulSoup(r.text,"html.parser"); target=norm(label); candidates=[]
+              for tag in soup.find_all("img"):
+                alt=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+                vals=[]
+                for a in ("src","data-src","data-original","data-lazy-src"):
+                  v=tag.get(a)
+                  if v:vals.append(v)
+                ss=tag.get("srcset")
+                if ss:vals += [x.strip().split()[0] for x in ss.split(",") if x.strip()]
+                if target and target in norm(alt):
+                  for v in vals:candidates.append((100,urljoin(r.url,v),"exact-alt"))
+              # Raw HTML fallback: image URL nearest exact series label.
+              raw=r.text
+              for m in re.finditer(r'''https?://[^"'<> ]+portal-file\.inovance\.com[^"'<> ]+\.(?:png|jpe?g|webp)(?:\?[^"'<> ]*)?''',raw,re.I):
+                a=max(0,m.start()-2500);b=min(len(raw),m.end()+2500)
+                if target in norm(raw[a:b]):candidates.append((80,m.group(0).replace("&amp;","&"),"near-series"))
+              # Generic portal file links whose URL itself is product document image.
+              for m in re.finditer(r'''https?://portal-file\.inovance\.com/[^"'<> ]+?\.(?:png|jpe?g|webp)(?:\?[^"'<> ]*)?''',raw,re.I):
+                u=m.group(0).replace("&amp;","&")
+                if any(k in u for k in ("/owfile/ProdDoc/XG/","/upload/image/")):
+                  candidates.append((30,u,"portal-product-image"))
+              seen=set(); selected=None; audit=[]
+              for score,u,why in sorted(candidates,reverse=True):
+                if u in seen:continue
+                seen.add(u)
+                try:
+                  ir=fetch(u,r.url);b=ir.content
+                  if not valid(b):continue
+                  im=Image.open(io.BytesIO(b))
+                  area=im.width*im.height
+                  finalscore=score+min(area/20000,60)+min(len(b)/20000,25)
+                  audit.append((finalscore,u,why,im.width,im.height,len(b),b,im.format))
+                except:pass
+              audit.sort(key=lambda z:z[0],reverse=True)
+              if audit:
+                sc,u,why,w,h,n,b,fmt=audit[0]
+                ext=".jpg" if fmt.lower()=="jpeg" else "."+fmt.lower()
+                fn=f"{idx:03d} - Inovance - {model}{ext}";(out/fn).write_bytes(b)
+                row.update({"ok":True,"file":fn,"source":u,"dimensions":[w,h],"bytes":n,"evidence":why,"score":round(sc,2),"candidate_count":len(audit)})
+              else:
+                row["error"]="no valid exact series image"
+            except Exception as e:row["error"]=str(e)
+            rows.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          print("SUMMARY",sum(1 for x in rows if x["ok"]),len(rows))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-inovance-heroes
+          path: inovance-heroes/
+          retention-days: 1
