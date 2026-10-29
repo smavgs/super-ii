@@ -1,0 +1,115 @@
+name: Aegis strict exact-model recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-strict-exact.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover only exact-model image matches
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          root=pathlib.Path(".");out=root/"strict-exact";out.mkdir(exist_ok=True)
+          entries=json.loads((root/".aegis-temp/component-images-missing-current.json").read_text())["missing"]
+          aliases={"DH-Robotics Technology Co., Ltd.":"DH-Robotics","Mech-Mind Robotics":"Mech-Mind","Zhejiang Fine-Motion Robot Joint Technology":"Fine-Motion"}
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,application/xhtml+xml,image/avif,image/webp,image/*,*/*;q=0.8","Accept-Language":"en-US,en;q=0.8,zh-CN;q=0.7"})
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-') or "Unknown"
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return len(b)>1800 and im.width>=140 and im.height>=100 and max(im.width/im.height,im.height/im.width)<8
+            except:return False
+          def ext(b,u):
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:
+              e=pathlib.Path(urlparse(u).path).suffix.lower();return ".jpg" if e==".jpeg" else (e if e in (".jpg",".png",".webp",".gif") else ".jpg")
+          def get(u,ref=None,t=16):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=t,allow_redirects=True);r.raise_for_status();return r
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=t,allow_redirects=True,verify=False);r.raise_for_status();return r
+          def urls(rec):
+            a=[]
+            for u in [rec.get("website"),(rec.get("seed") or {}).get("source_url")]:
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            for x in rec.get("resources") or []:
+              u=x.get("url") if isinstance(x,dict) else None
+              if isinstance(u,str) and u.startswith("http") and "robots.com/" not in u:a.append(u)
+            return list(dict.fromkeys(a))
+          def one(it):
+            idx,rid,name,maker=it["index"],it["id"],it["name"],it["manufacturer"];mn=norm(name)
+            try:rec=json.loads((root/"public/robot-library/records"/f"{rid}.json").read_text())
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":"record"}
+            errs=[]
+            for page in urls(rec)[:7]:
+              if page.lower().split("?")[0].endswith(".pdf"):continue
+              try:r=get(page)
+              except Exception as e:errs.append(f"GET:{type(e).__name__}");continue
+              soup=BeautifulSoup(r.text,"html.parser")
+              cand=[]
+              for tag in soup.find_all(["img","source"]):
+                label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+                vals=[]
+                for a in ("src","data-src","data-original","data-lazy-src","data-url"):
+                  v=tag.get(a)
+                  if isinstance(v,str) and v.strip():vals.append(v.strip())
+                for a in ("srcset","data-srcset"):
+                  v=tag.get(a)
+                  if v:vals += [x.strip().split()[0] for x in v.split(",") if x.strip()]
+                for v in vals:
+                  u=urljoin(r.url,v);nu=norm(u);nl=norm(label)
+                  if mn and (mn in nl or mn in nu):
+                    score=200 if mn in nl else 180
+                    cand.append((score,u,"exact-alt" if mn in nl else "exact-url"))
+              raw=r.text
+              for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)(?:"|')''',raw,re.I):
+                u=urljoin(r.url,m.group(1).replace("\\/","/"))
+                if mn and mn in norm(u):cand.append((170,u,"exact-url-raw"))
+              seen=set();best=None
+              for score,u,why in sorted(cand,reverse=True):
+                if u in seen:continue
+                seen.add(u)
+                try:
+                  ir=get(u,r.url,12);b=ir.content
+                  if not valid(b):continue
+                  im=Image.open(io.BytesIO(b));w,h=im.size
+                  s2=score*10000000+w*h+min(len(b),1000000)
+                  if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,why)
+                except:pass
+              if best:
+                _,b,u,w,h,why=best
+                mk=aliases.get(maker,maker);fn=f"{idx:03d} - {clean(mk)} - {clean(name)}{ext(b,u)}";(out/fn).write_bytes(b)
+                return {"index":idx,"name":name,"manufacturer":maker,"ok":True,"file":fn,"page":r.url,"source":u,"dimensions":[w,h],"evidence":why}
+              errs.append(f"{page}:no-exact")
+            return {"index":idx,"name":name,"manufacturer":maker,"ok":False,"error":" | ".join(errs)[-2000:]}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
+            fs=[ex.submit(one,x) for x in entries]
+            for f in concurrent.futures.as_completed(fs):
+              try:r=f.result()
+              except Exception as e:r={"ok":False,"error":str(e)}
+              results.append(r);print(json.dumps(r,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999));ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_report.json").write_text(json.dumps({"requested":len(entries),"success":ok,"failed":len(entries)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(entries)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-strict-exact
+          path: strict-exact/
+          retention-days: 1
