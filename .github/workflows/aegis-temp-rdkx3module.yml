@@ -1,0 +1,46 @@
+name: Aegis RDK X3 Module exact image
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-rdkx3module.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,requests,fitz
+          from PIL import Image
+          out=pathlib.Path("rdkx3module");out.mkdir(exist_ok=True)
+          u="https://archive.d-robotics.cc/downloads/en/hardware/rdk_x3_module/RDK%20X3%20MD.pdf"
+          r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=30);r.raise_for_status()
+          d=fitz.open(stream=r.content,filetype="pdf")
+          page=d[1]
+          rows=[]
+          for j,im in enumerate(page.get_images(full=True)):
+            xref,smask=im[0],im[1]
+            try:
+              pix=fitz.Pixmap(d,xref)
+              if smask:
+                try: pix=fitz.Pixmap(pix,fitz.Pixmap(d,smask))
+                except: pass
+              if pix.n>4: pix=fitz.Pixmap(fitz.csRGB,pix)
+              b=pix.tobytes("png")
+              pi=Image.open(io.BytesIO(b))
+              if pi.width<150 or pi.height<100: continue
+              fn=f"398 - D-Robotics - RDK X3 Module - candidate{len(rows)+1}.png"
+              (out/fn).write_bytes(b)
+              rows.append({"file":fn,"xref":xref,"dimensions":[pi.width,pi.height],"bytes":len(b)})
+            except Exception as e: pass
+          (out/"_report.json").write_text(json.dumps(rows,indent=2))
+          print(json.dumps(rows,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-rdkx3module
+          path: rdkx3module/
+          retention-days: 1
