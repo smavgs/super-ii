@@ -1,0 +1,68 @@
+name: Aegis SCATECH cable image candidates
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-scatech-ce6.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests,fitz,hashlib
+          from PIL import Image
+          out=pathlib.Path("scatech-ce6");out.mkdir(exist_ok=True)
+          u="https://scatech.com.cn/downloads/catalogs/scatech-product-catalog-2026.pdf"
+          T=[(36,"CE6G-0.2"),(37,"CE6M-0.2")]
+          rows=[]
+          try:
+            r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=45);r.raise_for_status()
+            if not r.content.startswith(b"%PDF"):raise ValueError(f"not-pdf {r.status_code} {r.headers.get('content-type')} {len(r.content)}")
+            d=fitz.open(stream=r.content,filetype="pdf")
+            def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+            def getimg(xref,smask):
+              pix=fitz.Pixmap(d,xref)
+              if smask:
+                try:pix=fitz.Pixmap(pix,fitz.Pixmap(d,smask))
+                except:pass
+              if pix.n>4:pix=fitz.Pixmap(fitz.csRGB,pix)
+              return pix.tobytes("png")
+            for idx,name in T:
+              n=norm(name);pages=[]
+              for p in range(len(d)):
+                try:t=d[p].get_text("text")
+                except:t=""
+                if n in norm(t):pages.append(p)
+              row={"index":idx,"name":name,"pages":[p+1 for p in pages],"candidates":[]}
+              pool=[]
+              for p in pages[:4]:
+                for im in d[p].get_images(full=True):
+                  try:
+                    b=getimg(im[0],im[1] if len(im)>1 else 0);pi=Image.open(io.BytesIO(b));w,h=pi.size
+                    if len(b)<1000 or w<100 or h<70 or max(w/h,h/w)>8:continue
+                    score=w*h+len(b)*3
+                    pool.append((score,b,p,w,h))
+                  except:pass
+              seen=set()
+              for score,b,p,w,h in sorted(pool,reverse=True,key=lambda x:x[0]):
+                hs=hashlib.sha256(b).hexdigest()
+                if hs in seen:continue
+                seen.add(hs);rank=len(row["candidates"])+1
+                fn=f"{idx:03d} - SCATECH - {name} - candidate{rank}.png";(out/fn).write_bytes(b)
+                row["candidates"].append({"file":fn,"page":p+1,"dimensions":[w,h],"bytes":len(b)})
+                if rank>=4:break
+              row["ok"]=bool(row["candidates"]);rows.append(row);print(json.dumps(row,ensure_ascii=False))
+          except Exception as e:
+            rows=[{"index":i,"name":n,"ok":False,"error":f"{type(e).__name__}:{e}"} for i,n in T]
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-scatech-ce6
+          path: scatech-ce6/
+          retention-days: 1
