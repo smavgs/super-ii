@@ -1,0 +1,139 @@
+name: Aegis robot pics recovery
+on:
+  push:
+    paths:
+      - ".github/workflows/aegis-robot-pics-recovery.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover exact robot images
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, re, html, mimetypes, os, time
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from urllib.parse import urljoin
+          from html.parser import HTMLParser
+
+          ROOT=Path(".")
+          OUT=Path("robot-pics-recovery")
+          OUT.mkdir(exist_ok=True)
+          records=[]
+          for p in sorted((ROOT/"public/robot-library/records").glob("*.json")):
+              try:
+                  r=json.loads(p.read_text())
+              except Exception:
+                  continue
+              if r.get("record_type")=="product" and r.get("category")=="robot":
+                  records.append(r)
+
+          def clean(s):
+              s=re.sub(r'[\\/:*?"<>|]+',' - ',str(s or '')).strip()
+              s=re.sub(r'\s+',' ',s)
+              return s[:150].rstrip(". ")
+
+          def norm(s):
+              return re.sub(r'[^a-z0-9]+','',html.unescape(str(s or '')).lower())
+
+          def get(url, referer=None, timeout=30):
+              h={"User-Agent":"Mozilla/5.0 (Aegis exact-model recovery; +https://superii.site)"}
+              if referer: h["Referer"]=referer
+              req=Request(url,headers=h)
+              with urlopen(req,timeout=timeout) as resp:
+                  return resp.read(), (resp.headers.get("Content-Type") or "").split(";")[0].lower(), resp.geturl()
+
+          class ImgParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.imgs=[]
+                  self.metas=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if tag.lower()=="img": self.imgs.append(a)
+                  if tag.lower()=="meta": self.metas.append(a)
+
+          def ext_for(data,ctype,url):
+              if ctype=="image/jpeg" or data[:3]==b'\xff\xd8\xff': return ".jpg"
+              if ctype=="image/png" or data[:8]==b'\x89PNG\r\n\x1a\n': return ".png"
+              if ctype=="image/webp" or (len(data)>12 and data[:4]==b"RIFF" and data[8:12]==b"WEBP"): return ".webp"
+              if ctype=="image/gif" or data[:6] in (b"GIF87a",b"GIF89a"): return ".gif"
+              e=Path(url.split("?",1)[0]).suffix.lower()
+              return e if e in {".jpg",".jpeg",".png",".webp",".gif"} else ".img"
+
+          def good_url(u):
+              low=u.lower()
+              return u.startswith("http") and not any(x in low for x in ["logo","placeholder","avatar","favicon","sprite"])
+
+          def save_candidate(rec, url, why, referer=None):
+              try:
+                  data,ctype,final=get(url,referer)
+                  if not ctype.startswith("image/") and not (data[:3]==b'\xff\xd8\xff' or data[:8]==b'\x89PNG\r\n\x1a\n' or (len(data)>12 and data[:4]==b"RIFF" and data[8:12]==b"WEBP")):
+                      return None
+                  if len(data)<8000:
+                      return None
+                  maker=(rec.get("makers") or [{}])[0].get("name") or "Unknown"
+                  name=rec.get("name") or rec.get("model") or rec["id"]
+                  ext=ext_for(data,ctype,final)
+                  fn=f"{clean(maker)} - {clean(name)}{ext}"
+                  (OUT/fn).write_bytes(data)
+                  return {"id":rec["id"],"name":name,"company":maker,"file":fn,"source":final,"evidence":why,"bytes":len(data)}
+              except Exception as e:
+                  return None
+
+          results=[]
+          for i,rec in enumerate(records,1):
+              hit=None
+              # First choice: reviewed manufacturer image already attached to the exact SuperII record.
+              for im in rec.get("images") or []:
+                  u=im.get("url") if isinstance(im,dict) else None
+                  if u and good_url(u):
+                      hit=save_candidate(rec,u,"manufacturer-record",im.get("source_url") if isinstance(im,dict) else None)
+                      if hit: break
+
+              # Second choice: same exact record ID on Robotuo; require exact model/name alt match.
+              if not hit:
+                  page=f"https://www.robotuo.com/robots/{rec['id']}/"
+                  try:
+                      raw,ctype,final=get(page)
+                      text=raw.decode("utf-8","replace")
+                      parser=ImgParser(); parser.feed(text)
+                      target=norm(rec.get("name") or rec.get("model"))
+                      candidates=[]
+                      for a in parser.imgs:
+                          alt=norm(a.get("alt",""))
+                          if alt!=target: continue
+                          src=a.get("src") or a.get("data-src") or ""
+                          if not src and a.get("srcset"):
+                              src=a["srcset"].split(",")[0].strip().split(" ")[0]
+                          if not src: continue
+                          u=urljoin(final,html.unescape(src))
+                          if good_url(u): candidates.append(u)
+                      # Prefer mirror media assets, then any exact-alt image.
+                      candidates=sorted(dict.fromkeys(candidates), key=lambda u:(0 if "/media/" in u else 1,len(u)))
+                      for u in candidates:
+                          hit=save_candidate(rec,u,"robotuo-exact-id-exact-alt",final)
+                          if hit: break
+                  except Exception:
+                      pass
+
+              results.append(hit or {"id":rec["id"],"name":rec.get("name"),"company":((rec.get("makers") or [{}])[0].get("name") or "Unknown"),"ok":False})
+              print(f"[{i}/{len(records)}] {results[-1].get('company')} - {results[-1].get('name')}: {'OK' if hit else 'MISS'}", flush=True)
+
+          ok=[x for x in results if x.get("file")]
+          miss=[x for x in results if not x.get("file")]
+          (OUT/"manifest.json").write_text(json.dumps({"total":len(records),"ok":len(ok),"missing":len(miss),"results":results},ensure_ascii=False,indent=2))
+          print(json.dumps({"total":len(records),"ok":len(ok),"missing":len(miss),"missing_items":[{"company":x["company"],"name":x["name"],"id":x["id"]} for x in miss]},ensure_ascii=False))
+          if len(records)!=198:
+              raise SystemExit(f"Expected 198 robot records, found {len(records)}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: robot-pics-recovery
+          path: robot-pics-recovery/
+          if-no-files-found: error
