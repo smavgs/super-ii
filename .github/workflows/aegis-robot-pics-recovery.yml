@@ -86,7 +86,7 @@ jobs:
                           ss=attr(tag,"srcset")
                           if ss: src=ss.split(",")[0].strip().split()[0]
                       if not src: continue
-                      u=urllib.parse.urljoin(robotuo_url,src)
+                      u=(urllib.parse.urljoin("https://www.robotuo.com/",src) if src.startswith("media/") else urllib.parse.urljoin(robotuo_url,src))
                       if any(x in norm(u) for x in BAD): continue
                       score=300
                       if alt and alt==target: score+=300
