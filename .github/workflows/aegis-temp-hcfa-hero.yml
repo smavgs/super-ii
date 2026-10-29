@@ -1,0 +1,84 @@
+name: Aegis HCFA exact hero originals
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-hcfa-hero.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0 beautifulsoup4==4.14.2
+      - name: Download HCFA model hero images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from PIL import Image
+          from bs4 import BeautifulSoup
+          out=pathlib.Path("hcfa-hero");out.mkdir(exist_ok=True)
+          fixed={
+            145:("HR","https://www.hcfa.cn/product/detail/id/170.html","https://www.hcfa.cn/upload/img/2025-12/6944f56148ac4.png"),
+            155:("Hu-ECU","https://www.hcfa.cn/product/detail/id/157.html","https://www.hcfa.cn/upload/img/2025-12/6940eee471fff.png"),
+            156:("Hu-GRS","https://www.hcfa.cn/product/detail/id/161.html","https://www.hcfa.cn/upload/img/2025-12/69410c516cada.png"),
+            465:("SV730","https://www.hcfa.cn/product/detail/id/114.html","https://www.hcfa.cn/upload/img/2025-12/69450a29c22e8.png"),
+            467:("SV760","https://www.hcfa.cn/product/detail/id/111.html","https://www.hcfa.cn/upload/img/2025-12/6948e873d3e66.png"),
+            504:("X2","https://www.hcfa.cn/product/detail/id/128.html","https://www.hcfa.cn/upload/img/2026-01/695cb325a0e28.png"),
+            505:("X6MN","https://www.hcfa.cn/product/detail/id/130.html","https://www.hcfa.cn/upload/img/2026-01/695cb0f558ad2.png"),
+            506:("X7","https://www.hcfa.cn/product/detail/id/132.html","https://www.hcfa.cn/upload/img/2026-01/695cafffc6b6f.png"),
+          }
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36"})
+          def save(idx,model,page,url):
+            r=S.get(url,headers={"Referer":page},timeout=20);r.raise_for_status();b=r.content
+            im=Image.open(io.BytesIO(b));im.load()
+            if im.width<180 or im.height<140:raise ValueError("too-small")
+            ext=".jpg" if im.format.lower()=="jpeg" else "."+im.format.lower()
+            fn=f"{idx:03d} - HCFA - {model}{ext}";(out/fn).write_bytes(b)
+            return {"index":idx,"model":model,"ok":True,"file":fn,"page":page,"source":r.url,"dimensions":[im.width,im.height],"bytes":len(b)}
+          results=[]
+          for idx,(model,page,url) in fixed.items():
+            try:row=save(idx,model,page,url)
+            except Exception as e:row={"index":idx,"model":model,"ok":False,"page":page,"source":url,"error":str(e)}
+            results.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          # Hu-MLS: exact page is intermittently unavailable to public crawlers, so inspect its server HTML directly.
+          idx,model,page=158,"Hu-MLS","https://www.hcfa.cn/product/detail/id/158.html"
+          try:
+            r=S.get(page,timeout=20);r.raise_for_status();raw=r.text
+            pos=raw.lower().find("hu-mls")
+            if pos<0:pos=0
+            end=raw.find("产品概览",pos)
+            if end<0:end=min(len(raw),pos+120000)
+            segment=raw[pos:end]
+            urls=[]
+            for m in re.finditer(r'''(?:src|data-src|data-original)=["']([^"']+)["']''',segment,re.I):
+              u=urljoin(r.url,m.group(1))
+              if "/upload/img/" in urlparse(u).path and u not in urls:urls.append(u)
+            picked=None;errors=[]
+            for u in urls:
+              try:
+                rr=S.get(u,headers={"Referer":page},timeout=20);rr.raise_for_status();b=rr.content
+                im=Image.open(io.BytesIO(b));im.load()
+                if im.width<180 or im.height<140:continue
+                ratio=max(im.width/im.height,im.height/im.width)
+                if ratio>5:continue
+                picked=(u,b,im);break
+              except Exception as e:errors.append(str(e))
+            if not picked:raise ValueError("no-valid-hero candidates="+str(urls[:10]))
+            u,b,im=picked;ext=".jpg" if im.format.lower()=="jpeg" else "."+im.format.lower()
+            fn=f"{idx:03d} - HCFA - {model}{ext}";(out/fn).write_bytes(b)
+            row={"index":idx,"model":model,"ok":True,"file":fn,"page":page,"source":u,"dimensions":[im.width,im.height],"bytes":len(b),"candidates":urls[:10]}
+          except Exception as e:
+            row={"index":idx,"model":model,"ok":False,"page":page,"error":str(e)}
+          results.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          print("SUMMARY",sum(1 for x in results if x.get("ok")),len(results))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-hcfa-hero
+          path: hcfa-hero/
+          retention-days: 1
