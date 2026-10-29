@@ -1,0 +1,118 @@
+name: Aegis Inovance exact official recovery
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-inovance-exact.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover exact Inovance product images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import concurrent.futures,io,json,pathlib,re
+          from urllib.parse import urljoin,urlparse
+          import requests
+          from bs4 import BeautifulSoup
+          from PIL import Image
+
+          out=pathlib.Path("inovance-exact"); out.mkdir(exist_ok=True)
+          targets=[
+            (177,"IS810","https://www.inovance.com/global/content/details_815_403232.html"),
+            (328,"MS1-A3","https://www.inovance.com/global/content/details_815_403231.html"),
+            (329,"MS1-A6","https://www.inovance.com/global/content/details_815_403235.html"),
+            (330,"MS1-S6","https://www.inovance.com/global/content/details_815_403234.html"),
+            (331,"MS1-V3","https://www.inovance.com/global/content/details_815_595794.html"),
+            (332,"MS1-V6","https://www.inovance.com/global/content/details_815_595697.html"),
+            (461,"SV660","https://www.inovance.com/global/content/details_815_403229.html"),
+            (462,"SV660ND","https://www.inovance.com/global/content/details_815_449957.html"),
+            (463,"SV670","https://www.inovance.com/global/content/details_815_403230.html"),
+            (464,"SV680","https://www.inovance.com/global/content/details_815_557127.html"),
+          ]
+          S=requests.Session(); S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8","Accept-Language":"en-US,en;q=0.9"})
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b)); im.load()
+              return len(b)>3000 and im.width>=180 and im.height>=120
+            except:return False
+          def ext(b,u):
+            try:
+              f=Image.open(io.BytesIO(b)).format.lower(); return ".jpg" if f=="jpeg" else "."+f
+            except:
+              e=pathlib.Path(urlparse(u).path).suffix.lower(); return ".jpg" if e not in (".png",".webp",".jpg",".jpeg") else (".jpg" if e==".jpeg" else e)
+          def one(t):
+            idx,name,page=t; n=norm(name)
+            try:
+              r=S.get(page,timeout=25); r.raise_for_status()
+            except Exception as e:return {"index":idx,"name":name,"ok":False,"error":f"page:{type(e).__name__}:{e}"}
+            soup=BeautifulSoup(r.text,"html.parser")
+            title=soup.title.get_text(" ",strip=True) if soup.title else ""
+            text=soup.get_text(" ",strip=True)
+            if n not in norm(title+" "+text):
+              return {"index":idx,"name":name,"ok":False,"error":"model absent from official page"}
+            cand=[]
+            for tag in soup.find_all("img"):
+              vals=[]
+              for a in ("src","data-src","data-original","data-lazy-src"):
+                v=tag.get(a)
+                if isinstance(v,str) and v.strip():vals.append(v.strip())
+              ss=tag.get("srcset")
+              if ss: vals += [x.strip().split()[0] for x in ss.split(",") if x.strip()]
+              label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              for src in vals:
+                u=urljoin(r.url,src); lu=u.lower(); ln=norm(label+" "+u)
+                if any(x in lu for x in ("logo","icon","favicon","banner","wechat","qr","avatar","footer","header","arrow","small-size","benefit")):continue
+                score=0
+                if n in norm(label): score=2000
+                elif n in norm(u): score=1700
+                elif "series" in label.lower() and n.split("series")[0] in norm(label): score=1300
+                elif "product" in lu or "upload" in lu: score=100
+                cand.append((score,u,label))
+            for tag in soup.find_all("meta"):
+              key=(tag.get("property") or tag.get("name") or "").lower()
+              if key in ("og:image","og:image:url","twitter:image") and tag.get("content"):
+                cand.append((800,urljoin(r.url,tag["content"]),"meta"))
+            # raw page image URLs near exact model text
+            for m in re.finditer(r'''["']([^"'<> ]+\.(?:png|jpe?g|webp)(?:\?[^"'<> ]*)?)["']''',r.text,re.I):
+              u=urljoin(r.url,m.group(1).replace("\\/","/")); lu=u.lower()
+              if any(x in lu for x in ("logo","icon","banner","wechat","qr","avatar","footer","header")):continue
+              a=max(0,m.start()-2500); b=min(len(r.text),m.end()+2500)
+              if n in norm(r.text[a:b]):cand.append((1500,u,"raw-near-model"))
+            best=None
+            for score,u,label in sorted(cand,reverse=True)[:30]:
+              if score<700:continue
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15); ir.raise_for_status(); b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b)); w,h=im.size
+                ratio=max(w/h,h/w)
+                if ratio>5:continue
+                s2=score*10000000+w*h+min(len(b),2000000)
+                if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,label,score)
+              except:pass
+            if not best:return {"index":idx,"name":name,"ok":False,"error":f"no exact usable image ({len(cand)} candidates)"}
+            _,b,u,w,h,label,score=best
+            fn=f"{idx:03d} - Inovance - {name}{ext(b,u)}"; (out/fn).write_bytes(b)
+            return {"index":idx,"name":name,"ok":True,"file":fn,"page":page,"source":u,"dimensions":[w,h],"label":label,"score":score}
+          results=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+            for f in concurrent.futures.as_completed([ex.submit(one,t) for t in targets]):
+              try:x=f.result()
+              except Exception as e:x={"ok":False,"error":str(e)}
+              results.append(x); print(json.dumps(x,ensure_ascii=False),flush=True)
+          results.sort(key=lambda x:x.get("index",9999)); ok=sum(bool(x.get("ok")) for x in results)
+          (out/"_report.json").write_text(json.dumps({"requested":len(targets),"success":ok,"failed":len(targets)-ok,"results":results},ensure_ascii=False,indent=2))
+          print(f"SUMMARY success={ok} failed={len(targets)-ok}")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-inovance-exact
+          path: inovance-exact/
+          retention-days: 1
