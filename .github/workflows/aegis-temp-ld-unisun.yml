@@ -1,0 +1,123 @@
+name: Aegis LDROBOT and Unisunbot exact candidates
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-ld-unisun.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests,fitz,hashlib
+          from urllib.parse import urljoin
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          out=pathlib.Path("ld-unisun");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"application/pdf,text/html,image/*,*/*"})
+          PDFs=[
+            (193,"LDROBOT","LD00","https://prod-1251541497.cos.ap-guangzhou.myqcloud.com/zixun_pc/qijian/iceasy/pdf/img.iceasy.com-product-product-files-202007-ff8080817309bb1c0173228f094b0137.pdf"),
+            (195,"LDROBOT","LD06 Raspberry Pi Development Kit","https://github.com/ldrobotSensorTeam/DeveloperKit/releases/download/v1.0/LDRobot_LD06.Raspberry.Pi.Raspbian.User.manual_v2.9.pdf"),
+            (435,"LDROBOT","SLAM CLEANPACK_LD05","https://alimg.szlcsc.com/upload/public/product/rich/20200522/3FFD9034A325D18568C3CD99C2998B6F.pdf"),
+            (507,"Unisunbot","XCP-040","https://omo-oss-file110.thefastfile.com/portal-saas/pg2025081217220218067/cms/file/xc%E4%BD%8E%E5%8A%9F%E7%8E%87%E4%BC%BA%E6%9C%8D%E8%AF%B4%E6%98%8E%E4%B9%A6.pdf"),
+          ]
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def clean(s):
+            s=re.sub(r'[\\/:*?"<>|]+','-',str(s or '')).strip();s=re.sub(r'\s+',' ',s)
+            return s[:100].strip(' .-')
+          def pixbytes(d,xref,smask):
+            pix=fitz.Pixmap(d,xref)
+            if smask:
+              try:pix=fitz.Pixmap(pix,fitz.Pixmap(d,smask))
+              except:pass
+            if pix.n>4:pix=fitz.Pixmap(fitz.csRGB,pix)
+            return pix.tobytes("png")
+          rows=[]
+          for idx,maker,name,u in PDFs:
+            row={"index":idx,"maker":maker,"name":name,"url":u,"ok":False,"candidates":[]}
+            try:
+              r=S.get(u,timeout=45,allow_redirects=True);r.raise_for_status()
+              if not r.content.startswith(b"%PDF"):raise ValueError(f"not-pdf {r.headers.get('content-type')} {len(r.content)}")
+              d=fitz.open(stream=r.content,filetype="pdf"); n=norm(name)
+              toks=[norm(x) for x in re.findall(r"[A-Za-z0-9]+",name) if len(norm(x))>=3]
+              pages=[]
+              for p in range(len(d)):
+                try:nt=norm(d[p].get_text("text"))
+                except:nt=""
+                if n and n in nt:pages.append(p)
+                elif toks and all(t in nt for t in toks[:min(3,len(toks))]):pages.append(p)
+              if not pages:
+                # model family/manual title often appears only on cover
+                pages=list(range(min(5,len(d))))
+              pool=[]
+              for p in pages[:10]:
+                for im in d[p].get_images(full=True):
+                  try:
+                    b=pixbytes(d,im[0],im[1] if len(im)>1 else 0);pi=Image.open(io.BytesIO(b));w,h=pi.size
+                    if len(b)<1200 or w<100 or h<80 or max(w/h,h/w)>7:continue
+                    pool.append((w*h+len(b)*3,b,p,w,h))
+                  except:pass
+              seen=set()
+              for sc,b,p,w,h in sorted(pool,reverse=True,key=lambda x:x[0]):
+                hs=hashlib.sha256(b).hexdigest()
+                if hs in seen:continue
+                seen.add(hs);rank=len(row["candidates"])+1
+                fn=f"{idx:03d} - {maker} - {clean(name)} - candidate{rank}.png";(out/fn).write_bytes(b)
+                row["candidates"].append({"file":fn,"page":p+1,"dimensions":[w,h],"bytes":len(b)})
+                if rank>=5:break
+              row["ok"]=bool(row["candidates"]);row["pages"]=[p+1 for p in pages[:10]]
+              if not row["ok"]:row["error"]="no candidates"
+            except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+            rows.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          # Quad-Eye exact technology page
+          idx,maker,name,page=390,"LDROBOT","Quad-Eye Matrix Sensor","https://www.ldrobot.com/technology"
+          row={"index":idx,"maker":maker,"name":name,"page":page,"ok":False,"candidates":[]}
+          try:
+            r=S.get(page,timeout=30);r.raise_for_status();s=BeautifulSoup(r.text,"html.parser")
+            terms=["Quad-Eye","matrix","四目","Genie"]
+            cand=[]
+            for i,tag in enumerate(s.find_all("img")):
+              src=tag.get("src") or tag.get("data-src") or tag.get("data-original")
+              if not src:continue
+              u=urljoin(r.url,src);lab=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+              score=0
+              if any(norm(t) in norm(lab+" "+u) for t in terms):score=9000
+              if score:cand.append((score,u,lab,i))
+            for st in s.find_all(string=True):
+              if not any(norm(t) in norm(st) for t in terms):continue
+              p=st.parent
+              for depth in range(6):
+                if not p:break
+                for tag in p.find_all("img",limit=15):
+                  src=tag.get("src") or tag.get("data-src")
+                  if src:cand.append((8000-depth*400,urljoin(r.url,src),tag.get("alt") or "same-block",-1))
+                p=p.parent
+            uniq={}
+            for sc,u,lab,i in cand:
+              if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,lab,i)
+            for u,(sc,lab,i) in sorted(uniq.items(),key=lambda x:x[1][0],reverse=True):
+              try:
+                ir=S.get(u,headers={"Referer":r.url},timeout=15);ir.raise_for_status();b=ir.content
+                pi=Image.open(io.BytesIO(b));pi.load();w,h=pi.size
+                if len(b)<1500 or w<140 or h<100:continue
+                rank=len(row["candidates"])+1
+                ext="."+pi.format.lower().replace("jpeg","jpg")
+                fn=f"390 - LDROBOT - Quad-Eye Matrix Sensor - candidate{rank}{ext}";(out/fn).write_bytes(b)
+                row["candidates"].append({"file":fn,"source":ir.url,"label":lab,"dimensions":[w,h],"score":sc})
+                if rank>=4:break
+              except:pass
+            row["ok"]=bool(row["candidates"])
+          except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+          rows.append(row);print(json.dumps(row,ensure_ascii=False))
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-ld-unisun
+          path: ld-unisun/
+          retention-days: 1
