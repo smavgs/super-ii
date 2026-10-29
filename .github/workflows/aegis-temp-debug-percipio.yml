@@ -1,0 +1,51 @@
+name: Aegis debug Percipio PDF images
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-debug-percipio.yml"
+permissions:
+  contents: read
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pymupdf==1.26.5 pillow==12.0.0
+      - name: Inspect FS820-E1 PDF image objects
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import requests,fitz,pathlib,json,io
+          from PIL import Image
+          out=pathlib.Path("percipio-debug");out.mkdir(exist_ok=True)
+          u="https://en.percipio.xyz/wp-content/uploads/sites/2/2024/05/FS820-E1-Specifications-V2.0.pdf"
+          r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=30);print("HTTP",r.status_code,len(r.content),r.headers.get("content-type"));r.raise_for_status()
+          (out/"FS820.pdf").write_bytes(r.content)
+          d=fitz.open(stream=r.content,filetype="pdf")
+          print("PAGES",len(d))
+          for pno in range(min(3,len(d))):
+            p=d[pno]
+            print("PAGE",pno+1,"text",p.get_text("text")[:500].replace("\n"," | "))
+            ims=p.get_images(full=True)
+            print("IMAGES",len(ims))
+            for i,im in enumerate(ims):
+              print("META",pno+1,i,im)
+              xref=im[0]
+              try:
+                z=d.extract_image(xref)
+                print("EXTRACT",xref,{k:z.get(k) for k in ["ext","width","height","colorspace","xres","yres","smask"]},"bytes",len(z.get("image",b"")))
+                b=z.get("image",b"")
+                if b:
+                  fn=out/f"p{pno+1}_i{i}_x{xref}.{z.get('ext','bin')}"
+                  fn.write_bytes(b)
+                  try:
+                    pi=Image.open(io.BytesIO(b));print("PIL",pi.mode,pi.size,pi.format)
+                  except Exception as e:print("PILERR",e)
+              except Exception as e:print("EXTRACTERR",xref,e)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: percipio-debug
+          path: percipio-debug/
+          retention-days: 1
