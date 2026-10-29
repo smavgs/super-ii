@@ -1,0 +1,125 @@
+name: Aegis HCFA exact product originals
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aegis-temp-hcfa-final.yml"
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - name: Recover HCFA exact product-page originals
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+
+          items={
+            140:("HC20","https://www.hcfa.cn/product/detail/id/165.html"),
+            145:("HR","https://www.hcfa.cn/product/detail/id/170.html"),
+            155:("Hu-ECU","https://www.hcfa.cn/product/detail/id/157.html"),
+            156:("Hu-GRS","https://www.hcfa.cn/product/detail/id/161.html"),
+            157:("Hu-MDB","https://www.hcfa.cn/product/detail/id/156.html"),
+            158:("Hu-MLS","https://www.hcfa.cn/product/detail/id/158.html"),
+            159:("Hu-MRS","https://www.hcfa.cn/product/detail/id/160.html"),
+            459:("SV-D3","https://www.hcfa.cn/product/detail/id/121.html"),
+            460:("SV-D5","https://www.hcfa.cn/product/detail/id/120.html"),
+            465:("SV730","https://www.hcfa.cn/product/detail/id/114.html"),
+            466:("SV730W","https://www.hcfa.cn/product/detail/id/110.html"),
+            467:("SV760","https://www.hcfa.cn/product/detail/id/111.html"),
+            468:("SV760W","https://www.hcfa.cn/product/detail/id/113.html"),
+            504:("X2","https://www.hcfa.cn/product/detail/id/128.html"),
+            505:("X6MN","https://www.hcfa.cn/product/detail/id/130.html"),
+            506:("X7","https://www.hcfa.cn/product/detail/id/132.html"),
+          }
+          out=pathlib.Path("hcfa-final");out.mkdir(exist_ok=True)
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          BAD=("logo","banner","icon","footer","header","qrcode","qr","wechat","weixin","map","contact","loading","default","avatar")
+          def norm(x):return re.sub(r"[^a-z0-9]+","",str(x or "").lower())
+          def clean(s):return re.sub(r'[\\/:*?"<>|]+','-',s).strip()
+          def fetch(u,ref=None):
+            h={"Referer":ref} if ref else {}
+            try:r=S.get(u,headers=h,timeout=20,allow_redirects=True)
+            except requests.exceptions.SSLError:r=S.get(u,headers=h,timeout=20,allow_redirects=True,verify=False)
+            r.raise_for_status();return r
+          def valid(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load()
+              return im.width>=160 and im.height>=120 and max(im.width/im.height,im.height/im.width)<6
+            except:return False
+          results=[]
+          for idx,(model,page) in items.items():
+            try:r=fetch(page)
+            except Exception as e:
+              results.append({"index":idx,"name":model,"ok":False,"error":"page:"+str(e)});continue
+            soup=BeautifulSoup(r.text,"html.parser")
+            mn=norm(model); cand=[]
+            # structured/meta first
+            for t in soup.find_all("meta"):
+              k=(t.get("property") or t.get("name") or "").lower();u=t.get("content")
+              if u and k in ("og:image","og:image:url","twitter:image"):
+                cand.append((140,urljoin(r.url,u),"meta"))
+            for i,t in enumerate(soup.find_all("img")):
+              vals=[]
+              for a in ("src","data-src","data-original","data-lazy-src"):
+                v=t.get(a)
+                if v:vals.append(v)
+              for a in ("srcset","data-srcset"):
+                v=t.get(a)
+                if v:vals.extend(x.strip().split()[0] for x in v.split(",") if x.strip())
+              label=norm((t.get("alt") or "")+" "+(t.get("title") or ""))
+              for v in vals:
+                u=urljoin(r.url,v);un=norm(u)
+                if any(b in un for b in BAD):continue
+                score=80
+                if mn and mn in label:score=220
+                elif mn and mn in un:score=210
+                if "/upload" in urlparse(u).path.lower() or "/uploads" in urlparse(u).path.lower():score+=30
+                if i<20:score+=10
+                cand.append((score,u,"img"))
+            # raw JS asset URLs near model string
+            raw=r.text
+            for m in re.finditer(r'''(?:"|')([^"'<>\\ ]+\.(?:png|jpe?g|webp)(?:\?[^"'<>\\ ]*)?)(?:"|')''',raw,re.I):
+              u=urljoin(r.url,m.group(1).replace("\\/","/"));un=norm(u)
+              if any(b in un for b in BAD):continue
+              a=max(0,m.start()-4000);b=min(len(raw),m.end()+4000)
+              score=170 if mn in norm(raw[a:b]) else 70
+              cand.append((score,u,"raw"))
+            uniq={}
+            for sc,u,w in cand:
+              if u not in uniq or sc>uniq[u][0]:uniq[u]=(sc,w)
+            evaluated=[]
+            for u,(base,why) in uniq.items():
+              try:
+                ir=fetch(u,r.url);b=ir.content
+                if not valid(b):continue
+                im=Image.open(io.BytesIO(b));area=im.width*im.height
+                score=base+min(area/20000,80)+min(len(b)/20000,30)
+                evaluated.append((score,ir,b,im.width,im.height,why))
+              except:pass
+            evaluated.sort(key=lambda z:z[0],reverse=True)
+            if not evaluated:
+              results.append({"index":idx,"name":model,"ok":False,"error":"no valid image","page":r.url});continue
+            score,ir,b,w,h,why=evaluated[0]
+            try:
+              fmt=Image.open(io.BytesIO(b)).format.lower();ext=".jpg" if fmt=="jpeg" else "."+fmt
+            except:ext=".jpg"
+            fn=f"{idx:03d} - HCFA - {clean(model)}{ext}"
+            (out/fn).write_bytes(b)
+            row={"index":idx,"name":model,"ok":True,"file":fn,"page":r.url,"source":ir.url,"dimensions":[w,h],"score":round(score,2),"evidence":why}
+            results.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          print("SUMMARY",sum(bool(x.get("ok")) for x in results),len(results))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-hcfa-final
+          path: hcfa-final/
+          retention-days: 1
