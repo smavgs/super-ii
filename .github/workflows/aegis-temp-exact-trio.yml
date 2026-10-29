@@ -1,0 +1,101 @@
+name: Aegis exact page trio recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-exact-trio.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 beautifulsoup4==4.14.2 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,re,requests,urllib3
+          from urllib.parse import urljoin,urlparse
+          from bs4 import BeautifulSoup
+          from PIL import Image
+          urllib3.disable_warnings()
+          out=pathlib.Path("exact-trio");out.mkdir(exist_ok=True)
+          T=[
+            (66,"TechWedali","ECH Series","https://www.tech-wedali.com/zlwskxbxt/27",["ECH","ech"]),
+            (431,"Fine-Motion","SHPR-10C","https://www.finemotion.com.cn/home/Index/product?id=7",["SHPR-10C","SHPR"]),
+            (495,"Orbbec","WristCam","https://www.orbbec.com/robot-free-data-collection/",["Orbbec Wrist-1","Wrist-1","WristCam"]),
+          ]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/155 Safari/537.36","Accept":"text/html,image/avif,image/webp,image/*,*/*;q=0.8"})
+          BAD=("logo","icon","favicon","banner","footer","header","qr","wechat","avatar","arrow","map","service","news")
+          def norm(s):return re.sub(r"[^a-z0-9]+","",str(s or "").lower())
+          def good(b):
+            try:
+              im=Image.open(io.BytesIO(b));im.load();return len(b)>1500 and im.width>=140 and im.height>=90
+            except:return False
+          def ext(b,u):
+            try:f=Image.open(io.BytesIO(b)).format.lower();return ".jpg" if f=="jpeg" else "."+f
+            except:return ".jpg"
+          rows=[]
+          for idx,maker,name,page,terms in T:
+            row={"index":idx,"maker":maker,"name":name,"page":page,"ok":False}
+            try:
+              try:r=S.get(page,timeout=25);r.raise_for_status()
+              except requests.exceptions.SSLError:r=S.get(page,timeout=25,verify=False);r.raise_for_status()
+              soup=BeautifulSoup(r.text,"html.parser");cand=[]
+              # direct alt/title/src term matches
+              for i,tag in enumerate(soup.find_all("img")):
+                vals=[]
+                for a in ("src","data-src","data-original","data-lazy-src"):
+                  v=tag.get(a)
+                  if v:vals.append(v)
+                ss=tag.get("srcset")
+                if ss: vals += [x.strip().split()[0] for x in ss.split(",") if x.strip()]
+                label=(tag.get("alt") or "")+" "+(tag.get("title") or "")
+                for v in vals:
+                  u=urljoin(r.url,v);lu=u.lower()
+                  if any(x in lu for x in BAD):continue
+                  score=0
+                  for term in terms:
+                    nt=norm(term)
+                    if nt and nt in norm(label):score=max(score,10000)
+                    elif nt and nt in norm(u):score=max(score,9000)
+                  if score:cand.append((score,u,label,i))
+              # exact text block proximity
+              for st in soup.find_all(string=True):
+                txt=norm(st)
+                if not any(norm(t) in txt for t in terms):continue
+                p=st.parent
+                for depth in range(6):
+                  if not p:break
+                  for tag in p.find_all("img",limit=15):
+                    src=tag.get("src") or tag.get("data-src") or tag.get("data-original")
+                    if src:
+                      u=urljoin(r.url,src)
+                      if not any(x in u.lower() for x in BAD):cand.append((8000-depth*400,u,tag.get("alt") or "same-block",-1))
+                  p=p.parent
+              uniq={}
+              for s,u,l,i in cand:
+                if u not in uniq or s>uniq[u][0]:uniq[u]=(s,l,i)
+              best=None
+              for u,(score,label,i) in uniq.items():
+                try:
+                  ir=S.get(u,headers={"Referer":r.url},timeout=15,verify=False);ir.raise_for_status();b=ir.content
+                  if not good(b):continue
+                  im=Image.open(io.BytesIO(b));w,h=im.size
+                  if max(w/h,h/w)>6:continue
+                  s2=score*10000000+w*h+len(b)
+                  if best is None or s2>best[0]:best=(s2,b,ir.url,w,h,label,i,score)
+                except:pass
+              if not best:raise ValueError(f"no model-matched usable image ({len(uniq)} candidates)")
+              _,b,u,w,h,label,i,score=best
+              fn=f"{idx:03d} - {maker} - {name}{ext(b,u)}";(out/fn).write_bytes(b)
+              row.update({"ok":True,"file":fn,"source":u,"dimensions":[w,h],"label":label,"dom_index":i,"score":score})
+            except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+            rows.append(row);print(json.dumps(row,ensure_ascii=False),flush=True)
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-exact-trio
+          path: exact-trio/
+          retention-days: 1
