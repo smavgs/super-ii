@@ -1,0 +1,45 @@
+name: Aegis LENFOR direct resource recovery
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/aegis-temp-lenfor-direct.yml"]
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python -m pip install --quiet requests==2.32.5 pillow==12.0.0
+      - shell: bash
+        run: |
+          python3 - <<'PY'
+          import io,json,pathlib,requests
+          from urllib.parse import quote
+          from PIL import Image
+          out=pathlib.Path("lenfor-direct");out.mkdir(exist_ok=True)
+          T=[
+            (206,"LF-MERG34-15-35-RR","products/LF-MERG-15-35-RR （1）_20260617032423.webp"),
+            (207,"LF-MFGF29-26-100-SR-DD","products/LF-MEGF-26-050-SR-DD （6）_20260617031036.webp"),
+            (208,"LF-MSEC35-100-50-DR-DB","products/画册图片整理/2-电动滑台/LF-MSEC-100-50-DR-DE （4）.webp"),
+            (209,"LF-RH1X-1L","products/LF-RH1X-1L__512x512.webp"),
+          ]
+          S=requests.Session();S.headers.update({"User-Agent":"Mozilla/5.0","Accept":"image/webp,image/*,*/*;q=0.8"})
+          rows=[]
+          for idx,name,path in T:
+            u="https://resources.lenfortech.com/website/"+quote(path,safe="/()_-.")
+            row={"index":idx,"name":name,"url":u,"ok":False}
+            try:
+              r=S.get(u,timeout=25);r.raise_for_status();b=r.content
+              im=Image.open(io.BytesIO(b));im.load()
+              if len(b)<2000 or im.width<150 or im.height<100:raise ValueError("small-invalid")
+              fn=f"{idx:03d} - LENFOR - {name}.webp";(out/fn).write_bytes(b)
+              row.update({"ok":True,"file":fn,"dimensions":[im.width,im.height],"bytes":len(b),"source":r.url})
+            except Exception as e:row["error"]=f"{type(e).__name__}:{e}"
+            rows.append(row);print(json.dumps(row,ensure_ascii=False))
+          (out/"_report.json").write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: superii-lenfor-direct
+          path: lenfor-direct/
+          retention-days: 1
