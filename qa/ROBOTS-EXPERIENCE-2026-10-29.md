@@ -11,10 +11,13 @@ The update brings the model/Workspace visual system to robot detail, product/com
 - Contact-only publication was checked against an unrelated private company draft edit; that edit stayed private. An existing whole-company claim cannot silently grant company administration through a product-labelled access request.
 - Type/template checks: zero errors and warnings, three existing hints. Site/content/localization validation and the Cloudflare production build passed. Release-bundle checks found no private local values. Rust formatting/build/tests/Clippy, 142 runtime tests, 45 SDK tests (five optional skips), package builds, container builds and Compose validation also passed.
 - In the isolated local browser, a product claim moved from pending to confirmed using a disposable website-proof fixture. Contact publication enabled the product's private inquiry form. A consented inquiry returned its success receipt and email continuation. No email was sent.
+- The Russian company inbox displayed the consented local inquiry, hid pagination for one item and saved its replied status. Its new-inquiry count changed from one to zero.
 - Desktop (1440), phone (390) and narrow Chinese (320) detail layouts were inspected. The phone dialog and document widths matched the viewport without horizontal overflow. Escape closed the dialog. Product photos loaded from local assets; fixed same-origin paths also avoid cross-host image blocking on the two production domains.
 - Local category searches returned all 198 robots, 73 hands and 516 grouped components in approximately 176–181 ms per restricted database round trip, including Docker/psql startup. This is local evidence, not a production latency promise.
 
 Screenshots, photo mapping manifests and command logs are stored in the task's local release evidence directory. Only disposable local data was created for claim/inquiry/engagement tests.
+
+The first pull-request audit identified GHSA-rmxm-3fg6-px4f in the existing transitive `@hono/node-server` dependency. Its lockfile entry was updated from 2.1.1 to patched 2.1.5; the production npm audit and rebuilt release passed with zero reported npm vulnerabilities. This does not claim that every dependency ecosystem has no outstanding advisories.
 
 ## Release boundary
 
