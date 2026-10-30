@@ -1,0 +1,50 @@
+{
+  "verified_at": "2026-10-30T11:29:02.009916+00:00",
+  "worker_version": "50f31942-a06f-468b-a02b-1f1eb6f79c0a",
+  "previous_worker_version": "a2e11f57-a90f-490c-b092-cd1735935927",
+  "domains": [
+    "https://superii.site",
+    "https://www.superii.site"
+  ],
+  "pull_request": "https://github.com/smavgs/super-ii/pull/143",
+  "predeployment_ci_commit": "f1c9a5b94e699562da4862fd0a0ba8090f547afd",
+  "predeployment_ci": "completed/success: Validate and build, CodeQL, DCO, Secret scanning, Rust security audit",
+  "live_checks": {
+    "passed": true,
+    "page_api_access_checks": 38,
+    "photo_sha256_matches": 787,
+    "supplied_photos": {
+      "robots": 198,
+      "hands": 73,
+      "component_representatives": 516
+    },
+    "inventory_sha256": "2aee3f3abd38a13a9daec3c0747eefef6f6bd5cb8fbfdb46af4b9260415a59d4",
+    "image_response_policy": "cross-origin",
+    "image_cors": "*"
+  },
+  "database": {
+    "applied_migrations": [
+      "0042_robot_engagement.sql",
+      "0043_robot_claim_scope.sql",
+      "0041_robot_supplied_media.sql"
+    ],
+    "app_tables": 129,
+    "rls_tables": 129,
+    "views": 1,
+    "core_records_preserved": true,
+    "reference_facts_hash_preserved": true,
+    "direct_application_grants_on_new_private_tables": []
+  },
+  "browser_checks": [
+    "Live catalogue and product detail",
+    "Signed-in product and full-company claim entry without submission",
+    "Chinese 390 px product detail without horizontal overflow"
+  ],
+  "verification_boundary": [
+    "Claim, contact publication and inquiry completion exercised only with disposable local data",
+    "No production claim, inquiry or like fixture created",
+    "Original embedded photo backgrounds retained; white media frames",
+    "No South Korean manufacturer confirmed in supplied records",
+    "Fresh uploads, mainland/WeChat and physical hardware execution unverified"
+  ]
+}

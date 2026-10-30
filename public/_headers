@@ -16,5 +16,6 @@
 
 /robot-media/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  ! Cross-Origin-Resource-Policy
   Cross-Origin-Resource-Policy: cross-origin
   Access-Control-Allow-Origin: *

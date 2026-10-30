@@ -19,9 +19,17 @@ Screenshots, photo mapping manifests and command logs are stored in the task's l
 
 The first pull-request audit identified GHSA-rmxm-3fg6-px4f in the existing transitive `@hono/node-server` dependency. Its lockfile entry was updated from 2.1.1 to patched 2.1.5; the production npm audit and rebuilt release passed with zero reported npm vulnerabilities. This does not claim that every dependency ecosystem has no outstanding advisories.
 
-## Release boundary
+## Production release — 30 October
 
-At preparation, these changes are locally verified and not yet promoted to production. The previous Robots deployment is Worker `a2e11f57-a90f-490c-b092-cd1735935927`. Release completion requires final GitHub checks, migrations 0041–0043, the Worker deployment and read-only live verification. The release ledger will record that result separately.
+The final Worker is `50f31942-a06f-468b-a02b-1f1eb6f79c0a`, serving both canonical domains. Migrations 0042/0043 were applied before deployment; 0041 switched the 787 reference covers after the assets were live. The previous rollback Worker is `a2e11f57-a90f-490c-b092-cd1735935927`.
+
+Thirty-eight live checks passed across both domains: catalogue totals, product detail, English/Russian/Chinese pages, machine documentation/schema, unauthenticated write/inbox refusal, cross-origin refusal and image response policy. All 787 downloaded WebP hashes matched the reviewed delivery inventory. The first pass caught duplicate resource-policy headers; the media rule now detaches the inherited header before setting `cross-origin`. The corrected rule was checked in the local Cloudflare runtime and on both live hosts. Its deployment changed no image bytes.
+
+Production retains RLS on all 129 application tables, with no direct application-role grants on the five new private tables. Existing profiles, repositories/files, company records and claim records retained their counts; reference facts retained their hash. Ordinary usage counters continued to change. No production claim, inquiry or like fixture was created; the normal browser product visit recorded one deduplicated view.
+
+Signed-in browser checks opened both the product and full-company claim forms and verified their distinct scope text. Chinese mobile detail matched the 390 px viewport without horizontal overflow. The live catalogue and product view screenshots are in the local release evidence directory. First actual manufacturer authorization and inquiry completion remain unverified.
+
+The application commit passed all GitHub workflows before deployment. The final header/evidence update and post-merge status are tracked in [PR #143](https://github.com/smavgs/super-ii/pull/143). The bounded, credential-free [release record](../docs/verification/robots-experience-production.json) records the deployed state.
 
 ## Practical limits
 
