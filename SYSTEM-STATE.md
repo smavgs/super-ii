@@ -114,3 +114,7 @@ PR #132 was deployed with migration 0036, the runtime package route and initial 
 3. Hardware discovery, lineage, trusted publishing, and scoped automation.
 4. Creator and community growth.
 5. Commercial infrastructure only when usage and safety evidence justify it.
+
+## Robots product experience release candidate
+
+The 29 October update is locally verified: 787 supplied product photographs, compact model-style detail, product-scoped claims alongside company claims, private consented inquiries, public likes and daily-deduplicated opens, and global company-country selection. Migrations 0041–0043 and the Worker rollout are pending at this preparation point; the production Robots row below describes the prior release. See [verification](qa/ROBOTS-EXPERIENCE-2026-10-29.md).

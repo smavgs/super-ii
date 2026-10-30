@@ -6,6 +6,8 @@ export type ExplorerCard = {
   highlights?: Array<{label:string;value:string}>; source_url?: string; source_date?: string;
   details_url?: string; product_url?: string; company_url?: string; stage?: string; claimed?: boolean;
   maintained?: unknown;
+  metrics?: {views:number;likes:number};
+  contact?: {available?:boolean;name?:string;email?:string;wechat?:string;phone?:string};
 };
 export type ExplorerSearch = { items: ExplorerCard[]; total: number; offset: number; limit: number };
 export type ExplorerQuery = { record_type:'product'|'company'; q:string; category:string; source:string; company:string|null; country:string; letter:string; limit:number; offset:number };
@@ -15,3 +17,8 @@ export function countryLabel(code:string,locale='en'){
   try{return `${flag} ${new Intl.DisplayNames([locale],{type:'region'}).of(code)}`;}catch{return `${flag} ${code}`;}
 }
 export function explorerName(item:{name:string;name_zh?:string},locale:string){return locale==='zh-CN'&&item.name_zh?item.name_zh:item.name;}
+
+// Serve our own media on either canonical host without cross-origin image blocking.
+export function robotImageUrl(value = ''): string {
+  try {const url = new URL(value);return ['superii.site','www.superii.site'].includes(url.hostname) && url.protocol === 'https:' && url.pathname.startsWith('/robot-media/') ? url.pathname : value;} catch {return value;}
+}
