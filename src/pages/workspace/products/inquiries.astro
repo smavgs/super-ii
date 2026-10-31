@@ -1,0 +1,17 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import RobotInquiryInbox from '@/components/RobotInquiryInbox.astro';
+import {companyWorkspace} from '@/lib/product-store';
+import {ensureAuthenticatedProfile} from '@/lib/auth';
+import {sqlClient} from '@/lib/db';
+import '@/styles/pixel-controls.css';
+import '@/styles/robots-explorer.css';
+Astro.response.headers.set('Cache-Control','private, no-store');
+let companies:Awaited<ReturnType<typeof companyWorkspace>>['companies']=[];let failed=false;
+try{const sql=sqlClient(Astro.locals);if(!sql)throw new Error();if(!(await ensureAuthenticatedProfile(Astro.locals,sql)))return Astro.redirect('/sign-in?redirect_url=%2Fworkspace%2Fproducts%2Finquiries');companies=(await companyWorkspace(Astro.locals)).companies;}catch{failed=true;Astro.response.status=503;}
+const selected=companies.find(c=>c.id===Astro.url.searchParams.get('organization'))??companies[0];
+---
+<BaseLayout title="Product inquiries" noindex preferLight><section class="shell robot-company-workspace workspace-skin"><nav class="button-row"><a href="/workspace/products">← Company and products</a><a href="/account">Workspace 👾</a></nav><p class="eyebrow">👾 COMPANY / INQUIRIES</p><h1>Your product conversations</h1>
+{companies.length>1&&<form method="get"><label>Company workspace<select name="organization">{companies.map(c=><option value={c.id} selected={c.id===selected?.id}>{c.name}</option>)}</select></label><button class="button button--secondary" type="submit">Open inbox</button></form>}
+{selected?<RobotInquiryInbox organization={selected.id}/>:<p>{failed?'Inquiries are temporarily unavailable. Try again.':'Publish a company product or complete a claim to start receiving inquiries.'}</p>}
+</section></BaseLayout>

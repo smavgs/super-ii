@@ -1,4 +1,6 @@
+import {robotExperienceMessages} from './robot-experience-localization';
 const words: Record<string,[string,string]>={
+  ...robotExperienceMessages,
 "Explore robots, their makers and the parts behind them.":["Роботы, их производители и компоненты.", "探索机器人、制造商及其组件。"],
 "Robot companies and access requests →":["Производители роботов и запросы доступа →", "机器人企业与访问申请 →"],
 "Manage robot company":["Управление производителем роботов", "管理机器人企业"],

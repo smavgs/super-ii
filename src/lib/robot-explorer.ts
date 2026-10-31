@@ -22,12 +22,18 @@ export function explorerQuery(params: URLSearchParams): ExplorerQuery {
 export async function searchRobotExplorer(locals:App.Locals,query:ExplorerQuery):Promise<ExplorerSearch>{
   const sql=sqlClient(locals); if(!sql)throw new Error('Catalogue unavailable');
   const rows=await sql`select app.search_robot_explorer(${query.record_type},${query.q},${query.category},${query.source},${query.company}::uuid,${query.country},${query.letter},${query.limit},${query.offset}) as result`;
-  return rows[0]?.result as ExplorerSearch;
+  const result=rows[0]?.result as ExplorerSearch;
+  if(result.items.length){const counts=await sql`select app.robot_public_metrics(${result.items.map(i=>i.id)}::uuid[]) as metrics`;
+    for(const item of result.items)item.metrics=counts[0]?.metrics?.[item.id]??{views:0,likes:0};}
+  return result;
 }
 export async function robotExplorerDetail(locals:App.Locals,id:string):Promise<ExplorerCard|null>{
   if(!productUuid.test(id))return null;
   const sql=sqlClient(locals); if(!sql)throw new Error('Catalogue unavailable');
   const rows=await sql`select app.robot_explorer_detail(${id}::uuid) as detail`;
-  return rows[0]?.detail as ExplorerCard|null;
+  const detail=rows[0]?.detail as ExplorerCard|null;
+  if(detail){const values=await sql`select app.robot_public_metrics(array[${id}::uuid]) as metrics, app.robot_contact(${id}::uuid) as contact`;
+    detail.metrics=values[0]?.metrics?.[id]??{views:0,likes:0};detail.contact=values[0]?.contact??undefined;}
+  return detail;
 }
 export const explorerPublicHeaders={'cache-control':'public, max-age=30, s-maxage=60','access-control-allow-origin':'*','x-content-type-options':'nosniff'};

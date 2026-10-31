@@ -1,0 +1,17 @@
+---
+import {sqlClient} from '@/lib/db';
+import {translateProduct} from '@/lib/product-localization';
+const t=(s:string)=>translateProduct(s,Astro.locals.locale??'en');
+const {organization}=Astro.props as {organization:string};
+let inbox:{total:number;new:number;items:Array<{id:string;subject_id:string;product_name:string;topic:string;message:string;reply_email:string;status:string;created_at:string;sender_name:string}>}|null=null;
+try{const sql=sqlClient(Astro.locals);if(sql){const rows=await sql`select app.robot_inquiry_inbox(${organization}::uuid,0) as inbox`;inbox=rows[0]?.inbox;}}catch{}
+---
+<section data-robot-inbox data-inbox-organization={organization}>
+ <h2>Product inquiries</h2><p class="robot-claim-privacy">Private to your company team. Reply by email, then mark the inquiry as replied.</p>
+ {inbox?<><p data-inbox-count>{inbox.total} {t("inquiries")} · {inbox.new} {t("new")}</p><div data-inbox-items>{inbox.items.map(item=><article class="robot-inbox-card">
+  <h3 data-no-translate>{item.product_name}</h3><small data-no-translate>{item.sender_name} · {t(item.topic)} · {new Date(item.created_at).toLocaleDateString(Astro.locals.locale??'en')} · {t(item.status)}</small>
+  <p data-no-translate>{item.message}</p><div class="button-row"><a class="button robot-action-mint" href={`mailto:${item.reply_email}?subject=${encodeURIComponent(item.product_name+' · Super ii inquiry')}&body=${encodeURIComponent('Regarding your inquiry:\n\n'+item.message)}`}>Reply by email ↗</a><button class="button button--secondary" data-inquiry-status="replied" data-inquiry-id={item.id}>Mark replied</button><button class="button button--secondary" data-inquiry-status="archived" data-inquiry-id={item.id}>Archive</button></div>
+ </article>)}</div>{!inbox.items.length&&<p>Your first product inquiries will appear here.</p>}<button type="button" class="button button--secondary" data-inbox-previous hidden>← Previous inquiries</button><button type="button" class="button button--secondary" data-inbox-next hidden={inbox.total<=30}>Next inquiries →</button></>:<p>Inquiries are temporarily unavailable. Try again.</p>}
+ <p data-inbox-status role="status" aria-live="polite"></p>
+</section>
+<script>import '@/scripts/robot-inbox';</script>

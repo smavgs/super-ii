@@ -1,5 +1,7 @@
+import {robotExperienceMessages} from './robot-experience-localization';
 // Interface text only; company-authored content retains its supplied language.
 const messages: Record<string, [string, string]> = {
+  ...robotExperienceMessages,
 "Team access":["Доступ команды", "团队访问"],
 "Share this company’s public Robots link with a colleague. They can request access, which appears here for review.":["Отправьте коллеге открытую ссылку компании в каталоге роботов. Его запрос доступа появится здесь для проверки.", "将此企业的公开机器人目录链接分享给同事。对方可申请访问权限，申请将在此显示供审核。"],
 "Remove access":["Удалить доступ", "移除访问权限"],

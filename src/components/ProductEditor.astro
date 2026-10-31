@@ -9,6 +9,7 @@ import {
   resourceKinds,
 } from "@/lib/products";
 import type { companyWorkspace } from "@/lib/product-store";
+import { countryOptions } from "@/lib/countries";
 import JourneyLabel from '@/components/JourneyLabel.astro';
 import "@/styles/products.css";
 import "@/styles/pixel-controls.css";
@@ -179,6 +180,7 @@ const productFields = [
               </label>
             ))
           }
+          <label>Company country / region<select name="company.country"><option value="">Choose a country or region</option>{countryOptions(Astro.locals.locale??"en").map(c=><option value={c.code} selected={company.country===c.code}>{c.label}</option>)}</select></label>
           <p>Chinese fields are optional. Your own wording is preserved.</p>
         </div>
       </details>

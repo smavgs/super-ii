@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import RobotInquiryInbox from '@/components/RobotInquiryInbox.astro';
 import {ensureAuthenticatedProfile} from '@/lib/auth';
 import {sqlClient} from '@/lib/db';
 import {companyWorkspace} from '@/lib/product-store';
@@ -8,43 +9,57 @@ import '@/styles/pixel-controls.css';
 import '@/styles/robots-explorer.css';
 Astro.response.headers.set('Cache-Control','private, no-store');
 const sql=sqlClient(Astro.locals);let data:any=null;let companies:Awaited<ReturnType<typeof companyWorkspace>>['companies']=[];let failed=false;
+const selected=Astro.url.searchParams.get('product');const selectedProduct=selected&&productUuid.test(selected)?selected:null;
 try{
  if(!sql)throw new Error('unavailable');
- if(!(await ensureAuthenticatedProfile(Astro.locals,sql)))return Astro.redirect(`/sign-in?redirect_url=${encodeURIComponent(Astro.url.pathname)}`);
- if(productUuid.test(Astro.params.id??'')){
-  const result=await sql`select app.robot_company_workspace(${Astro.params.id}::uuid) as workspace`;data=result[0]?.workspace;
+ if(!(await ensureAuthenticatedProfile(Astro.locals,sql)))return Astro.redirect(`/sign-in?redirect_url=${encodeURIComponent(Astro.url.pathname+Astro.url.search)}`);
+ if(productUuid.test(Astro.params.id??'')&&(!selected||selectedProduct)){
+  const result=await sql`select app.robot_claim_workspace(${Astro.params.id}::uuid,${selectedProduct}::uuid) as workspace`;data=result[0]?.workspace;
   companies=(await companyWorkspace(Astro.locals)).companies;
  }
 }catch{failed=true;}
+if(data?.requires_company_access)return Astro.redirect(`/workspace/robots/companies/${Astro.params.id}?access=company`);
 if(!data?.reference)Astro.response.status=failed?503:404;
 const organization=data?.organization_id??(data?.request?.request_kind==='claim'?data.request.organization_id:null);
-const company=companies.find(c=>c.id===organization);
-const reference=data?.reference;const ownRequest=data?.request;
+const company=companies.find(c=>c.id===organization);const reference=data?.reference;const ownRequest=data?.request;
+const companyPath=`/workspace/robots/companies/${Astro.params.id}`;
+const suggestedHandle=(reference?.name??'company').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'company';
 ---
-<BaseLayout title="Manage robot company" noindex preferLight>
-<section class="shell robot-company-workspace workspace-skin" data-company-claim data-reference={Astro.params.id} data-organization={organization} data-request={ownRequest?.id} data-website={company?.company.website??reference?.website??''}>
- <nav class="button-row"><a href="/robots">← Explore robots</a><a href="/workspace/robots">Company requests</a><a href="/workspace/products">Company and products</a></nav>
+<BaseLayout title={data?.can_manage?'Company Workspace':selectedProduct?'Claim this product':'Claim this company'} noindex preferLight>
+<section class="shell robot-company-workspace workspace-skin" data-company-claim data-reference={Astro.params.id} data-product={selectedProduct} data-organization={organization} data-request={ownRequest?.id} data-website={company?.company.website??reference?.website??''}>
+ <nav class="button-row"><a href="/robots">← Explore robots</a><a href="/workspace/robots">Your claims</a><a href="/account">Workspace 👾</a></nav>
  {reference?<>
- <p class="eyebrow">👾 COMPANY / WORKSPACE</p><h1 data-no-translate>{reference.name}</h1>
- <p>{data.can_manage?'Your company can maintain its products here.':data.claimed?'This company already has a verified owner. Ask its administrators for access.':'Claim your company once. Review the supplied information in private drafts, then publish each product when ready.'}</p>
- <p>Authority comes from control of the listed official website or a reviewed claim. A matching email address alone does not transfer ownership.</p>
- {ownRequest&&<p class="robot-source-note">Request: <strong>{ownRequest.status}</strong>{ownRequest.review_note&&<span data-no-translate> · {ownRequest.review_note}</span>}</p>}
+ <header class="robot-claim-hero">{reference.logo&&<img src={reference.logo} alt="" referrerpolicy="no-referrer"/>}<div><p class="eyebrow">👾 COMPANY / WORKSPACE</p><h1 data-no-translate>{data.selected_product?.name??reference.name}</h1><p>{data.can_manage?'Your product home. Ready for the next conversation.':data.claimed?'Request access from the team that maintains this page.':'Claim your page. Make it yours.'}</p></div></header>
+ <nav class="robot-claim-scope" aria-label="Claim scope">{selectedProduct&&<a href={`${companyPath}?product=${selectedProduct}`} aria-current="page">This product</a>}<a href={companyPath} aria-current={!selectedProduct?'page':undefined}>Full company</a><span class="robot-claim-privacy" data-no-translate>{reference.name}</span></nav>
+ <div class="robot-claim-shell"><nav class="robot-claim-navigation" aria-label="Company Workspace sections">
+  <button type="button" data-claim-tab="claim" aria-current={!data.can_manage?'true':'false'}>✓ {data.can_manage?'Your contact':'Claim & verify'}</button>
+  <button type="button" data-claim-tab="products" aria-current={data.can_manage?'true':'false'}>▧ Products</button>
+  {data.can_manage&&<button type="button" data-claim-tab="inquiries" aria-current="false">✉ Inquiries</button>}
+  {(data.can_manage||data.inbox?.length>0)&&<button type="button" data-claim-tab="team" aria-current="false">◇ Team & requests</button>}
+ </nav><div class="robot-claim-content">
+ <section data-claim-panel="claim" hidden={data.can_manage}>
+ <h2>{data.can_manage?'Your public contact':data.claimed?'Join the company team':selectedProduct?'Claim this product':'Claim this company'}</h2>
+ {!data.can_manage&&<p class="robot-claim-privacy">{data.claimed?'This request grants access to the existing company workspace after its team approves.':selectedProduct?'Access applies to this product. Full company access is a separate request.':'One company claim lets your team maintain its catalogue.'}</p>}
+ {ownRequest&&<p class="robot-claim-state">Request: <strong>{ownRequest.status}</strong>{ownRequest.review_note&&<span data-no-translate> · {ownRequest.review_note}</span>}</p>}
  {!data.can_manage&&(!ownRequest||ownRequest.status==='declined'||ownRequest.status==='approved')&&<form data-claim-request>
-  {!data.claimed&&<><label>Company workspace<select name="organization_id"><option value="">Create a company workspace</option>{companies.map(c=><option value={c.id}>{c.name} · @{c.handle}</option>)}</select></label><label>New workspace address<input name="handle" pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]" minlength="3" maxlength="40" placeholder="your-company"/><small>Used only when creating a new workspace.</small></label></>}
-  <label>Your role and authority<textarea name="notes" minlength="10" maxlength="4000" required rows="3" placeholder="Explain your role and how it can be verified."/></label>
-  <label>Public evidence (optional)<input type="url" name="evidence_url" maxlength="2048" placeholder="https://your-company.example/team"/></label>
-  <label class="robot-claim-check"><input type="checkbox" name="authorized" required/>I am authorized to request management access for this company.</label>
-  <button class="button robot-explorer-gold" type="submit">{data.claimed?'Request access':'Save company request'}</button>
+  {!data.claimed&&<><label>Company workspace<select name="organization_id"><option value="">Create a company workspace</option>{companies.map(c=><option value={c.id}>{c.name} · @{c.handle}</option>)}</select></label><details><summary>Workspace address</summary><label>New workspace address<input name="handle" pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]" minlength="3" maxlength="40" value={`${suggestedHandle}-${(selectedProduct??Astro.params.id)?.slice(0,6)}`}/></label></details></>}
+  <label>Your role<textarea name="notes" minlength="10" maxlength="4000" required rows="3" placeholder="Your role at the company and how we can verify it."/></label>
+  <label>Authority evidence<input type="url" name="evidence_url" maxlength="2048" placeholder="https://your-company.example/team"/><small>A team page or other public proof. You can also verify the company website after saving.</small></label>
+  <label class="robot-claim-check"><input type="checkbox" name="authorized" required/>{selectedProduct?'I am authorized to maintain this product.':'I am authorized to maintain this company.'}</label>
+  <button class="button robot-action-red" type="submit">{data.claimed?'Request access':'Continue →'}</button>
  </form>}
- {ownRequest?.status==='pending'&&ownRequest.request_kind==='claim'&&<details class="robot-source-note" open><summary>Verify the official website</summary><p>Use your company’s DNS settings to prove control. If you cannot manage DNS, your authority evidence remains available for review.</p><p data-no-translate>{reference.website||'No official website was supplied; authority review is required.'}</p><div class="button-row"><button type="button" class="button button--secondary" data-claim-dns="start">Get TXT record</button><button type="button" class="button button--secondary" data-claim-dns="check">Check TXT record</button><button type="button" class="button robot-explorer-gold" data-claim-confirm>Confirm company control</button></div><pre data-dns-result hidden></pre></details>}
- {organization&&<>
- <div class="button-row"><a class="button button--secondary" href="/workspace/products/new">Add another product</a>{data.can_manage&&<a href="#company-team">Team access</a>}</div>
- <h2>Products</h2><p>Open a reference to create its editable private draft. Publishing keeps its original Robots link connected to your maintained page after the company claim is approved.</p>
- <label>Find a product<input data-claim-product-filter type="search" placeholder="Search product names"/></label>
- <div class="robot-claim-products">{data.products.map((p:any)=><div data-claim-product-name={p.name.toLowerCase()}><strong data-no-translate>{p.name}</strong>{p.product_id?<a class="button button--secondary" href={`/workspace/products/${p.product_id}`}>Edit · {p.status}</a>:<button class="button button--secondary" type="button" data-prepare-reference={p.reference_id}>Open private draft</button>}</div>)}</div>
- </>}
- {data.can_manage&&<section id="company-team"><h2>Team access</h2><p>Share this company’s public Robots link with a colleague. They can request access, which appears here for review.</p>{data.members?.map((m:any)=><div class="robot-team-row"><span data-no-translate>{m.name} · @{m.handle}</span><span>{m.role}</span>{data.can_manage_team&&m.role!=='owner'&&<button type="button" class="text-button" data-remove-company-member={m.id}>Remove access</button>}</div>)}</section>}
- {data.inbox?.length>0&&<><h2>Access and authority requests</h2><p>Approve only after checking the evidence. Access approval grants company administration to the named member.</p>{data.inbox.map((item:any)=><form data-claim-review={item.id} class="robot-source-note"><h3 data-no-translate>{item.requester_name} · @{item.requester_handle}</h3><p data-no-translate>{item.notes}</p>{item.evidence_url&&<a href={item.evidence_url} target="_blank" rel="noopener noreferrer">Open authority evidence ↗</a>}<label>Review reason<textarea name="reason" required minlength="10" maxlength="2000" rows="2"/></label><div class="button-row"><button class="button button--secondary" type="submit" name="decision" value="decline">Decline</button><button class="button robot-explorer-gold" type="submit" name="decision" value="approve">Approve verified request</button></div></form>)}</>}
+ {ownRequest?.status==='pending'&&ownRequest.request_kind==='claim'&&<><p>Choose how to confirm your role.</p><details name="claim-proof" open><summary>Verify company website</summary><p class="robot-claim-privacy">Add a TXT record to the official website’s DNS. Your website keeps working as usual.</p><p data-no-translate>{reference.website||'Website not supplied — use authority review below.'}</p><div class="button-row"><button type="button" class="button robot-action-mint" data-claim-dns="start">Get verification record</button><button type="button" class="button button--secondary" data-claim-dns="check">Check record</button><button type="button" class="button robot-action-red" data-claim-confirm>Confirm claim</button></div><pre data-dns-result hidden></pre></details><details name="claim-proof"><summary>Ask for authority review</summary><p>Your saved role and evidence are already in the review queue. You can continue preparing private drafts while the request is reviewed.</p></details></>}
+ {data.can_manage&&<form data-company-contact><p class="robot-claim-privacy">Publish a contact email so visitors can ask about your products. Inquiries also appear in your private inbox.</p><label>Company contact email<input type="email" name="email" maxlength="254" required value={company?.company.email??''}/></label><label>WeChat (optional)<input name="wechat" maxlength="100" value={company?.company.wechat??''}/></label><label class="robot-claim-check"><input type="checkbox" name="authorized" required/>Publish this contact on my claimed pages.</label><button class="button robot-action-red" type="submit">Publish contact</button></form>}
+ </section>
+ <section data-claim-panel="products" hidden={!data.can_manage}><h2>{selectedProduct?'Your product':'Your products'}</h2>
+ {organization?<><p class="robot-claim-privacy">Edit privately. Publish when ready.</p><label>Find a product<input data-claim-product-filter type="search" placeholder="Search product names"/></label><div class="robot-claim-products">{data.products.map((p:any)=><div data-claim-product-name={p.name.toLowerCase()}><strong data-no-translate>{p.name}</strong>{p.product_id?<a class="button robot-action-mint" href={`/workspace/products/${p.product_id}`}><span>Edit</span> · <span>{p.status}</span></a>:<button class="button button--secondary" type="button" data-prepare-reference={p.reference_id}>Open private draft</button>}</div>)}</div><a class="button button--secondary" href="/workspace/products/new">Add another product →</a></>:<p>Start your claim to prepare a private product draft.</p>}
+ </section>
+ {data.can_manage&&organization&&<section data-claim-panel="inquiries" hidden><RobotInquiryInbox organization={organization}/></section>}
+ <section data-claim-panel="team" hidden>
+ {data.can_manage&&<><h2>Team access</h2><p class="robot-claim-privacy">Colleagues can request access from your public page.</p>{data.members?.map((m:any)=><div class="robot-team-row"><span data-no-translate>{m.name} · @{m.handle}</span><span>{m.role}</span>{data.can_manage_team&&m.role!=='owner'&&<button type="button" class="text-button" data-remove-company-member={m.id}>Remove access</button>}</div>)}</>}
+ {data.inbox?.length>0&&<><h2>Access and authority requests</h2><p class="robot-claim-privacy">Approve after checking the person’s role. This grants administration of this workspace.</p>{data.inbox.map((item:any)=><form data-claim-review={item.id} class="robot-source-note"><h3 data-no-translate>{item.requester_name} · @{item.requester_handle}</h3><p data-no-translate>{item.notes}</p>{item.evidence_url&&<a href={item.evidence_url} target="_blank" rel="noopener noreferrer">Open authority evidence ↗</a>}<label>Review reason<textarea name="reason" required minlength="10" maxlength="2000" rows="2"/></label><div class="button-row"><button class="button button--secondary" type="submit" name="decision" value="decline">Decline</button><button class="button robot-action-red" type="submit" name="decision" value="approve">Approve verified request</button></div></form>)}</>}
+ </section>
+ </div></div>
  </>:<h1>{failed?'Company workspace is temporarily unavailable':'Company not found'}</h1>}
  <p data-claim-status role="status" aria-live="polite"></p>
 </section></BaseLayout>

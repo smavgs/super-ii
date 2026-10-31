@@ -51,3 +51,63 @@
 .robot-company-workspace h1{font-size:clamp(2rem,4vw,3rem)}
 .robot-company-workspace>p{max-width:85ch}
 .robot-company-workspace>nav{gap:12px;font-size:.85rem;flex-wrap:wrap}
+
+/* Product surfaces share the model page's compact Workspace rhythm. */
+.robots-explorer{--robot-line:var(--ws-border,#7d8a99);max-width:1440px;padding-top:24px}
+.robot-explorer-heading{border-bottom:1px solid var(--robot-line);padding-bottom:16px}
+.robot-explorer-heading h1{letter-spacing:-.025em}.robot-explorer-heading .button:not(.robot-explorer-gold){background:var(--ws-cyan);color:#20344b}
+.robot-explorer-search{grid-template-columns:minmax(190px,1fr) auto auto minmax(140px,190px) auto}
+.robot-explorer-search :is(input,select){font-size:.84rem}
+.robot-explorer-card{border-color:var(--ws-border);background:var(--ws-panel);box-shadow:2px 2px 0 var(--ws-shadow)}
+.robot-card-copy{padding:12px;gap:5px}.robot-card-copy>strong{font-size:1.16rem}.robot-card-facts{gap:5px;min-height:0;flex-wrap:wrap}
+.robot-card-facts span{padding:3px 5px;border:1px solid var(--ws-border);border-radius:2px;background:var(--ws-violet);color:#20344b;font-size:.65rem}
+.robot-card-facts span:nth-child(2){background:var(--ws-cyan)}
+.robot-card-metrics{display:flex;gap:12px;color:var(--muted);font:400 .68rem var(--font-mono,'IBM Plex Mono',monospace);margin-top:3px}
+.robot-card-image,.robot-card-image>img,.robot-company-tile .robot-card-image>img,.robot-card-maker img,.robot-detail-gallery .robot-gallery-stage,.robot-detail-thumbnails button,.robot-company-detail-logo,.robot-context-maker img{background:#fff}
+.robot-company-tile{box-shadow:none;background:transparent;border:0;border-bottom:1px solid var(--line)}
+.robot-company-tile .robot-card-copy>strong{font-size:.77rem}.robot-company-tile .robot-card-copy{padding:0}.robot-company-tile:hover{background:var(--ws-soft);box-shadow:none}
+.robot-company-detail-logo{width:160px;height:85px;object-fit:contain;padding:8px;box-sizing:border-box}
+.robot-detail-panel{width:min(1240px,calc(100vw - 48px));margin:24px auto;height:calc(100dvh - 48px);border-radius:4px;box-shadow:5px 5px 0 var(--ws-shadow)}
+.robot-detail-toolbar{background:var(--ws-soft)}.robot-detail-heading{padding:18px 24px 8px}.robot-detail-heading h2{font-size:clamp(1.65rem,2.7vw,2.5rem);letter-spacing:-.025em;margin-block:6px}
+.robot-detail-heading .robot-responsibility{display:inline-block;padding:3px 7px;background:var(--ws-violet);color:#20344b;border:1px solid var(--ws-border);border-radius:2px;font-size:.63rem}
+.robot-detail-actions{display:flex;flex-wrap:wrap;gap:9px;padding:4px 24px 10px}.robot-detail-actions .button{min-height:42px;font-size:.83rem;padding:8px 12px}
+.robots-explorer .robot-action-mint,.robot-company-workspace .robot-action-mint{background:var(--ws-cyan);color:#20344b}
+.robots-explorer .robot-action-red,.robot-company-workspace .robot-action-red{background:linear-gradient(120deg,#ba1e43,#8e1534);color:#fff;border-color:#78132f;box-shadow:2px 2px 0 #4b1324}
+.robots-explorer .robot-action-claim{background:linear-gradient(120deg,#ba1e43,#8e1534);color:#fff;border-color:#78132f}
+.robots-explorer [data-robot-like][aria-pressed=true]{background:var(--ws-violet);color:#6536a4}
+.robot-detail-tabs{padding:8px;margin:6px 24px 0;border:1px solid var(--ws-border);border-radius:4px;background:var(--ws-soft);gap:6px}
+.robot-detail-tabs button{flex:initial;min-width:130px;border:1px solid transparent;border-radius:3px;font:650 .85rem var(--font-body,inherit);padding:8px 12px}
+.robot-detail-tabs button[aria-pressed=true]{border:1px solid #20344b;box-shadow:2px 2px 0 var(--ws-shadow)}
+.robot-detail-tabs button:hover{border-color:var(--ws-border)}.robot-detail-body{padding:20px 24px 24px}
+.robot-product-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;align-items:start;gap:28px}.robot-product-main{min-width:0}
+.robot-product-context{padding-left:22px;border-left:1px solid var(--robot-line);min-width:0;font-size:.84rem}.robot-product-context h3{margin:16px 0 8px;font-size:1rem}
+.robot-context-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+.robot-context-metrics strong,.robot-context-metrics span{display:block}.robot-context-metrics strong{font:600 1.14rem var(--font-mono,monospace)}.robot-context-metrics span{font-size:.75rem;color:var(--muted);margin-top:4px}
+.robot-context-facts{margin:0}.robot-context-facts>div{display:flex;align-items:baseline;gap:10px;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.robot-context-facts dt{color:var(--muted)}.robot-context-facts dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.robot-context-maker{display:flex;flex-direction:row-reverse;align-items:center;justify-content:flex-end;gap:8px;min-height:44px;color:inherit;text-decoration:none;font-weight:650;margin-block:12px}
+.robot-context-maker img{width:32px;height:30px;object-fit:contain}.robot-product-context small{display:block;color:var(--muted);line-height:1.5;margin-top:8px}
+.robot-detail-gallery{grid-template-columns:minmax(0,1fr) 62px;gap:10px}.robot-gallery-stage{display:grid;place-items:center;min-width:0;border:1px solid var(--line)}
+.robot-gallery-stage img{width:100%;height:290px;object-fit:contain}.robot-detail-thumbnails{max-height:290px}.robot-detail-thumbnails img{width:56px;height:52px}
+.robot-product-summary{margin:14px 0}.robot-detail-variant{font-size:.78rem}.robot-detail-variant select{background:var(--ws-soft);border-color:var(--ws-border);border-radius:3px}
+.robot-detail-body>details{border-bottom:1px solid var(--line);padding-block:12px}.robot-detail-body>details>summary{cursor:pointer;font-weight:650;padding:7px}.robot-detail-body>details[open]>summary{background:var(--ws-soft)}
+.robot-inquiry-form{display:grid;gap:14px;max-width:650px}.robot-inquiry-form label{display:grid;gap:6px;font-size:.9rem;font-weight:600}
+.robot-inquiry-form :is(input:not([type=checkbox]),select,textarea){width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--ws-border);border-radius:3px;background:var(--ws-panel);color:var(--ink);font:inherit}
+.robot-inquiry-form .robot-consent{display:flex;align-items:start;font-size:.82rem;font-weight:400}.robot-consent input{margin-top:4px}.robot-inquiry-form .button{justify-self:start}
+.robot-inquiry-form [role=status]:empty{display:none}.robot-direct-email{display:inline-block;margin-top:20px;font-size:.82rem}
+.robot-claim-shell{display:grid;grid-template-columns:210px minmax(0,1fr);gap:28px;margin-top:18px}.robot-claim-navigation{display:grid;align-content:start;gap:6px;position:sticky;top:90px}
+.robot-claim-navigation button{display:flex;align-items:center;gap:10px;min-height:46px;padding:10px 12px;text-align:left;border:1px solid var(--ws-border);border-radius:3px;background:var(--ws-panel);color:var(--ink);font-weight:650;cursor:pointer}
+.robot-claim-navigation button[aria-current=true]{background:var(--yellow);color:#20344b;box-shadow:2px 2px 0 var(--ws-shadow)}
+.robot-claim-navigation button:nth-child(2)[aria-current=true]{background:var(--ws-cyan)}.robot-claim-navigation button:nth-child(3)[aria-current=true]{background:var(--ws-violet)}
+.robot-claim-content{min-width:0}.robot-claim-content h2{font-size:1.4rem;margin-top:0}.robot-claim-content>section[hidden]{display:none}
+.robot-company-workspace .robot-claim-hero{display:flex;align-items:center;gap:15px;margin-top:20px}.robot-claim-hero img{width:68px;height:60px;object-fit:contain;background:#fff;padding:5px;border:1px solid var(--ws-border)}
+.robot-claim-hero h1{font-size:clamp(1.6rem,3vw,2.3rem);margin:5px 0}.robot-claim-hero p{margin:0}.robot-claim-scope{display:flex;gap:8px;flex-wrap:wrap;padding-block:12px;border-bottom:1px solid var(--line)}
+.robot-claim-scope a{font-size:.83rem;padding:7px 10px;border:1px solid var(--ws-border);border-radius:3px;color:inherit;text-decoration:none}.robot-claim-scope a[aria-current]{background:var(--ws-violet);color:#20344b;box-shadow:2px 2px 0 var(--ws-shadow)}
+.robot-claim-products{border:0;padding:0}.robot-claim-products>div{padding:12px 3px}.robot-company-workspace label small{font-weight:400;color:var(--muted)}
+.robot-inbox-card{padding:16px 0;border-bottom:1px solid var(--line)}.robot-inbox-card h3{font-size:1.02rem;margin:0 0 8px}.robot-inbox-card p{white-space:pre-wrap;overflow-wrap:anywhere}.robot-inbox-card small{color:var(--muted)}
+.robot-inbox-card .button{font-size:.8rem}.robot-claim-privacy{font-size:.85rem;color:var(--muted)}
+@media(max-width:1000px){.robot-explorer-search{grid-template-columns:1fr 1fr 1fr auto}.robot-search-box{grid-column:1/-1}.robot-explorer-search>.button{grid-column:auto}.robot-product-layout{grid-template-columns:minmax(0,1fr) 220px;gap:18px}.robot-product-context{padding-left:16px}}
+@media(max-width:700px){.robot-product-layout{grid-template-columns:1fr}.robot-product-context{padding:16px 0 0;border-left:0;border-top:1px solid var(--robot-line)}.robot-context-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}.robot-gallery-stage img{height:230px}.robot-detail-thumbnails{max-height:230px}.robot-claim-shell{grid-template-columns:1fr;gap:18px}.robot-claim-navigation{position:static;display:flex;flex-wrap:wrap}.robot-claim-navigation button{flex:1 1 auto}.robot-claim-hero{align-items:flex-start}}
+@media(max-width:600px){.robot-detail-panel{width:100%;height:100dvh;margin:0;border:0}.robot-detail-actions{padding:4px 14px 10px;gap:7px}.robot-detail-actions .button{font-size:.76rem;padding:8px}.robot-detail-heading{padding:14px}.robot-detail-tabs{margin:0 12px;padding:5px;gap:3px}.robot-detail-tabs button{flex:1;min-width:0;padding:8px 4px;font-size:.74rem}.robot-detail-body{padding:16px 14px}.robot-explorer-search{grid-template-columns:1fr 1fr}.robot-explorer-search>.button{grid-column:auto}.robot-card-copy>strong{font-size:1rem}.robot-card-copy{padding:9px}.robot-card-facts span{font-size:.59rem}.robot-card-image{height:140px}.robot-card-metrics{font-size:.59rem}.robot-share-actions button{font-size:.65rem}.robot-company-tile .robot-card-copy>strong{font-size:.65rem}.robot-company-workspace .robot-claim-hero img{width:48px;height:48px}.robot-context-facts{grid-template-columns:1fr}}
+
+.robot-company-workspace [hidden]{display:none!important}

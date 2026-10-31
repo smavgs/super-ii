@@ -76,6 +76,7 @@
     "/products",
     "/workspace/products",
     "/workspace/products/new",
+    "/workspace/products/inquiries",
     "/workspace/workrooms/new",
     "/api/products",
     "/schemas/product/v1.json",

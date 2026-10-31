@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { countryCodes } from "./countries";
 
 export const productKinds = [
   "model",
@@ -80,6 +81,7 @@ const cardUrl = z
 
 export const companyDocumentSchema = z
   .object({
+    country: z.string().refine(value => !value || countryCodes.includes(value), "Choose a country or region.").default(""),
     name: text(160),
     name_zh: text(160),
     summary: text(600),

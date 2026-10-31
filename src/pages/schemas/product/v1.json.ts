@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import {countryCodes} from "@/lib/countries";
 export const prerender = true;
 const text = (maxLength: number) => ({ type: "string", maxLength });
 const url = { type: "string", maxLength: 2048, pattern: "^(https://|$)" };
@@ -19,7 +20,9 @@ const company = object({
   phone: text(40),
   wechat: text(100),
   representative_card_url: text(200),
+  country: {enum: ["", ...countryCodes]},
 });
+company.required = company.required.filter(key => key !== "country");
 const product = object({
   name: text(160),
   name_zh: text(160),
