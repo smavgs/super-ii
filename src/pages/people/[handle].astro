@@ -48,6 +48,14 @@ let fameNumber: number | null = null;
 let viewerProfileId: string | null = null;
 let linkedWork: LinkedWorkItem[] = [];
 let showcase: ShowcaseItem[] = [];
+const workQuery=(Astro.url.searchParams.get('work_q')??'').trim().slice(0,200);
+const workKind=['model','dataset','space'].includes(Astro.url.searchParams.get('work_kind')??'')?Astro.url.searchParams.get('work_kind')!:'all';
+let workPage=Math.max(1,Math.min(417,Math.trunc(Number(Astro.url.searchParams.get('work_page')))||1));
+let curatedModels:LinkedWorkItem[]=[];
+let curatedTotal=0;
+let matchingCount=0;
+let visibleRepositories:PublicRepository[]=[];
+
 if (sql) {
   try {
     viewerProfileId = (await ensureAuthenticatedProfile(Astro.locals, sql))?.profileId ?? null;
@@ -113,17 +121,27 @@ if (sql) {
       `;
       fameNumber = fame[0]?.slot_number ? Number(fame[0].slot_number) : null;
       [linkedWork, showcase] = await Promise.all([
-        listOwnerLinkedWork(sql, 'person', profile.id),
+        listOwnerLinkedWork(sql, 'person', profile.id, 100, {provider:'other'}),
         listPublicShowcase(sql, 'person', profile.id),
       ]);
+      const counts=await sql`select count(*)::integer as total,
+        count(*) filter(where ${workQuery}='' or strpos(lower(concat_ws(' ',title,summary,provider_slug)),lower(${workQuery}))>0)::integer as matching
+        from app.external_catalog_items where owner_profile_id=${profile.id}::uuid and provider='ollama' and status='active'`;
+      curatedTotal=Number(counts[0]?.total??0);
+      const filtered=repositories.filter(item=>(workKind==='all'||item.kind===workKind)&&`${item.title} ${item.summary} ${item.slug}`.toLowerCase().includes(workQuery.toLowerCase()));
+      matchingCount=filtered.length+(['all','model'].includes(workKind)?Number(counts[0]?.matching??0):0);
+      workPage=Math.min(workPage,Math.max(1,Math.ceil(matchingCount/24)));
+      const offset=(workPage-1)*24;
+      visibleRepositories=filtered.slice(offset,offset+24);
+      if(['all','model'].includes(workKind)&&visibleRepositories.length<24) curatedModels=await listOwnerLinkedWork(sql,'person',profile.id,24-visibleRepositories.length,{provider:'ollama',query:workQuery,offset:Math.max(0,offset-filtered.length)});
+
     }
   } catch {
     profile = null;
   }
 }
-const curatedModels=linkedWork.filter(item=>item.provider==='ollama');
-linkedWork=linkedWork.filter(item=>item.provider!=='ollama');
-const workCount=repositories.length+curatedModels.length;
+const workCount=repositories.length+curatedTotal;
+const workPageHref=(number:number)=>{const params=new URLSearchParams(Astro.url.searchParams);params.set('work_page',String(number));return `${Astro.url.pathname}?${params}#work`;};
 if (!profile) Astro.response.status = 404;
 const medal = (rank: number) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
 const highlightedBy = Astro.url.searchParams.get('highlight');
@@ -184,14 +202,14 @@ const socialLinks: SocialLink[] = profile ? [
         ]} />
         <section class="repository-section" id="work" data-detail-panel="work">
           <div class="repository-section__heading"><div><p class="eyebrow">Public work</p><h2>Published work</h2></div><span>{workCount}</span></div>
-          {workCount > 0 && <div class="profile-work-tools" data-profile-work-tools hidden>
-            <label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Search published work</span><input type="search" data-profile-work-search placeholder="Search this member’s work" /></label>
-            <div class="profile-kind-filters" aria-label="Filter published work">{[['all', 'All'], ['model', 'Models'], ['dataset', 'Datasets'], ['space', 'Apps']].map(([kind, label]) => <button type="button" data-profile-kind={kind} aria-pressed={kind === 'all'}>{label}<span>{kind === 'all' ? workCount : repositories.filter(item => item.kind === kind).length + (kind === 'model' ? curatedModels.length : 0)}</span></button>)}</div>
-            <p class="sr-only" data-profile-filter-status aria-live="polite"></p>
-          </div>}
-          {workCount ? <div class="catalog-results">{repositories.map((item) => <a class="catalog-card" data-profile-work-item data-kind={item.kind} href={repositoryPath(item)}><div class="catalog-card__topline"><span class:list={['work-kind', `work-kind--${item.kind}`]}><i class:list={['ph', item.kind === 'model' ? 'ph-cube' : item.kind === 'dataset' ? 'ph-database' : 'ph-app-window']} aria-hidden="true"></i>{item.kind === 'space' ? 'App' : item.kind === 'model' ? 'Model' : 'Dataset'}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><code data-no-translate>{item.owner_handle}/{item.slug}</code><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}{curatedModels.map(item=><LinkedWorkCard item={item} showOwner={false} profileFilter />)}</div> : <p>No public work yet.</p>}
-          <div class="button-row profile-pagination" data-profile-pagination hidden><button class="button button--secondary" type="button" data-profile-previous>Previous page</button><span data-profile-page-status></span><button class="button button--secondary" type="button" data-profile-next>Next page</button></div>
-          <p class="profile-filter-empty" data-profile-filter-empty hidden>No work matches these filters. Try another type or search.</p>
+          {workCount>0&&<form class="profile-work-tools" data-profile-work-tools method="get" action="#work">
+            <label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Search published work</span><input type="search" name="work_q" value={workQuery} maxlength="200" placeholder="Search this member’s work" /></label>
+            <button class="button button--secondary" type="submit" name="work_kind" value={workKind}>Search</button>
+            <div class="profile-kind-filters" aria-label="Filter published work">{[['all','All'],['model','Models'],['dataset','Datasets'],['space','Apps']].map(([kind,label])=><button type="submit" name="work_kind" value={kind} aria-pressed={workKind===kind}>{label}<span>{kind==='all'?workCount:repositories.filter(item=>item.kind===kind).length+(kind==='model'?curatedTotal:0)}</span></button>)}</div>
+          </form>}
+          {matchingCount ? <div class="catalog-results">{visibleRepositories.map((item) => <a class="catalog-card" data-profile-work-item data-kind={item.kind} href={repositoryPath(item)}><div class="catalog-card__topline"><span class:list={['work-kind', `work-kind--${item.kind}`]}><i class:list={['ph', item.kind === 'model' ? 'ph-cube' : item.kind === 'dataset' ? 'ph-database' : 'ph-app-window']} aria-hidden="true"></i>{item.kind === 'space' ? 'App' : item.kind === 'model' ? 'Model' : 'Dataset'}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><code data-no-translate>{item.owner_handle}/{item.slug}</code><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}{curatedModels.map(item=><LinkedWorkCard item={item} showOwner={false} profileFilter />)}</div> : !workCount&&<p>No public work yet.</p>}
+          {matchingCount>24&&<nav class="button-row profile-pagination" aria-label="Published work pages">{workPage>1&&<a class="button button--secondary" href={workPageHref(workPage-1)}>Previous page</a>}<span>{workPage} / {Math.ceil(matchingCount/24)}</span>{(workPage * 24 < matchingCount) && <a class="button button--secondary" href={workPageHref(workPage+1)}>Next page</a>}</nav>}
+          {!matchingCount&&workCount>0&&<p class="profile-filter-empty">No work matches these filters. Try another type or search.</p>}
         </section>
         {showcase.length > 0 && <section id="showcase" data-detail-panel="showcase"><ShowcaseGallery items={showcase} title={profile.profile_kind === 'person' ? 'Selected work' : 'What we build'} /></section>}
         {linkedWork.length > 0 && <section id="linked-work" data-detail-panel="linked-work"><LinkedWorkGrid items={linkedWork} heading="Linked work" /></section>}
@@ -208,38 +226,6 @@ const socialLinks: SocialLink[] = profile ? [
 
 {profile && <script>
   const root = document.querySelector<HTMLElement>('[data-profile-id]');
-  const filterTools = root?.querySelector<HTMLElement>('[data-profile-work-tools]');
-  const search = root?.querySelector<HTMLInputElement>('[data-profile-work-search]');
-  const filters = [...root?.querySelectorAll<HTMLButtonElement>('[data-profile-kind]') ?? []];
-  const items = [...root?.querySelectorAll<HTMLElement>('[data-profile-work-item]') ?? []];
-  let selectedKind = 'all';
-  let workPage=1;
-  function filterWork(reset=true) {
-    if(reset)workPage=1;
-    const query = (search?.value ?? '').trim().toLocaleLowerCase();
-    const matches=items.filter(item=>(selectedKind==='all'||item.dataset.kind===selectedKind)&&(item.textContent??'').toLocaleLowerCase().includes(query));
-    const visible=matches.length;
-    items.forEach(item=>{item.hidden=true;});
-    matches.slice((workPage-1)*24,workPage*24).forEach(item=>{item.hidden=false;});
-    const pagination=root?.querySelector<HTMLElement>('[data-profile-pagination]');
-    if(pagination)pagination.hidden=visible<=24;
-    const previous=root?.querySelector<HTMLButtonElement>('[data-profile-previous]');
-    const next=root?.querySelector<HTMLButtonElement>('[data-profile-next]');
-    if(previous)previous.disabled=workPage===1;if(next)next.disabled=workPage*24>=visible;
-    const pageStatus=root?.querySelector('[data-profile-page-status]');
-    if(pageStatus)pageStatus.textContent=`${workPage} / ${Math.max(1,Math.ceil(visible/24))}`;
-    filters.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.profileKind === selectedKind)));
-    const empty = root?.querySelector<HTMLElement>('[data-profile-filter-empty]');
-    if (empty) empty.hidden = visible !== 0;
-    const result = root?.querySelector<HTMLElement>('[data-profile-filter-status]');
-    if (result) result.textContent = document.documentElement.lang === 'ru' ? `Показано ${visible} из ${items.length} опубликованных проектов.` : document.documentElement.lang.toLowerCase().startsWith('zh') ? `显示 ${visible} 项，共 ${items.length} 项已发布作品。` : `${visible} of ${items.length} published works shown.`;
-  }
-  if (filterTools) filterTools.hidden = false;
-  search?.addEventListener('input', ()=>filterWork());
-  root?.querySelector('[data-profile-previous]')?.addEventListener('click',()=>{workPage--;filterWork(false);});
-  root?.querySelector('[data-profile-next]')?.addEventListener('click',()=>{workPage++;filterWork(false);});
-  filterWork();
-  filters.forEach(button => button.addEventListener('click', () => { selectedKind = button.dataset.profileKind ?? 'all'; filterWork(); }));
   const campaignId = root?.dataset.highlightCampaign;
   if (campaignId && /^[0-9a-f-]{36}$/i.test(campaignId)) {
     void fetch('/api/highlights/events', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ campaign_id: campaignId, event_type: 'profile_view' }), keepalive: true }).catch(() => undefined);

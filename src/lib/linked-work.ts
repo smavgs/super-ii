@@ -108,7 +108,8 @@ export async function listOwnerLinkedWork(
   sql: NeonQueryFunction<false, false>,
   ownerType: 'person' | 'organization',
   ownerId: string,
-  limit = 1000,
+  limit = 100,
+  options: { provider?: 'ollama' | 'other'; query?: string; offset?: number } = {},
 ): Promise<LinkedWorkItem[]> {
   const rows = await sql.query(
     `select item.id, item.kind, item.provider, item.provider_repo_id,
@@ -127,8 +128,11 @@ export async function listOwnerLinkedWork(
      where item.status = 'active'
        and (($1 = 'person' and item.owner_profile_id = $2::uuid)
          or ($1 = 'organization' and item.owner_organization_id = $2::uuid))
-     order by item.updated_at desc, item.id limit $3`,
-    [ownerType, ownerId, Math.min(Math.max(limit, 1), 1000)],
+       and ($4 = '' or ($4 = 'ollama' and item.provider = 'ollama') or ($4 = 'other' and item.provider <> 'ollama'))
+       and ($5 = '' or strpos(lower(concat_ws(' ', item.title,item.summary,item.provider_slug)),lower($5)) > 0)
+     order by item.updated_at desc, item.title, item.id limit $3 offset $6`,
+    [ownerType, ownerId, Math.min(Math.max(limit, 1), 100), options.provider ?? '',
+      (options.query ?? '').trim().slice(0,200), Number.isSafeInteger(options.offset) ? Math.min(Math.max(options.offset!,0),10000) : 0],
   );
   return rows as LinkedWorkItem[];
 }

@@ -10,7 +10,7 @@ const bundle = join(root, "node_modules", `.ollama-flows-${process.pid}.mjs`);
 await build({
   stdin: {
     resolveDir: root,
-    contents: `export * as download from './src/pages/api/ollama/[id]/download.ts';export * as edit from './src/pages/api/ollama/[id]/index.ts';`,
+    contents: `export * as download from './src/pages/api/ollama/[id]/download.ts';export * as edit from './src/pages/api/ollama/[id]/index.ts';export {listOwnerLinkedWork} from './src/lib/linked-work';export {sqlClient} from './tools/lib/connection-test-db.mjs';`,
   },
   outfile: bundle,
   bundle: true,
@@ -146,6 +146,25 @@ try {
       .status,
     409,
   );
+  const sourceSnapshot = {
+    schemaVersion: 2,
+    format: "gguf",
+    config: { mediaType: "config", digest: configDigest, size: 2 },
+    layers: [
+      { mediaType: "application/vnd.ollama.image.model", digest, size: 16 },
+    ],
+  };
+  await owner(
+    `update app.external_catalog_items set source_metadata='${JSON.stringify({ manifest: sourceSnapshot, format: "gguf" })}'::jsonb where id='${item}' returning id`,
+  );
+  const beforeSnapshot = remoteCalls;
+  const pinned = await download(null, "HEAD");
+  assert.equal(pinned.status, 200);
+  assert.equal(
+    remoteCalls,
+    beforeSnapshot,
+    "known snapshot HEAD must not follow a changed latest tag",
+  );
   const callsBefore = remoteCalls;
   await owner(
     `update app.profiles set is_public=false where id='${alice}' returning id`,
@@ -208,6 +227,47 @@ try {
     assert.equal(
       seeded.find((row) => row.provider_slug === "qwen3").status,
       "removed",
+    );
+    const publicSql = routes.sqlClient(locals(null));
+    const first = await routes.listOwnerLinkedWork(
+      publicSql,
+      "person",
+      alice,
+      24,
+      { provider: "ollama" },
+    );
+    const second = await routes.listOwnerLinkedWork(
+      publicSql,
+      "person",
+      alice,
+      24,
+      { provider: "ollama", offset: 24 },
+    );
+    assert.equal(first.length, 24);
+    assert.equal(second.length, 24);
+    assert.equal(new Set([...first, ...second].map((row) => row.id)).size, 48);
+    const match = await routes.listOwnerLinkedWork(
+      publicSql,
+      "person",
+      alice,
+      24,
+      { provider: "ollama", query: "qwen3" },
+    );
+    assert.ok(match.length > 0 && match.length < 24);
+    assert.ok(
+      match.every((row) =>
+        `${row.title} ${row.summary} ${row.provider_slug}`
+          .toLowerCase()
+          .includes("qwen3"),
+      ),
+    );
+    assert.equal(
+      (
+        await routes.listOwnerLinkedWork(publicSql, "person", alice, 100, {
+          provider: "other",
+        })
+      ).length,
+      0,
     );
     const editable = seeded.find((row) => row.status === "active");
     const removedId = item;

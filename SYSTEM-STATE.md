@@ -2,11 +2,11 @@
 
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
-- Snapshot: 2026-10-30
-- Verification scope: this update records the Robots product experience, supplied media, scoped claims and private inquiries rollout; earlier capability entries retain their documented verification boundaries.
+- Snapshot: 2026-11-01
+- Verification scope: this update records curated Ollama listings and streaming downloads; earlier capability entries retain their documented verification boundaries.
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
-- Catalog rule: no model, dataset, or app is seeded or presented as community content. The current public catalog contains two creator-published models, one creator-published dataset, and no app; every item passed the normal publication path.
+- Catalog rule: reviewed repositories use the normal publication path. Curated external listings are separately identified and never presented as community-authored or Super ii-tested model files. The Ollama catalogue contains 266 source listings curated by @smavgs; hosting and original authorship remain distinct.
 
 ## Status ladder
 
@@ -119,6 +119,6 @@ PR #132 was deployed with migration 0036, the runtime package route and initial 
 
 The 29 October update was deployed on 30 October. Migrations 0042/0043 preceded the Worker; migration 0041 switched reference covers only after the image assets were available. A live header check caught overlapping static image policies; the scoped media rule now removes the inherited value before setting its public image policy. Both hosts return the corrected single value. See [verification](qa/ROBOTS-EXPERIENCE-2026-10-29.md) and [release evidence](docs/verification/robots-experience-production.json). GitHub release checks are tracked in [PR #143](https://github.com/smavgs/super-ii/pull/143).
 
-## Ollama catalogue release candidate (2026-11-01)
+## Ollama catalogue production release (2026-11-01)
 
-Curated Ollama listings under @smavgs are implemented and locally tested, using 266 AILocalClick model families. The model-page layout is preserved. Source files stream through Super ii with proper filenames, no weight storage, range support and native browser download progress. Standard model layers were resolved for 241 families; other entries retain explicit source availability. Curator editing, public/private access boundaries and pagination passed local checks. A complete browser license-file download matched its upstream checksum; this is not verification of model execution or large-file throughput. Production migration, import and verification remain pending. See [architecture and verification boundaries](docs/architecture/ollama-catalogue.md).
+Curated Ollama listings are live under @smavgs, using 266 AILocalClick model families. The existing model-page layout is preserved. Source files stream through Super ii with proper filenames, no weight storage, range support and native browser download progress. Standard model layers were resolved for 241 families; other entries retain explicit source availability. Migration 0044 and the idempotent metadata import are applied. Production checks verified anonymous model pages and source availability, owner-editor exclusion for anonymous requests, a real GGUF byte range, a complete license download with its source checksum, and unauthenticated edit rejection. The signed-in owner editor and Markdown preview were inspected without saving production test edits. Full local validation, database and runtime tests passed. This is not a claim of model execution, complete multi-gigabyte transfers or large-file throughput. The older Hugging Face linked-card entry retains its own verification boundary. See [architecture and verification boundaries](docs/architecture/ollama-catalogue.md) and [release evidence](qa/OLLAMA-2026-11-01.md).

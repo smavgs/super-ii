@@ -5,6 +5,8 @@ import {
   getOllamaListing,
   resolveOllamaVersion,
   validOllamaTag,
+  parseOllamaManifest,
+  ollamaFiles,
 } from "@/lib/ollama";
 import { streamOllamaFile } from "@/lib/ollama-download";
 
@@ -42,8 +44,23 @@ const serve: APIRoute = async ({ params, request, locals, url }) => {
           : "Downloads are temporarily unavailable.",
         rate === "limited" ? 429 : 503,
       );
-    const version = await resolveOllamaVersion(item.provider_slug, tag);
-    const file = version.files.find((file) => file.digest === digest);
+    // A displayed source snapshot already binds this immutable digest. Keep its
+    // download/resume link stable when Ollama moves the mutable latest tag.
+    let file;
+    if (tag === "latest" && item.source_metadata.manifest) {
+      const snapshot = parseOllamaManifest(item.source_metadata.manifest);
+      const format =
+        typeof item.source_metadata.format === "string"
+          ? item.source_metadata.format
+          : "";
+      file = ollamaFiles(item.provider_slug, tag, snapshot, format).find(
+        (candidate) => candidate.digest === digest,
+      );
+    }
+    if (!file) {
+      const version = await resolveOllamaVersion(item.provider_slug, tag);
+      file = version.files.find((candidate) => candidate.digest === digest);
+    }
     if (!file)
       return error(
         "This version has changed. Load the version again in Files & versions before downloading.",
