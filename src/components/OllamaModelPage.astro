@@ -1,0 +1,96 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
+import BrandMark from '@/components/BrandMark.astro';
+import DetailNavigation from '@/components/DetailNavigation.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { consumeRateLimit } from '@/lib/rate-limit';
+import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
+import { ollamaDownloadPath, ollamaFiles, ollamaFileSize, parseOllamaManifest, resolveOllamaVersion, validOllamaTag, type OllamaListing, type OllamaFile } from '@/lib/ollama';
+import '@/styles/repository-card.css';
+import '@/styles/public-detail.css';
+import '@/styles/ollama.css';
+
+interface Props { item: OllamaListing }
+const { item } = Astro.props;
+const sql = sqlClient(Astro.locals);
+const actor = sql ? await ensureAuthenticatedProfile(Astro.locals,sql) : null;
+let canEdit = actor?.profileId === item.owner_profile_id;
+if (!canEdit && actor && item.owner_organization_id && sql) {
+  const rows = await sql`select app.can_access_organization(${item.owner_organization_id}::uuid,true) as allowed`;
+  canEdit = rows[0]?.allowed === true;
+}
+const metadata = item.source_metadata;
+const tag = Astro.url.searchParams.get('tag') ?? 'latest';
+let files: OllamaFile[] = [];
+let versionError = '';
+let format = typeof metadata.format === 'string' ? metadata.format : '';
+try {
+  if (!validOllamaTag(tag)) throw new Error('Enter a valid Ollama version tag.');
+  if (!Astro.url.searchParams.has('tag')) {
+    if (metadata.manifest) files = ollamaFiles(item.provider_slug,tag,parseOllamaManifest(metadata.manifest),format);
+  } else {
+    if (!sql || await consumeRateLimit(Astro.locals,Astro.request,sql,'ollama.metadata',120,3600)!=='allowed') throw new Error('Please try again later.');
+    const version = await resolveOllamaVersion(item.provider_slug,tag);
+    files = version.files; format = version.format;
+  }
+} catch { versionError = 'This version is not available for download. Try another tag or check the upstream model page.'; }
+const weights = files.filter(file => file.weight);
+const primary = weights.find(file => file.mediaType === 'application/vnd.ollama.image.model');
+const capabilities = Array.isArray(metadata.capabilities) ? metadata.capabilities.filter((x):x is string=>typeof x==='string') : [];
+const sizes = Array.isArray(metadata.sizes) ? metadata.sizes.filter((x):x is string=>typeof x==='string'&&validOllamaTag(x)) : [];
+const cloudOnly = !primary && capabilities.includes('cloud') && sizes.length === 0;
+const preview = canEdit && Astro.url.searchParams.get('edit') === '1';
+Astro.response.headers.set('cache-control','private, no-store');
+---
+<BaseLayout title={item.title} description={item.summary} titleNoTranslate descriptionNoTranslate className="detail-skin">
+  <div class="repository-page shell ollama-page" data-detail-sections data-default-panel={preview ? 'edit' : 'overview'}>
+    <header class="repository-header">
+      <p class="eyebrow"><span aria-hidden="true">👾 </span>Model · External source</p>
+      <div class="repository-path"><span>Curated by</span><CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} /><span data-no-translate>/ {item.provider_slug}</span></div>
+      <h1 data-no-translate>{item.title}</h1>
+      <div class="repository-badges"><span class="brand-inline"><BrandMark brand="ollama" size="xs" />Ollama</span>{format && <span data-no-translate>{format.toUpperCase()}</span>}{capabilities.map(capability=><span data-no-translate>{capability}</span>)}<span>{cloudOnly ? 'Cloud model' : 'Curated listing'}</span></div>
+      <div class="repository-actions">
+        {primary ? <a class="button ollama-download" href={ollamaDownloadPath(item.id,tag,primary)} download={primary.filename} data-ollama-download><BrandMark brand="ollama" size="sm" /><span>Ollama · Download</span><small>{ollamaFileSize(primary.size)}</small><i class="ph ph-download-simple" aria-hidden="true"></i></a>
+          : <span class="ollama-availability">{cloudOnly ? 'Cloud access · no local weights available' : 'Download unavailable for this version'}</span>}
+        <a class="button button--secondary" href="#files">Files &amp; versions</a>
+        <a class="button button--secondary" href={item.source_url} target="_blank" rel="noopener noreferrer">Original model &amp; license ↗</a>
+        {canEdit && <a class="button button--secondary" href="#edit">Edit listing</a>}
+      </div>
+      {primary && <p class="ollama-download-note">Downloads a file to your computer. {weights.length > 1 ? `${weights.length} weight files are listed below; companion files may be needed.` : 'To install the full model in Ollama, use the command under “Use model”.'}</p>}
+      <p class="form-status" data-ollama-download-status role="status"></p>
+    </header>
+    <DetailNavigation items={[
+      {id:'overview',label:'Overview',icon:'ph-squares-four'},
+      {id:'card',label:'Model Card',icon:'ph-article'},
+      {id:'files',label:'Files & versions',icon:'ph-folder',count:files.length},
+      {id:'use',label:'Use model',icon:'ph-play'},
+      ...(canEdit ? [{id:'edit',label:'Edit listing',icon:'ph-pencil-simple'}] : []),
+    ]} />
+    <div class="repository-detail-layout"><div class="repository-detail-content">
+      <section class="repository-section repository-overview" id="overview" data-detail-panel="overview">
+        <p class="eyebrow">From the Ollama library</p><h2>About this model</h2>
+        <p class="repository-summary" data-no-translate>{item.summary}</p>
+        <div class="detail-route-list">
+          <a href="#card"><i class="ph ph-article" aria-hidden="true"></i><span><strong>Read the model card</strong><small>Overview, source attribution and usage notes.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+          <a href="#files"><i class="ph ph-folder" aria-hidden="true"></i><span><strong>{files.length} source files{weights.length ? ` · ${ollamaFileSize(weights.reduce((n,f)=>n+f.size,0))} of weights` : ''}</strong><small>Choose a version; inspect filenames, sizes and checksums.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+          <a href="#use"><i class="ph ph-play" aria-hidden="true"></i><span><strong>Use on your computer</strong><small>Downloaded files and the complete Ollama installation path.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </div>
+      </section>
+      <section class="repository-section" id="card" data-detail-panel="card"><h2>Model Card</h2><article class="repository-card-markdown notebook-markdown" data-no-translate set:html={renderRepositoryMarkdown(item.card_markdown || item.summary,{sourceUrl:item.source_url})} /></section>
+      <section class="repository-section" id="files" data-detail-panel="files">
+        <p class="form-status" data-ollama-download-status role="status"></p>
+        <div class="repository-section__heading"><div><p class="eyebrow">Ollama source files</p><h2>Files &amp; versions</h2></div></div>
+        <form method="get" class="ollama-version-form" action="#files"><label for="ollama-tag">Version tag<input id="ollama-tag" name="tag" value={tag} list="ollama-tags" maxlength="128" pattern="[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}" required /></label><datalist id="ollama-tags">{['latest',...sizes].map(value=><option value={value} />)}</datalist><button class="button button--secondary" type="submit">Load version</button><a href={`${item.source_url}/tags`} target="_blank" rel="noopener noreferrer">All upstream tags ↗</a></form>
+        {versionError && <p role="status">{versionError}</p>}
+        {weights.length > 1 && <p>This version includes companion weights. Download the files required by your runtime; the main model file alone may not provide every capability.</p>}
+        {files.length > 0 ? <div class="file-table-wrap"><table class="file-table"><thead><tr><th>File</th><th>Size</th><th>SHA-256</th><th>Download</th></tr></thead><tbody>{files.map(file=><tr><td><strong>{file.label}</strong><code>{file.filename}</code></td><td>{ollamaFileSize(file.size)}</td><td><code title={file.digest}>{file.digest.slice(7,19)}…</code></td><td><a href={ollamaDownloadPath(item.id,tag,file)} download={file.filename} data-ollama-download aria-label={`Download ${file.filename}`}><BrandMark brand="ollama" size="xs" /> Download</a></td></tr>)}</tbody></table></div> : <p>{cloudOnly ? 'This source currently offers cloud access rather than downloadable weights.' : 'No downloadable files were resolved for this tag.'}</p>}
+        <p class="ollama-download-note">Files are streamed from Ollama through Super ii for correct filenames. Super ii does not store these weights. Your browser handles progress, cancellation and supported resume.</p><p class="ollama-download-note">{Astro.url.searchParams.has('tag')?'Version checked for this request.':`Source snapshot: ${String(metadata.checked_at??'').slice(0,10)}. Load a version to refresh its files.`}</p>
+      </section>
+      <section class="repository-section" id="use" data-detail-panel="use"><h2>Use model</h2><h3>Downloaded file</h3><p>{format==='gguf' ? 'Open the GGUF in a runtime that supports this model’s architecture. For vision models, check the companion projector and upstream instructions.' : 'Use a runtime that supports the file format and architecture documented by the original model.'} Downloading a file does not install or run it automatically.</p>{cloudOnly ? <p>For this cloud model, follow the access instructions on its upstream page.</p> : <><h3>Install the complete model in Ollama</h3><p>With Ollama installed, this command retrieves the model and its required configuration:</p><pre data-no-translate><code>{`ollama run ${item.provider_slug}:${validOllamaTag(tag)?tag:'latest'}`}</code></pre></>}<p>Hardware requirements, permitted use and model limitations are described in the <a href={item.source_url} target="_blank" rel="noopener noreferrer">upstream model card</a>. These models have not been execution-tested by Super ii.</p></section>
+      {canEdit && <section class="repository-section" id="edit" data-detail-panel="edit"><h2>Edit your listing</h2><form data-ollama-editor data-id={item.id} class="ollama-editor"><label>Title<input name="title" maxlength="200" required value={item.title} /></label><label>Summary<textarea name="summary" maxlength="2000" rows="3">{item.summary}</textarea></label><label>Model card · Markdown<textarea name="card_markdown" rows="18" maxlength="100000">{item.card_markdown}</textarea></label><div class="button-row"><button class="button" type="submit">Save listing</button><button class="button button--secondary" type="button" data-ollama-preview>Preview card</button></div><p role="status" data-ollama-editor-status></p><article class="repository-card-markdown" data-ollama-preview-body hidden></article></form></section>}
+    </div><aside class="repository-context" aria-label="Model source details"><div class="repository-context__card"><p class="eyebrow">Source &amp; credit</p><h2>Ollama library</h2><p>Curated by <a href={`/people/${item.owner_handle}`} data-no-translate>@{item.owner_handle}</a>. Original model authors retain their credit and rights.</p><a href={item.source_url} target="_blank" rel="noopener noreferrer">Original model, authors &amp; terms ↗</a><p>This is an external source listing. Download availability comes from Ollama; Super ii publication checks do not apply to these files.</p><small>Catalogue source: <a href="https://github.com/smavgs/ailocalclick" target="_blank" rel="noopener noreferrer">AILocalClick</a></small></div></aside></div>
+  </div>
+</BaseLayout>
+<script src="@/scripts/ollama.ts"></script>

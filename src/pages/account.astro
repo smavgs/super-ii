@@ -38,6 +38,7 @@ let bridgeSources: Array<{
   sync_enabled: boolean;
 }> = [];
 let memberProfile: MemberProfile | null = null;
+let ollamaCount = 0;
 let linkedWork: Array<{
   id: string; kind: 'model' | 'dataset' | 'space'; provider: 'huggingface' | 'google-drive';
   provider_repo_id: string; source_url: string; source_revision: string | null;
@@ -124,7 +125,7 @@ if (sql) {
                item.source_url, item.source_revision, item.title, item.summary,
                item.license, item.updated_at
         from app.external_catalog_items item
-        where item.status = 'active' and (
+        where item.status = 'active' and item.provider <> 'ollama' and (
           item.owner_profile_id = ${profile.profileId}::uuid
           or exists (
             select 1 from app.organization_members member
@@ -134,6 +135,9 @@ if (sql) {
           )
         ) order by item.updated_at desc limit 100
       ` as typeof linkedWork;
+      const curated = await sql`select count(*)::integer as count from app.external_catalog_items
+        where owner_profile_id=${profile.profileId}::uuid and provider='ollama' and status='active'`;
+      ollamaCount=Number(curated[0]?.count??0);
       showcaseMedia = await sql`
         select id, title, caption, alt_text, link_url, position, width, height
         from app.showcase_media
@@ -156,7 +160,7 @@ if (sql) {
       <section class="shell member-workspace"><h1>Workspace</h1><div class="account-card"><h2>Log in to continue</h2><p>Your work and account settings are available after authentication.</p><SignInButton asChild mode="modal"><button class="button button--dark" type="button">Log in</button></SignInButton></div></section>
     </Show>
     <Show when="signed-in">
-      <MemberWorkspace {repositories} {notifications} {bridgeSources} {linkedWork} {showcaseMedia} {showcaseUploadsRemaining} {subscriptions} {payments} {memberProfile} {unavailable}>
+      <MemberWorkspace {repositories} {notifications} {bridgeSources} {linkedWork} {ollamaCount} {showcaseMedia} {showcaseUploadsRemaining} {subscriptions} {payments} {memberProfile} {unavailable}>
         <UserProfile slot="identity" routing="hash" appearance={{
           elements: { rootBox: 'sii-clerk-profile-root', cardBox: 'sii-clerk-profile-card' },
           variables: { colorPrimary: '#071a2f', borderRadius: '12px' },

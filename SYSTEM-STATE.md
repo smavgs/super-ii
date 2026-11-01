@@ -118,3 +118,7 @@ PR #132 was deployed with migration 0036, the runtime package route and initial 
 ## Robots product experience release
 
 The 29 October update was deployed on 30 October. Migrations 0042/0043 preceded the Worker; migration 0041 switched reference covers only after the image assets were available. A live header check caught overlapping static image policies; the scoped media rule now removes the inherited value before setting its public image policy. Both hosts return the corrected single value. See [verification](qa/ROBOTS-EXPERIENCE-2026-10-29.md) and [release evidence](docs/verification/robots-experience-production.json). GitHub release checks are tracked in [PR #143](https://github.com/smavgs/super-ii/pull/143).
+
+## Ollama catalogue release candidate (2026-11-01)
+
+Curated Ollama listings under @smavgs are implemented and locally tested, using 266 AILocalClick model families. The model-page layout is preserved. Source files stream through Super ii with proper filenames, no weight storage, range support and native browser download progress. Standard model layers were resolved for 241 families; other entries retain explicit source availability. Curator editing, public/private access boundaries and pagination passed local checks. A complete browser license-file download matched its upstream checksum; this is not verification of model execution or large-file throughput. Production migration, import and verification remain pending. See [architecture and verification boundaries](docs/architecture/ollama-catalogue.md).

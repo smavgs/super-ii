@@ -97,6 +97,7 @@ export function sqlClient(locals) {
         states.get(client),
       );
     states.set(client, locals.__testActor ?? {});
+    client.query = (query, values = []) => queryDatabase(query.replace(/\$(\d+)\b/g, (_match, index) => literal(values[Number(index)-1])), states.get(client));
     clients.set(locals, client);
   }
   return clients.get(locals);
