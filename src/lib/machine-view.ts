@@ -54,12 +54,35 @@ export function machineResources(url: URL): string {
 export async function pageMarkdown(response: Response, url: URL): Promise<string> {
   const clean = new HTMLRewriter().on('script, style, template, noscript, nav, form, button, dialog, [hidden], [aria-hidden="true"], [data-machine-exclude]', { element(e) { e.remove(); } }).transform(response);
   let output = '', title = '', inCode = false;
-  const append = (text: string) => { output += text; };
+  let link: { href: string; label: string } | null = null;
+  const append = (text: string) => { if (link) link.label += text; else output += text; };
   const rewriter = new HTMLRewriter()
     .on('title', { text(t) { title += t.text; } })
     .on('main', { text(t) { append(inCode ? t.text : t.text.replace(/\s+/g, ' ')); } })
     .on('main *', { element(e) {
       const tag = e.tagName;
+      if (tag === 'a' && !inCode && !link) {
+        try {
+          const target = new URL(decode(e.getAttribute('href') ?? ''), url);
+          if (!['https:', 'http:', 'mailto:'].includes(target.protocol)) return;
+          target.searchParams.delete('view');
+          const current = { href: target.href, label: '' };
+          link = current;
+          e.onEndTag(() => {
+            link = null;
+            const label = current.label.replace(/\s+/g, ' ').trim().replace(/[\\[\]`*_]/g, '\\$&') || current.href;
+            append(`[${label}](<${current.href}>)`);
+          });
+        } catch { /* Ignore unusable links. */ }
+        return;
+      }
+      // Card links may contain entire headings and paragraphs. Their Markdown
+      // label must stay inline so the browser and agents receive a usable link.
+      if (link) {
+        if (tag === 'img') append(` ${e.getAttribute('alt') ?? ''} `);
+        else { append(' '); e.onEndTag(() => append(' ')); }
+        return;
+      }
       if (/^h[1-6]$/.test(tag)) { append('\n\n' + '#'.repeat(Number(tag[1])) + ' '); e.onEndTag(() => append('\n\n')); }
       else if (['p','div','section','article','header','footer','ul','ol','dl','details','summary','figure','blockquote'].includes(tag)) { append('\n\n'); e.onEndTag(() => append('\n\n')); }
       else if (tag === 'li') { append('\n- '); e.onEndTag(() => append('\n')); }
@@ -67,15 +90,8 @@ export async function pageMarkdown(response: Response, url: URL): Promise<string
       else if (tag === 'td' || tag === 'th' || tag === 'dd') { append(' | '); }
       else if (tag === 'pre') { inCode = true; append('\n\n```\n'); e.onEndTag(() => { inCode = false; append('\n```\n\n'); }); }
       else if (tag === 'code' && !inCode) { append('`'); e.onEndTag(() => append('`')); }
-      else if (tag === 'span' && !inCode) e.onEndTag(() => append(' '));
-      else if (tag === 'a') {
-        try {
-          const target = new URL(decode(e.getAttribute('href') ?? ''), url);
-          if (!['https:', 'http:', 'mailto:'].includes(target.protocol)) return;
-          target.searchParams.delete('view');
-          append('['); e.onEndTag(() => append(`](<${target.href}>)`));
-        } catch { /* Ignore unusable links. */ }
-      } else if (tag === 'img') {
+      else if (tag === 'span' && !inCode) { append(' '); e.onEndTag(() => append(' ')); }
+      else if (tag === 'img') {
         const alt = e.getAttribute('alt');
         if (alt) append(` ${alt} `);
       }
