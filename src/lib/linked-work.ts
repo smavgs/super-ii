@@ -5,7 +5,7 @@ import { sqlClient } from './db';
 export type LinkedWorkItem = {
   id: string;
   kind: RepositoryKind;
-  provider: 'huggingface' | 'google-drive';
+  provider: 'huggingface' | 'google-drive' | 'ollama';
   provider_repo_id: string;
   provider_namespace: string;
   provider_slug: string;
@@ -45,7 +45,7 @@ export async function searchLinkedWork(
   const sql = sqlClient(locals);
   if (!sql) return { state: 'unconfigured', items: [] };
   const pageSize = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 24;
-  const pageOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 100) : 0;
+  const pageOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 10000) : 0;
   const query = clean(filters.query);
   const task = clean(filters.task, 120);
   const library = clean(filters.library, 120);
@@ -53,7 +53,7 @@ export async function searchLinkedWork(
   const modality = clean(filters.modality, 120);
   const author = clean(filters.author, 120);
   const maxSizeBytes = typeof filters.maxSizeBytes === 'number' && Number.isFinite(filters.maxSizeBytes) && filters.maxSizeBytes >= 0
-    ? Math.min(Math.trunc(filters.maxSizeBytes), 21_474_836_480)
+    ? Math.min(Math.trunc(filters.maxSizeBytes), 2_199_023_255_552)
     : null;
   const updatedAfter = /^\d{4}-\d{2}-\d{2}$/u.test(filters.updatedAfter ?? '')
     ? filters.updatedAfter!
@@ -90,7 +90,7 @@ export async function searchLinkedWork(
         and (${modality} = '' or coalesce(item.source_metadata->>'modality','') ilike '%' || ${modality} || '%')
         and (${author} = '' or item.provider_namespace ilike '%' || ${author} || '%'
               or coalesce(profile.handle, organization.handle, '') ilike '%' || ${author} || '%')
-        and (${maxSizeBytes}::bigint is null or (item.provider = 'huggingface' and item.total_size_bytes <= ${maxSizeBytes}::bigint))
+        and (${maxSizeBytes}::bigint is null or (item.provider in ('huggingface','ollama') and item.file_count > 0 and item.total_size_bytes <= ${maxSizeBytes}::bigint))
         and (${updatedAfter} = '' or item.updated_at >= nullif(${updatedAfter}, '')::date)
       order by
         case when ${sort} = 'downloads' then coalesce(item.provider_downloads, 0) end desc,
@@ -109,6 +109,7 @@ export async function listOwnerLinkedWork(
   ownerType: 'person' | 'organization',
   ownerId: string,
   limit = 100,
+  options: { provider?: 'ollama' | 'other'; query?: string; offset?: number } = {},
 ): Promise<LinkedWorkItem[]> {
   const rows = await sql.query(
     `select item.id, item.kind, item.provider, item.provider_repo_id,
@@ -127,8 +128,11 @@ export async function listOwnerLinkedWork(
      where item.status = 'active'
        and (($1 = 'person' and item.owner_profile_id = $2::uuid)
          or ($1 = 'organization' and item.owner_organization_id = $2::uuid))
-     order by item.updated_at desc, item.id limit $3`,
-    [ownerType, ownerId, Math.min(Math.max(limit, 1), 100)],
+       and ($4 = '' or ($4 = 'ollama' and item.provider = 'ollama') or ($4 = 'other' and item.provider <> 'ollama'))
+       and ($5 = '' or strpos(lower(concat_ws(' ', item.title,item.summary,item.provider_slug)),lower($5)) > 0)
+     order by item.updated_at desc, item.title, item.id limit $3 offset $6`,
+    [ownerType, ownerId, Math.min(Math.max(limit, 1), 100), options.provider ?? '',
+      (options.query ?? '').trim().slice(0,200), Number.isSafeInteger(options.offset) ? Math.min(Math.max(options.offset!,0),10000) : 0],
   );
   return rows as LinkedWorkItem[];
 }

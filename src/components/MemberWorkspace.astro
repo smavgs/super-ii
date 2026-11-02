@@ -26,9 +26,10 @@ interface Props {
   payments: Array<{ id: string; plan_id: string; billing_term: string; price_amount_cents: number; status: string }>;
   memberProfile: (EditableMemberProfile & { id: string; handle: string; display_name: string; avatar_url: string | null }) | null;
   unavailable?: boolean;
+  ollamaCount?: number;
 }
 
-const { repositories, notifications, bridgeSources, linkedWork, showcaseMedia, showcaseUploadsRemaining, subscriptions, payments, memberProfile, unavailable = false } = Astro.props;
+const { repositories, notifications, bridgeSources, linkedWork, showcaseMedia, showcaseUploadsRemaining, subscriptions, payments, memberProfile, unavailable = false, ollamaCount = 0 } = Astro.props;
 const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 const sections = [
   { id: 'work', label: 'Your work', icon: 'ph-folder-open' },
@@ -102,6 +103,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
           </div>
         </details>}
 
+        {ollamaCount > 0 && memberProfile && <div class="workspace-disclosure"><div class="workspace-disclosure__body"><h3 class="brand-inline"><BrandMark brand="ollama" size="sm" />Your Ollama listings · {ollamaCount}</h3><p>Open a model to edit its title, summary or model card.</p><a class="button button--secondary" href={`/people/${memberProfile.handle}#work`}>Browse your models</a></div></div>}
         {linkedWork.length > 0 && <details class="workspace-disclosure" id="linked-work" open>
           <summary>Linked work<small>Free external cards. Files remain with their provider.</small></summary>
           <div class="workspace-disclosure__body">

@@ -1,7 +1,7 @@
 ---
 import InfoTip from '@/components/InfoTip.astro';
 import CreatorLink from '@/components/CreatorLink.astro';
-import BrandMark from '@/components/BrandMark.astro';
+import LinkedWorkCard from '@/components/LinkedWorkCard.astro';
 import { catalogMeta, type CatalogKind } from '@/lib/site';
 import {
   repositoryPath,
@@ -39,19 +39,20 @@ const filters: CatalogFilters = {
   maxVramBytes: optionalBytes(query.get('max_vram_gb'), 1024 ** 3),
   sort: (query.get('sort') ?? undefined) as CatalogFilters['sort'],
 };
+const page = Math.max(1,Math.min(417,Math.trunc(Number(query.get('page')))||1));
+const offset = (page-1)*24;
+const pageHref = (number: number) => { const params=new URLSearchParams(query); params.set('page',String(number)); return `/${kind}?${params}`; };
 const result = origin === 'external'
   ? { state: 'ok' as const, items: [] }
-  : await searchCatalog(Astro.locals, repositoryKind, filters);
+  : await searchCatalog(Astro.locals, repositoryKind, filters, 25, offset);
 const linkedResult = origin === 'superii'
   ? { state: 'ok' as const, items: [] }
-  : await searchLinkedWork(Astro.locals, repositoryKind, filters);
+  : await searchLinkedWork(Astro.locals, repositoryKind, filters, 25, offset);
+const hasNextPage=page<417&&(result.items.length>24||linkedResult.items.length>24);
+result.items=result.items.slice(0,24); linkedResult.items=linkedResult.items.slice(0,24);
 const totalCount = result.items.length + linkedResult.items.length;
 const hasAdvancedFilters = origin !== 'all' || Object.entries(filters).some(([key, value]) => !['query', 'sort'].includes(key) && value !== undefined && value !== '');
 const hasFilters = hasAdvancedFilters || Boolean(filters.query);
-const linkedValue = (item: (typeof linkedResult.items)[number], key: string) => {
-  const value = item.source_metadata?.[key];
-  return typeof value === 'string' && value ? value : null;
-};
 const emptyState = {
   models: {
     title: 'No reviewed public models yet.',
@@ -198,26 +199,7 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
             <a class="catalog-card__open" href={repositoryPath(item)} aria-label={`Open ${item.title}`}><span>Open {repositoryKind === 'space' ? 'app' : repositoryKind}</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
           </article>
         ))}
-        {linkedResult.items.map((item) => (
-          <article class="catalog-card catalog-card--external">
-            <div class="catalog-card__topline">
-              <CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} />
-              <span class="origin-badge origin-badge--external"><BrandMark brand="huggingface" size="xs" />External · Hugging Face</span>
-            </div>
-            <h2 data-no-translate>{item.title}</h2>
-            <p data-no-translate>{item.summary || `Linked from ${item.provider_repo_id}. Files remain on Hugging Face.`}</p>
-            <div class="catalog-card__metadata">
-              {item.license && <span data-no-translate>{item.license}</span>}
-              {linkedValue(item, 'task') && <span data-no-translate>{linkedValue(item, 'task')}</span>}
-              {linkedValue(item, 'library') && <span data-no-translate>{linkedValue(item, 'library')}</span>}
-              {linkedValue(item, 'sdk') && <span data-no-translate>{linkedValue(item, 'sdk')}</span>}
-              <span>{Number(item.total_size_bytes).toLocaleString()} bytes</span>
-              {item.provider_downloads !== null && <span title="Downloads reported by Hugging Face">HF ⬇️ {Number(item.provider_downloads).toLocaleString()}</span>}
-              {item.provider_likes !== null && <span title="Likes reported by Hugging Face">HF ❤️ {Number(item.provider_likes).toLocaleString()}</span>}
-            </div>
-            <a class="catalog-card__open" href={item.source_url} target="_blank" rel="ugc nofollow noopener noreferrer external" aria-label={`Open ${item.title} on Hugging Face`}><span><BrandMark brand="huggingface" size="xs" />Open on Hugging Face</span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
-          </article>
-        ))}
+        {linkedResult.items.map(item => <LinkedWorkCard item={item} />)}
       </div>
     ) : (
       <div class="empty-state" aria-live="polite">
@@ -241,5 +223,6 @@ const createAction = memberAction(Astro.locals, Astro.locals.locale ?? 'en', {
         </div>
       </div>
     )}
+    {(page>1||hasNextPage)&&<nav class="button-row catalog-pagination" aria-label="Catalogue pages">{page>1&&<a class="button button--secondary" href={pageHref(page-1)}>Previous page</a>}<span>Page {page}</span>{hasNextPage&&<a class="button button--secondary" href={pageHref(page+1)}>Next page</a>}</nav>}
   </div>
 </form>

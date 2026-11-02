@@ -24,6 +24,7 @@ const paths = [
   'src/pages/bring-my-work.astro',
   'src/components/Catalog.astro',
   'src/components/LinkedWorkGrid.astro',
+  'src/components/LinkedWorkCard.astro',
   'src/components/MemberProfileWorkspace.astro',
   'src/components/RobotWorkspace.astro',
   'src/components/ShowcaseGallery.astro',

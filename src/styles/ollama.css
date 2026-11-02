@@ -1,0 +1,105 @@
+.ollama-page .ollama-download {
+  display: inline-flex;
+  gap: 0.6rem;
+  border: 2px solid #20344b;
+  border-radius: 3px;
+  background: #ffdd57;
+  color: #142c44;
+  box-shadow: 3px 3px 0 #20344b;
+  font-weight: 750;
+}
+.ollama-page .ollama-download:hover {
+  background: #ffe987;
+  transform: translateY(-1px);
+}
+.ollama-page .ollama-download:focus-visible {
+  outline: 3px solid #086aa9;
+  outline-offset: 4px;
+}
+.ollama-page .ollama-download small {
+  padding: 0.15rem 0.35rem;
+  background: #fff7d5;
+  border: 1px solid #20344b;
+  font-family: var(--font-mono);
+}
+.ollama-download-note {
+  max-width: 85ch;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0.65rem 0;
+}
+.ollama-page .form-status:empty {
+  display: none;
+}
+.ollama-availability {
+  padding: 0.7rem;
+  border: 1px solid var(--ws-border);
+  background: var(--ws-soft);
+}
+.ollama-version-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+.ollama-version-form label,
+.ollama-editor label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 650;
+}
+.ollama-version-form input {
+  max-width: 18rem;
+}
+.ollama-page .file-table td:first-child code {
+  display: block;
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.ollama-page .file-table td a {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 2.75rem;
+}
+.ollama-editor {
+  display: grid;
+  gap: 1rem;
+}
+.ollama-editor :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+}
+.ollama-editor textarea[name="card_markdown"] {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.ollama-page .repository-context p {
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+.catalog-pagination,
+.profile-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+@media (max-width: 600px) {
+  .ollama-page .ollama-download {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .ollama-version-form input {
+    max-width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ollama-page .ollama-download:hover {
+    transform: none;
+  }
+}

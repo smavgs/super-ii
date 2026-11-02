@@ -1,7 +1,15 @@
 ---
 import RepositoryPage from '@/components/RepositoryPage.astro';
+import OllamaModelPage from '@/components/OllamaModelPage.astro';
+import { getOllamaListing, validOllamaSlug } from '@/lib/ollama';
+import { sqlClient } from '@/lib/db';
 
 const owner = Astro.params.owner ?? '';
 const slug = Astro.params.slug ?? '';
+const sql = sqlClient(Astro.locals);
+let ollama = null;
+if (sql && slug.startsWith('ollama-') && validOllamaSlug(slug.slice(7))) {
+  try { ollama = await getOllamaListing(sql,{owner,slug:slug.slice(7)}); } catch { Astro.response.status=503; }
+}
 ---
-<RepositoryPage kind="model" owner={owner} slug={slug} />
+{ollama ? <OllamaModelPage item={ollama} /> : <RepositoryPage kind="model" owner={owner} slug={slug} />}

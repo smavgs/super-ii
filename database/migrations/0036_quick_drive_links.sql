@@ -4,6 +4,11 @@ begin;
 -- repositories. Keep Hugging Face's verified-identity contract intact.
 alter table app.external_catalog_items alter column external_identity_id drop not null;
 alter table app.external_catalog_items alter column source_revision drop not null;
+-- A later provider migration owns these constraints once its card column exists.
+-- Reapplying the migration set must not reject existing Ollama source listings.
+do $provider_constraints$ begin
+if not exists(select 1 from information_schema.columns where table_schema='app'
+  and table_name='external_catalog_items' and column_name='card_markdown') then
 alter table app.external_catalog_items drop constraint if exists external_catalog_items_provider_check;
 alter table app.external_catalog_items add constraint external_catalog_items_provider_check check (provider in ('huggingface','google-drive'));
 alter table app.external_catalog_items drop constraint if exists external_catalog_items_source_url_check;
@@ -16,6 +21,9 @@ alter table app.external_catalog_items add constraint external_catalog_items_sou
   (provider='huggingface' and external_identity_id is not null and source_revision is not null and source_revision ~ '^[a-f0-9]{40,64}$') or
   (provider='google-drive' and external_identity_id is null and source_revision is null and owner_profile_id is not null and kind in ('model','dataset') and provider_downloads is null and provider_likes is null)
 );
+
+end if;
+end $provider_constraints$;
 
 create or replace function app.link_drive_catalog_item(p_kind public.repository_kind,p_url text,p_title text,p_license text,p_format text,p_rights jsonb)
 returns uuid language plpgsql volatile security definer set search_path=app,pg_catalog

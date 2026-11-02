@@ -81,7 +81,7 @@ export async function searchCatalog(
   if (!sql) return { state: 'unconfigured', items: [] };
 
   const pageSize = Number.isSafeInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 20;
-  const pageOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 100) : 0;
+  const pageOffset = Number.isSafeInteger(offset) ? Math.min(Math.max(offset, 0), 10000) : 0;
 
   const maxSize = filters.maxSizeBytes;
   const updatedAfter = filters.updatedAfter && !Number.isNaN(Date.parse(filters.updatedAfter))

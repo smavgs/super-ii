@@ -101,7 +101,7 @@ for (const copy of ['Promoted · kept separate from organic ranking', 'data-high
   requireText('highlightStrip', copy);
 }
 
-for (const copy of ['FAME ✦', 'Community #', 'Reviewed public work', 'Proposals']) {
+for (const copy of ['FAME ✦', 'Community #', 'Public work', 'Proposals']) {
   requireText('profile', copy);
 }
 

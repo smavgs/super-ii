@@ -146,7 +146,7 @@ assert.match(mcpServer, /catalogFiltersFromInput\(input\)/);
 assert.match(a2a, /catalogSearchWithKindSchema/);
 assert.match(a2a, /catalogFiltersFromInput\(input\)/);
 assert.match(catalog, /Math\.min\(Math\.max\(limit, 1\), 50\)/);
-assert.match(catalog, /Math\.min\(Math\.max\(offset, 0\), 100\)/);
+assert.match(catalog, /Math\.min\(Math\.max\(offset, 0\), 10000\)/);
 
 for (const leaked of ['service:', 'version:', 'checks:', 'timestamp:']) {
   assert.ok(!healthRoute.includes(leaked), `/api/health must not expose ${leaked.slice(0, -1)}`);
