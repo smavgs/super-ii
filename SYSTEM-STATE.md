@@ -2,8 +2,8 @@
 
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
-- Snapshot: 2026-11-01
-- Verification scope: this update records curated Ollama listings and streaming downloads; earlier capability entries retain their documented verification boundaries.
+- Snapshot: 2026-11-02
+- Verification scope: this update deploys member notifications and public page representations; earlier capability entries retain their documented verification boundaries.
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
 - Catalog rule: reviewed repositories use the normal publication path. Curated external listings are separately identified and never presented as community-authored or Super ii-tested model files. The Ollama catalogue contains 266 source listings curated by @smavgs; hosting and original authorship remain distinct.
@@ -92,6 +92,8 @@ PR #132 was deployed with migration 0036, the runtime package route and initial 
 | Agent traces | implemented | opt-in | Trace metadata is private by default and exposes only hashes and explicitly public records. |
 | Hostile multi-tenant compute isolation | designed | deferred | Current Apps use non-root, capability-dropped, read-only containers with no app-network egress. Rootless or stronger microVM-grade host isolation is required before hostile multi-tenant compute is advertised. |
 | Hosted GPU cloud and high-throughput serving | designed | deferred | Super ii does not claim a free GPU cloud. The registry offers docs-reviewed vLLM and SGLang guidance for user-provisioned hosts; Super ii-managed GPU pools and mountable high-volume storage wait for measured demand and funded capacity. |
+| Member notification bell | production | Signed-in header with durable unread history, attention filters and scoped event recording | Migration 0045; real restricted-role notification flows and full database suite; see docs/architecture/member-notifications-machine-view.md |
+| Human and Machine public page views | production | Public Markdown negotiation, browser view and curated Ollama file representations; private work excluded | Real Worker transformation tests; see qa/HOME-NOTIFICATIONS-MACHINE-2026-11-02.md |
 
 ## Release truth rules
 
@@ -122,3 +124,7 @@ The 29 October update was deployed on 30 October. Migrations 0042/0043 preceded 
 ## Ollama catalogue production release (2026-11-01)
 
 Curated Ollama listings are live under @smavgs, using 266 AILocalClick model families. The existing model-page layout is preserved. Source files stream through Super ii with proper filenames, no weight storage, range support and native browser download progress. Standard model layers were resolved for 241 families; other entries retain explicit source availability. Migration 0044 and the idempotent metadata import are applied. Production checks verified anonymous model pages and source availability, owner-editor exclusion for anonymous requests, a real GGUF byte range, a complete license download with its source checksum, and unauthenticated edit rejection. The signed-in owner editor and Markdown preview were inspected without saving production test edits. Full local validation, database and runtime tests passed. This is not a claim of model execution, complete multi-gigabyte transfers or large-file throughput. The older Hugging Face linked-card entry retains its own verification boundary. See [architecture and verification boundaries](docs/architecture/ollama-catalogue.md) and [release evidence](qa/OLLAMA-2026-11-01.md).
+
+## Home, notifications and machine view release (2026-11-02)
+
+The yellow hero keeps its size with small monochrome pixel movement and a black/grey headline gradient. The signed-in bell sits before the theme toggle and records relevant events transactionally. Public pages expose a Human/Machine switch and direct Markdown reads, including curated Ollama listings. Migration 0045 and the Worker are deployed on both domains. All 30 public/access-boundary checks and signed-in desktop/mobile bell review passed; the nine existing unread events were preserved. Local restricted-role event tests and the full database suite pass. The bell refreshes every 30 seconds while active and on focus/reconnection; it is not external browser push. Final revision and post-merge checks are the release sign-off gates recorded with PR #151. See [architecture and coverage](docs/architecture/member-notifications-machine-view.md) and [verification](qa/HOME-NOTIFICATIONS-MACHINE-2026-11-02.md).

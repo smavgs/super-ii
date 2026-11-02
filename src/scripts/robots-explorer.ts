@@ -150,6 +150,7 @@ function initialize(root:HTMLElement){
   }
   function renderActions(d:Detail){
     const actions=$('[data-detail-actions]');actions.replaceChildren();liked=false;
+    const machine=new URL(location.href);machine.searchParams.delete('product');machine.searchParams.delete('company');machine.searchParams.set(d.record_type==='company'?'company':'product',d.id);machine.searchParams.set('view','machine');const machineLink=link('▦ Machine',machine.href,'button button--secondary');machineLink.dataset.noTranslate='';append(actions,machineLink);
     if(d.contact?.available){const ask=el('button','✉ '+t('Contact company'),'button robot-action-red');ask.type='button';ask.onclick=()=>{tab='contact';void render();};append(actions,ask);}
     if(d.website)append(actions,link('↗ '+t('Official website'),d.website,'button robot-action-mint'));
     if(d.product_url)append(actions,link(t(d.source==='community'?'Open project':'View maintained page'),localPath(d.product_url),'button robot-action-mint'));

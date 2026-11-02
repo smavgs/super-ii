@@ -1,0 +1,13 @@
+---
+import { publicMachinePath, viewUrl } from '@/lib/machine-view';
+const available = publicMachinePath(Astro.url.pathname);
+---
+{available && <nav class="page-view-switch" aria-label="Page view" data-machine-exclude data-no-translate><a href={viewUrl(Astro.url, 'human')} aria-current="page"><span aria-hidden="true">☺</span> Human</a><a href={viewUrl(Astro.url, 'machine')}><span aria-hidden="true">▦</span> Machine</a></nav>}
+<style>
+  .page-view-switch { position: fixed; z-index: 35; bottom: max(.8rem, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; padding: 3px; border: 1px solid #777; border-radius: 4px; background: #faf9f2; box-shadow: 3px 3px 0 #0003; font: 600 .7rem var(--font-mono); }
+  .page-view-switch a { display: flex; gap: .4rem; align-items: center; min-height: 36px; padding: .4rem .7rem; color: #282828; text-decoration: none; border-radius: 2px; }
+  .page-view-switch a[aria-current] { color: #fff; background: #222; }
+  .page-view-switch a:focus-visible { outline: 3px solid #777; outline-offset: 2px; }
+  @media (max-width: 900px) { .page-view-switch { left: auto; right: .8rem; transform: none; } }
+  @media print { .page-view-switch { display: none; } }
+</style>

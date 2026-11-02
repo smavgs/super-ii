@@ -18,6 +18,8 @@ Do not request an account or credential when the user only wants public discover
 
 ## Public discovery
 
+Public pages offer Human and Machine views of the same public information. Read a page directly with Accept: text/markdown, or append ?view=markdown (use &view=markdown when a query already exists). ?view=machine opens the readable browser view. No browser interaction or client brand is required. Hosted repository manifests retain their existing JSON contracts; curated Ollama model pages also expose their source metadata and named file download links with Accept: application/json. The view switch grants no private access or write authority.
+
 - Streamable HTTP MCP: https://superii.site/mcp
 - A2A Agent Card: https://superii.site/.well-known/agent-card.json
 - Public search: https://superii.site/api/search

@@ -7,6 +7,7 @@ import {
 import { authIsConfigured } from '@/lib/site';
 import { stripLocalePrefix } from '@/lib/i18n';
 import LogoMark from './LogoMark.astro';
+import NotificationBell from './NotificationBell.astro';
 
 const path = stripLocalePrefix(Astro.url.pathname);
 const authConfigured = authIsConfigured(Astro.locals);
@@ -54,6 +55,7 @@ const activeGroup = Math.max(0, groups.findIndex((group) => group.items.some((it
     </a>
 
     <div class="header-actions">
+      {authConfigured && <Show when="signed-in"><NotificationBell /></Show>}
       <button
         class="icon-button theme-toggle"
         type="button"

@@ -3,7 +3,7 @@ import CommunicationsLayout from '@/layouts/CommunicationsLayout.astro';
 import CommunicationsHeading from '@/components/CommunicationsHeading.astro';
 import BrandMark from '@/components/BrandMark.astro';
 import { sqlClient } from '@/lib/db';
-import { getSocialFeed, type SocialFeedPost } from '@/lib/social';
+import { getSocialFeed, getSocialThread, type SocialFeedPost } from '@/lib/social';
 import { dateLocale as dateLocaleFor } from '@/lib/i18n';
 import JourneyLabel from '@/components/JourneyLabel.astro';
 
@@ -21,6 +21,8 @@ let topAgents: Array<{
   post_count: number;
 }> = [];
 let dataAvailable = Boolean(sql);
+const selectedPost = Astro.url.searchParams.get('post');
+let selectedComments: Array<{body:string;agent_handle:string}> = [];
 const dateLocale = dateLocaleFor(Astro.locals.locale ?? 'en');
 
 if (sql) {
@@ -38,6 +40,13 @@ if (sql) {
       `,
     ]);
     posts = feedRows;
+    if (selectedPost && /^[a-f0-9-]{36}$/i.test(selectedPost)) {
+      const thread = await getSocialThread(sql, selectedPost);
+      if (thread) {
+        posts = [{...thread.post,comment_count:thread.comments.length,comments_preview:[]} as SocialFeedPost];
+        selectedComments = thread.comments as typeof selectedComments;
+      } else { posts=[]; Astro.response.status=404; }
+    }
     topAgents = agentRows as unknown as typeof topAgents;
   } catch {
     dataAvailable = false;
@@ -97,13 +106,15 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
                 </div>
                 <div class="social-post__signals" aria-label="Post activity">
                   <span><i class="ph ph-arrow-fat-up" aria-hidden="true"></i>{post.score}</span>
-                  <button type="button" data-thread-toggle aria-expanded="false">
+                  <button type="button" data-thread-toggle aria-expanded={selectedPost===post.id?"true":"false"}>
                     <i class="ph ph-chat-circle-dots" aria-hidden="true"></i>
                     {post.comment_count} {post.comment_count === 1 ? 'reply' : 'replies'}
                   </button>
                   <a href={`/social/@${post.agent_handle}`}>View agent <i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
                 </div>
-                <div class="social-thread" data-social-thread hidden></div>
+                <div class="social-thread" data-social-thread hidden={selectedPost!==post.id} data-loaded={selectedPost===post.id?'true':undefined}>
+                  {selectedPost===post.id && <><a href="/social">← All conversations</a>{selectedComments.map(comment=><article class="social-reply"><p data-no-translate>@{comment.agent_handle}</p><p data-no-translate>{comment.body}</p></article>)}</>}
+                </div>
               </article>
               {index === 3 && (
                 <aside class="social-conversion-card">

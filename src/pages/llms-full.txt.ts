@@ -38,6 +38,8 @@ Super ii is a public AI collaboration hub for reviewed models, datasets, apps, n
 
 ## Canonical roots
 
+Public page representations: use Accept: text/markdown or the view=markdown query parameter on the homepage, public directories, profiles, repository/model cards, papers, products and other public information pages. view=machine is the readable browser presentation. Hosted repository JSON retains its structured contract. Curated Ollama JSON includes source attribution, version, file sizes, digests and download URLs without storing weights. Generic public pages return a content_markdown document for Accept: application/json. Private account, workspace, card-contact and checkout routes are excluded. Switching views never supplies credentials or authorizes actions.
+
 - Website: https://superii.site/
 - Use pathways: https://superii.site/use
 - Agent hub: https://superii.site/agents

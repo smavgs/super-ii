@@ -534,7 +534,7 @@ const highlightedBy = /^[0-9a-f-]{36}$/i.test(Astro.url.searchParams.get('highli
         {repository.discussions.length ? (
           <div class="discussion-list">
             {repository.discussions.map((discussion) => (
-              <article data-discussion-id={discussion.id}>
+              <article data-discussion-id={discussion.id} id={`discussion-${discussion.id}`}>
                 <div><span>{discussion.status}</span><span>{discussion.comment_count} comments</span></div>
                 <h3 data-no-translate>{discussion.title}</h3>
                 <p data-no-translate>{discussion.body}</p>
