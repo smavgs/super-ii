@@ -24,6 +24,16 @@ const statusChinese: Record<CapabilityStatus, string> = {
 };
 
 const capabilitiesRussian: Record<string, RussianCapability> = {
+  'Member notification bell': {
+    capability: 'Уведомления участников',
+    availability: 'Колокольчик для вошедших участников: история непрочитанного, задачи, требующие внимания, и события с проверкой доступа',
+    evidence: 'Миграция 0045; проверки реальных маршрутов с ограниченными ролями и полный набор тестов базы данных; docs/architecture/member-notifications-machine-view.md',
+  },
+  'Human and Machine public page views': {
+    capability: 'Публичные страницы для людей и машин',
+    availability: 'Публичный Markdown, представление в браузере и файлы каталога Ollama; закрытая работа исключена',
+    evidence: 'Проверки преобразования в реальном Worker; qa/HOME-NOTIFICATIONS-MACHINE-2026-11-02.md',
+  },
   'Robots explorer and company maintenance': {
     capability: 'Каталог роботов и управление компаниями',
     availability: 'работает; первая заявка производителя и обращение ожидаются',

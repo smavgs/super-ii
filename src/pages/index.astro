@@ -1,4 +1,5 @@
 ---
+import HeroPixels from '@/components/HeroPixels.astro';
 import InfoTip from '@/components/InfoTip.astro';
 import AgentBash from '@/components/AgentBash.astro';
 import LogoMark from '@/components/LogoMark.astro';
@@ -83,6 +84,7 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
 
 <BaseLayout className="home-skin">
   <section class="hero">
+    <HeroPixels />
     <div class="shell hero-inner">
       <div class="hero-copy">
         <div class="launch-pill">

@@ -133,6 +133,7 @@ if (root) {
       notification.tabIndex = -1;
       notification.focus();
       button.remove();
+      window.dispatchEvent(new Event('superii:notifications-changed'));
       if (activityStatus) activityStatus.textContent = copy('Marked as read.', 'Отмечено как прочитанное.');
     } catch {
       button.disabled = false;

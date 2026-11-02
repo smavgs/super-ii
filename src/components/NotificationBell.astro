@@ -1,0 +1,41 @@
+<div class="notification-hub" data-notifications data-machine-exclude>
+  <button class="icon-button notification-bell" type="button" data-notification-toggle aria-label="Notifications" aria-expanded="false" aria-controls="notification-panel">
+    <i class="ph ph-bell" aria-hidden="true"></i><span class="notification-count" data-notification-count hidden></span>
+  </button>
+  <section class="notification-panel" id="notification-panel" data-notification-panel aria-label="Notifications" hidden>
+    <header><div><p>👾 YOUR WORK</p><h2>Notifications</h2></div><button type="button" class="icon-button" data-notification-close aria-label="Close notifications">×</button></header>
+    <div class="notification-filters" role="group" aria-label="Filter notifications"><button type="button" data-notification-filter="unread" aria-pressed="true">Unread</button><button type="button" data-notification-filter="action" aria-pressed="false">Needs you</button><button type="button" data-notification-filter="all" aria-pressed="false">All</button></div>
+    <p class="notification-status" data-notification-status role="status">Loading your updates…</p>
+    <ol class="notification-list" data-notification-list></ol>
+    <footer><button type="button" class="text-button" data-notification-more hidden>Load earlier</button><button type="button" class="text-button" data-notification-refresh>Refresh</button><a href="/account#activity">Workspace activity ↗</a></footer>
+  </section>
+  <span class="sr-only" role="status" data-notification-announcement></span>
+</div>
+<script>import '@/scripts/notifications';</script>
+<style>
+  .notification-hub { position: relative; }
+  .notification-bell { position: relative; }
+  .notification-bell.has-unread { color: #cf2525; }
+  .notification-count { position: absolute; top: -2px; right: -4px; min-width: 17px; height: 17px; padding: 1px 4px; border-radius: 4px; background: #c82328; color: #fff; border: 2px solid var(--paper,white); font: 600 9px/11px var(--font-mono); }
+  .notification-bell.is-ringing i { animation: notification-ring 650ms ease-in-out; transform-origin: top center; }
+  @keyframes notification-ring { 0%,100% { transform: rotate(0); } 20%,60% { transform: rotate(18deg); } 40%,80% { transform: rotate(-16deg); } }
+  .notification-panel { position: absolute; z-index: 110; right: -3.5rem; top: calc(100% + 1rem); width: min(26rem, calc(100vw - 1.5rem)); max-height: min(38rem,calc(100dvh - 6rem)); overflow: auto; overscroll-behavior: contain; background: var(--paper,#fffdf6); color: var(--ink,#071a2f); border: 1px solid var(--line,#999); border-radius: 5px; box-shadow: 5px 5px 0 #1113; }
+  .notification-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--line,#999); }
+  .notification-panel header p { margin: 0 0 .25rem; font: 600 .65rem var(--font-mono); }
+  .notification-panel h2 { margin: 0; font-size: 1.5rem; }
+  .notification-filters { display: flex; gap: .4rem; padding: .8rem 1rem 0; }
+  .notification-filters button { min-height: 36px; flex: 1; border: 1px solid #8a8a80; border-radius: 3px; padding: .35rem; background: transparent; color: inherit; font: 600 .7rem var(--font-mono); cursor: pointer; }
+  .notification-filters button[aria-pressed='true'] { background: #ffd21e; color: #222; border-color: #333; }
+  .notification-status { margin: .75rem 1rem; font-size: .85rem; }
+  .notification-list { list-style: none; margin: 0; padding: 0; }
+  .notification-list :global(li) { border-bottom: 1px solid var(--line,#bbb); padding: .9rem 1rem; }
+  .notification-list :global(li[data-unread='true']) { border-left: 3px solid #d12c2c; padding-left: calc(1rem - 3px); }
+  .notification-list :global(strong) { display: block; font-size: .95rem; }
+  .notification-list :global(p) { font-size: .85rem; margin: .35rem 0; overflow-wrap: anywhere; }
+  .notification-list :global(time) { font-size: .7rem; opacity: .75; }
+  .notification-list :global(.notification-row-actions) { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .45rem; font-size: .8rem; }
+  .notification-list :global(button) { background: none; color: inherit; padding: .35rem; border: 1px solid #999; border-radius: 3px; cursor: pointer; font: inherit; }
+  .notification-panel > footer { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; padding: .8rem 1rem; font-size: .75rem; }
+  @media (max-width: 600px) { .notification-panel { position: fixed; top: 4.6rem; left: .75rem; right: .75rem; width: auto; } }
+  @media (prefers-reduced-motion: reduce) { .notification-bell.is-ringing i { animation: none; } }
+</style>

@@ -1,0 +1,19 @@
+<div class="hero-pixels" data-hero-pixels aria-hidden="true">
+  {Array.from({ length: 54 }, (_, i) => {
+    const x = (i * 37 + 7) % 100;
+    // Concentrate motion along the edges, leaving the main copy calm.
+    const y = i % 3 === 0 ? 7 + (i * 13) % 20 : 72 + (i * 7) % 25;
+    return <span style={`--x:${x}%;--y:${y}%;--size:${3 + i % 4 * 2}px;--shade:${24 + i % 5 * 18};--delay:-${i * .73}s;--duration:${12 + i % 7}s;--drift:${i % 2 ? 16 : -16}px`}></span>;
+  })}
+</div>
+<script>
+  const pixels = document.querySelector<HTMLElement>('[data-hero-pixels]');
+  if (pixels) {
+    const preference = matchMedia('(prefers-reduced-motion: reduce)');
+    let visible = false;
+    const update = () => pixels.classList.toggle('is-moving', visible && !document.hidden && !preference.matches);
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); }).observe(pixels);
+    document.addEventListener('visibilitychange', update);
+    preference.addEventListener('change', update);
+  }
+</script>

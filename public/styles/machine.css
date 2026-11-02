@@ -1,0 +1,21 @@
+:root { color-scheme: dark; font: 15px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; background: #151515; color: #e0e0dc; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+body > header { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); border-bottom: 1px solid #444; background: #151515f5; }
+a { color: #eee4a4; text-underline-offset: .2em; overflow-wrap: anywhere; }
+.machine-brand { font-size: 1.2rem; text-decoration: none; font-weight: 700; }
+nav { display: flex; padding: 3px; border: 1px solid #777; border-radius: 4px; }
+nav a { padding: .4rem .8rem; text-decoration: none; color: #eee; }
+nav a[aria-current] { background: #f0ce39; color: #161616; }
+main { max-width: 1000px; margin: auto; padding: 2rem clamp(1rem, 4vw, 3rem) 5rem; }
+.machine-tools { display: flex; flex-wrap: wrap; gap: .8rem; align-items: center; padding-bottom: 1.5rem; border-bottom: 1px dashed #555; font-size: .75rem; }
+.machine-tools > span:first-child { flex-basis: 100%; color: #aaa; letter-spacing: .12em; }
+button { cursor: pointer; border: 1px solid #777; border-radius: 3px; padding: .65rem; background: #292929; color: #eee; font: inherit; }
+h1, h2, h3 { line-height: 1.35; color: #f2f2ed; overflow-wrap: anywhere; }
+h1 { font-size: clamp(1.5rem,4vw,2.2rem); margin-top: 2rem; }
+h2 { font-size: 1.35rem; border-top: 1px solid #444; margin-top: 2.5rem; padding-top: 1.5rem; }
+p, li { overflow-wrap: anywhere; }
+pre { padding: 1rem; background: #222; border: 1px solid #444; overflow: auto; }
+code { font: inherit; color: #eee4a4; }
+table { display: block; overflow: auto; border-collapse: collapse; } td, th { border: 1px solid #555; padding: .5rem; }
+:focus-visible { outline: 3px solid #f0ce39; outline-offset: 3px; }

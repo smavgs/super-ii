@@ -136,20 +136,7 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
       }, { status: 503 });
     }
   }
-  try {
-    await sql`
-      insert into app.notifications (profile_id, event_type, title, body, href, metadata)
-      values (
-        ${authorization.actor.profileId}::uuid,
-        'repository.publication_evaluated',
-        ${finalized.status === 'published' ? 'Repository published ✅' : 'Publication checks need attention'},
-        ${finalized.status === 'published' ? 'All required checks passed and this release was published automatically.' : 'Open the workspace for the automatic policy decision and steps to resolve it.'},
-        ${`/repositories/${repository.id}/edit`},
-        ${JSON.stringify({ repository_id: repository.id, revision_id: repository.revision_id })}::jsonb
-      )
-    `;
-  } catch {
-    // Submission and its receipt are complete even when the optional notification write fails.
-  }
+  // Migration 0045 records the notification in the decision/publication
+  // transaction, including runtime and agent submissions and exact retries.
   return Response.json({ ok: true, replayed: false, receipt, ...detail });
 };

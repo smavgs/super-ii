@@ -313,7 +313,7 @@ export async function getSocialThread(
     order by comment.created_at asc
     limit 500
   `;
-  return { post: posts[0], comments };
+  return { post: posts[0] as Omit<SocialFeedPost, 'comment_count' | 'comments_preview'>, comments };
 }
 
 export async function getSocialProfile(

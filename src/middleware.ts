@@ -5,6 +5,10 @@ import { negotiatedRepositoryResponse } from '@/lib/agent-resources';
 import { getPublicRepository } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
 import { getPublicPaper, paperDocument, paperMarkdown } from '@/lib/papers';
+import { publicMachinePath, representPage, machinePage, machineResources, ollamaDocument, ollamaMarkdown } from '@/lib/machine-view';
+import { getOllamaListing, ollamaFiles, parseOllamaManifest, resolveOllamaVersion, validOllamaSlug, validOllamaTag, type OllamaFile } from '@/lib/ollama';
+import { sqlClient } from '@/lib/db';
+import { consumeRateLimit } from '@/lib/rate-limit';
 import {
   isLocalizablePath,
   localeCookie,
@@ -211,6 +215,11 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
   headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
   headers.set('x-content-type-options', 'nosniff');
   headers.set('x-frame-options', sameOriginFrame ? 'SAMEORIGIN' : 'DENY');
+  if (publicMachinePath(url.pathname)) {
+    const vary = new Set((headers.get('vary') ?? '').split(',').map(value => value.trim()).filter(Boolean));
+    vary.add('Accept');
+    headers.set('vary', [...vary].join(', '));
+  }
   if (transformHtml) {
     headers.set('content-language', locale);
     const vary = new Set((headers.get('vary') ?? '').split(',').map((value) => value.trim()).filter(Boolean));
@@ -379,10 +388,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (context.request.method === 'GET') {
     const accept = context.request.headers.get('accept')?.toLowerCase() ?? '';
+    const view = context.url.searchParams.get('view');
+    const viewRequested = view === 'machine' || view === 'markdown';
     const machineRead = (
       (accept.includes('application/json') || accept.includes('text/markdown'))
       && !accept.includes('text/html')
-    );
+    ) || viewRequested;
     const match = routePath.match(/^\/(models|datasets|spaces)\/([^/]+)\/([^/]+)$/);
     if (machineRead && match) {
       const kindMap: Record<string, RepositoryKind> = {
@@ -398,6 +409,29 @@ export const onRequest = defineMiddleware(async (context, next) => {
       } catch {
         return secure(Response.json({ error: 'invalid repository path' }, { status: 400 }), context.request);
       }
+      if (match[1] === 'models' && slug.startsWith('ollama-') && validOllamaSlug(slug.slice(7))) {
+        const sql = sqlClient(context.locals);
+        if (!sql) return secure(Response.json({error:'repository service unavailable'}, {status:503}), context.request);
+        try {
+          const item = await getOllamaListing(sql, {owner, slug:slug.slice(7)});
+          if (item) {
+            const tag = context.url.searchParams.get('tag') ?? 'latest';
+            if (!validOllamaTag(tag)) return secure(Response.json({error:'invalid version tag'}, {status:400}), context.request);
+            let files: OllamaFile[] = [];
+            if (context.url.searchParams.has('tag')) {
+              const rate = await consumeRateLimit(context.locals,context.request,sql,'ollama.metadata',120,3600);
+              if (rate !== 'allowed') return secure(Response.json({error:'metadata temporarily unavailable'}, {status:rate === 'limited' ? 429 : 503}),context.request);
+              files = (await resolveOllamaVersion(item.provider_slug,tag)).files;
+            } else if (item.source_metadata.manifest) files = ollamaFiles(item.provider_slug,tag,parseOllamaManifest(item.source_metadata.manifest),String(item.source_metadata.format ?? ''));
+            const md = ollamaMarkdown(item,context.url,tag,files);
+            const response = view === 'machine' ? machinePage(md,context.url)
+              : !viewRequested && accept.includes('application/json') ? Response.json(ollamaDocument(item,context.url.origin,tag,files))
+              : new Response(md,{headers:{'content-type':'text/markdown; charset=utf-8'}});
+            response.headers.set('cache-control','no-store');
+            return secure(response,context.request);
+          }
+        } catch { return secure(Response.json({error:'model metadata temporarily unavailable'}, {status:503}),context.request); }
+      }
       const result = await getPublicRepository(context.locals, kindMap[match[1]], owner, slug);
       if (!result.repository) {
         return secure(Response.json(
@@ -405,7 +439,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
           { status: result.state === 'error' ? 503 : 404 },
         ), context.request);
       }
-      const response = negotiatedRepositoryResponse(result.repository, context.request);
+      const request = viewRequested ? new Request(context.request, {headers:{accept:'text/markdown'}}) : context.request;
+      const response = negotiatedRepositoryResponse(result.repository, request);
+      if (response && view === 'machine') return secure(machinePage((await response.text()) + machineResources(context.url),context.url), context.request);
       if (response) return secure(response, context.request);
     }
     const paperMatch = routePath.match(/^\/papers\/([^/]+)\/([^/]+)$/);
@@ -426,12 +462,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
         ), context.request);
       }
       const origin = context.url.origin;
-      const response = accept.includes('application/json')
+      if (view === 'machine') return secure(machinePage(paperMarkdown(result.paper,origin) + machineResources(context.url),context.url),context.request);
+      const response = !viewRequested && accept.includes('application/json')
         ? Response.json(paperDocument(result.paper, origin))
         : new Response(paperMarkdown(result.paper, origin), {
             headers: { 'content-type': 'text/markdown; charset=utf-8' },
           });
       return secure(response, context.request);
+    }
+    if (machineRead && publicMachinePath(routePath)) {
+      // Deliberately render the public page without a Clerk actor, even when
+      // the reader is signed in. Private account/workspace routes never enter.
+      const machineUrl = new URL(context.request.url);
+      const rendered = secure(await next(context.locals.localizedRewrite),context.request,requestedLocale);
+      return secure(await representPage(rendered,machineUrl,view,accept),context.request,requestedLocale);
     }
   }
 
