@@ -1,6 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import { stripLocalePrefix } from './i18n';
 import { ollamaDownloadPath, type OllamaListing, type OllamaFile } from './ollama';
+import type { ExplorerCard } from './robot-explorer-ui';
 
 const markdown = new MarkdownIt({ html: false, linkify: false });
 const escape = markdown.utils.escapeHtml;
@@ -36,6 +37,8 @@ export function machineResources(url: URL): string {
   const links: Array<readonly [string, string]> = [...protocolLinks];
   if (path.startsWith('/robots')) {
     const query = new URLSearchParams(url.search); query.delete('view');
+    const selected = query.get('product') || query.get('company');
+    if (selected) { query.delete('product'); query.delete('company'); query.set('id',selected); }
     links.unshift(['Robot catalogue and product details (JSON)', '/api/robots/explore?' + query]);
   }
   if (path.startsWith('/social')) links.unshift(['Social agent protocol', '/social/agents.md']);
@@ -100,4 +103,8 @@ export function ollamaDocument(item: OllamaListing, origin: string, tag: string,
 export function ollamaMarkdown(item: OllamaListing, url: URL, tag: string, files: OllamaFile[]): string {
   const doc = ollamaDocument(item, url.origin, tag, files);
   return `# ${item.title}\n\n${item.summary}\n\nCurated by @${item.owner_handle}. Model credits and terms belong to the original publishers.\n\nSource: ${item.source_url}\n\nLicense: ${item.license || 'See source terms'}\n\n${item.card_markdown}\n\n## Files · ${tag}\n\n${doc.files.map(file=>`- [${file.filename}](${file.download_url}) — ${file.size} bytes; ${file.digest}`).join('\n') || 'No downloadable files in this source snapshot. See the source for availability.'}\n\nSelect another version with the tag query parameter. Downloads stream upstream files with their proper filenames. Super ii stores no model weights for this listing.${machineResources(url)}`;
+}
+export function robotMarkdown(item: ExplorerCard, url: URL): string {
+  const links = [item.details_url, item.product_url, item.company_url, item.source_url, item.website].filter((href):href is string=>Boolean(href));
+  return `# ${item.name}\n\n${item.summary ?? ''}\n\nType: ${item.record_type} · Source: ${item.source}\n\n## Published details\n\n\`\`\`json\n${JSON.stringify(item,null,2)}\n\`\`\`\n\n## Resources\n\n${links.map(href=>`- ${new URL(href,url.origin).href}`).join('\n')}\n- [Structured detail](${url.origin}/api/robots/explore?id=${item.id})${machineResources(url)}`;
 }

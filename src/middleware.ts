@@ -5,7 +5,9 @@ import { negotiatedRepositoryResponse } from '@/lib/agent-resources';
 import { getPublicRepository } from '@/lib/repository';
 import type { RepositoryKind } from '@/lib/catalog';
 import { getPublicPaper, paperDocument, paperMarkdown } from '@/lib/papers';
-import { publicMachinePath, representPage, machinePage, machineResources, ollamaDocument, ollamaMarkdown } from '@/lib/machine-view';
+import { publicMachinePath, representPage, machinePage, machineResources, ollamaDocument, ollamaMarkdown, robotMarkdown } from '@/lib/machine-view';
+import { robotExplorerDetail } from '@/lib/robot-explorer';
+import { productPublicRate } from '@/lib/product-http';
 import { getOllamaListing, ollamaFiles, parseOllamaManifest, resolveOllamaVersion, validOllamaSlug, validOllamaTag, type OllamaFile } from '@/lib/ollama';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
@@ -394,6 +396,21 @@ export const onRequest = defineMiddleware(async (context, next) => {
       (accept.includes('application/json') || accept.includes('text/markdown'))
       && !accept.includes('text/html')
     ) || viewRequested;
+    const selectedRobot = context.url.searchParams.get('product') || context.url.searchParams.get('company');
+    if (machineRead && routePath === '/robots' && selectedRobot) {
+      const denied = await productPublicRate(context.locals,context.request);
+      if (denied) return secure(denied,context.request);
+      try {
+        const item = await robotExplorerDetail(context.locals,selectedRobot);
+        if (!item) return secure(Response.json({error:'Entry unavailable'},{status:404}),context.request);
+        const md = robotMarkdown(item,context.url);
+        const response = view === 'machine' ? machinePage(md,context.url)
+          : !viewRequested && accept.includes('application/json') ? Response.json(item)
+          : new Response(md,{headers:{'content-type':'text/markdown; charset=utf-8'}});
+        response.headers.set('cache-control','no-store');
+        return secure(response,context.request);
+      } catch {return secure(Response.json({error:'Catalogue unavailable'},{status:503}),context.request);}
+    }
     const match = routePath.match(/^\/(models|datasets|spaces)\/([^/]+)\/([^/]+)$/);
     if (machineRead && match) {
       const kindMap: Record<string, RepositoryKind> = {

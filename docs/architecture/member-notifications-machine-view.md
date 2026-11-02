@@ -72,8 +72,10 @@ party requests. Copy page and copy agent instruction use the same visible page.
 Hosted models/datasets/apps and papers use their established rich machine
 representations. Ollama listings include source credit, model-card text, file
 names, sizes, checksums and the existing streaming download URLs, including
-explicit tag selection with the existing metadata rate limit. Robot catalogue
-pages link to their structured detail/search API. Client-only operations still
+explicit tag selection with the existing metadata rate limit. Selected robot
+products and companies have a direct Machine action in their detail panel and
+return the corresponding public record, including maintained data and source
+resource links. Catalogue pages link to the structured detail/search API. Client-only operations still
 require their documented APIs; the switch does not execute tools or turn private
 Workspace state into a public document. Human-readable private cards, account,
 checkout, creation and workroom routes are intentionally outside the public
