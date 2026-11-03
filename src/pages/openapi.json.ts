@@ -135,7 +135,7 @@ const openapi = {
         tags: ['Discovery'],
         operationId: 'listAgentSkills',
         summary: 'List validated, portable AI-agent Skills',
-        description: 'Returns one unified validated catalog built from the refreshed open-source feed and reviewed skills packaged with the release. Exact slug or name collisions are removed. Super ii keeps a five-minute edge copy and may serve the last valid copy during a brief upstream interruption.',
+        description: 'Returns one unified validated catalog built from the refreshed open-source feed and reviewed skills packaged with the release. Exact slug or name collisions are removed. Super ii keeps a five-minute edge copy, may serve a recent valid copy during an upstream interruption, and otherwise serves packaged prompts. Optional source links describe reported use cases, not execution verification.',
         responses: {
           '200': {
             description: 'Current validated Skills catalog',
@@ -146,7 +146,7 @@ const openapi = {
                   required: ['version', 'skills'],
                   properties: {
                     version: { const: 1 },
-                    skills: { type: 'array', minItems: 1, maxItems: 1000, items: { $ref: '#/components/schemas/Skill' } },
+                    skills: { type: 'array', minItems: 1, maxItems: 5000, items: { $ref: '#/components/schemas/Skill' } },
                   },
                   additionalProperties: false,
                 },
@@ -685,6 +685,11 @@ const openapi = {
             },
           },
           bestWith: { type: 'array', maxItems: 12, items: { type: 'string', maxLength: 80 } },
+          summary: { type: 'string', maxLength: 500 },
+          source: { type: 'object', required: ['label', 'url'], additionalProperties: false, properties: {
+            label: { type: 'string', maxLength: 80 },
+            url: { type: 'string', format: 'uri', pattern: '^https://', maxLength: 2000 },
+          } },
         },
         additionalProperties: false,
       },

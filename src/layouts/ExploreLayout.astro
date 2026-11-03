@@ -6,7 +6,7 @@ import '@/styles/pixel-controls.css';
 import '@/styles/explore.css';
 
 interface Props {
-  active: 'models' | 'datasets' | 'spaces' | 'transparent' | 'builders' | 'robots' | 'robot' | 'collections' | 'organizations' | 'use' | 'build' | 'tokenizer' | 'highlights' | 'enterprise' | 'docs' | 'notebooks' | 'about' | 'fame' | 'join-team' | 'pricing' | 'security' | 'legal/privacy' | 'legal/terms';
+  active: 'models' | 'datasets' | 'spaces' | 'transparent' | 'builders' | 'robots' | 'robot' | 'collections' | 'organizations' | 'use' | 'build' | 'tokenizer' | 'highlights' | 'enterprise' | 'docs' | 'notebooks' | 'about' | 'fame' | 'join-team' | 'pricing' | 'security' | 'legal/privacy' | 'legal/terms' | 'skills' | 'frontier-ai';
   title: string;
   eyebrow: string;
   description: string;
@@ -36,6 +36,11 @@ const toolDestinations = [
   { id: 'enterprise', label: 'Enterprise', icon: 'buildings' },
 ];
 const isTool = toolDestinations.some(item => item.id === active);
+const agentDestinations = [
+  { id: 'skills', label: 'Skills', icon: 'sparkle' },
+  { id: 'frontier-ai', label: 'Frontier AI', icon: 'lightning' },
+];
+const isAgentTool = agentDestinations.some(item => item.id === active);
 const guideGroups = [
   { label: 'Learn', pages: [
     { id: 'docs', label: 'Documentation', icon: 'book-open' },
@@ -54,12 +59,12 @@ const guideGroups = [
   ] },
 ];
 const guideGroup = guideGroups.find(group => group.pages.some(page => page.id === active));
-const destinations = guideGroup?.pages ?? (isTool ? toolDestinations : exploreDestinations);
-const navigationLabel = guideGroup?.label ?? (isTool ? 'Tools & services' : 'Explore');
+const destinations = guideGroup?.pages ?? (isAgentTool ? agentDestinations : isTool ? toolDestinations : exploreDestinations);
+const navigationLabel = guideGroup?.label ?? (isAgentTool ? 'Agent tools' : isTool ? 'Tools & services' : 'Explore');
 ---
 <BaseLayout title={title} description={description} image={image} imageAlt={imageAlt} noindex={noindex} preferLight>
-  <div class:list={["explore-skin", { "tools-skin": isTool, "guide-skin": Boolean(guideGroup) }]} data-explore-page={active}>
-    <nav class="shell explore-nav" aria-label={guideGroup || isTool ? navigationLabel : "Explore Super ii"}>
+  <div class:list={["explore-skin", { "tools-skin": isTool, "agent-tools-skin": isAgentTool, "guide-skin": Boolean(guideGroup) }]} data-explore-page={active}>
+    <nav class="shell explore-nav" aria-label={guideGroup || isTool || isAgentTool ? navigationLabel : "Explore Super ii"}>
       <a class="explore-workspace" href="/account"><i class="ph ph-arrow-left" aria-hidden="true"></i>Workspace</a>
       <details class="explore-switcher" data-explore-switcher>
         <summary><i class="ph ph-squares-four" aria-hidden="true"></i><span>{navigationLabel}</span><span class="explore-current">{destinations.find(item => item.id === active)?.label}</span></summary>

@@ -107,7 +107,7 @@ Every reviewed model page—not the overview page—derives its exact immutable 
 
 The public Skills page is one searchable interface for complete, portable AI-agent prompts. A person can open a skill in place, inspect its category and First get requirements, copy the complete prompt, share a direct link, or choose Play and select a Chat or Code tool. Play uses a direct prefill only for a supported target and a bounded prompt; otherwise it explicitly copies the prompt and opens the tool when a stable destination exists. Declared variables are filled locally before handoff, and the interface warns against entering secrets. The Share and Play actions do not send the prompt to the Super ii assistant.
 
-GET https://superii.site/api/skills returns the unified validated Skills catalog. Every Skill includes slug, name, category, integrations, and the complete prompt; tags, variables, and bestWith are optional. Super ii validates and de-duplicates the refreshed open-source feed together with reviewed skills packaged in the release, then keeps one same-origin edge response for the interface.
+GET https://superii.site/api/skills returns the unified validated Skills catalog. Every Skill includes slug, name, category, integrations, and the complete prompt; tags, variables, bestWith, summary, and source (label plus HTTPS url) are optional. The release includes 1,642 sourced use cases. Reported examples are not independent execution verification. Super ii validates and de-duplicates the refreshed open-source feed together with reviewed skills packaged in the release, then keeps one same-origin edge response for the interface. If the upstream feed and recent cache are unavailable, the packaged catalog remains available.
 
 ## Super ii Cards
 

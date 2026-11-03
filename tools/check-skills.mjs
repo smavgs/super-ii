@@ -5,6 +5,7 @@ import {
   MAX_SKILL_PROMPT_LENGTH,
   mergeSkillsCatalog,
   PACKAGED_SKILL_COUNT,
+  USE_CASE_SKILL_COUNT,
   parsePublicSkillsCatalog,
   parseSkillsCatalog,
   SKILLS_SOURCE_URL,
@@ -54,7 +55,9 @@ for (const text of [
   'data-skills-grid',
   'data-skill-window',
   'Complete prompt',
-  'Works with any agent',
+  'Use with your AI tool',
+  'data-skills-more',
+  'data-skill-window-source',
   'data-skill-window-copy',
   'data-skill-window-share',
   'data-skill-window-play',
@@ -77,14 +80,14 @@ for (const text of [
   "new URL(document.URL).searchParams.get('skill')",
   'if (requestedSkill) openSkill(requestedSkill)',
   'data-skill-launcher-tab',
-  'DIRECT_PROMPT_LIMIT = 3_500',
-  "mode: 'copy'",
-  "mode: 'deeplink'",
+  'SKILLS_PAGE_SIZE = 48',
+  'dispatchSkillLaunch(target, prompt',
+  'visible.slice(0, visibleLimit)',
   'showVariableForm(target, variables)',
   'substituteVariables(activeSkill, new FormData(launcherVariables))',
   'window.localStorage.setItem(LAST_TARGET_KEY, target.id)',
   'window.requestAnimationFrame(positionLauncher)',
-  "normalizeName(activeSkill.category) === 'vibe coding'",
+  "'software & devops'",
   "ui('First get'",
   'programMark(name)',
 ]) requireText('client', text);
@@ -101,7 +104,8 @@ for (const text of [
   "redirect: 'manual'",
   "'x-superii-skills-cache': state",
   "return publicResponse(cached.body, 'stale')",
-  'unified-skills-v2',
+  'unified-skills-v3',
+  "'packaged'",
 ]) requireText('api', text);
 for (const forbidden of ['sqlClient', 'DATABASE_URL', 'contributor:', 'sourceUrl:', 'detailUrl:']) rejectText('api', forbidden);
 
@@ -214,7 +218,7 @@ if (parseSkillsCatalog({ version: 1, agents: [{
   slug: 'too-long', name: 'Too long', category: 'Ops', integrations: [], prompt: 'x'.repeat(MAX_SKILL_PROMPT_LENGTH + 1),
 }] })) errors.push('catalog parser must reject prompts above the documented limit');
 if (PACKAGED_SKILL_COUNT !== 121 || !parsePublicSkillsCatalog(additionsJson)) errors.push('packaged Skills additions must parse through the public schema');
-if (!valid || mergeSkillsCatalog(valid).skills.length !== PACKAGED_SKILL_COUNT + 1) errors.push('unified catalog must include upstream and packaged Skills');
+if (!valid || mergeSkillsCatalog(valid).skills.length !== PACKAGED_SKILL_COUNT + USE_CASE_SKILL_COUNT + 1) errors.push('unified catalog must include upstream and both packaged collections');
 if (SKILLS_SOURCE_URL !== 'https://smavgs.github.io/make-great-agents/api/agents.json') errors.push('refreshed open-source catalog URL drifted');
 
 if (errors.length) {
@@ -222,4 +226,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('OK: Skills serves one validated catalog, 121 packaged additions, First get program marks, portable Copy and Share, and an adaptive green Play handoff with variables and safe clipboard fallbacks.');
+console.log('OK: Skills validates the expanded catalog, preserves portable Copy and Share, and opens green Play handoffs with complete-prompt fallbacks.');

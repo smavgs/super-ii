@@ -1,30 +1,21 @@
 ---
 import SuperAssistant from '@/components/SuperAssistant.astro';
-import BaseLayout from '@/layouts/BaseLayout.astro';
-import JourneyLabel from '@/components/JourneyLabel.astro';
+import ExploreLayout from '@/layouts/ExploreLayout.astro';
+import '@/styles/agent-tools.css';
 
 export const prerender = false;
 ---
 
-<BaseLayout
+<ExploreLayout
+  active="skills"
   title="Skills"
-  description="Ready-to-use skills for your AI agent. Search, copy, share, or play any complete prompt."
-  className="skills-page"
+  eyebrow="Give your agent a useful job"
+  description="Ready-to-use skills for your AI agent. Pick a task, preview the complete prompt, then press Play."
 >
-  <section class="skills-hero">
-    <div class="shell skills-hero__inner">
-      <div class="skills-hero__copy">
-        <p class="skills-kicker"><span aria-hidden="true">✦</span> Included from Free</p>
-        <h1>Skills</h1>
-        <p>Ready-to-use skills for your AI agent.</p>
-      </div>
-      <div class="skills-hero__note" aria-label="How Skills work">
-        <JourneyLabel kind="how" />
-        <p><strong>Pick a useful job.</strong> Copy it, share it, or play it with the AI tool you already use.</p>
-      </div>
-    </div>
-  </section>
-
+  <div slot="actions" class="agent-tools-actions">
+    <span class="agent-tool-badge"><i class="ph ph-sparkle" aria-hidden="true"></i> Included from Free</span>
+    <a class="button" href="/frontier-ai"><i class="ph ph-lightning" aria-hidden="true"></i> Set up frontier AI</a>
+  </div>
   <section class="skills-library" aria-labelledby="skills-library-title">
     <div class="shell">
       <div class="skills-toolbar">
@@ -37,7 +28,10 @@ export const prerender = false;
         <p class="skills-count" id="skills-library-title" aria-live="polite" data-skills-count>Loading skills…</p>
       </div>
 
-      <div class="skills-filters" aria-label="Filter skills by category" data-skills-filters hidden></div>
+      <details class="skills-filter-panel">
+        <summary><i class="ph ph-funnel" aria-hidden="true"></i> Categories <span aria-hidden="true">+</span></summary>
+        <div class="skills-filters" aria-label="Filter skills by category" data-skills-filters hidden></div>
+      </details>
 
       <div class="skills-error" data-skills-error hidden>
         <span aria-hidden="true">↻</span>
@@ -51,6 +45,11 @@ export const prerender = false;
             <i>{String(index + 1).padStart(2, '0')}</i><b></b><em></em><em></em>
           </span>
         ))}
+      </div>
+
+      <div class="skills-pagination" data-skills-pagination hidden>
+        <p data-skills-shown aria-live="polite"></p>
+        <button type="button" class="button" data-skills-more>Show more skills <i class="ph ph-arrow-down" aria-hidden="true"></i></button>
       </div>
 
       <div class="skills-empty" data-skills-empty hidden>
@@ -76,7 +75,8 @@ export const prerender = false;
       <div class="skill-window__requirements" data-skill-window-integrations></div>
 
       <section class="skill-window__prompt" aria-labelledby="skill-window-prompt-title">
-        <div><h3 id="skill-window-prompt-title">Complete prompt</h3><span>Works with any agent</span></div>
+        <div><h3 id="skill-window-prompt-title">Complete prompt</h3><span>Use with your AI tool</span></div>
+        <p class="skill-window__source" data-skill-window-source hidden></p>
         <pre><code data-skill-window-prompt></code></pre>
       </section>
 
@@ -141,9 +141,14 @@ export const prerender = false;
 
       <div class="skill-launcher__handoff" data-skill-launcher-handoff hidden>
         <span class="skill-launcher__handoff-mark" aria-hidden="true"><i class="ph ph-check"></i></span>
-        <p>Skill copied</p>
+        <p data-skill-launcher-handoff-status>Skill ready</p>
         <h3 data-skill-launcher-handoff-title>Open your AI tool and paste.</h3>
         <p data-skill-launcher-handoff-copy></p>
+        <details class="skill-handoff-prompt">
+          <summary>Complete prompt</summary>
+          <textarea readonly aria-label="Complete handoff prompt" data-skill-launcher-handoff-prompt></textarea>
+        </details>
+        <button type="button" class="skill-handoff-copy" data-skill-launcher-handoff-copy-again>Copy complete prompt</button>
         <div>
           <button type="button" data-skill-launcher-handoff-back>Choose another</button>
           <a href="#" target="_blank" rel="noopener noreferrer" data-skill-launcher-handoff-open hidden>Open tool ↗</a>
@@ -153,7 +158,7 @@ export const prerender = false;
   </dialog>
 
   <SuperAssistant />
-</BaseLayout>
+</ExploreLayout>
 
 <script>
   import '@/scripts/skills-page';

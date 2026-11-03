@@ -16,7 +16,15 @@ const {
 ---
 
 <span class:list={['logo-mark', `logo-mark--${size}`]}>
-  <Image
+  {size === 'small' ? <img
+    src="/brand/super-ii-icon-192.png"
+    alt={label}
+    width="192"
+    height="192"
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding="sync"
+  /> : <Image
     src={superIiLogo}
     alt={label}
     width={768}
@@ -26,5 +34,5 @@ const {
     loading={priority ? 'eager' : 'lazy'}
     fetchpriority={priority ? 'high' : 'auto'}
     decoding="async"
-  />
+  />}
 </span>

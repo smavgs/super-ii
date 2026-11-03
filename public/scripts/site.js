@@ -62,6 +62,10 @@
   });
 
   mobileNav?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => closeMenu()));
+  document.addEventListener('click', (event) => {
+    if (!mobileNav?.hidden && event.target instanceof Node
+      && !mobileNav.contains(event.target) && !menuButton?.contains(event.target)) closeMenu(true);
+  });
   document.querySelector('.header-auth')?.addEventListener('click', (event) => {
     if (event.target instanceof Element && event.target.closest('a, button')) closeMenu();
   }, { capture: true });

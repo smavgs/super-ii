@@ -546,11 +546,16 @@ export function createSuperAssistant(root: HTMLElement): SuperAssistantControlle
     activeRequest?.abort();
     activeRequest = null;
     document.removeEventListener('keydown', onKeydown);
-    window.removeEventListener('pagehide', destroy);
+    window.removeEventListener('pagehide', onPageHide);
+  };
+  const onPageHide = (event: PageTransitionEvent) => {
+    // BFCache restores this same controller and its DOM. Do not permanently
+    // destroy it when a mobile back/forward navigation freezes the document.
+    if (!event.persisted) destroy();
   };
   renderSearchState();
   document.addEventListener('keydown', onKeydown);
-  window.addEventListener('pagehide', destroy);
+  window.addEventListener('pagehide', onPageHide);
 
   return { toggle, openSkillSetup, destroy };
 }
