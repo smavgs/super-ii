@@ -1,4 +1,5 @@
 import additionsSource from '../content/skills-additions.json' with { type: 'json' };
+import useCasesSource from '../content/skills-use-cases.json' with { type: 'json' };
 
 export const SKILLS_SOURCE_URL = 'https://smavgs.github.io/make-great-agents/api/agents.json';
 export const SKILLS_FEED_VERSION = 1;
@@ -18,6 +19,8 @@ export type Skill = {
   tags?: string[];
   variables?: SkillVariable[];
   bestWith?: string[];
+  summary?: string;
+  source?: { label: string; url: string };
 };
 
 export type SkillsCatalog = {
@@ -80,6 +83,16 @@ function parseSkillEntry(entry: unknown): Skill | null {
   const bestWith = entry.bestWith === undefined ? undefined : parseTextList(entry.bestWith, 12);
   const variables = entry.variables === undefined ? undefined : parseVariables(entry.variables);
   if (tags === null || bestWith === null || variables === null) return null;
+  if (entry.summary !== undefined && !isCleanText(entry.summary, 500)) return null;
+  let source: Skill['source'];
+  if (entry.source !== undefined) {
+    if (!isRecord(entry.source) || !isCleanText(entry.source.label, 80) || !isCleanText(entry.source.url, 2_000)) return null;
+    try {
+      const url = new URL(entry.source.url);
+      if (url.protocol !== 'https:' || url.username || url.password) return null;
+      source = { label: entry.source.label.trim(), url: url.href };
+    } catch { return null; }
+  }
 
   return {
     slug: entry.slug,
@@ -91,11 +104,13 @@ function parseSkillEntry(entry: unknown): Skill | null {
     ...(tags?.length ? { tags } : {}),
     ...(variables?.length ? { variables } : {}),
     ...(bestWith?.length ? { bestWith } : {}),
+    ...(typeof entry.summary === 'string' ? { summary: entry.summary } : {}),
+    ...(source ? { source } : {}),
   };
 }
 
-function parseEntries(value: unknown): Skill[] | null {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 1_000) return null;
+function parseEntries(value: unknown, limit = 1_000): Skill[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > limit) return null;
   const skills: Skill[] = [];
   const slugs = new Set<string>();
   for (const entry of value) {
@@ -115,7 +130,7 @@ export function parseSkillsCatalog(value: unknown): SkillsCatalog | null {
 
 export function parsePublicSkillsCatalog(value: unknown): SkillsCatalog | null {
   if (!isRecord(value) || value.version !== SKILLS_FEED_VERSION || !Array.isArray(value.skills)) return null;
-  const skills = parseEntries(value.skills);
+  const skills = parseEntries(value.skills, 5_000);
   return skills ? { version: SKILLS_FEED_VERSION, skills } : null;
 }
 
@@ -126,13 +141,17 @@ const packagedAdditions = (() => {
 })();
 
 export const PACKAGED_SKILL_COUNT = packagedAdditions.skills.length;
+const useCases = parsePublicSkillsCatalog(useCasesSource);
+if (!useCases) throw new Error('Packaged Skills use cases failed validation');
+export const USE_CASE_SKILL_COUNT = useCases.skills.length;
+const packagedSkills = [...packagedAdditions.skills, ...useCases.skills];
 
 export function mergeSkillsCatalog(upstream: SkillsCatalog): SkillsCatalog {
   const skills = [...upstream.skills];
   const slugs = new Set(skills.map((skill) => skill.slug));
   const names = new Set(skills.map((skill) => skill.name.trim().toLocaleLowerCase()));
 
-  for (const addition of packagedAdditions.skills) {
+  for (const addition of packagedSkills) {
     const normalizedName = addition.name.trim().toLocaleLowerCase();
     if (slugs.has(addition.slug) || names.has(normalizedName)) continue;
     skills.push(addition);

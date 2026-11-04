@@ -1,4 +1,5 @@
 import type { Skill, SkillVariable, SkillsCatalog } from '@/lib/skills';
+import { launchTargets, planSkillLaunch, dispatchSkillLaunch, type LaunchGroup, type LaunchTarget } from '@/lib/skill-launch';
 import {
   siApple,
   siCursor,
@@ -40,20 +41,6 @@ import {
   siZoom,
 } from 'simple-icons';
 
-type LaunchGroup = 'chat' | 'code';
-type LaunchMode = 'url' | 'copy' | 'deeplink';
-
-type LaunchTarget = {
-  id: string;
-  name: string;
-  group: LaunchGroup;
-  mode: LaunchMode;
-  icon?: string;
-  asset?: string;
-  openUrl?: string;
-  makeUrl?: (prompt: string, skill: Skill) => string;
-};
-
 const glyphs: Record<string, string> = {
   marketing: '✦',
   ops: '⌘',
@@ -78,40 +65,35 @@ const categoryRussian: Record<string, string> = {
   Success: 'Работа с клиентами',
   'Data Science': 'Анализ данных',
   'Vibe Coding': 'Разработка',
+  'Work & Operations': 'Работа и операции',
+  'Software & DevOps': 'Разработка и DevOps',
+  'Sales, Marketing & Support': 'Продажи, маркетинг и поддержка',
+  'Life Admin & Home': 'Быт и дом',
+  'Money, Bills & Benefits': 'Финансы, счета и льготы',
+  'Research & Knowledge': 'Исследования и знания',
+  'Travel & Bookings': 'Путешествия и бронирования',
+  'Shopping & Errands': 'Покупки и поручения',
+  'Content & Creative': 'Контент и творчество',
+  'Games & Simulations': 'Игры и симуляции',
+  'Security, Science & Hardware': 'Безопасность, наука и оборудование',
+};
+const categoryChinese: Record<string, string> = {
+  All: '全部', Marketing: '营销', Ops: '运营', Personal: '个人', Productivity: '效率', Sales: '销售', Success: '客户成功',
+  'Data Science': '数据科学', 'Vibe Coding': '编程',
+  'Work & Operations': '工作与运营', 'Software & DevOps': '软件与 DevOps',
+  'Sales, Marketing & Support': '销售、营销与支持', 'Life Admin & Home': '日常事务与家庭',
+  'Money, Bills & Benefits': '资金、账单与福利', 'Research & Knowledge': '研究与知识',
+  'Travel & Bookings': '旅行与预订', 'Shopping & Errands': '购物与跑腿', 'Content & Creative': '内容与创意',
+  'Games & Simulations': '游戏与模拟', 'Security, Science & Hardware': '安全、科学与硬件',
+};
+const chineseUi: Record<string, string> = {
+  'Use your AI tool': '使用您的 AI 工具', 'First get': '先连接', 'Best with': '推荐搭配',
+  'Desktop app': '桌面应用', 'Copy + open': '复制并打开', 'Open with prompt': '携带提示词打开',
+  'Source': '来源', 'Recent': '最近使用', 'Your AI tool': '您的 AI 工具',
 };
 
-const DIRECT_PROMPT_LIMIT = 3_500;
 const LAST_TARGET_KEY = 'superii.skills.last-play-target.v1';
-
-const launchTargets: LaunchTarget[] = [
-  { id: 'chatgpt', name: 'ChatGPT', group: 'chat', mode: 'url', asset: '/brand/agents/codex.svg', openUrl: 'https://chatgpt.com/', makeUrl: (prompt) => `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
-  { id: 'claude', name: 'Claude', group: 'chat', mode: 'url', asset: '/brand/agents/claude-code.svg', openUrl: 'https://claude.ai/new', makeUrl: (prompt) => `https://claude.ai/new?q=${encodeURIComponent(prompt)}` },
-  { id: 'gemini', name: 'Gemini', group: 'chat', mode: 'copy', openUrl: 'https://gemini.google.com/app' },
-  { id: 'grok', name: 'Grok', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=none&q=${encodeURIComponent(prompt)}` },
-  { id: 'grok-think', name: 'Grok Think', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=think&q=${encodeURIComponent(prompt)}` },
-  { id: 'grok-search', name: 'Grok Deep Search', group: 'chat', mode: 'url', asset: '/brand/agents/grok.svg', openUrl: 'https://grok.com/chat', makeUrl: (prompt) => `https://grok.com/chat?reasoningMode=deepsearch&q=${encodeURIComponent(prompt)}` },
-  { id: 'mistral', name: 'Le Chat', group: 'chat', mode: 'url', asset: '/brand/agents/mistral.svg', openUrl: 'https://chat.mistral.ai/chat', makeUrl: (prompt) => `https://chat.mistral.ai/chat?q=${encodeURIComponent(prompt)}` },
-  { id: 'perplexity', name: 'Perplexity', group: 'chat', mode: 'url', openUrl: 'https://www.perplexity.ai/', makeUrl: (prompt) => `https://www.perplexity.ai/search?q=${encodeURIComponent(prompt)}` },
-  { id: 'phind', name: 'Phind', group: 'chat', mode: 'url', icon: 'ph-magnifying-glass', openUrl: 'https://www.phind.com/', makeUrl: (prompt) => `https://www.phind.com/search?q=${encodeURIComponent(prompt)}` },
-  { id: 'you', name: 'You.com', group: 'chat', mode: 'url', icon: 'ph-globe', openUrl: 'https://you.com/', makeUrl: (prompt) => `https://you.com/search?q=${encodeURIComponent(prompt)}` },
-  { id: 'huggingchat', name: 'HuggingChat', group: 'chat', mode: 'url', openUrl: 'https://huggingface.co/chat/', makeUrl: (prompt) => `https://huggingface.co/chat/?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'poe', name: 'Poe', group: 'chat', mode: 'url', openUrl: 'https://poe.com/', makeUrl: (prompt) => `https://poe.com/?q=${encodeURIComponent(prompt)}` },
-  { id: 'meta', name: 'Meta AI', group: 'chat', mode: 'url', openUrl: 'https://www.meta.ai/', makeUrl: (prompt) => `https://www.meta.ai/?q=${encodeURIComponent(prompt)}` },
-  { id: 'manus', name: 'Manus', group: 'chat', mode: 'url', icon: 'ph-hand', openUrl: 'https://manus.im/app', makeUrl: (prompt) => `https://manus.im/app?q=${encodeURIComponent(prompt)}` },
-  { id: 'copilot', name: 'Microsoft Copilot', group: 'chat', mode: 'copy', asset: '/brand/agents/copilot.svg', openUrl: 'https://copilot.microsoft.com/' },
-  { id: 'deepseek', name: 'DeepSeek', group: 'chat', mode: 'copy', openUrl: 'https://chat.deepseek.com/' },
-  { id: 'pi', name: 'Pi', group: 'chat', mode: 'copy', openUrl: 'https://pi.ai/' },
-  { id: 'codex', name: 'Codex', group: 'code', mode: 'copy', asset: '/brand/agents/codex.svg', openUrl: 'https://chatgpt.com/codex' },
-  { id: 'cursor', name: 'Cursor', group: 'code', mode: 'deeplink', makeUrl: (prompt) => `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(prompt)}` },
-  { id: 'vscode', name: 'VS Code · Copilot Chat', group: 'code', mode: 'deeplink', makeUrl: (prompt) => `vscode://GitHub.Copilot-Chat/chat?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'vscode-insiders', name: 'VS Code Insiders', group: 'code', mode: 'deeplink', icon: 'ph-code', makeUrl: (prompt) => `vscode-insiders://GitHub.Copilot-Chat/chat?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'goose', name: 'Goose', group: 'code', mode: 'deeplink', icon: 'ph-bird', makeUrl: (prompt, skill) => gooseRecipe(prompt, skill) },
-  { id: 'v0', name: 'v0', group: 'code', mode: 'url', openUrl: 'https://v0.dev/chat', makeUrl: (prompt) => `https://v0.dev/chat?q=${encodeURIComponent(prompt)}` },
-  { id: 'bolt', name: 'Bolt', group: 'code', mode: 'url', icon: 'ph-lightning', openUrl: 'https://bolt.new/', makeUrl: (prompt) => `https://bolt.new/?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'lovable', name: 'Lovable', group: 'code', mode: 'url', icon: 'ph-heart', openUrl: 'https://lovable.dev/', makeUrl: (prompt) => `https://lovable.dev/?autosubmit=true#prompt=${encodeURIComponent(prompt)}` },
-  { id: 'netlify', name: 'Netlify', group: 'code', mode: 'url', openUrl: 'https://app.netlify.com/', makeUrl: (prompt) => `https://app.netlify.com/run?prompt=${encodeURIComponent(prompt)}` },
-  { id: 'ai2sql', name: 'AI2SQL', group: 'code', mode: 'url', icon: 'ph-database', openUrl: 'https://builder.ai2sql.io/', makeUrl: (prompt) => `https://builder.ai2sql.io/dashboard/builder-all-lp?tab=generate&prompt=${encodeURIComponent(prompt)}` },
-];
+const SKILLS_PAGE_SIZE = 48;
 
 const programAssets: Record<string, string> = {
   chatgpt: '/brand/agents/codex.svg',
@@ -225,11 +207,11 @@ const programIcons: Record<string, string> = {
 };
 
 function ui(english: string, russianText: string) {
-  return russian ? russianText : english;
+  return russian ? russianText : chinese ? chineseUi[english] ?? english : english;
 }
 
 function categoryLabel(category: string) {
-  return russian ? categoryRussian[category] ?? category : category;
+  return russian ? categoryRussian[category] ?? category : chinese ? categoryChinese[category] ?? category : category;
 }
 
 function required<T extends Element>(selector: string): T {
@@ -256,6 +238,11 @@ function isSkill(value: unknown): value is Skill {
     && typeof skill.category === 'string'
     && typeof skill.prompt === 'string'
     && isStringList(skill.integrations)
+    && (skill.summary === undefined || typeof skill.summary === 'string')
+    && (skill.source === undefined || (typeof skill.source === 'object' && skill.source !== null
+      && typeof (skill.source as { label?: unknown }).label === 'string'
+      && typeof (skill.source as { url?: unknown }).url === 'string'
+      && /^https:\/\//.test((skill.source as { url: string }).url)))
     && (skill.tags === undefined || isStringList(skill.tags))
     && (skill.bestWith === undefined || isStringList(skill.bestWith))
     && (skill.variables === undefined
@@ -367,25 +354,14 @@ function requirementGroup(label: string, names: string[], bestWith = false) {
   return group;
 }
 
-function gooseRecipe(prompt: string, skill: Skill) {
-  const config = {
-    version: '1.0.0',
-    title: skill.name,
-    description: summary(skill.prompt),
-    instructions: 'This is a Super ii Skill. Follow the complete instructions below.',
-    prompt,
-    activities: ['message:This skill was opened from Super ii.', 'Do it now', 'Review the instructions'],
-  };
-  const bytes = new TextEncoder().encode(JSON.stringify(config));
-  let binary = '';
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return `goose://recipe?config=${btoa(binary)}`;
-}
-
 const search = required<HTMLInputElement>('[data-skills-search]');
 const count = required<HTMLElement>('[data-skills-count]');
 const filters = required<HTMLElement>('[data-skills-filters]');
 const grid = required<HTMLElement>('[data-skills-grid]');
+const pagination = required<HTMLElement>('[data-skills-pagination]');
+const shown = required<HTMLElement>('[data-skills-shown]');
+const more = required<HTMLButtonElement>('[data-skills-more]');
+const dialogSource = required<HTMLElement>('[data-skill-window-source]');
 const error = required<HTMLElement>('[data-skills-error]');
 const retry = required<HTMLButtonElement>('[data-skills-retry]');
 const empty = required<HTMLElement>('[data-skills-empty]');
@@ -420,7 +396,12 @@ const launcherHandoffCopy = required<HTMLElement>('[data-skill-launcher-handoff-
 const launcherHandoffBack = required<HTMLButtonElement>('[data-skill-launcher-handoff-back]');
 const launcherHandoffOpen = required<HTMLAnchorElement>('[data-skill-launcher-handoff-open]');
 
+const handoffStatus = required<HTMLElement>('[data-skill-launcher-handoff-status]');
+const handoffPrompt = required<HTMLTextAreaElement>('[data-skill-launcher-handoff-prompt]');
+const handoffCopy = required<HTMLButtonElement>('[data-skill-launcher-handoff-copy-again]');
+
 let skills: Skill[] = [];
+let visibleLimit = SKILLS_PAGE_SIZE;
 let activeCategory = 'All';
 let activeSkill: Skill | null = null;
 let activeLaunchTab: LaunchGroup = 'chat';
@@ -431,6 +412,7 @@ function searchable(skill: Skill) {
   return [
     skill.name,
     skill.category,
+    skill.summary ?? '',
     ...skill.integrations,
     ...(skill.tags ?? []),
     ...(skill.bestWith ?? []),
@@ -470,7 +452,7 @@ function renderDialogRequirements(skill: Skill) {
     icon.className = 'ph ph-check-circle';
     icon.setAttribute('aria-hidden', 'true');
     const copy = document.createElement('span');
-    copy.textContent = ui('No setup needed', 'Настройка не нужна');
+    copy.textContent = ui('Use your AI tool', 'Используйте свой ИИ-инструмент');
     ready.appendChild(icon);
     ready.appendChild(copy);
     dialogRequirements.appendChild(ready);
@@ -488,6 +470,16 @@ function openSkill(skill: Skill) {
   dialogCategory.textContent = categoryLabel(skill.category);
   dialogMark.textContent = glyph(skill.category);
   dialogPrompt.textContent = skill.prompt;
+  dialogSource.replaceChildren();
+  dialogSource.hidden = !skill.source;
+  if (skill.source) {
+    const link = document.createElement('a');
+    link.href = skill.source.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = `${ui('Source', 'Источник')}: ${skill.source.label} ↗`;
+    dialogSource.appendChild(link);
+  }
   dialogStatus.textContent = '';
   renderDialogRequirements(skill);
   document.body.classList.add('skill-window-open');
@@ -502,7 +494,7 @@ function cardRequirements(skill: Skill) {
     icon.className = 'ph ph-check-circle';
     icon.setAttribute('aria-hidden', 'true');
     const copy = document.createElement('span');
-    copy.textContent = ui('No setup needed', 'Настройка не нужна');
+    copy.textContent = ui('Use your AI tool', 'Используйте свой ИИ-инструмент');
     row.appendChild(icon);
     row.appendChild(copy);
     return row;
@@ -550,7 +542,7 @@ function makeCard(skill: Skill, index: number) {
   title.textContent = skill.name;
   const copy = document.createElement('span');
   copy.className = 'skill-card__copy';
-  copy.textContent = summary(skill.prompt);
+  copy.textContent = summary(skill.summary ?? skill.prompt);
   const meta = document.createElement('span');
   meta.className = 'skill-card__meta';
   const category = document.createElement('b');
@@ -565,9 +557,14 @@ function makeCard(skill: Skill, index: number) {
   return card;
 }
 
-function renderCards() {
+function renderCards(reset: unknown = true) {
+  if (reset !== false) visibleLimit = SKILLS_PAGE_SIZE;
   const visible = visibleSkills();
-  grid.replaceChildren(...visible.map(makeCard));
+  grid.replaceChildren(...visible.slice(0, visibleLimit).map(makeCard));
+  pagination.hidden = visible.length === 0;
+  more.hidden = visibleLimit >= visible.length;
+  const displayed = Math.min(visible.length, visibleLimit);
+  shown.textContent = chinese ? `已显示 ${displayed} / ${visible.length} 项` : ui(`Showing ${displayed} of ${visible.length}`, `Показано ${displayed} из ${visible.length}`);
   grid.classList.remove('skills-grid--loading');
   grid.setAttribute('aria-busy', 'false');
   empty.hidden = visible.length !== 0;
@@ -582,6 +579,8 @@ function renderCards() {
         : 'навыков';
     const suffix = activeCategory === 'All' ? '' : ` в категории «${categoryLabel(activeCategory)}»`;
     count.textContent = `${visible.length} ${noun}${suffix}`;
+  } else if (chinese) {
+    count.textContent = `${visible.length} 项技能${activeCategory === 'All' ? '' : ` · ${categoryLabel(activeCategory)}`}`;
   } else {
     const suffix = activeCategory === 'All' ? '' : ` in ${activeCategory}`;
     count.textContent = `${visible.length} ${visible.length === 1 ? 'skill' : 'skills'}${suffix}`;
@@ -617,7 +616,9 @@ async function loadSkills() {
   count.textContent = ui('Loading skills…', 'Загружаем навыки…');
   retry.disabled = true;
   try {
-    const response = await fetch('/api/skills', {
+    // Give the expanded collection its own browser cache entry. Returning
+    // visitors may still have the previous release's stale-while-revalidate copy.
+    const response = await fetch('/api/skills?catalog=3', {
       credentials: 'same-origin',
       headers: { accept: 'application/json' },
     });
@@ -643,9 +644,9 @@ async function loadSkills() {
 }
 
 function targetModeLabel(target: LaunchTarget) {
-  if (target.mode === 'deeplink') return ui('Desktop', 'Приложение');
+  if (target.mode === 'deeplink') return ui('Desktop app', 'Приложение');
   if (target.mode === 'copy') return ui('Copy + open', 'Копировать + открыть');
-  return ui('Direct', 'Сразу');
+  return ui('Open with prompt', 'Открыть с промптом');
 }
 
 function readLastTarget() {
@@ -747,7 +748,7 @@ function positionLauncher() {
 function openLauncher() {
   if (!activeSkill) return;
   const recentTarget = launchTargets.find((target) => target.id === readLastTarget());
-  activeLaunchTab = normalizeName(activeSkill.category) === 'vibe coding'
+  activeLaunchTab = ['vibe coding', 'software & devops'].includes(normalizeName(activeSkill.category))
     ? 'code'
     : recentTarget?.group ?? 'chat';
   resetLauncher();
@@ -789,7 +790,7 @@ function substituteVariables(skill: Skill, form: FormData) {
   for (const variable of skill.variables ?? []) {
     const value = String(form.get(variable.name) ?? '');
     const pattern = new RegExp(`\\$\\{${variable.name}(?::[^}]*)?\\}`, 'g');
-    prompt = prompt.replace(pattern, value);
+    prompt = prompt.replace(pattern, () => value);
   }
   return prompt;
 }
@@ -819,68 +820,51 @@ async function copyText(value: string) {
   }
 }
 
-function showHandoff(target: LaunchTarget, copied: boolean, reason: 'copy' | 'long' | 'blocked') {
+function showHandoff(target: LaunchTarget, prompt: string, copied: boolean, plan: ReturnType<typeof planSkillLaunch>, blocked: boolean) {
   launcherPicker.hidden = true;
   launcherVariables.hidden = true;
   launcherHandoff.hidden = false;
   launcherTitle.textContent = target.name;
-  launcherHandoffTitle.textContent = copied
-    ? ui(`Open ${target.name} and paste the skill.`, `Откройте ${target.name} и вставьте навык.`)
-    : ui('Copy was blocked by the browser.', 'Браузер заблокировал копирование.');
-  launcherHandoffCopy.textContent = copied
-    ? reason === 'long'
-      ? ui('This complete skill is too long for a reliable URL handoff, so it is safely on your clipboard.', 'Полный навык слишком длинный для надёжной ссылки, поэтому он скопирован.')
-      : ui('Nothing was sent through Super ii. The complete skill is on your clipboard.', 'Через Super ii ничего не отправлялось. Полный навык находится в буфере обмена.')
-    : ui('Use Copy in the skill window, then open your AI tool and paste it.', 'Используйте «Копировать» в окне навыка, затем откройте ИИ-инструмент и вставьте его.');
-  if (target.openUrl) {
-    launcherHandoffOpen.href = target.openUrl;
-    launcherHandoffOpen.textContent = ui(`Open ${target.name} ↗`, `Открыть ${target.name} ↗`);
-    launcherHandoffOpen.hidden = false;
-  } else {
-    launcherHandoffOpen.hidden = true;
-    launcherHandoffOpen.removeAttribute('href');
-  }
+  handoffStatus.textContent = copied ? ui('Complete prompt copied', 'Полный промпт скопирован') : ui('Complete prompt ready', 'Полный промпт готов');
+  handoffPrompt.value = prompt;
+  launcherHandoffTitle.textContent = blocked
+    ? ui('Allow the new tab, or open it below.', 'Разрешите новую вкладку или откройте ниже.')
+    : plan.native
+      ? ui('Continue in the Codex app.', 'Продолжите в приложении Codex.')
+      : plan.requiresPaste
+        ? ui(`Paste the skill in ${target.name}.`, `Вставьте навык в ${target.name}.`)
+        : ui(`Continue in ${target.name}.`, `Продолжите в ${target.name}.`);
+  launcherHandoffCopy.textContent = plan.native
+    ? ui('The desktop app must be installed. You can also open Codex in your browser and paste the prompt.', 'Приложение должно быть установлено. Можно открыть Codex в браузере и вставить промпт.')
+    : plan.reason === 'long'
+      ? ui('The complete prompt is too long for a link. The tool still opens; paste the full text there.', 'Полный промпт слишком длинный для ссылки. Инструмент откроется; вставьте полный текст.')
+      : ui('Sign in if needed. If the prompt is not already filled in, paste it. Review it before sending.', 'Войдите при необходимости. Если промпт не заполнен, вставьте его. Проверьте перед отправкой.');
+  if (!copied) launcherHandoffCopy.textContent += ' ' + ui('Clipboard access was unavailable; copy the complete prompt below.', 'Буфер обмена недоступен; скопируйте полный промпт ниже.');
+  launcherHandoffOpen.href = plan.native ? target.openUrl : plan.url;
+  launcherHandoffOpen.textContent = plan.native
+    ? ui('Open Codex in browser ↗', 'Открыть Codex в браузере ↗')
+    : ui(`Open ${target.name} ↗`, `Открыть ${target.name} ↗`);
+  launcherHandoffOpen.hidden = false;
   window.requestAnimationFrame(positionLauncher);
 }
 
 async function launchSkill(target: LaunchTarget, prompt: string) {
   if (!activeSkill) return;
   rememberTarget(target);
-
-  if (target.mode === 'copy' || prompt.length > DIRECT_PROMPT_LIMIT) {
-    const copied = await copyText(prompt);
-    showHandoff(target, copied, prompt.length > DIRECT_PROMPT_LIMIT ? 'long' : 'copy');
-    return;
-  }
-
-  if (target.mode === 'deeplink') {
-    const copied = await copyText(prompt);
-    const url = target.makeUrl?.(prompt, activeSkill);
-    if (!url) {
-      showHandoff(target, copied, 'blocked');
-      return;
-    }
-    window.location.href = url;
-    dialogStatus.textContent = ui(`Skill prepared for ${target.name}.`, `Навык подготовлен для ${target.name}.`);
-    launcher.close();
-    return;
-  }
-
-  const url = target.makeUrl?.(prompt, activeSkill);
-  if (!url) {
-    const copied = await copyText(prompt);
-    showHandoff(target, copied, 'blocked');
-    return;
-  }
-  const opened = window.open(url, '_blank');
-  if (!opened) {
-    const copied = await copyText(prompt);
-    showHandoff(target, copied, 'blocked');
-    return;
-  }
-  try { opened.opener = null; } catch { /* Browser-enforced isolation is sufficient. */ }
-  dialogStatus.textContent = ui(`Opened ${target.name}.`, `Открыт ${target.name}.`);
-  launcher.close();
+  const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  const { plan, blocked, copied } = await dispatchSkillLaunch(target, prompt, {
+    copy: copyText,
+    openNative: (url) => window.location.assign(url),
+    open: (url) => {
+      const opened = window.open('about:blank', '_blank');
+      if (!opened) return false;
+      opened.opener = null;
+      opened.location.replace(url);
+      return true;
+    },
+  }, mobile);
+  showHandoff(target, prompt, copied, plan, blocked);
 }
 
 function selectTarget(target: LaunchTarget) {
@@ -893,6 +877,12 @@ function selectTarget(target: LaunchTarget) {
   void launchSkill(target, activeSkill.prompt);
 }
 
+more.addEventListener('click', () => {
+  const previous = visibleLimit;
+  visibleLimit += SKILLS_PAGE_SIZE;
+  renderCards(false);
+  (grid.children[previous] as HTMLElement | undefined)?.focus();
+});
 search.addEventListener('input', renderCards);
 search.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && search.value) {
@@ -982,7 +972,14 @@ launcherTabs.forEach((button) => button.addEventListener('click', () => {
 }));
 launcherBack.addEventListener('click', resetLauncher);
 launcherHandoffBack.addEventListener('click', resetLauncher);
-launcherHandoffOpen.addEventListener('click', () => launcher.close());
+handoffCopy.addEventListener('click', async () => {
+  const copied = await copyText(handoffPrompt.value);
+  handoffStatus.textContent = copied ? ui('Complete prompt copied', 'Полный промпт скопирован') : ui('Select and copy the prompt below.', 'Выделите и скопируйте промпт ниже.');
+  if (!copied) {
+    handoffPrompt.closest('details')?.setAttribute('open', '');
+    handoffPrompt.focus(); handoffPrompt.select();
+  }
+});
 launcherVariables.addEventListener('submit', (event) => {
   event.preventDefault();
   if (!activeSkill || !pendingTarget) return;

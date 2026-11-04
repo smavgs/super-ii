@@ -9,9 +9,9 @@ import {
 const FRESH_SECONDS = 300;
 const STALE_SECONDS = 86_400;
 const MAX_UPSTREAM_BYTES = 2_000_000;
-const CACHE_KEY = new Request('https://superii.site/.internal-cache/unified-skills-v2');
+const CACHE_KEY = new Request('https://superii.site/.internal-cache/unified-skills-v3');
 
-function publicResponse(body: string, state: 'fresh' | 'hit' | 'stale') {
+function publicResponse(body: string, state: 'fresh' | 'hit' | 'stale' | 'packaged') {
   return new Response(body, {
     status: 200,
     headers: {
@@ -21,20 +21,6 @@ function publicResponse(body: string, state: 'fresh' | 'hit' | 'stale') {
       'x-superii-skills-cache': state,
     },
   });
-}
-
-function unavailable() {
-  return Response.json(
-    { error: 'skills catalog is temporarily unavailable' },
-    {
-      status: 503,
-      headers: {
-        'cache-control': 'no-store',
-        'retry-after': '60',
-        'x-content-type-options': 'nosniff',
-      },
-    },
-  );
 }
 
 function cacheStorage(): Cache | null {
@@ -120,5 +106,6 @@ export const GET: APIRoute = async () => {
   if (cached && Date.now() - cached.fetchedAt <= STALE_SECONDS * 1_000) {
     return publicResponse(cached.body, 'stale');
   }
-  return unavailable();
+  // The locally supplied collection stays useful even during an upstream outage.
+  return publicResponse(JSON.stringify(mergeSkillsCatalog({ version: 1, skills: [] })), 'packaged');
 };
