@@ -70,7 +70,7 @@ for (const text of [
 for (const forbidden of ['contributor', 'sourceUrl', 'detailUrl', 'View source', 'data-skill-window-setup', 'Prompt Factory']) rejectText('page', forbidden);
 
 for (const text of [
-  "fetch('/api/skills'",
+  "fetch('/api/skills?catalog=3'",
   'skill.tags ?? []',
   'skill.bestWith ?? []',
   'dialog.showModal()',

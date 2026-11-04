@@ -616,7 +616,9 @@ async function loadSkills() {
   count.textContent = ui('Loading skills…', 'Загружаем навыки…');
   retry.disabled = true;
   try {
-    const response = await fetch('/api/skills', {
+    // Give the expanded collection its own browser cache entry. Returning
+    // visitors may still have the previous release's stale-while-revalidate copy.
+    const response = await fetch('/api/skills?catalog=3', {
       credentials: 'same-origin',
       headers: { accept: 'application/json' },
     });
