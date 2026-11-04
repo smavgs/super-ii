@@ -970,9 +970,14 @@ pre {
 }
 
 .logo-mark img {
-  width: 166.6%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Preserve the familiar close crop, with a square image at every size. */
+  width: 277.6%;
   max-width: none;
-  height: 166.6%;
+  height: 277.6%;
   object-fit: cover;
 }
 
@@ -11149,6 +11154,7 @@ pre {
   display: inline-flex;
   min-height: 3rem;
   align-items: center;
+  justify-content: center;
   gap: 0.48rem;
   padding: 0.72rem 1rem;
   border: 1px solid rgb(7 26 47 / 0.16);

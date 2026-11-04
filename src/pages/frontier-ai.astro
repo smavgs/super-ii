@@ -22,6 +22,7 @@ const frontierStartUrl = isSignedIn
   eyebrow="Maximum-power AI. $0 to start."
   description="Connect OpenCode to NVIDIA and start using Kimi K3, a 2.8-trillion-parameter frontier model, in three clear steps."
 >
+  <SuperAssistant />
   <div slot="actions" class="agent-tools-actions">
     <a class="button button--yellow" href={frontierStartUrl}><i class="ph ph-lightning" aria-hidden="true"></i> Use frontier AI</a>
     <a class="button" href="/skills"><i class="ph ph-sparkle" aria-hidden="true"></i> Find a skill</a>
@@ -171,7 +172,6 @@ const frontierStartUrl = isSignedIn
     </div>
   </section>
 
-  <SuperAssistant />
 </ExploreLayout>
 
 <script>

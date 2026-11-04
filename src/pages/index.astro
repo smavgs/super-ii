@@ -83,6 +83,7 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
 ---
 
 <BaseLayout className="home-skin">
+  <SuperAssistant />
   <section class="hero">
     <HeroPixels />
     <div class="shell hero-inner">
@@ -323,5 +324,4 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
       </ul>
     </div>
   </section>
-  <SuperAssistant />
 </BaseLayout>

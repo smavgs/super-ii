@@ -7,9 +7,7 @@
 .site-header .header-profile { display: flex; margin-left: .3rem; }
 .site-directory { inset: 5rem max(.75rem, calc((100vw - 90rem) / 2)) auto auto; width: min(24rem, calc(100vw - 1.5rem)); max-height: calc(100dvh - 5.75rem); padding: .65rem; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); box-shadow: 4px 4px 0 var(--ws-shadow), 0 16px 40px #071a2f20; overscroll-behavior: contain; overflow-y: auto; }
 .site-directory[hidden] { display: none; }
-.menu-open .super-assistant { visibility: hidden; }
 .site-directory > nav { width: 100%; max-width: none; gap: .65rem; padding: 0; }
-.logo-mark--small img { width: 100%; height: 100%; max-width: 100%; object-fit: contain; }
 .directory-group { min-width: 0; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); }
 .directory-group > summary { display: flex; align-items: center; gap: .75rem; min-height: 3.5rem; padding: .75rem 1rem; list-style: none; cursor: pointer; font-weight: 700; font-size: 1.1rem; }
 .directory-group > summary::-webkit-details-marker { display: none; }
@@ -20,8 +18,9 @@
 .directory-group:nth-child(3) > summary > i { background: var(--yellow); }
 .directory-group > summary:hover, .directory-group[open] > summary { background: var(--ws-soft); }
 .directory-group[open] > summary { border-bottom: 1px solid var(--ws-border); }
-.directory-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .5rem; padding: .65rem; }
-.directory-links a { display: flex; align-items: center; gap: .65rem; min-width: 0; min-height: 2.75rem; padding: .6rem .7rem; border: 1px solid transparent; border-radius: 3px; text-decoration: none; color: var(--ink); line-height: 1.25; overflow-wrap: anywhere; }
+.directory-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: .25rem .5rem; padding: .65rem; }
+.directory-links a { display: flex; align-items: center; gap: .45rem; min-width: 0; min-height: 2.75rem; padding: .6rem .4rem; border: 1px solid transparent; border-radius: 3px; text-decoration: none; color: var(--ink); line-height: 1.25; overflow-wrap: normal; word-break: normal; hyphens: none; }
+html[lang='ru'] .directory-links { grid-template-columns: minmax(0, 1fr); }
 .directory-links a > i { color: var(--ws-violet-ink); font-size: 1.25rem; flex: none; }
 .directory-links a:hover { background: var(--ws-soft); border-color: var(--ws-border); }
 .directory-links a[aria-current='page'] { background: var(--yellow); color: #071a2f; border-color: #20344b; }
@@ -48,14 +47,10 @@
   .directory-links { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* One stable launcher across pages, including the interval before fonts load. */
-body .super-assistant .super-assistant__launcher { min-width: 9.5rem; min-height: 3rem; border: 1px solid #20344b; border-radius: 3px; background: #ffe500; color: #071a2f; box-shadow: 3px 3px 0 #071a2f; font-family: system-ui, sans-serif; }
+/* Keep the familiar type and natural button size on every assistant page. */
+body .super-assistant .super-assistant__launcher { min-height: 3rem; border: 1px solid #20344b; border-radius: 3px; background: #ffe500; color: #071a2f; box-shadow: 3px 3px 0 #071a2f; font-family: var(--font-ui); }
 .super-assistant__launcher { view-transition-name: superii-assistant-launcher; }
-@view-transition { navigation: auto; }
 ::view-transition-group(superii-assistant-launcher) { animation-duration: .12s; }
 ::view-transition-old(superii-assistant-launcher),
 ::view-transition-new(superii-assistant-launcher) { animation: none; mix-blend-mode: normal; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-@media (prefers-reduced-motion: reduce) {
-  @view-transition { navigation: none; }
-}

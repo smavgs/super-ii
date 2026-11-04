@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import superIiLogo from '@/assets/super-ii-logo.png';
 
 interface Props {
@@ -16,23 +15,13 @@ const {
 ---
 
 <span class:list={['logo-mark', `logo-mark--${size}`]}>
-  {size === 'small' ? <img
-    src="/brand/super-ii-icon-192.png"
+  <img
+    src={superIiLogo.src}
     alt={label}
-    width="192"
-    height="192"
+    width={superIiLogo.width}
+    height={superIiLogo.height}
     loading={priority ? 'eager' : 'lazy'}
     fetchpriority={priority ? 'high' : 'auto'}
-    decoding="sync"
-  /> : <Image
-    src={superIiLogo}
-    alt={label}
-    width={768}
-    height={768}
-    format="webp"
-    quality={90}
-    loading={priority ? 'eager' : 'lazy'}
-    fetchpriority={priority ? 'high' : 'auto'}
-    decoding="async"
-  />}
+    decoding={priority ? 'sync' : 'async'}
+  />
 </span>

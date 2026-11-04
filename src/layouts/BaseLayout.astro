@@ -1,5 +1,7 @@
 ---
 import '@fontsource-variable/source-sans-3';
+import uiLatinFont from '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2?url';
+import uiCyrillicFont from '@fontsource-variable/source-sans-3/files/source-sans-3-cyrillic-wght-normal.woff2?url';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import '@/styles/global.css';
@@ -89,6 +91,15 @@ const imageHeightContent = String(imageHeight);
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} data-no-translate={descriptionNoTranslate ? '' : undefined} />
     <meta name="theme-color" content="#ffd21e" />
+    <link rel="preload" as="font" type="font/woff2" href={uiLatinFont} crossorigin="anonymous" />
+    {locale === 'ru' && <link rel="preload" as="font" type="font/woff2" href={uiCyrillicFont} crossorigin="anonymous" />}
+    <!-- Opt in before the external stylesheet arrives on the next page. -->
+    <style is:inline>
+      @view-transition { navigation: auto; }
+      @media (prefers-reduced-motion: reduce) {
+        @view-transition { navigation: none; }
+      }
+    </style>
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     {publicMachinePath(Astro.url.pathname) && <link rel="alternate" type="text/markdown" title="Machine-readable page" href={viewUrl(Astro.url,'markdown')} />}
