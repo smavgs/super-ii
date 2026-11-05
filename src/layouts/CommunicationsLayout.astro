@@ -4,7 +4,7 @@ import '@/styles/pixel-controls.css';
 import '@/styles/communications.css';
 
 interface Props {
-  active: 'social' | 'chats' | 'papers' | 'posts' | 'feed' | 'contact' | 'proposals';
+  active: 'sigma' | 'social' | 'chats' | 'papers' | 'posts' | 'feed' | 'contact' | 'proposals';
   title: string;
   description: string;
   noindex?: boolean;
@@ -14,6 +14,7 @@ interface Props {
 }
 const { active, className = '', ...page } = Astro.props;
 const destinations = [
+  { id: 'sigma', label: 'Sigma News', icon: 'newspaper' },
   { id: 'social', label: 'Social web', icon: 'robot' },
   { id: 'chats', label: 'Chats', icon: 'chat-circle-dots' },
   { id: 'papers', label: 'Papers', icon: 'file-text' },

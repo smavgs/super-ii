@@ -1,0 +1,170 @@
+---
+import CommunicationsLayout from "@/layouts/CommunicationsLayout.astro";
+import SigmaMascot from "@/components/SigmaMascot.astro";
+import BrandMark from "@/components/BrandMark.astro";
+import { sqlClient } from "@/lib/db";
+import { sigmaStory, type SigmaStory } from "@/lib/sigma";
+import { sigmaCopy } from "@/lib/sigma-copy";
+import { sigmaTranslation } from "@/lib/sigma-input";
+import { renderRepositoryMarkdown } from "@/lib/repository-markdown";
+import { dateLocale } from "@/lib/i18n";
+import "@/styles/sigma.css";
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+const sql = sqlClient(Astro.locals);
+let story: SigmaStory | null = null;
+let unavailable = !sql;
+if (sql)
+  try {
+    story = await sigmaStory(
+      sql,
+      Astro.params.owner ?? "",
+      Astro.params.slug ?? "",
+    );
+  } catch {
+    unavailable = true;
+  }
+if (!story) Astro.response.status = unavailable ? 503 : 404;
+const selected = story ? sigmaTranslation(story.document, locale) : null;
+const sourceBrand = (url: string) => {
+  const host = new URL(url).hostname;
+  return host === "huggingface.co"
+    ? "huggingface"
+    : host === "github.com"
+      ? "github"
+      : host === "arxiv.org"
+        ? "arxiv"
+        : host === "claude.com" || host === "anthropic.com"
+          ? "anthropic"
+          : null;
+};
+---
+
+<CommunicationsLayout
+  active="sigma"
+  title={selected?.text.title ?? c.notFound}
+  description={selected?.text.summary ?? c.tagline}
+  titleNoTranslate
+  descriptionNoTranslate
+  noindex={!story}
+  className="sigma-page"
+>
+  <article class="shell sigma-article" data-no-translate>
+    <a href="/sigma">← {c.back}</a>
+    {
+      story && selected ? (
+        <>
+          <header>
+            <>
+              <div class="sigma-controls">
+                <>
+                  <SigmaMascot />
+                  <span
+                    class="sigma-topic"
+                    data-topic={story.document.category}
+                  >
+                    {c[story.document.category]}
+                  </span>
+                  <div class="sigma-meta">
+                    <>
+                      <a href={`/people/${story.owner}`}>{story.owner_name}</a>
+                      <time datetime={story.published_at}>
+                        {new Date(story.published_at).toLocaleDateString(
+                          dateLocale(locale),
+                          { dateStyle: "long" },
+                        )}
+                      </time>
+                    </>
+                  </div>
+                </>
+              </div>
+              <h1 lang={selected.language}>{selected.text.title}</h1>
+              <p class="sigma-dek" lang={selected.language}>
+                {selected.text.summary}
+              </p>
+            </>
+          </header>
+          {selected.fallback && <p class="sigma-fallback">{c.original}</p>}
+          {story.document.images[0] && (
+            <figure>
+              <img
+                src={story.document.images[0].url}
+                alt={story.document.images[0].alt}
+                fetchpriority="high"
+              />
+              <figcaption>
+                <a href={story.document.images[0].source_url} rel="noreferrer">
+                  {story.document.images[0].credit}
+                </a>
+              </figcaption>
+            </figure>
+          )}
+          <div
+            class="sigma-article-body"
+            lang={selected.language}
+            set:html={renderRepositoryMarkdown(selected.text.body)}
+          />
+          {story.document.images[1] && (
+            <figure>
+              <img
+                src={story.document.images[1].url}
+                alt={story.document.images[1].alt}
+                loading="lazy"
+              />
+              <figcaption>
+                <a href={story.document.images[1].source_url} rel="noreferrer">
+                  {story.document.images[1].credit}
+                </a>
+              </figcaption>
+            </figure>
+          )}
+          <section class="sigma-sources">
+            <>
+              <h2>{c.sources}</h2>
+              <ul>
+                {story.document.sources.map((source) => (
+                  <li>
+                    <a class="brand-inline" href={source.url} rel="noreferrer">
+                      {sourceBrand(source.url) && (
+                        <BrandMark brand={sourceBrand(source.url)!} size="xs" />
+                      )}
+                      {source.label} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </>
+          </section>
+          <>
+            <button
+              class="button button--secondary"
+              type="button"
+              data-sigma-copy
+              data-label={c.share}
+              data-copied={c.copied}
+            >
+              {c.share}
+            </button>
+            <span class="sigma-status" role="status" data-copy-status />
+          </>
+        </>
+      ) : (
+        <h1>{unavailable ? c.loadingError : c.notFound}</h1>
+      )
+    }
+  </article>
+</CommunicationsLayout>
+<script>
+  const copy = document.querySelector<HTMLButtonElement>("[data-sigma-copy]");
+  copy?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(location.href);
+      copy.textContent = copy.dataset.copied!;
+      document.dispatchEvent(new Event("sigma:thanks"));
+      setTimeout(() => (copy.textContent = copy.dataset.label!), 2000);
+    } catch {
+      const status = document.querySelector("[data-copy-status]");
+      if (status) status.textContent = location.href;
+    }
+  });
+</script>

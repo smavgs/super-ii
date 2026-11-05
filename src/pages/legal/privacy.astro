@@ -4,7 +4,12 @@ import GuideReader from '@/components/GuideReader.astro';
 import '@/styles/guides.css';
 
 export const prerender = false;
-const effectiveDate = 'October 29, 2026';
+const effectiveDate = 'November 4, 2026';
+const sigmaPrivacy = {
+  en: 'We store the email address, selected email language, confirmation and unsubscribe times, consent version, and delivery status needed to operate Sigma News. Confirming the email link activates the subscription. Delivery uses Resend, which receives the recipient address and email content. Each edition includes a link to change the email language or unsubscribe. Your address is not public and subscribing does not require a Super ii account. Unsubscribing stops future sends; limited subscription and delivery records remain to honour that choice and prevent duplicate delivery. You can request deletion through the privacy contact form. Sigma drafts are visible to their author and authorized editors; only published snapshots and their credited images are public. Uploaded images are re-encoded and stripped of JPEG metadata.',
+  ru: 'Мы храним адрес электронной почты, выбранный язык рассылки, время подтверждения и отписки, версию согласия и статус доставки для работы Sigma News. Подписка активируется после подтверждения. Для доставки используется Resend, который получает адрес получателя и содержание письма. В каждом выпуске есть ссылка для смены языка и отписки. Адрес не публикуется; аккаунт Super ii не требуется. Отписка прекращает будущие отправки; ограниченные записи о подписке и доставке сохраняются для соблюдения выбора и предотвращения повторной отправки. Удаление можно запросить через форму обращения по вопросам конфиденциальности. Черновики Sigma доступны автору и уполномоченным редакторам; публичны только опубликованные версии и изображения с указанием источника. Загруженные изображения перекодируются, а метаданные JPEG удаляются.',
+  'zh-CN': '我们保存邮箱地址、邮件语言、确认和退订时间、同意版本及投递状态，用于运营 Sigma News。完成确认后才会激活订阅。Resend 负责投递并接收收件地址和邮件内容。每期均有更改邮件语言和退订的链接。邮箱地址不公开，订阅无需 Super ii 账号。退订会停止后续发送；我们保留有限的订阅和投递记录，以遵守您的选择并防止重复投递。您可通过隐私联系表申请删除。Sigma 草稿仅作者和获授权的编辑可见；只有已发布版本及注明来源的图片公开。上传图片会重新编码，并移除 JPEG 元数据。',
+};
 ---
 
 <ExploreLayout active="legal/privacy" title="Privacy Policy" eyebrow={`Legal · Effective ${effectiveDate}`} description="This policy explains the personal information Super ii uses and how to exercise your choices." noindex>
@@ -90,6 +95,7 @@ const effectiveDate = 'October 29, 2026';
 
       <p>Robot view counting uses a daily salted network hash to deduplicate repeated opens; it does not store raw network addresses in those records. Deduplication records older than 31 days are removed during subsequent view recording, while aggregate totals remain. Likes remain until removed or the account is deleted. Product inquiries remain in the company's private inbox for follow-up; archiving changes their status and does not delete them. You can request removal through our privacy contact form.</p>
       <h2 id="choices">6. Your choices and rights</h2>
+      <p data-no-translate><strong>Sigma News:</strong> {sigmaPrivacy[Astro.locals.locale ?? 'en']}</p>
       <p>Depending on where you live, you may have rights to access, correct, delete, restrict, object to, or obtain a copy of personal information, and to withdraw consent where processing relies on consent. You may also have the right to complain to a local data-protection authority.</p>
       <p>Use Workspace to edit or remove public showcase images and linked external-work cards.</p>
       <p>Use <a href="/chats">Chats</a> to archive or permanently delete saved conversations, turn chat memory on or off, and add, edit, or delete memory items. Use My cards to choose exactly which contact fields appear, pause or rotate an unlisted link, delete a card, edit Your details, and review or delete received connections and private notes. Use account settings for available self-service changes, use Bring my work to disconnect an external identity or pause public-source checks, use Social web controls to pause or revoke a sponsored agent, or submit a <a href="/contact?interest=privacy">privacy request</a>. We may need to verify that you control the relevant account. We will not discriminate against you for exercising a legal privacy right.</p>

@@ -21,6 +21,10 @@ interface ImportMetaEnv {
   readonly SUPERII_ADMIN_USER_IDS?: string;
   readonly BRIDGE_TOKEN_ENCRYPTION_KEY?: string;
   readonly OPENROUTER_API_KEY?: string;
+  readonly RESEND_API_KEY?: string;
+  readonly SIGMA_EMAIL_FROM?: string;
+  readonly SIGMA_PUBLIC_ORIGIN?: string;
+  readonly SIGMA_TOKEN_SECRET?: string;
 }
 
 interface ImportMeta {

@@ -1,0 +1,489 @@
+---
+import CommunicationsLayout from "@/layouts/CommunicationsLayout.astro";
+import SigmaMascot from "@/components/SigmaMascot.astro";
+import { ensureAuthenticatedProfile } from "@/lib/auth";
+import { sqlClient } from "@/lib/db";
+import {
+  sigmaAccess,
+  sigmaStories,
+  type SigmaAccess,
+  type SigmaDraft,
+  type SigmaStory,
+} from "@/lib/sigma";
+import { sigmaCopy } from "@/lib/sigma-copy";
+import {
+  sigmaCategories,
+  sigmaLocales,
+  sigmaTranslation,
+  type SigmaDocument,
+} from "@/lib/sigma-input";
+import { sigmaDigest, type SigmaEditionStory } from "@/lib/sigma-email";
+import { z } from "zod";
+import "@/styles/sigma.css";
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+const sql = sqlClient(Astro.locals);
+let access: SigmaAccess = { profile_id: null, editor: false, admin: false };
+let drafts: SigmaDraft[] = [];
+let error = false;
+let published: SigmaStory[] = [];
+type Edition = {
+  id: string;
+  stories: SigmaEditionStory[];
+  created_at: string;
+  started_at: string | null;
+  subscribers: number;
+  sent?: number;
+  remaining?: number;
+  failed?: number;
+};
+let editions: Edition[] = [];
+if (sql)
+  try {
+    const profile = await ensureAuthenticatedProfile(Astro.locals, sql);
+    if (profile) {
+      access = await sigmaAccess(sql);
+      const id = Astro.url.searchParams.get("id");
+      drafts =
+        (await sql`select * from app.sigma_drafts(${id && z.uuid().safeParse(id).success ? id : null}::uuid)`) as SigmaDraft[];
+      if (access.editor) {
+        published = await sigmaStories(sql, "", 0, 29);
+        const rows = await sql`select app.sigma_editions_list() as edition`;
+        editions = rows.map((row) => row.edition as Edition);
+      }
+    }
+  } catch {
+    error = true;
+  }
+const draft = drafts.find((row) => row.id === Astro.url.searchParams.get("id"));
+const editing = Boolean(draft) || Astro.url.searchParams.has("new");
+const id = draft?.id ?? crypto.randomUUID();
+const doc: SigmaDocument = draft?.document ?? {
+  source_language: locale,
+  category: "community",
+  translations: { [locale]: { title: "", summary: "", body: "" } },
+  sources: [],
+  images: [],
+  rights_confirmed: false,
+};
+const edition = editions.find(
+  (item) => item.id === Astro.url.searchParams.get("edition"),
+);
+const newsletters =
+  access.editor && Astro.url.searchParams.get("tab") === "editions";
+Astro.response.headers.set("cache-control", "private, no-store");
+---
+
+<CommunicationsLayout
+  active="sigma"
+  title={c.desk}
+  description={c.writerIntro}
+  titleNoTranslate
+  descriptionNoTranslate
+  noindex
+  className="sigma-page"
+>
+  <div class="shell" data-no-translate data-sigma-desk data-locale={locale}>
+    <header class="sigma-heading">
+      <SigmaMascot /><div class="sigma-heading-copy">
+        <h1>{c.desk}</h1><p>{c.writerIntro}</p>
+      </div><a class="button button--secondary" href="/sigma">{c.news}</a>
+    </header>
+    {
+      !access.profile_id ? (
+        <div class="empty-state sigma-empty">
+          <>
+            <p>{error ? c.loadingError : c.writerIntro}</p>
+            <a
+              class="button button--dark"
+              href="/sign-in?redirect_url=%2Fsigma%2Feditor"
+            >
+              {c.signIn}
+            </a>
+          </>
+        </div>
+      ) : (
+        <>
+          <nav class="sigma-controls">
+            <a class="button button--dark" href="/sigma/editor?new=1">{c.newStory}</a>
+            <a class="button button--secondary" href="/sigma/editor">
+              {c.draft}
+            </a>
+            {access.editor && (
+              <a
+                class="button button--secondary"
+                href="/sigma/editor?tab=editions"
+              >
+                {c.edition}
+              </a>
+            )}
+          </nav>
+          {newsletters ? (
+            <section class="sigma-editor">
+              <p>{c.editionHelp}</p>
+              <p>{c.newsletterAdmin}</p>
+              <form data-sigma-edition>
+                <div class="sigma-fields">
+                  {published.map((story) => (
+                    <label class="sigma-checkbox">
+                      <input type="checkbox" name="story" value={story.id} />
+                      <span>
+                        {sigmaTranslation(story.document, locale).text.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <button class="button button--dark" type="submit">
+                  {c.prepare}
+                </button>
+                <p class="sigma-status" data-edition-status role="status" />
+              </form>
+              {edition && (
+                <section
+                  class="sigma-digest-preview"
+                  data-current-edition={edition.id}
+                >
+                  <label>
+                    {c.preview}{" "}
+                    <select data-preview-language>
+                      {sigmaLocales.map((lang) => (
+                        <option value={lang} selected={lang === locale}>
+                          {lang === "en"
+                            ? "English"
+                            : lang === "ru"
+                              ? "Русский"
+                              : "简体中文"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {sigmaLocales.map((lang) => (
+                    <iframe
+                      title={`${c.preview} · ${lang}`}
+                      data-edition-preview={lang}
+                      hidden={lang !== locale}
+                      sandbox=""
+                      srcdoc={
+                        sigmaDigest(
+                          lang,
+                          edition.stories,
+                          "https://superii.site",
+                          "https://superii.site/sigma",
+                          edition.created_at,
+                        ).html
+                      }
+                      style="width:100%;height:440px;border:0;margin-top:1rem;background:#f5f3ed"
+                    />
+                  ))}
+                  <div class="sigma-delivery-counts">
+                    <span>
+                      {c.subscribers}: {edition.subscribers}
+                    </span>
+                    <span>
+                      {c.sent}: <b data-delivery-sent>{edition.sent ?? 0}</b>
+                    </span>
+                    <span>
+                      {c.remaining}:{" "}
+                      <b data-delivery-remaining>{edition.remaining ?? 0}</b>
+                    </span>
+                    <span>
+                      {c.failed}:{" "}
+                      <b data-delivery-failed>{edition.failed ?? 0}</b>
+                    </span>
+                  </div>
+                  {access.admin && (
+                    <button
+                      class="button button--dark"
+                      type="button"
+                      data-send-edition
+                    >
+                      {c.send}
+                    </button>
+                  )}
+                  <p class="sigma-status" data-delivery-status role="status" />
+                </section>
+              )}
+              <div class="sigma-editor-list">
+                {editions.map((item) => (
+                  <a href={`/sigma/editor?tab=editions&edition=${item.id}`}>
+                    {new Date(item.created_at).toLocaleDateString(locale)} ·{" "}
+                    {item.id.slice(0, 8)}
+                    <span>
+                      {item.sent ?? 0} {c.sent}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : editing ? (
+            <form
+              class="sigma-editor"
+              data-sigma-editor
+              data-id={id}
+              data-version={draft?.version ?? 0}
+              data-slug={draft?.slug ?? ""}
+              data-initial={JSON.stringify(doc)}
+            >
+              <div class="sigma-editor-top">
+                <label>
+                  {c.category}
+                  <select name="category">
+                    {sigmaCategories.map((category) => (
+                      <option
+                        value={category}
+                        selected={doc.category === category}
+                      >
+                        {c[category]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {c.originalLanguage}
+                  <select name="source_language">
+                    {sigmaLocales.map((lang) => (
+                      <option
+                        value={lang}
+                        selected={doc.source_language === lang}
+                      >
+                        {lang === "en"
+                          ? "English"
+                          : lang === "ru"
+                            ? "Русский"
+                            : "简体中文"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {sigmaLocales.map((lang) => (
+                <details
+                  open={lang === doc.source_language}
+                  data-translation={lang}
+                >
+                  <summary>
+                    {lang === "en"
+                      ? "English"
+                      : lang === "ru"
+                        ? "Русский"
+                        : "简体中文"}
+                  </summary>
+                  <div class="sigma-fields">
+                    <label>
+                      {c.title}
+                      <input
+                        name={`${lang}.title`}
+                        value={doc.translations[lang]?.title ?? ""}
+                        maxlength="300"
+                      />
+                    </label>
+                    <label>
+                      {c.summary}
+                      <textarea
+                        name={`${lang}.summary`}
+                        rows="2"
+                        maxlength="500"
+                      >{doc.translations[lang]?.summary ?? ""}</textarea>
+                    </label>
+                    <label>
+                      {c.body}
+                      <textarea
+                        name={`${lang}.body`}
+                        rows="10"
+                        maxlength="30000"
+                      >{doc.translations[lang]?.body ?? ""}</textarea>
+                    </label>
+                  </div>
+                </details>
+              ))}
+              <label>
+                {c.sources}
+                <textarea name="sources" rows="3" placeholder={c.sourceHelp}>{doc.sources
+                    .map((source) => `${source.label} | ${source.url}`)
+                    .join("\n")}</textarea>
+                <small>{c.sourceHelp}</small>
+              </label>
+              <details>
+                <summary>{c.images}</summary>
+                <div class="sigma-fields">
+                  <small>{c.imageHelp}</small>
+                  {[0, 1].map((index) => (
+                    <div
+                      class="sigma-fields sigma-image-fields"
+                      data-image-index={index}
+                    >
+                      <input
+                        type="file"
+                        data-image-upload
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={!draft}
+                      />
+                      <img
+                        data-image-preview
+                        src={doc.images[index]?.url}
+                        hidden={!doc.images[index]}
+                        alt=""
+                      />
+                      <input
+                        type="hidden"
+                        name={`image.${index}.url`}
+                        value={doc.images[index]?.url ?? ""}
+                      />
+                      <label>
+                        {c.alt}
+                        <input
+                          name={`image.${index}.alt`}
+                          value={doc.images[index]?.alt ?? ""}
+                          maxlength="300"
+                        />
+                      </label>
+                      <label>
+                        {c.credit}
+                        <input
+                          name={`image.${index}.credit`}
+                          value={doc.images[index]?.credit ?? ""}
+                          maxlength="300"
+                        />
+                      </label>
+                      <label>
+                        {c.sourceUrl}
+                        <input
+                          type="url"
+                          name={`image.${index}.source_url`}
+                          value={doc.images[index]?.source_url ?? ""}
+                        />
+                      </label>
+                      <button
+                        class="button button--secondary"
+                        type="button"
+                        data-image-remove
+                      >
+                        {c.remove}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </details>
+              <label class="sigma-checkbox">
+                <input
+                  type="checkbox"
+                  name="rights_confirmed"
+                  checked={doc.rights_confirmed}
+                />
+                <span>{c.rights}</span>
+              </label>
+              <details>
+                <summary>{c.preview}</summary>
+                <div class="sigma-fields" data-draft-preview>
+                  <h2 />
+                  <p />
+                  <div style="white-space:pre-wrap;overflow-wrap:anywhere" />
+                </div>
+              </details>
+              <div class="form-actions">
+                <button
+                  type="submit"
+                  class="button button--secondary"
+                  value="save"
+                >
+                  {c.save}
+                </button>
+                <button
+                  type="submit"
+                  class="button button--dark"
+                  value={access.editor ? "publish" : "submit"}
+                >
+                  {access.editor ? c.publish : c.submit}
+                </button>
+                {draft?.published_at && (
+                  <button
+                    type="submit"
+                    class="button button--secondary"
+                    value="unpublish"
+                  >
+                    {c.unpublish}
+                  </button>
+                )}
+                {draft && (
+                  <button
+                    type="submit"
+                    class="button button--secondary"
+                    value="delete"
+                  >
+                    {c.delete}
+                  </button>
+                )}
+              </div>
+              <p class="sigma-status" data-editor-status role="status" />
+            </form>
+          ) : (
+            <>
+              <button
+                type="button"
+                class="button button--secondary"
+                data-import-trigger
+              >
+                {c.importDraft}
+              </button>
+              <input
+                type="file"
+                accept="application/json,.json"
+                data-import-draft
+                hidden
+              />
+              <p class="sigma-status" data-import-status role="status" />
+              <div class="sigma-editor-list">
+                {drafts.map((item) => (
+                  <a href={`/sigma/editor?id=${item.id}`}>
+                    <strong>
+                      {sigmaTranslation(item.document, locale).text.title}
+                    </strong>
+                    <span>
+                      {item.status === "published"
+                        ? c.live
+                        : item.status === "submitted"
+                          ? c.review
+                          : c.draft}{" "}
+                      · @{item.owner}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+          {access.admin && !editing && !newsletters && (
+            <details class="sigma-editor">
+              <summary>{c.editors}</summary>
+              <form class="sigma-fields" data-editor-access>
+                <label>
+                  {c.handle}
+                  <input name="handle" required maxlength="80" />
+                </label>
+                <div class="form-actions">
+                  <button
+                    class="button button--secondary"
+                    type="submit"
+                    value="true"
+                  >
+                    {c.grant}
+                  </button>
+                  <button
+                    class="button button--secondary"
+                    type="submit"
+                    value="false"
+                  >
+                    {c.revoke}
+                  </button>
+                </div>
+                <p class="sigma-status" role="status" data-access-status />
+              </form>
+            </details>
+          )}
+        </>
+      )
+    }
+  </div>
+</CommunicationsLayout>
+<script>
+  import "@/scripts/sigma-editor";
+</script>

@@ -1,0 +1,212 @@
+---
+import CommunicationsLayout from "@/layouts/CommunicationsLayout.astro";
+import SigmaMascot from "@/components/SigmaMascot.astro";
+import { sqlClient } from "@/lib/db";
+import { sigmaStories, type SigmaStory } from "@/lib/sigma";
+import { sigmaCopy } from "@/lib/sigma-copy";
+import { sigmaTranslation } from "@/lib/sigma-input";
+import { dateLocale } from "@/lib/i18n";
+import "@/styles/sigma.css";
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+const view =
+  Astro.url.searchParams.get("view") === "papers" ? "papers" : "news";
+const query = (Astro.url.searchParams.get("q") ?? "").slice(0, 200);
+const page = Math.min(
+  2500,
+  Math.max(
+    0,
+    Number.parseInt(Astro.url.searchParams.get("page") ?? "0", 10) || 0,
+  ),
+);
+const size = 3;
+const sql = sqlClient(Astro.locals);
+type Paper = {
+  title: string;
+  summary: string;
+  owner: string;
+  owner_name: string;
+  slug: string;
+  published_at: string;
+};
+let stories: SigmaStory[] = [];
+let papers: Paper[] = [];
+let unavailable = !sql;
+if (sql)
+  try {
+    if (view === "news") stories = await sigmaStories(sql, query, page, size);
+    else
+      papers =
+        (await sql`select p.title,p.abstract as summary,profile.handle as owner,profile.display_name as owner_name,p.slug,coalesce(p.published_on::timestamptz,p.created_at) as published_at from app.papers p join app.profiles profile on profile.id=p.owner_profile_id and profile.is_public where p.is_public and (${query}='' or position(lower(${query}) in lower(p.title||' '||p.abstract||' '||profile.handle))>0) order by coalesce(p.published_on::timestamptz,p.created_at) desc,p.id limit ${size + 1} offset ${page * size}`) as Paper[];
+  } catch {
+    unavailable = true;
+  }
+const hasNext = (view === "news" ? stories : papers).length > size;
+const href = (target: number) =>
+  `/sigma?${new URLSearchParams({ view, q: query, page: String(target) })}`;
+---
+
+<CommunicationsLayout
+  active="sigma"
+  title="Sigma News"
+  description={c.tagline}
+  descriptionNoTranslate
+  className="sigma-page"
+>
+  <div data-no-translate>
+    <header class="shell sigma-heading">
+      <SigmaMascot
+        edition={page === 0 && !query ? stories[0]?.published_at : undefined}
+      /><div class="sigma-heading-copy">
+        <h1>Sigma News</h1><p>{c.tagline}</p>
+      </div><a class="button button--secondary" href="/sigma/editor"
+        ><i class="ph ph-pencil-line" aria-hidden="true"></i>{c.contribute}</a>
+    </header>
+    <div class="shell">
+      <div class="sigma-controls">
+        <nav class="sigma-tabs" aria-label="Sigma">
+          <a href="/sigma" aria-current={view === "news" ? "page" : undefined}
+            ><i class="ph ph-newspaper" aria-hidden="true"></i>{c.news}</a
+          ><a
+            href="/sigma?view=papers"
+            aria-current={view === "papers" ? "page" : undefined}
+            ><i class="ph ph-file-text" aria-hidden="true"></i>{c.papers}</a>
+        </nav><form class="sigma-search" method="get" action="/sigma">
+          <input type="hidden" name="view" value={view} /><input
+            type="search"
+            name="q"
+            value={query}
+            maxlength="200"
+            placeholder={c.search}
+            aria-label={c.search}
+          /><button
+            class="button button--secondary"
+            type="submit"
+            aria-label={c.searchButton}
+            ><i class="ph ph-magnifying-glass" aria-hidden="true"></i></button>
+        </form>
+      </div>
+      <div class="sigma-list">
+        {
+          view === "news" &&
+            stories.slice(0, size).map((story) => {
+              const selected = sigmaTranslation(story.document, locale);
+              return (
+                <article class="sigma-row">
+                  <div>
+                    <>
+                      <div class="sigma-meta">
+                        <span class="sigma-topic" data-topic={story.document.category}>
+                          {c[story.document.category]}
+                        </span>
+                        <time datetime={story.published_at}>
+                          {new Date(story.published_at).toLocaleDateString(dateLocale(locale), { month: "short", day: "numeric" })}
+                        </time>
+                        <a href={`/people/${story.owner}`}>@{story.owner}</a>
+                        {selected.fallback && (
+                          <span lang={selected.language}>
+                            {selected.language}
+                          </span>
+                        )}
+                      </div>
+                      <h2 lang={selected.language}>
+                        <a href={`/sigma/${story.owner}/${story.slug}`}>
+                          {selected.text.title}
+                        </a>
+                      </h2>
+                      <p lang={selected.language}>{selected.text.summary}</p>
+                    </>
+                  </div>
+                  {story.document.images[0] && (
+                    <img
+                      src={story.document.images[0].url}
+                      alt=""
+                      width="110"
+                      height="80"
+                      loading="lazy"
+                    />
+                  )}
+                </article>
+              );
+            })
+        }
+        {
+          view === "papers" &&
+            papers.slice(0, size).map((paper) => (
+              <article class="sigma-row">
+                <div>
+                  <>
+                    <div class="sigma-meta">
+                      <>
+                        <span class="sigma-topic" data-topic="models">
+                          {c.papers}
+                        </span>
+                        <a href={`/people/${paper.owner}`}>@{paper.owner}</a>
+                        <time datetime={paper.published_at}>
+                          {new Date(paper.published_at).toLocaleDateString(
+                            dateLocale(locale),
+                            { month: "short", day: "numeric" },
+                          )}
+                        </time>
+                      </>
+                    </div>
+                    <h2>
+                      <a href={`/papers/${paper.owner}/${paper.slug}`}>
+                        {paper.title}
+                      </a>
+                    </h2>
+                    <p>{paper.summary}</p>
+                  </>
+                </div>
+              </article>
+            ))
+        }
+      </div>
+      {
+        !(view === "news" ? stories : papers).length && (
+          <div class="empty-state sigma-empty">
+            <h2>
+              {unavailable
+                ? c.loadingError
+                : query || page
+                  ? c.noResults
+                  : c.empty}
+            </h2>
+            {!unavailable && !query && !page && (
+              <>
+                <p>{c.emptyDetail}</p>
+                <a
+                  class="button button--dark"
+                  href={view === "papers" ? "/papers/new" : "/sigma/editor"}
+                >
+                  {view === "papers" ? c.papers : c.contribute}
+                </a>
+              </>
+            )}
+          </div>
+        )
+      }
+      {
+        (page > 0 || hasNext) && (
+          <nav class="sigma-pagination" aria-label={c.news}>
+            {page > 0 ? (
+              <a class="button button--secondary" href={href(page - 1)}>
+                ← {c.previous}
+              </a>
+            ) : (
+              <span />
+            )}
+            <span>{page + 1}</span>
+            {hasNext ? (
+              <a class="button button--secondary" href={href(page + 1)}>
+                {c.next} →
+              </a>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )
+      }
+    </div>
+  </div>
+</CommunicationsLayout>

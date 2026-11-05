@@ -1,6 +1,7 @@
 ---
 import BrandMark from './BrandMark.astro';
 import LogoMark from './LogoMark.astro';
+import SigmaSignup from './SigmaSignup.astro';
 import { isLocalizablePath, localizedPath, stripLocalePrefix, type SiteLocale } from '@/lib/i18n';
 
 const year = new Date().getFullYear();
@@ -32,7 +33,7 @@ const languageHref = (targetLocale: SiteLocale) => {
         <span>Super <strong>ii</strong></span>
       </a>
       <p>Open super intelligence, built together.</p>
-      <span class="footer-beta"><span></span> Agent Friendly</span>
+      <SigmaSignup />
     </div>
 
     <div class="footer-column">

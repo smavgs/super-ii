@@ -154,7 +154,7 @@ const capabilityRows = capabilitySection.split('\n').filter((line) => /^\|/.test
 const canonicalCapabilityCount = capabilityRows.filter((line) => line.split('|').length >= 6).length;
 const russianCapabilityCount = (systemStateLocalization.match(/^  ['"].+['"]: \{$/gm) ?? []).length;
 const chineseProductLabels = new Set(['Python SDK', 'Super ii Robot', 'Super ii Transparent']);
-if (canonicalCapabilityCount !== 64) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 64`);
+if (canonicalCapabilityCount !== 65) errors.push(`Canonical system-state register has ${canonicalCapabilityCount} rows instead of 65`);
 if (russianCapabilityCount !== canonicalCapabilityCount) errors.push(`Russian system-state coverage is ${russianCapabilityCount}/${canonicalCapabilityCount}`);
 for (const row of capabilityRows) {
   const cells = row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim().replaceAll('`', ''));

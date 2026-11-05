@@ -474,8 +474,8 @@ def main() -> int:
             if retired_marker in homepage_contract:
                 errors.append(f"Retired homepage positioning remains: {retired_marker}")
         footer_contract = footer_file.read_text(encoding="utf-8")
-        if '<span class="footer-beta"><span></span> Agent Friendly</span>' not in footer_contract:
-            errors.append("Footer must identify Super ii as Agent Friendly")
+        if '<SigmaSignup />' not in footer_contract or '<span class="footer-beta">' in footer_contract:
+            errors.append("Footer must offer Sigma signup in place of the Agent Friendly badge")
         for retired_marker in ("Public beta", "Open by design · Clear controls when needed"):
             if retired_marker in footer_contract:
                 errors.append(f"Retired footer positioning remains: {retired_marker}")
