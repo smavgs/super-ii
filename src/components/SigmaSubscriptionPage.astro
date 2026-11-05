@@ -1,0 +1,162 @@
+---
+import CommunicationsLayout from "@/layouts/CommunicationsLayout.astro";
+import SigmaMascot from "@/components/SigmaMascot.astro";
+import { sqlClient } from "@/lib/db";
+import { sigmaMailConfig, verifySigmaToken } from "@/lib/sigma-email";
+import { sigmaCopy } from "@/lib/sigma-copy";
+import "@/styles/sigma.css";
+interface Props {
+  confirm?: boolean;
+}
+const confirm = Astro.props.confirm ?? false;
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+const token = Astro.url.searchParams.get("token") ?? "";
+const config = sigmaMailConfig(Astro.locals);
+const sql = sqlClient(Astro.locals);
+let valid = false;
+let alreadyConfirmed = false;
+let alreadyUnsubscribed = false;
+let language = locale;
+if (config && sql)
+  try {
+    const parsed = await verifySigmaToken(
+      config.secret,
+      confirm ? "confirm" : "manage",
+      token,
+    );
+    if (parsed) {
+      const rows =
+        await sql`select app.sigma_subscription_state(${parsed.id}::uuid) as subscription`;
+      const state = rows[0].subscription;
+      if (state) {
+        language = state.locale;
+        alreadyConfirmed =
+          confirm && state.status === "active" && state.nonce === parsed.nonce;
+        alreadyUnsubscribed = !confirm && state.status === "unsubscribed";
+        valid = confirm
+          ? state.nonce === parsed.nonce &&
+            (alreadyConfirmed ||
+              (state.status === "pending" &&
+                Date.now() - Date.parse(state.requested_at) < 86_400_000))
+          : state.version === parsed.nonce;
+      }
+    }
+  } catch {}
+Astro.response.headers.set("cache-control", "private, no-store");
+Astro.response.headers.set("referrer-policy", "no-referrer");
+---
+
+<CommunicationsLayout
+  active="sigma"
+  title={confirm ? c.confirmTitle : c.preferences}
+  description={c.consent}
+  titleNoTranslate
+  descriptionNoTranslate
+  noindex
+  className="sigma-page"
+>
+  <div class="shell sigma-token-page" data-no-translate>
+    <SigmaMascot /><h1>{confirm ? c.confirmTitle : c.preferences}</h1>
+    {
+      valid ? (
+        <form data-sigma-token data-token={token} data-locale={locale}>
+          {alreadyConfirmed ? (
+            <p>{c.confirmed}</p>
+          ) : alreadyUnsubscribed ? (
+            <p>{c.unsubscribed}</p>
+          ) : confirm ? (
+            <>
+              <p>{c.confirmBody}</p>
+              <button class="button button--dark" type="submit" value="confirm">
+                {c.confirm}
+              </button>
+            </>
+          ) : (
+            <>
+              <label>
+                {c.language}{" "}
+                <select name="locale">
+                  <option value="en" selected={language === "en"}>
+                    English
+                  </option>
+                  <option value="ru" selected={language === "ru"}>
+                    Русский
+                  </option>
+                  <option value="zh-CN" selected={language === "zh-CN"}>
+                    简体中文
+                  </option>
+                </select>
+              </label>
+              <div class="form-actions">
+                <button
+                  class="button button--dark"
+                  type="submit"
+                  value="language"
+                >
+                  {c.saveLanguage}
+                </button>
+                <button
+                  class="button button--secondary"
+                  type="submit"
+                  value="unsubscribe"
+                >
+                  {c.unsubscribe}
+                </button>
+              </div>
+            </>
+          )}
+          <p role="status" class="sigma-status" data-token-status />
+        </form>
+      ) : (
+        <p>{config && sql ? c.expired : c.unavailable}</p>
+      )
+    }
+    <p><a href="/sigma">{c.back} →</a></p>
+  </div>
+</CommunicationsLayout>
+<script>
+  import { sigmaCopy } from "@/lib/sigma-copy";
+  import type { SigmaLocale } from "@/lib/sigma-input";
+  const form = document.querySelector<HTMLFormElement>("[data-sigma-token]");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = (event as SubmitEvent).submitter as HTMLButtonElement;
+    const action = button.value;
+    const c = sigmaCopy(form.dataset.locale as SigmaLocale);
+    const status = form.querySelector<HTMLElement>("[data-token-status]")!;
+    const buttons = [...form.querySelectorAll("button")];
+    buttons.forEach((b) => (b.disabled = true));
+    try {
+      const response = await fetch("/api/sigma/subscription", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          token: form.dataset.token,
+          action,
+          locale: new FormData(form).get("locale"),
+        }),
+      });
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok)
+        throw new Error(result.error === "expired" ? c.expired : c.unavailable);
+      status.textContent =
+        action === "confirm"
+          ? c.confirmed
+          : action === "unsubscribe"
+            ? c.unsubscribed
+            : c.languageSaved;
+      if (action !== "language") buttons.forEach((b) => (b.hidden = true));
+      if (action === "unsubscribe") {
+        const language = form.querySelector("label");
+        if (language) language.hidden = true;
+      }
+      document.dispatchEvent(new Event("sigma:thanks"));
+    } catch (error) {
+      status.textContent =
+        error instanceof Error ? error.message : c.unavailable;
+    } finally {
+      buttons.forEach((b) => (b.disabled = false));
+    }
+  });
+</script>

@@ -81,6 +81,7 @@ const localizableRoots = new Set([
   'sign-in',
   'sign-up',
   'skills',
+  'sigma',
   'social',
   'spaces',
   'status',

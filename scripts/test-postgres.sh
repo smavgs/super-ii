@@ -168,7 +168,7 @@ docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_tes
 counts=$(docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -Atc \
   "select count(*) || ':' || (select count(*) from app.repositories) from information_schema.tables where table_schema = 'app'")
 
-if [ "$counts" != "130:0" ]; then
+if [ "$counts" != "135:0" ]; then
   echo "ERROR: unexpected post-test database state: $counts" >&2
   exit 1
 fi
@@ -194,5 +194,6 @@ SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-robo
 
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-robot-experience-flows.mjs"
 SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-notification-flows.mjs"
+SUPERII_TEST_PG_CONTAINER="$container_name" node "$project_root/tools/check-sigma-flows.mjs"
 
 echo "OK: PostgreSQL 17 migrations are rerunnable and the transactional integration test passed."

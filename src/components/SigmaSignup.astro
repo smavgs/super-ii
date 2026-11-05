@@ -1,0 +1,172 @@
+---
+import { sigmaCopy } from "@/lib/sigma-copy";
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+---
+
+<div class="sigma-signup" data-no-translate>
+  <div class="sigma-signup-heading">
+    <a href="/sigma">Sigma News</a><span>· {c.free}</span>
+  </div>
+  <form
+    data-sigma-signup
+    data-locale={locale}
+    aria-label={`Sigma News · ${c.consent}`}
+  >
+    <div class="sigma-signup-row">
+      <input
+        type="email"
+        name="email"
+        autocomplete="email"
+        required
+        maxlength="254"
+        placeholder="you@company.com"
+        aria-label={c.email}
+      />
+      <input
+        class="sigma-trap"
+        name="website"
+        tabindex="-1"
+        autocomplete="off"
+        aria-hidden="true"
+      />
+      <button type="submit">{c.subscribe}</button>
+    </div>
+    <p role="status" aria-live="polite" data-sigma-status hidden></p>
+  </form>
+</div>
+<style>
+  .sigma-signup {
+    --sigma-ink: #142436;
+    max-width: 26rem;
+    margin-top: 0.8rem;
+    padding: 0.75rem;
+    color: var(--sigma-ink);
+    background: #c2ff38;
+    border: 2px solid #20344b;
+    border-radius: 4px;
+    box-shadow: 3px 3px #20344b;
+  }
+  .sigma-signup-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+  .sigma-signup-heading a {
+    font-weight: 750;
+    color: inherit;
+    text-decoration: none;
+    font-family: var(--font-mono);
+  }
+  .sigma-signup-heading a:hover {
+    text-decoration: underline;
+  }
+  .sigma-signup-row {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .sigma-signup-row input[type="email"] {
+    min-width: 0;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem;
+    border: 1px solid #20344b;
+    border-radius: 3px;
+    background: #fffdf6;
+    color: #142436;
+    font: inherit;
+    box-shadow: none;
+  }
+  .sigma-signup-row button {
+    flex: none;
+    min-height: 2.75rem;
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+    background: #142436;
+    color: #fffdf6;
+    border: 1px solid #142436;
+    border-radius: 3px;
+    font: 600 0.85rem var(--font-ui, sans-serif);
+    cursor: pointer;
+  }
+  .sigma-signup-row button:hover {
+    background: #2b4058;
+  }
+  .sigma-signup-row button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+  .sigma-signup :is(input, button, a):focus-visible {
+    outline: 3px solid #7a2ec7;
+    outline-offset: 2px;
+  }
+  .sigma-signup [data-sigma-status] {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin: 0.55rem 0 0;
+    color: inherit;
+  }
+  .sigma-signup [hidden] {
+    display: none;
+  }
+  .sigma-trap {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
+<script>
+  import { sigmaCopy } from "@/lib/sigma-copy";
+  import type { SigmaLocale } from "@/lib/sigma-input";
+  document
+    .querySelectorAll<HTMLFormElement>("[data-sigma-signup]")
+    .forEach((form) => {
+      const c = sigmaCopy(form.dataset.locale as SigmaLocale);
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = form.querySelector<HTMLButtonElement>("button")!;
+        const status = form.querySelector<HTMLElement>("[data-sigma-status]")!;
+        button.disabled = true;
+        button.textContent = c.subscribing;
+        status.hidden = true;
+        try {
+          const values = new FormData(form);
+          const response = await fetch("/api/sigma/subscribe", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              email: String(values.get("email")).trim(),
+              website: values.get("website"),
+              locale: form.dataset.locale,
+              consent: true,
+            }),
+          });
+          const result = (await response.json()) as { error?: string };
+          if (!response.ok)
+            throw new Error(
+              result.error === "limited"
+                ? c.limited
+                : result.error === "invalid"
+                  ? c.invalid
+                  : c.unavailable,
+            );
+          status.textContent = c.checkInbox;
+          form.reset();
+          document.dispatchEvent(new Event("sigma:thanks"));
+        } catch (error) {
+          status.textContent =
+            error instanceof Error ? error.message : c.unavailable;
+        } finally {
+          button.disabled = false;
+          button.textContent = c.subscribe;
+          status.hidden = false;
+        }
+      });
+    });
+</script>

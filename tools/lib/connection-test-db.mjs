@@ -32,7 +32,7 @@ export async function queryDatabase(query, actor = null, owner = false) {
       actor?.organizationId ?? '',
       actor?.agentIdentityId ?? '',
       actor?.socialAgentId ?? '',
-      '0',
+      actor?.isAdmin ? '1' : '0',
       String(expires),
       nonce,
     ];
@@ -49,7 +49,7 @@ export async function queryDatabase(query, actor = null, owner = false) {
       actor?.organizationId ?? null,
       actor?.agentIdentityId ?? null,
       actor?.socialAgentId ?? null,
-      false,
+      actor?.isAdmin ?? false,
       expires,
       nonce,
       signature,
@@ -105,8 +105,8 @@ export function sqlClient(locals) {
 export function setSqlActorContext(sql, patch) {
   states.set(sql, { ...states.get(sql), ...patch });
 }
-export function runtimeValue(_locals, key) {
-  return key === 'CONTACT_HASH_SALT' ? 'isolated-connection-test-salt' : undefined;
+export function runtimeValue(locals, key) {
+  return locals.__testEnv?.[key] ?? (key === 'CONTACT_HASH_SALT' ? 'isolated-connection-test-salt' : undefined);
 }
 export const paymentSqlClient = sqlClient;
 export const publishingServiceSqlClient = sqlClient;
