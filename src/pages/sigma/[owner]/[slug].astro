@@ -1,9 +1,10 @@
 ---
 import CommunicationsLayout from "@/layouts/CommunicationsLayout.astro";
 import SigmaMascot from "@/components/SigmaMascot.astro";
+import SigmaActions from "@/components/SigmaActions.astro";
 import BrandMark from "@/components/BrandMark.astro";
 import { sqlClient } from "@/lib/db";
-import { sigmaStory, type SigmaStory } from "@/lib/sigma";
+import { sigmaStory, sigmaEngagement, type SigmaStory, type SigmaEngagement } from "@/lib/sigma";
 import { sigmaCopy } from "@/lib/sigma-copy";
 import { sigmaTranslation } from "@/lib/sigma-input";
 import { renderRepositoryMarkdown } from "@/lib/repository-markdown";
@@ -13,6 +14,7 @@ const locale = Astro.locals.locale ?? "en";
 const c = sigmaCopy(locale);
 const sql = sqlClient(Astro.locals);
 let story: SigmaStory | null = null;
+let engagement: SigmaEngagement | null = null;
 let unavailable = !sql;
 if (sql)
   try {
@@ -21,10 +23,12 @@ if (sql)
       Astro.params.owner ?? "",
       Astro.params.slug ?? "",
     );
+    if (story) engagement = await sigmaEngagement(sql, story.id);
   } catch {
     unavailable = true;
   }
 if (!story) Astro.response.status = unavailable ? 503 : 404;
+Astro.response.headers.set("cache-control", "private, no-store");
 const selected = story ? sigmaTranslation(story.document, locale) : null;
 const sourceBrand = (url: string) => {
   const host = new URL(url).hostname;
@@ -135,18 +139,7 @@ const sourceBrand = (url: string) => {
               </ul>
             </>
           </section>
-          <>
-            <button
-              class="button button--secondary"
-              type="button"
-              data-sigma-copy
-              data-label={c.share}
-              data-copied={c.copied}
-            >
-              {c.share}
-            </button>
-            <span class="sigma-status" role="status" data-copy-status />
-          </>
+          <SigmaActions id={story.id} path={`/sigma/${story.owner}/${story.slug}`} title={selected.text.title} likes={engagement?.likes_count} liked={engagement?.liked} />
         </>
       ) : (
         <h1>{unavailable ? c.loadingError : c.notFound}</h1>
@@ -154,17 +147,3 @@ const sourceBrand = (url: string) => {
     }
   </article>
 </CommunicationsLayout>
-<script>
-  const copy = document.querySelector<HTMLButtonElement>("[data-sigma-copy]");
-  copy?.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(location.href);
-      copy.textContent = copy.dataset.copied!;
-      document.dispatchEvent(new Event("sigma:thanks"));
-      setTimeout(() => (copy.textContent = copy.dataset.label!), 2000);
-    } catch {
-      const status = document.querySelector("[data-copy-status]");
-      if (status) status.textContent = location.href;
-    }
-  });
-</script>

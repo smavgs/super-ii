@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS = ROOT / "database" / "migrations"
 REQUIRED_TABLES = {
-    "sigma_stories", "sigma_editors", "sigma_subscribers", "sigma_editions", "sigma_deliveries",
+    "sigma_stories", "sigma_editors", "sigma_subscribers", "sigma_editions", "sigma_deliveries", "sigma_story_likes",
     "company_pages", "company_products", "company_website_checks",
     "profiles",
     "organizations",

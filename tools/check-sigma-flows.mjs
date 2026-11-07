@@ -9,6 +9,7 @@ const root = resolve(import.meta.dirname, ".."),
   bundle = join(root, "node_modules", `.sigma-flow-${process.pid}.mjs`);
 const definitions = {
   stories: "src/pages/api/sigma/stories.ts",
+  likes: "src/pages/api/sigma/likes.ts",
   editors: "src/pages/api/sigma/editors.ts",
   subscribe: "src/pages/api/sigma/subscribe.ts",
   subscription: "src/pages/api/sigma/subscription.ts",
@@ -163,6 +164,7 @@ try {
     403,
   );
   await ok(await save(author, 0, "save"));
+  assert.equal((await post("likes", other, { id, active: true })).status, 404, "drafts cannot receive public likes");
   assert.equal(
     (await db(`select * from app.sigma_public_stories()`)).length,
     0,
@@ -182,6 +184,34 @@ try {
   await ok(await post("editors", admin, { handle: editor, enabled: true }));
   await ok(await save(author, 1, "submit"));
   await ok(await save(editor, 2, "publish"));
+  assert.equal((await post("likes", null, { id, active: true })).status, 401);
+  assert.equal((await post("likes", other, { id, active: true }, { origin: "https://other.test" })).status, 403);
+  assert.equal((await post("likes", other, { id, active: true, profile_id: actors[author].profileId })).status, 400);
+  await assert.rejects(() => db("select * from app.sigma_story_likes"));
+  await assert.rejects(() => db(`select app.sigma_story_engagement('${id}',true)`));
+  assert.deepEqual(await ok(await post("likes", other, { id, active: true })), { liked: true, likes_count: 1 });
+  assert.deepEqual(await ok(await post("likes", other, { id, active: true })), { liked: true, likes_count: 1 }, "retries do not add duplicate hearts");
+  assert.deepEqual((await db(`select app.sigma_story_engagement('${id}') as result`))[0].result, { liked: false, likes_count: 1 }, "anonymous readers see a count, never another member's state");
+  assert.deepEqual((await db(`select app.sigma_story_engagement('${id}') as result`, actors[other]))[0].result, { liked: true, likes_count: 1 });
+  assert.deepEqual(await ok(await post("likes", other, { id, active: false })), { liked: false, likes_count: 0 });
+  for (let i = 0; i < 4; i++) {
+    const extraId = randomUUID();
+    const extra = structuredClone(document);
+    extra.translations.en.title = `Page story ${i} ${run}`;
+    extra.category = i % 2 ? "research" : "models";
+    await ok(await post("stories", author, { id: extraId, version: 0, slug: `page-${i}-${run}`, action: "save", document: extra }));
+    await ok(await post("stories", editor, { id: extraId, version: 1, slug: `page-${i}-${run}`, action: "publish", document: extra }));
+  }
+  const browse = async (query = "", topic = "", page = 0) => (await db(`select app.sigma_public_page(${quote(query)},${quote(topic)},${page},3) as result`))[0].result;
+  const firstPage = await browse(), lastPage = await browse("", "", 999);
+  assert.equal(firstPage.total, 5);
+  assert.equal(firstPage.stories.length, 3);
+  assert.equal(lastPage.page, 1, "out-of-range requests clamp to the final real page");
+  assert.equal(lastPage.stories.length, 2);
+  assert.equal(new Set([...firstPage.stories, ...lastPage.stories].map((story) => story.id)).size, 5);
+  assert.equal((await browse("Полезная", "models")).total, 3, "search covers translations and combines with topic filtering");
+  assert.equal((await browse("", "research")).total, 2);
+  assert.equal((await browse("no-matching-news-" + run)).total, 0);
   assert.equal(
     (
       await db(
@@ -193,6 +223,7 @@ try {
   const changed = structuredClone(document);
   changed.translations.en.title = "An unpublished change";
   await ok(await save(author, 3, "save", changed));
+  assert.equal((await browse("An unpublished change")).total, 0, "search does not expose private draft edits");
   assert.equal(
     (await save(author, 3, "save", changed)).status,
     409,
@@ -243,6 +274,9 @@ try {
   await owner(
     `update app.profiles set is_public=false where id='${actors[author].profileId}' returning id`,
   );
+  assert.equal((await browse()).total, 0, "filtered totals do not reveal hidden authors");
+  assert.equal((await db(`select app.sigma_story_engagement('${id}') as result`))[0].result, null);
+  assert.equal((await post("likes", other, { id, active: true })).status, 404);
   assert.equal(
     (await db(`select * from app.sigma_public_stories()`)).length,
     0,
