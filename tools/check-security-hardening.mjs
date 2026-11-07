@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
+import { formOriginDenied } from '../src/lib/form-origin.ts';
 import {
   catalogSearchInputSchema,
   catalogSearchWithKindSchema,
@@ -8,6 +9,41 @@ import {
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
+
+// Exercise the real form boundary, including callback attempts to reach actions
+// or other routes. Token cryptography and consent are covered by Sigma DB flows.
+const token = `${'a'.repeat(36)}.${'b'.repeat(36)}.${'c'.repeat(64)}`;
+const callback = `/api/sigma/subscription?token=${token}`;
+let tokenChecks = 0;
+const guard = (path, method = 'POST', headers = {}, valid = true) => formOriginDenied(
+  new Request(`https://superii.site${path}`, { method, headers }),
+  async () => { tokenChecks++; return valid; },
+);
+const form = { 'content-type': 'application/x-www-form-urlencoded' };
+assert.equal(await guard('/account', 'GET'), false);
+assert.equal(await guard('/account'), true);
+assert.equal(await guard('/account', 'POST', form), true);
+assert.equal(await guard('/account', 'POST', { ...form, origin: 'https://evil.example' }), true);
+assert.equal(await guard('/account', 'POST', { ...form, origin: 'https://superii.site' }), false);
+assert.equal(await guard('/api/sigma/stories', 'POST', { 'content-type': 'application/json' }), false);
+for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+  for (const type of ['text/plain', 'multipart/form-data; boundary=test', 'APPLICATION/X-WWW-FORM-URLENCODED']) {
+    assert.equal(await guard('/account', method, { 'content-type': type }), true);
+  }
+}
+for (const [path, method, headers] of [
+  ['/api/sigma/subscribe?token=' + token, 'POST', form],
+  [callback, 'DELETE', form],
+  [callback, 'POST', { ...form, origin: 'https://evil.example' }],
+  [callback, 'POST', { ...form, 'sec-fetch-site': 'cross-site' }],
+  [callback + '&_action=admin.delete', 'POST', form],
+  [callback + '&token=' + token, 'POST', form],
+  ['/api/sigma/subscription?token=forged', 'POST', form],
+]) assert.equal(await guard(path, method, headers), true);
+assert.equal(tokenChecks, 0);
+assert.equal(await guard(callback, 'POST', form, false), true);
+assert.equal(await guard(callback, 'POST', form, true), false);
+assert.equal(await formOriginDenied(new Request('https://superii.site' + callback, { method: 'POST', headers: form }), async () => { throw new Error('unavailable'); }), true);
 
 function parseDirective(policy, name) {
   const directive = policy

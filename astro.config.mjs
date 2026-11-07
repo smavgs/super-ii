@@ -14,7 +14,9 @@ export default defineConfig({
   }),
   integrations: [clerk({ enableEnvSchema: false })],
   security: {
-    checkOrigin: true,
+    // Equivalent form-origin enforcement runs first in src/middleware.ts so
+    // signed RFC 8058 unsubscribe callbacks can reach their bounded handler.
+    checkOrigin: false,
   },
   vite: {
     build: {
