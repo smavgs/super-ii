@@ -11,6 +11,8 @@ import { productPublicRate } from '@/lib/product-http';
 import { getOllamaListing, ollamaFiles, parseOllamaManifest, resolveOllamaVersion, validOllamaSlug, validOllamaTag, type OllamaFile } from '@/lib/ollama';
 import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
+import { formOriginDenied } from '@/lib/form-origin';
+import { sigmaMailConfig, verifySigmaToken } from '@/lib/sigma-email';
 import {
   isLocalizablePath,
   localeCookie,
@@ -350,6 +352,12 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (await formOriginDenied(context.request, async (token) => {
+    const config = sigmaMailConfig(context.locals);
+    return Boolean(config && await verifySigmaToken(config.secret, 'manage', token));
+  })) {
+    return secure(new Response('Cross-site form submissions are forbidden', { status: 403 }), context.request);
+  }
   const requestedLocale = localeFromPathname(context.url.pathname);
   if (requestedLocale !== 'en' && !isLocalizablePath(context.url.pathname) && pageRequest(context.request)) {
     const englishOnly = new URL(context.url);

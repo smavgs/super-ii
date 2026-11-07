@@ -1,0 +1,58 @@
+{
+  "verified_at": "2026-11-06",
+  "origin": "https://superii.site",
+  "feature_pr": "https://github.com/smavgs/super-ii/pull/154",
+  "feature_commit": "8b87dcf694d1de2636c65397cb9e248ffdb18817",
+  "observed_production_worker_version": "72a3ed3c-bdca-4bd3-a04e-e3155bb39b2f",
+  "unsubscribe_fix_preview_version": "c202d822-af30-43b7-af02-9a6c70d7bdbe",
+  "migration": {
+    "file": "database/migrations/0046_sigma_news.sql",
+    "sha256": "1c072799e50ef193993b885ea069c9b844b055054211b6515e3bde0d197d57e8",
+    "applied_alone": true,
+    "new_tables_with_rls": 5,
+    "direct_backend_table_grants": 0
+  },
+  "publication": {
+    "owner_authorized_complete_pack": true,
+    "editor_handle": "smavgs",
+    "used_signed_restricted_editorial_gateway": true,
+    "published_stories": 15,
+    "locales": ["en", "ru", "zh-CN"],
+    "public_language_pages_checked": 45,
+    "public_jpeg_hashes_checked": 29,
+    "all_public_checks_passed": true,
+    "original_source_folders_unchanged": true,
+    "independent_claim_and_image_license_audit": false
+  },
+  "mail": {
+    "verified_sender_domain": "news.superii.site",
+    "confirmation_delivered": true,
+    "explicit_browser_confirmation_passed": true,
+    "unsubscribe_preview_uses_production_test_subscriber": true,
+    "signed_origin_free_post_status": 200,
+    "ordinary_form_post_status": 403,
+    "cross_site_browser_post_status": 403,
+    "forged_token_post_status": 403,
+    "action_dispatch_attempt_status": 403,
+    "edition_sends_performed": 0
+  },
+  "browser": {
+    "locales_checked": ["en", "ru", "zh-CN"],
+    "desktop": {"width": 956, "height": 817, "page_height": 1238, "horizontal_overflow": false},
+    "phone": {"width": 390, "height": 844, "page_height": 1632, "horizontal_overflow": false},
+    "mascot_animation": "sigma-idle",
+    "animation_iterations": "infinite",
+    "animation_state": "running",
+    "play_control": false,
+    "email_placeholder": "you@company.com"
+  },
+  "machine_access": {
+    "superii.site_passed": 40,
+    "www.superii.site_passed": 40
+  },
+  "limits": [
+    "This records the observed feature deployment and fix preview, not a permanent pointer to the latest deployment.",
+    "The provider test covered confirmation delivery; no newsletter edition or campaign was sent.",
+    "Global administrator access was preserved; the publishing owner received Sigma editor access only."
+  ]
+}
