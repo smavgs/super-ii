@@ -24,6 +24,21 @@ export type SigmaAccess = {
   editor: boolean;
   admin: boolean;
 };
+export type SigmaEngagement = { likes_count: number; liked: boolean };
+export type SigmaPage = {
+  stories: (SigmaStory & SigmaEngagement)[];
+  total: number;
+  page: number;
+  size: number;
+};
+export async function sigmaPage(sql: NeonQueryFunction<false, false>, query = "", topic = "", page = 0, size = 3): Promise<SigmaPage> {
+  const rows = await sql`select app.sigma_public_page(${query},${topic},${page},${size}) as result`;
+  return rows[0].result as SigmaPage;
+}
+export async function sigmaEngagement(sql: NeonQueryFunction<false, false>, id: string): Promise<SigmaEngagement | null> {
+  const rows = await sql`select app.sigma_story_engagement(${id}::uuid) as result`;
+  return rows[0].result as SigmaEngagement | null;
+}
 export async function sigmaAccess(
   sql: NeonQueryFunction<false, false>,
 ): Promise<SigmaAccess> {

@@ -11,6 +11,14 @@ Sigma lives at `/sigma`, under Community. The footer signup replaces only the fo
 
 Public discovery displays three stories per page. The one-to-two-screen target applies to discovery, not to full-length reading, editing or arbitrarily large accessibility text. The existing footer wraps naturally on phones; Sigma's community navigation becomes a horizontally scrollable row.
 
+## Finding and sharing news
+
+The news list combines text search across published translations with a topic selector. It shows the matching result count, the current page and total pages, and direct page links. Filters are kept when changing pages; changing a filter starts from the first page. Out-of-range page requests resolve to the last real page. Papers keep their existing records and separate search results.
+
+Every news item and article has a Share button. It opens the device share sheet where supported, falls back to copying the canonical article URL, and exposes a selectable URL if clipboard access is unavailable. Cancelling native sharing does not copy or send anything.
+
+Signed-in members can add or remove one heart per story. Only the total and the viewer's own state are returned; liker identities are private. Likes do not influence ordering. Writes require a same-origin request, verified member identity, bounded input and an identity rate limit. Migration `0047_sigma_discovery_engagement.sql` adds the RLS-protected like table and narrow gateways; apply it before deploying these discovery controls.
+
 ## Motion
 
 The original 👾 mascot animates automatically with a quiet idle bob, a short hop when a previously unseen edition is opened, and a brief thank-you wiggle after a successful action. There is no play/pause control or sound. Offscreen mascots and hidden tabs conserve resources, and the operating system's reduced-motion preference is respected. Browser storage is optional and only remembers whether an edition has been seen.

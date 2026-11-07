@@ -1,0 +1,36 @@
+---
+import { sigmaCopy } from "@/lib/sigma-copy";
+import { localizedPath } from "@/lib/i18n";
+import { isSignedInUser } from "@/lib/member-actions";
+type Props = { id: string; path: string; title: string; likes?: number; liked?: boolean };
+const { id, path, title, likes, liked = false } = Astro.props;
+const likesAvailable = typeof likes === "number";
+const locale = Astro.locals.locale ?? "en";
+const c = sigmaCopy(locale);
+const storyPath = localizedPath(path, locale);
+const signIn = `${localizedPath('/sign-in', locale)}?redirect_url=${encodeURIComponent(storyPath)}`;
+const signedIn = isSignedInUser(Astro.locals);
+const label = likesAvailable ? `${liked ? c.unlike : c.like} · ${likes}` : c.likesUnavailable;
+---
+<div class="sigma-actions" data-sigma-actions data-story-id={id} data-title={title}
+  data-url={`https://superii.site${storyPath}`} data-sign-in={signIn}
+  data-like-label={c.like} data-unlike-label={c.unlike} data-like-error={c.likeError}
+  data-copied={c.copied} data-share-label={c.share} data-copy-label={c.copyLink}>
+  {signedIn ? (
+    <button type="button" class="button sigma-like" data-sigma-like disabled={!likesAvailable} aria-pressed={liked} aria-label={label} title={label}>
+      <svg class="sigma-heart" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+      <span data-like-count>{likesAvailable ? likes : ""}</span>
+    </button>
+  ) : (
+    <a class="button sigma-like" href={signIn} aria-label={`${c.signInToLike}${likesAvailable ? ` · ${likes}` : ""}`} title={c.signInToLike}>
+      <svg class="sigma-heart" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+      <span>{likes}</span>
+    </a>
+  )}
+  <button type="button" class="button sigma-share" data-sigma-share><i class="ph ph-share-network" aria-hidden="true"></i><span>{c.share}</span></button>
+  <span class="sigma-action-status" role="status" data-sigma-action-status></span>
+  <label class="sigma-share-fallback" hidden>{c.copyLink}<input type="url" readonly value={`https://superii.site${storyPath}`} /></label>
+</div>
+<script>
+  import "@/scripts/sigma-actions";
+</script>
