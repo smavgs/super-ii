@@ -29,3 +29,6 @@
 .hf-page pre { max-width: 100%; overflow-x: auto; }
 @media(max-width:600px) { .hf-page .repository-actions .hf-primary { width: 100%; justify-content: center; } .hf-file-table { font-size: .78rem; } .hf-file-table :is(th,td) { padding: .45rem .25rem; } .hf-file-table :is(th,td):first-child { width: 51%; } .hf-file-table :is(th,td):last-child { width: 32%; } }
 @media(prefers-reduced-motion:reduce) { .hf-page .hf-primary { transition: none; } .hf-page .hf-primary:hover { transform: none; } }
+
+.hf-page .repository-badges > span > span:not(.brand-mark) { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; }
+.hf-page .repository-badges .brand-mark { padding: 0; background: color-mix(in srgb, var(--brand-mark-color) 8%, white); color: var(--brand-mark-color); border-radius: .42rem; }
