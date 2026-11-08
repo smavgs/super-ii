@@ -1,0 +1,92 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CreatorLink from '@/components/CreatorLink.astro';
+import BrandMark from '@/components/BrandMark.astro';
+import DetailNavigation from '@/components/DetailNavigation.astro';
+import { ensureAuthenticatedProfile } from '@/lib/auth';
+import { sqlClient } from '@/lib/db';
+import { renderRepositoryMarkdown } from '@/lib/repository-markdown';
+import { hfFrameOrigin, type HfListing } from '@/lib/hf-catalogue';
+import '@/styles/repository-card.css';
+import '@/styles/public-detail.css';
+import '@/styles/hf-catalogue.css';
+
+interface Props { item: HfListing }
+const {item} = Astro.props;
+const sql = sqlClient(Astro.locals);
+const actor = sql ? await ensureAuthenticatedProfile(Astro.locals,sql) : null;
+let canEdit = actor?.profileId === item.owner_profile_id;
+if (!canEdit && actor && item.owner_organization_id && sql) {
+  const rows = await sql`select app.can_access_organization(${item.owner_organization_id}::uuid,true) as allowed`;
+  canEdit = rows[0]?.allowed === true;
+}
+const app = item.kind === 'space';
+const metadata = item.source_metadata;
+const gated = Boolean(metadata.gated);
+const runtime = String(metadata.runtime_stage ?? 'UNKNOWN');
+const available = ['RUNNING','RUNNING_BUILDING','SLEEPING'].includes(runtime);
+const origin = app ? hfFrameOrigin(metadata.subdomain) : null;
+if (origin) Astro.response.headers.set('x-superii-hf-frame-origin',origin);
+Astro.response.headers.set('cache-control','private, no-store');
+const command = `hf download ${item.provider_repo_id} --repo-type ${item.kind} --revision ${item.source_revision}`;
+const kindLabel = app ? 'App' : 'Dataset';
+---
+<BaseLayout title={item.title} description={item.summary} titleNoTranslate descriptionNoTranslate className="detail-skin">
+  <div class="repository-page shell hf-page" data-detail-sections data-hf-page data-id={item.id} data-frame-origin={origin} data-default-panel={canEdit && Astro.url.searchParams.get('edit') === '1' ? 'edit' : 'overview'}>
+    <header class="repository-header">
+      <p class="eyebrow"><span aria-hidden="true">👾 </span>{kindLabel} · <span>Curated listing</span></p>
+      <div class="repository-path"><span>Curated by</span><CreatorLink compact kind={item.owner_type} handle={item.owner_handle} displayName={item.owner_display_name} avatarUrl={item.owner_avatar_url} /></div>
+      <h1 data-no-translate>{item.title}</h1>
+      <div class="repository-badges"><span class="brand-inline"><BrandMark brand="huggingface" size="sm" />Hugging Face</span><span><span>Original creator</span>: <a href={`https://huggingface.co/${encodeURIComponent(item.provider_namespace)}`} target="_blank" rel="noopener noreferrer" data-no-translate>{item.provider_namespace}</a></span>{item.license && <span data-no-translate>{item.license}</span>}<span class:list={['hf-status',{'hf-status--limited':gated || (app && !available)}]}>{gated ? 'Access required' : app ? available ? 'Available on Hugging Face' : 'Currently unavailable on Hugging Face' : 'Public source files'}</span></div>
+      <div class="repository-actions">
+        {app ? <a class="button hf-primary" href="#app" data-hf-open><i class="ph ph-play" aria-hidden="true"></i><span>Open app</span></a> : gated ? <a class="button hf-primary" href={item.source_url} target="_blank" rel="noopener noreferrer">Request access on Hugging Face ↗</a> : <a class="button hf-primary" href="#files"><i class="ph ph-download-simple" aria-hidden="true"></i><span>Browse &amp; download</span></a>}
+        {app && <a class="button button--secondary" href="#files">Source files</a>}
+        <a class="button button--secondary" href={item.source_url} target="_blank" rel="noopener noreferrer">Original source &amp; license ↗</a>
+        {canEdit && <a class="button button--secondary" href="#edit">Edit listing</a>}
+      </div>
+    </header>
+    <DetailNavigation items={[
+      {id:'overview',label:'Overview',icon:'ph-squares-four'},
+      ...(app ? [{id:'app',label:'Open app',icon:'ph-play'}] : []),
+      {id:'files',label:'Files',icon:'ph-folder'},
+      {id:'use',label:'Use locally',icon:'ph-terminal-window'},
+      ...(canEdit ? [{id:'edit',label:'Edit listing',icon:'ph-pencil-simple'}] : []),
+    ]} />
+    <div class="repository-detail-layout"><div class="repository-detail-content">
+      <section class="repository-section repository-overview" id="overview" data-detail-panel="overview">
+        <h2>{app ? 'About this app' : 'About this dataset'}</h2>
+        <p class="repository-summary" data-no-translate>{item.summary}</p>
+        <div class="hf-source-line"><BrandMark brand="huggingface" size="xs" /><code data-no-translate>{item.provider_repo_id}</code><span>Source checked</span><time data-no-translate>{String(metadata.checked_at ?? '').slice(0,10)}</time></div>
+        {item.card_markdown && <details class="hf-description"><summary>More details</summary><article class="repository-card-markdown notebook-markdown" data-no-translate set:html={renderRepositoryMarkdown(item.card_markdown,{sourceUrl:item.source_url})} /></details>}
+        <div class="detail-route-list">
+          <a href={app ? '#app' : '#files'}><i class:list={['ph',app ? 'ph-play' : 'ph-download-simple']} aria-hidden="true"></i><span><strong>{app ? 'Run the hosted app' : 'Choose the files you need'}</strong><small>{app ? 'Launch the Hugging Face app inside this page.' : 'Explore folders, inspect file sizes and download directly.'}</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+          <a href="#use"><i class="ph ph-terminal-window" aria-hidden="true"></i><span><strong>Use locally</strong><small>Get the complete source snapshot with the Hugging Face CLI.</small></span><i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </div>
+      </section>
+      {app && <section class="repository-section" id="app" data-detail-panel="app">
+        <h2>Open app</h2><p>Runs on Hugging Face. Inputs go to this app’s provider.</p>
+        {!available && <p class="hf-availability">This app was paused or unavailable at the last source check. Try again to check its current status.</p>}
+        <div class="button-row"><button class="button hf-primary" type="button" data-hf-launch>Launch app</button><button class="button button--secondary" type="button" data-hf-stop hidden>Close app</button><a href={origin ?? item.source_url} target="_blank" rel="noopener noreferrer">Open at source ↗</a></div>
+        <p role="status" data-hf-app-status></p>
+        <div class="hf-app-frame" data-hf-frame hidden></div>
+        <p class="hf-note">Some apps require their own account, payment or provider permissions. If embedding is unavailable, use the source link.</p>
+      </section>}
+      <section class="repository-section" id="files" data-detail-panel="files">
+        <h2>{app ? 'Source files' : 'Files & downloads'}</h2>
+        <p>{gated ? 'This dataset requires the original provider’s access approval. Use the source link to review its terms.' : 'Choose a file to download. Files come from Hugging Face; they are not stored on Super ii.'}</p>
+        {gated ? <a class="button hf-primary" href={item.source_url} target="_blank" rel="noopener noreferrer">Request access on Hugging Face ↗</a> : <div data-hf-browser>
+          <nav class="hf-file-nav" aria-label="File browser"><button class="button button--secondary" type="button" data-hf-root>Root folder</button><button class="button button--secondary" type="button" data-hf-up hidden>Up one folder</button><code data-hf-folder data-no-translate>/</code></nav>
+          <p role="status" aria-live="polite" data-hf-files-status>Open Files to load the source folder.</p>
+          <div class="hf-file-scroll"><table class="file-table hf-file-table"><thead><tr><th>File</th><th>Size</th><th>Action</th></tr></thead><tbody data-hf-files></tbody></table></div>
+          <div class="button-row hf-file-pages"><button class="button button--secondary" type="button" data-hf-previous hidden>Previous files</button><span data-hf-file-page></span><button class="button button--secondary" type="button" data-hf-next hidden>Next files</button></div>
+          <p role="status" aria-live="polite" data-hf-download-status></p>
+        </div>}
+        <p class="hf-note"><span>File snapshot</span>: <code data-no-translate>{item.source_revision?.slice(0,12)}</code>. <span>Individual downloads do not install an app or fetch a whole dataset. See Use locally for the complete snapshot.</span></p>
+        <noscript><a href={`${item.source_url}/tree/${item.source_revision}`} target="_blank" rel="noopener noreferrer">Browse files on Hugging Face ↗</a></noscript>
+      </section>
+      <section class="repository-section" id="use" data-detail-panel="use"><h2>Use locally</h2><p>With the Hugging Face CLI installed, download this exact source snapshot:</p><pre data-no-translate><code>{command}</code></pre><p>For large datasets, choose individual files or add an include pattern in the CLI. Check available disk space first.</p>{app && <p>App source files need the runtime, dependencies and any services described by the original creator. Downloading them does not install or launch the app.</p>}<p>Gated sources require your own Hugging Face account and access approval.</p><a href="https://huggingface.co/docs/huggingface_hub/guides/cli" target="_blank" rel="noopener noreferrer">Hugging Face CLI guide ↗</a></section>
+      {canEdit && <section class="repository-section" id="edit" data-detail-panel="edit"><h2>Edit your listing</h2><form data-hf-editor class="hf-editor"><label>Title<input name="title" maxlength="200" required value={item.title} /></label><label>Summary<textarea name="summary" maxlength="2000" rows="3">{item.summary}</textarea></label><label>Description · Markdown<textarea name="card_markdown" rows="12" maxlength="100000">{item.card_markdown}</textarea></label><button class="button hf-primary" type="submit">Save listing</button><p role="status" data-hf-editor-status></p></form></section>}
+    </div><aside class="repository-context" aria-label="Source details"><div class="repository-context__card"><p class="eyebrow">Source &amp; credit</p><h2 class="brand-inline"><BrandMark brand="huggingface" size="sm" />Hugging Face</h2><p><span>Original creator</span>: <strong data-no-translate>{item.provider_namespace}</strong></p><p>Curated descriptions and source links. Original creators retain their rights; source licenses and access rules apply.</p><dl class="hf-metrics">{item.provider_downloads !== null && <><dt>HF monthly downloads</dt><dd data-no-translate>{Number(item.provider_downloads).toLocaleString('en')}</dd></>}{item.provider_likes !== null && <><dt>HF likes</dt><dd data-no-translate>{Number(item.provider_likes).toLocaleString('en')}</dd></>}<dt>License</dt><dd data-no-translate>{item.license ?? 'Not specified by source'}</dd></dl><p class="hf-note">Source figures are a dated snapshot. Inclusion is not an execution or quality review by Super ii.</p></div></aside></div>
+  </div>
+</BaseLayout>
+<script src="@/scripts/hf-catalogue.ts"></script>

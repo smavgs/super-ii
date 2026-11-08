@@ -44,7 +44,7 @@ function responseNonce(): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-function contentSecurityPolicy(nonce: string | null, allowSameOriginFrame = false): string {
+function contentSecurityPolicy(nonce: string | null, allowSameOriginFrame = false, hfOrigin = ''): string {
   const scriptSources = [
     "'self'",
     ...(nonce ? [`'nonce-${nonce}'`, "'strict-dynamic'"] : []),
@@ -62,7 +62,7 @@ function contentSecurityPolicy(nonce: string | null, allowSameOriginFrame = fals
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "worker-src 'self' blob:",
-    `frame-src 'self' ${clerkFrontendApi} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `frame-src 'self' ${clerkFrontendApi} https://challenges.cloudflare.com https://*.protect.clerk.com${hfOrigin ? ' '+hfOrigin : ''}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -204,7 +204,12 @@ function secure(response: Response, request: Request, locale: SiteLocale = local
     && response.body !== null
     && contentType.includes('text/html');
   const nonce = transformHtml ? responseNonce() : null;
-  const strictPolicy = contentSecurityPolicy(nonce);
+  // Only a rendered curated app page may permit its one validated HF frame origin.
+  const candidateFrame = headers.get('x-superii-hf-frame-origin') ?? '';
+  headers.delete('x-superii-hf-frame-origin');
+  const hfOrigin = /^\/(?:ru\/|zh-cn\/)?spaces\/[^/]+\/hf-[a-f0-9-]{36}$/.test(url.pathname)
+    && /^https:\/\/[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.hf\.space$/.test(candidateFrame) ? candidateFrame : '';
+  const strictPolicy = contentSecurityPolicy(nonce, false, hfOrigin);
   headers.set('content-security-policy', isolatedSpaceFrame
     ? isolatedSpaceCsp(url.origin)
     : inlineMediaFrame

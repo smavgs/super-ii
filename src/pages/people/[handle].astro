@@ -51,8 +51,9 @@ let showcase: ShowcaseItem[] = [];
 const workQuery=(Astro.url.searchParams.get('work_q')??'').trim().slice(0,200);
 const workKind=['model','dataset','space'].includes(Astro.url.searchParams.get('work_kind')??'')?Astro.url.searchParams.get('work_kind')!:'all';
 let workPage=Math.max(1,Math.min(417,Math.trunc(Number(Astro.url.searchParams.get('work_page')))||1));
-let curatedModels:LinkedWorkItem[]=[];
+let curatedWork:LinkedWorkItem[]=[];
 let curatedTotal=0;
+let curatedCounts:Record<string,number>={};
 let matchingCount=0;
 let visibleRepositories:PublicRepository[]=[];
 
@@ -124,16 +125,17 @@ if (sql) {
         listOwnerLinkedWork(sql, 'person', profile.id, 100, {provider:'other'}),
         listPublicShowcase(sql, 'person', profile.id),
       ]);
-      const counts=await sql`select count(*)::integer as total,
+      const counts=await sql`select kind,count(*)::integer as total,
         count(*) filter(where ${workQuery}='' or strpos(lower(concat_ws(' ',title,summary,provider_slug)),lower(${workQuery}))>0)::integer as matching
-        from app.external_catalog_items where owner_profile_id=${profile.id}::uuid and provider='ollama' and status='active'`;
-      curatedTotal=Number(counts[0]?.total??0);
+        from app.external_catalog_items where owner_profile_id=${profile.id}::uuid and (provider='ollama' or is_curated) and status='active' group by kind`;
+      curatedCounts=Object.fromEntries(counts.map(row=>[String(row.kind),Number(row.total)]));
+      curatedTotal=counts.reduce((sum,row)=>sum+Number(row.total),0);
       const filtered=repositories.filter(item=>(workKind==='all'||item.kind===workKind)&&`${item.title} ${item.summary} ${item.slug}`.toLowerCase().includes(workQuery.toLowerCase()));
-      matchingCount=filtered.length+(['all','model'].includes(workKind)?Number(counts[0]?.matching??0):0);
+      matchingCount=filtered.length+counts.filter(row=>workKind==='all'||row.kind===workKind).reduce((sum,row)=>sum+Number(row.matching),0);
       workPage=Math.min(workPage,Math.max(1,Math.ceil(matchingCount/24)));
       const offset=(workPage-1)*24;
       visibleRepositories=filtered.slice(offset,offset+24);
-      if(['all','model'].includes(workKind)&&visibleRepositories.length<24) curatedModels=await listOwnerLinkedWork(sql,'person',profile.id,24-visibleRepositories.length,{provider:'ollama',query:workQuery,offset:Math.max(0,offset-filtered.length)});
+      if(visibleRepositories.length<24) curatedWork=await listOwnerLinkedWork(sql,'person',profile.id,24-visibleRepositories.length,{provider:'curated',kind:workKind,query:workQuery,offset:Math.max(0,offset-filtered.length)});
 
     }
   } catch {
@@ -205,9 +207,9 @@ const socialLinks: SocialLink[] = profile ? [
           {workCount>0&&<form class="profile-work-tools" data-profile-work-tools method="get" action="#work">
             <label><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="sr-only">Search published work</span><input type="search" name="work_q" value={workQuery} maxlength="200" placeholder="Search this member’s work" /></label>
             <button class="button button--secondary" type="submit" name="work_kind" value={workKind}>Search</button>
-            <div class="profile-kind-filters" aria-label="Filter published work">{[['all','All'],['model','Models'],['dataset','Datasets'],['space','Apps']].map(([kind,label])=><button type="submit" name="work_kind" value={kind} aria-pressed={workKind===kind}>{label}<span>{kind==='all'?workCount:repositories.filter(item=>item.kind===kind).length+(kind==='model'?curatedTotal:0)}</span></button>)}</div>
+            <div class="profile-kind-filters" aria-label="Filter published work">{[['all','All'],['model','Models'],['dataset','Datasets'],['space','Apps']].map(([kind,label])=><button type="submit" name="work_kind" value={kind} aria-pressed={workKind===kind}>{label}<span>{kind==='all'?workCount:repositories.filter(item=>item.kind===kind).length+(curatedCounts[kind]??0)}</span></button>)}</div>
           </form>}
-          {matchingCount ? <div class="catalog-results">{visibleRepositories.map((item) => <a class="catalog-card" data-profile-work-item data-kind={item.kind} href={repositoryPath(item)}><div class="catalog-card__topline"><span class:list={['work-kind', `work-kind--${item.kind}`]}><i class:list={['ph', item.kind === 'model' ? 'ph-cube' : item.kind === 'dataset' ? 'ph-database' : 'ph-app-window']} aria-hidden="true"></i>{item.kind === 'space' ? 'App' : item.kind === 'model' ? 'Model' : 'Dataset'}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><code data-no-translate>{item.owner_handle}/{item.slug}</code><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}{curatedModels.map(item=><LinkedWorkCard item={item} showOwner={false} profileFilter />)}</div> : !workCount&&<p>No public work yet.</p>}
+          {matchingCount ? <div class="catalog-results">{visibleRepositories.map((item) => <a class="catalog-card" data-profile-work-item data-kind={item.kind} href={repositoryPath(item)}><div class="catalog-card__topline"><span class:list={['work-kind', `work-kind--${item.kind}`]}><i class:list={['ph', item.kind === 'model' ? 'ph-cube' : item.kind === 'dataset' ? 'ph-database' : 'ph-app-window']} aria-hidden="true"></i>{item.kind === 'space' ? 'App' : item.kind === 'model' ? 'Model' : 'Dataset'}</span>{item.license ? <span data-no-translate>{item.license}</span> : <span>License pending</span>}</div><h3 data-no-translate>{item.title}</h3><p data-no-translate>{item.summary}</p><div class="catalog-card__metadata"><code data-no-translate>{item.owner_handle}/{item.slug}</code><span>⬇️ {item.downloads_count}</span><span>❤️ {item.likes_count}</span></div></a>)}{curatedWork.map(item=><LinkedWorkCard item={item} showOwner={false} profileFilter />)}</div> : !workCount&&<p>No public work yet.</p>}
           {matchingCount>24&&<nav class="button-row profile-pagination" aria-label="Published work pages">{workPage>1&&<a class="button button--secondary" href={workPageHref(workPage-1)}>Previous page</a>}<span>{workPage} / {Math.ceil(matchingCount/24)}</span>{(workPage * 24 < matchingCount) && <a class="button button--secondary" href={workPageHref(workPage+1)}>Next page</a>}</nav>}
           {!matchingCount&&workCount>0&&<p class="profile-filter-empty">No work matches these filters. Try another type or search.</p>}
         </section>
