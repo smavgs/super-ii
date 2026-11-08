@@ -4,6 +4,7 @@ import { sqlClient } from './db';
 
 export type LinkedWorkItem = {
   id: string;
+  is_curated: boolean;
   kind: RepositoryKind;
   provider: 'huggingface' | 'google-drive' | 'ollama';
   provider_repo_id: string;
@@ -66,7 +67,7 @@ export async function searchLinkedWork(
     : 'updated';
   try {
     const rows = await sql`
-      select item.id, item.kind, item.provider, item.provider_repo_id,
+      select item.id, item.is_curated, item.kind, item.provider, item.provider_repo_id,
              item.provider_namespace, item.provider_slug, item.source_url,
              item.source_revision, item.title, item.summary, item.license,
              item.file_count, item.total_size_bytes, item.provider_downloads,
@@ -95,7 +96,8 @@ export async function searchLinkedWork(
       order by
         case when ${sort} = 'downloads' then coalesce(item.provider_downloads, 0) end desc,
         case when ${sort} = 'likes' then coalesce(item.provider_likes, 0) end desc,
-        item.updated_at desc, item.id
+        item.updated_at desc,
+        case when item.is_curated and item.source_metadata->>'source_rank' ~ '^[0-9]{1,6}$' then (item.source_metadata->>'source_rank')::integer end, item.id
       limit ${pageSize} offset ${pageOffset}
     `;
     return { state: 'ok', items: rows as LinkedWorkItem[] };
@@ -109,10 +111,10 @@ export async function listOwnerLinkedWork(
   ownerType: 'person' | 'organization',
   ownerId: string,
   limit = 100,
-  options: { provider?: 'ollama' | 'other'; query?: string; offset?: number } = {},
+  options: { provider?: 'ollama' | 'curated' | 'other'; query?: string; offset?: number; kind?: string } = {},
 ): Promise<LinkedWorkItem[]> {
   const rows = await sql.query(
-    `select item.id, item.kind, item.provider, item.provider_repo_id,
+    `select item.id, item.is_curated, item.kind, item.provider, item.provider_repo_id,
             item.provider_namespace, item.provider_slug, item.source_url,
             item.source_revision, item.title, item.summary, item.license,
             item.file_count, item.total_size_bytes, item.provider_downloads,
@@ -128,11 +130,13 @@ export async function listOwnerLinkedWork(
      where item.status = 'active'
        and (($1 = 'person' and item.owner_profile_id = $2::uuid)
          or ($1 = 'organization' and item.owner_organization_id = $2::uuid))
-       and ($4 = '' or ($4 = 'ollama' and item.provider = 'ollama') or ($4 = 'other' and item.provider <> 'ollama'))
+       and ($4 = '' or ($4 = 'ollama' and item.provider = 'ollama') or ($4 = 'curated' and (item.provider = 'ollama' or item.is_curated)) or ($4 = 'other' and item.provider <> 'ollama' and not item.is_curated))
+       and ($7 = '' or item.kind::text = $7)
        and ($5 = '' or strpos(lower(concat_ws(' ', item.title,item.summary,item.provider_slug)),lower($5)) > 0)
-     order by item.updated_at desc, item.title, item.id limit $3 offset $6`,
+     order by item.updated_at desc,
+       case when item.is_curated and item.source_metadata->>'source_rank' ~ '^[0-9]{1,6}$' then (item.source_metadata->>'source_rank')::integer end, item.title, item.id limit $3 offset $6`,
     [ownerType, ownerId, Math.min(Math.max(limit, 1), 100), options.provider ?? '',
-      (options.query ?? '').trim().slice(0,200), Number.isSafeInteger(options.offset) ? Math.min(Math.max(options.offset!,0),10000) : 0],
+      (options.query ?? '').trim().slice(0,200), Number.isSafeInteger(options.offset) ? Math.min(Math.max(options.offset!,0),10000) : 0, ['model','dataset','space'].includes(options.kind ?? '') ? options.kind : ''],
   );
   return rows as LinkedWorkItem[];
 }

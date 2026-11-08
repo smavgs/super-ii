@@ -13,6 +13,11 @@ alter table app.external_catalog_items add constraint external_catalog_items_sou
   (provider='ollama' and provider_namespace='library' and provider_slug ~ '^[a-z0-9][a-z0-9._-]{0,99}$'
     and provider_repo_id='library/'||provider_slug and source_url='https://ollama.com/library/'||provider_slug)
 );
+-- The later curation migration owns this constraint once its flag exists.
+-- Preserve curated HF rows when the full migration set is replayed.
+do $revision_constraint$ begin
+if not exists(select 1 from information_schema.columns where table_schema='app'
+  and table_name='external_catalog_items' and column_name='is_curated') then
 alter table app.external_catalog_items drop constraint if exists external_catalog_items_source_revision_check;
 alter table app.external_catalog_items add constraint external_catalog_items_source_revision_check check (
   (provider='huggingface' and external_identity_id is not null and source_revision is not null and source_revision ~ '^[a-f0-9]{40,64}$') or
@@ -20,6 +25,8 @@ alter table app.external_catalog_items add constraint external_catalog_items_sou
   (provider='ollama' and external_identity_id is null and (source_revision is null or source_revision ~ '^[a-f0-9]{64}$')
     and kind='model' and provider_downloads is null and provider_likes is null)
 );
+end if;
+end $revision_constraint$;
 alter table app.external_catalog_items drop constraint if exists external_catalog_items_total_size_bytes_check;
 alter table app.external_catalog_items add constraint external_catalog_items_total_size_bytes_check
   check (total_size_bytes >= 0 and total_size_bytes <= case when provider='ollama' then 2199023255552 else 21474836480 end);
