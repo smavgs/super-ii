@@ -2,7 +2,8 @@ import type { NeonQueryFunction } from '@neondatabase/serverless';
 import type { LinkedWorkItem } from './linked-work';
 
 export type HfListing = LinkedWorkItem & {
-  kind: 'dataset' | 'space';
+  kind: 'model' | 'dataset' | 'space';
+  last_checked_at?: string;
   card_markdown: string;
   owner_profile_id: string | null;
   owner_organization_id: string | null;
@@ -17,12 +18,16 @@ export const validHfRevision = (revision: unknown): revision is string => typeof
 export const validHfPath = (path: string, root = false) => (root && path === '') || (path.length <= 1024 && path.split('/').every(part => part && part !== '.' && part !== '..' && !/[\\%\u0000-\u001f\u007f]/.test(part)));
 export const validHfCursor = (cursor: string) => cursor === '' || /^[A-Za-z0-9+/_=-]{1,2000}$/.test(cursor);
 export const hfFrameOrigin = (subdomain: unknown): string | null => typeof subdomain === 'string' && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain) ? `https://${subdomain}.hf.space` : null;
-export const hfPagePath = (item: Pick<LinkedWorkItem, 'id' | 'kind' | 'owner_handle'>) => `/${item.kind === 'dataset' ? 'datasets' : 'spaces'}/${encodeURIComponent(item.owner_handle)}/hf-${item.id}`;
+// Verified at the original Space on 2026-11-08: DeepSite redirects to its own
+// domain and rejects its hf.space host. Keep the listing local; do not embed it.
+export const hfAppExternalUrl = (item: Pick<HfListing, 'kind' | 'provider_repo_id'>): string | null =>
+  item.kind === 'space' && item.provider_repo_id.toLowerCase() === 'enzostvs/deepsite' ? 'https://deepsite.hf.co/' : null;
+export const hfPagePath = (item: Pick<LinkedWorkItem, 'id' | 'kind' | 'owner_handle'>) => `/${item.kind === 'model' ? 'models' : item.kind === 'dataset' ? 'datasets' : 'spaces'}/${encodeURIComponent(item.owner_handle)}/hf-${item.id}`;
 export const hfDownloadPath = (id: string, path: string) => `/api/huggingface/${id}/download?path=${encodeURIComponent(path)}`;
 export const encodeHfPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 export function hfApiBase(item: Pick<HfListing, 'kind' | 'provider_repo_id' | 'source_revision'>) {
-  if (!['dataset', 'space'].includes(item.kind) || !validHfRepo(item.provider_repo_id) || !validHfRevision(item.source_revision)) throw new HfSourceError(400, 'Invalid source.');
-  return `https://huggingface.co/api/${item.kind === 'dataset' ? 'datasets' : 'spaces'}/${encodeHfPath(item.provider_repo_id)}`;
+  if (!['model','dataset','space'].includes(item.kind) || !validHfRepo(item.provider_repo_id) || !validHfRevision(item.source_revision)) throw new HfSourceError(400, 'Invalid source.');
+  return `https://huggingface.co/api/${item.kind === 'model' ? 'models' : item.kind === 'dataset' ? 'datasets' : 'spaces'}/${encodeHfPath(item.provider_repo_id)}`;
 }
 
 export async function getHfListing(sql: NeonQueryFunction<false, false>, id: string): Promise<HfListing | null> {
@@ -34,8 +39,8 @@ export async function getHfListing(sql: NeonQueryFunction<false, false>, id: str
     from app.external_catalog_items item
     left join app.profiles profile on profile.id=item.owner_profile_id and profile.is_public
     left join app.organizations organization on organization.id=item.owner_organization_id and organization.is_public
-    where item.id=$1::uuid and item.provider='huggingface' and item.is_curated
-      and item.kind in ('dataset','space') and item.status='active'
+    where item.id=$1::uuid and item.provider='huggingface'
+      and item.kind in ('model','dataset','space') and item.status='active'
       and (profile.id is not null or organization.id is not null) limit 1`, [id]);
   return (rows[0] as HfListing | undefined) ?? null;
 }
@@ -71,7 +76,7 @@ export async function hfPublicState(item: HfListing, fetcher: typeof fetch = fet
   const query = new URLSearchParams(); fields.forEach(field => query.append('expand',field));
   const data = await hfJson(await metadataRequest(`${hfApiBase(item)}?${query}`,fetcher)) as Record<string, unknown>;
   if (typeof data.id !== 'string' || data.id.toLowerCase() !== item.provider_repo_id.toLowerCase() || data.private !== false || data.disabled === true) throw new HfSourceError(404,'This public source is unavailable.');
-  if (data.gated) throw new HfSourceError(403,'This dataset requires access on Hugging Face.');
+  if (data.gated) throw new HfSourceError(403,'This source requires access on Hugging Face.');
   return data;
 }
 

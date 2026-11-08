@@ -30,7 +30,7 @@ export async function streamHfFile(request: Request, item: HfListing, file: HfFi
   const outgoing = new Headers({'accept-encoding':'identity','user-agent':'SuperiiCatalog/1.0'});
   if (useRange) outgoing.set('range',`bytes=${start}-${end}`);
   // No browser cookies, provider tokens or user supplied URLs reach the source.
-  let url = `https://huggingface.co/${item.kind === 'dataset' ? 'datasets' : 'spaces'}/${encodeHfPath(item.provider_repo_id)}/resolve/${item.source_revision}/${encodeHfPath(file.path)}?download=true`;
+  let url = `https://huggingface.co/${item.kind === 'model' ? '' : item.kind === 'dataset' ? 'datasets/' : 'spaces/'}${encodeHfPath(item.provider_repo_id)}/resolve/${item.source_revision}/${encodeHfPath(file.path)}?download=true`;
   const controller = new AbortController();
   const onAbort = () => controller.abort();
   request.signal.addEventListener('abort',onAbort,{once:true});

@@ -1,5 +1,7 @@
 ---
 import RepositoryPage from '@/components/RepositoryPage.astro';
+import HuggingFacePage from '@/components/HuggingFacePage.astro';
+import { getHfListing, validHfId } from '@/lib/hf-catalogue';
 import OllamaModelPage from '@/components/OllamaModelPage.astro';
 import { getOllamaListing, validOllamaSlug } from '@/lib/ollama';
 import { sqlClient } from '@/lib/db';
@@ -7,9 +9,14 @@ import { sqlClient } from '@/lib/db';
 const owner = Astro.params.owner ?? '';
 const slug = Astro.params.slug ?? '';
 const sql = sqlClient(Astro.locals);
+let hf = null;
+if (sql && slug.startsWith('hf-') && validHfId(slug.slice(3))) {
+  try { const found=await getHfListing(sql,slug.slice(3)); if(found?.kind==='model' && found.owner_handle.toLowerCase()===owner.toLowerCase()) hf=found; }
+  catch { Astro.response.status=503; }
+}
 let ollama = null;
 if (sql && slug.startsWith('ollama-') && validOllamaSlug(slug.slice(7))) {
   try { ollama = await getOllamaListing(sql,{owner,slug:slug.slice(7)}); } catch { Astro.response.status=503; }
 }
 ---
-{ollama ? <OllamaModelPage item={ollama} /> : <RepositoryPage kind="model" owner={owner} slug={slug} />}
+{hf ? <HuggingFacePage item={hf} /> : ollama ? <OllamaModelPage item={ollama} /> : <RepositoryPage kind="model" owner={owner} slug={slug} />}

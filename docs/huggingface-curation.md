@@ -23,3 +23,11 @@ The migration runner replays all migrations. Migration 0044 defers its source-re
 `tools/check-hf-catalogue.mjs` covers source records, bounded metadata, access restrictions, path validation, pagination, download host restrictions, HEAD and ranges. `tools/check-hf-catalogue-flows.mjs` uses actual restricted routes and signed Postgres contexts for owner isolation, private profiles, gated sources, repeatable 200-item import, preserved edits/removals and normal sharing allowances. It runs in `npm run db:test`; unit checks run in `npm run validate`.
 
 The November 6 Sigma pack is a separate content publication: 15 stories, 45 language versions and 29 images, published through the existing editorial gateway. No newsletter campaign was sent.
+
+## Linked model navigation
+
+Hugging Face model cards also open exact local pages at `/models/{owner}/hf-{listing UUID}`. The same route handling applies to existing verified-namespace HF datasets/apps, with Linked labels rather than Curated labels. Curator editing remains restricted to curated rows; creator linking and upstream ownership rules are unchanged. Model downloads use the model resolve URL (no datasets/spaces prefix), and the file browser preserves the exact stored revision.
+
+## Apps with their own website
+
+DeepSite was checked on 2026-11-08: its original Hugging Face Space redirects to `https://deepsite.hf.co/`, and its `hf.space` app rejects that host. `hfAppExternalUrl` records this reviewed exception. The catalogue always opens the Super ii overview first; its app tab has an explicit external action, no iframe and no extra frame CSP permission. Other Spaces use the normal bounded live availability check and exact-host iframe. A RUNNING status does not establish that every embedded app supports sign-in or third-party frames; the source action stays visible.

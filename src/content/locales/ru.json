@@ -2,7 +2,7 @@
   "locale": "ru",
   "sourceLocale": "en",
   "generatedFrom": "utrobinmv/t5_translate_en_ru_zh_base_200",
-  "messageCount": 4027,
+  "messageCount": 4086,
   "messages": {
     "# Overview Document intended use, limitations, evaluation, training data, and responsible-use notes.": "# Обзор Предполагаемое использование документа, ограничения, оценка, данные об обучении и заметки ответственного использования.",
     "$0 to start.": "$0 для начала.",
@@ -4081,6 +4081,14 @@
     "Not specified by source": "Не указана источником",
     "Source figures are a dated snapshot. Inclusion is not an execution or quality review by Super ii.": "Показатели источника приведены на дату проверки. Включение в каталог не означает проверку работы или качества со стороны Super ii.",
     "External listings credit their original creators. File availability and access follow the source provider.": "Внешние материалы указывают оригинальных авторов. Наличие файлов и доступ определяет исходный поставщик.",
-    "Source publisher": "Публикатор источника"
+    "Source publisher": "Публикатор источника",
+    "Linked from Hugging Face": "Связано с Hugging Face",
+    "Linked by": "Добавил ссылку",
+    "Linked from the source publisher. Original authors, licenses and access rules remain with the source.": "Ссылка на материал исходного публикатора. Авторы, лицензии и правила доступа указаны в источнике.",
+    "Model weights need a compatible runtime and sufficient memory. Check the original model card for its architecture, companion files and usage instructions.": "Весам модели нужны совместимая среда выполнения и достаточный объём памяти. Архитектура, дополнительные файлы и инструкции указаны в оригинальной карточке модели.",
+    "This app runs on its own website.": "Это приложение работает на собственном сайте.",
+    "This app requires its own website. Its description and source files remain here on Super ii.": "Это приложение нужно открывать на его собственном сайте. Описание и исходные файлы остаются здесь, на Super ii.",
+    "Open on app’s website ↗": "Открыть на сайте приложения ↗",
+    "This source requires the original provider’s access approval. Use the source link to review its terms.": "Для этого источника нужно разрешение исходного поставщика. Условия доступны по ссылке на источник."
   }
 }

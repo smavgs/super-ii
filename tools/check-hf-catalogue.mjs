@@ -7,6 +7,9 @@ const catalogue=JSON.parse(await readFile(new URL('../src/data/huggingface-catal
 assert.equal(catalogue.items.length,200);
 assert.equal(catalogue.items.filter(i=>i.kind==='dataset').length,100);
 assert.equal(new Set(catalogue.items.map(i=>i.id)).size,200);
+assert.equal(hf.hfAppExternalUrl({kind:'space',provider_repo_id:'enzostvs/deepsite'}),'https://deepsite.hf.co/');
+assert.equal(hf.hfAppExternalUrl({kind:'model',provider_repo_id:'enzostvs/deepsite'}),null);
+assert.equal(hf.hfAppExternalUrl({kind:'space',provider_repo_id:'other/deepsite'}),null);
 for(const item of catalogue.items){assert.ok(hf.validHfRepo(item.repo_id));assert.ok(hf.validHfRevision(item.revision));assert.ok(hf.validHfId(item.id));if(item.kind==='space')assert.ok(hf.hfFrameOrigin(item.metadata.subdomain));}
 for(const path of ['../secret','a/../b','a//b','/etc/passwd','a\\b','a%2f..','a\nheader','a/'.repeat(600)])assert.equal(hf.validHfPath(path),false);
 assert.equal(hf.validHfPath('训练/episode 1.parquet'),true);
@@ -32,6 +35,12 @@ await assert.rejects(hf.hfFiles(item,'','bad!'),e=>e.status===400);
 await assert.rejects(hf.hfJson(new Response('x'.repeat(1_048_577))),/too large/);
 await assert.rejects(hf.hfFiles(item,'','',async(url,options)=>String(url).includes('/tree/')?Response.json([file],{headers:{link:'<https://evil.test/?cursor=abc>; rel="next"'}}):metadata(url,options)),/folder mismatch|pagination/);
 await assert.rejects(hf.hfFile(item,'missing',async(url,options)=>String(url).includes('/paths-info/')?Response.json([]):metadata(url,options)),e=>e.status===404);
+const model={...item,kind:'model'};
+assert.equal(hf.hfApiBase(model),'https://huggingface.co/api/models/creator/data');
+assert.match(hf.hfPagePath({id:catalogue.items[0].id,owner_handle:'alice',kind:'model'}),/^\/models\/alice\/hf-/);
+let modelSource='';
+await hf.streamHfFile(new Request('https://superii.site/file'),model,selected,async url=>{modelSource=String(url);return new Response('0123456789abcdef',{headers:{'content-length':'16'}});});
+assert.match(modelSource,/^https:\/\/huggingface.co\/creator\/data\/resolve\/[a-f0-9]{40}\/data\/file.parquet\?download=true$/);
 const payload=new TextEncoder().encode('0123456789abcdef');
 let streamCalls=0;
 const download=async(url,init)=>{

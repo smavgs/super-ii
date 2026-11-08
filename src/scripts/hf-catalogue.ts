@@ -94,8 +94,8 @@ if (root) {
     if(!launch || !frame || launch.disabled || frame.querySelector('iframe')) return;
     launch.disabled=true; if(appStatus) appStatus.textContent=t('Checking app availability…');
     try {
-      const data = await result(await fetch(`${api}/app`)) as {url:string;title:string};
-      if(data.url !== root!.dataset.frameOrigin) throw new Error(t('The source address changed. Reload this page or open the source link.'));
+      const data = await result(await fetch(`${api}/app`)) as {mode:string;url:string;title:string};
+      if(data.mode !== 'embed' || data.url !== root!.dataset.frameOrigin) throw new Error(t('The source address changed. Reload this page or open the source link.'));
       const iframe=document.createElement('iframe'); iframe.title=data.title; iframe.referrerPolicy='no-referrer';
       iframe.setAttribute('sandbox','allow-scripts allow-forms allow-same-origin allow-downloads');
       iframe.allow='fullscreen'; iframe.src=data.url;
