@@ -5663,6 +5663,7 @@
     "HF likes": "HF 点赞数",
     "Not specified by source": "来源未指定",
     "Source figures are a dated snapshot. Inclusion is not an execution or quality review by Super ii.": "来源数据为某一日期的快照。收录不代表 Super ii 对运行情况或质量进行了审核。",
-    "External listings credit their original creators. File availability and access follow the source provider.": "外部条目注明原作者。文件可用性和访问权限由来源提供方决定。"
+    "External listings credit their original creators. File availability and access follow the source provider.": "外部条目注明原作者。文件可用性和访问权限由来源提供方决定。",
+    "Source publisher": "来源发布者"
   }
 }

@@ -4080,6 +4080,7 @@
     "HF likes": "Отметки «Нравится» на HF",
     "Not specified by source": "Не указана источником",
     "Source figures are a dated snapshot. Inclusion is not an execution or quality review by Super ii.": "Показатели источника приведены на дату проверки. Включение в каталог не означает проверку работы или качества со стороны Super ii.",
-    "External listings credit their original creators. File availability and access follow the source provider.": "Внешние материалы указывают оригинальных авторов. Наличие файлов и доступ определяет исходный поставщик."
+    "External listings credit their original creators. File availability and access follow the source provider.": "Внешние материалы указывают оригинальных авторов. Наличие файлов и доступ определяет исходный поставщик.",
+    "Source publisher": "Публикатор источника"
   }
 }
