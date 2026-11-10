@@ -16,7 +16,7 @@ Interaction thesis: the familiar 👾 emoji, a gently moving topic strip with pa
 - [x] Member tools and moderator queue
 - [x] Homepage, Community and Workspace integration
 - [x] Isolation and behavioral tests; mobile/desktop browser verification
-- [ ] Migration, PR checks, merge, deployment and live access verification
+- [x] Migration, PR checks, merge, deployment and live access verification — see [release evidence](../../qa/ALIENS-LIST-2026-11-10.md)
 
 ## Boundaries
 
