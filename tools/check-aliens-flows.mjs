@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 import sharp from 'sharp';
 import {queryDatabase as db} from './lib/connection-test-db.mjs';
 const root=resolve(import.meta.dirname,'..'),bundle=join(root,'node_modules',`.aliens-test-${process.pid}.mjs`);
-const definitions={listings:'src/pages/api/aliens-list/listings.ts',member:'src/pages/api/aliens-list/member.ts',upload:'src/pages/api/aliens-list/media/[id]/index.ts',photo:'src/pages/api/aliens-list/media/[id]/[file].ts',input:'src/lib/aliens/input.ts',mail:'src/lib/aliens/mail.ts'};
+const definitions={listings:'src/pages/api/aliens-list/listings.ts',member:'src/pages/api/aliens-list/member.ts',upload:'src/pages/api/aliens-list/media/[id]/index.ts',photo:'src/pages/api/aliens-list/media/[id]/[file].ts',input:'src/lib/aliens/input.ts',mail:'src/lib/aliens/mail.ts',time:'src/lib/aliens/event-time.ts'};
 globalThis.__alienTestBucket=new Map();
 await build({stdin:{resolveDir:root,contents:Object.entries(definitions).map(([key,path])=>`export * as ${key} from ${JSON.stringify(resolve(root,path))};`).join('\n')},outfile:bundle,bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent',plugins:[{name:'isolated-services',setup(b){b.onResolve({filter:/^(?:@\/lib\/db|\.\.\/db|\.\/db)$/},()=>({path:join(root,'tools/lib/connection-test-db.mjs')}));b.onResolve({filter:/^cloudflare:workers$/},()=>({path:'cloudflare-test',namespace:'test'}));b.onLoad({filter:/.*/,namespace:'test'},()=>({contents:`export const env={SHOWCASE_MEDIA:{put:async(k,v)=>globalThis.__alienTestBucket.set(k,v),get:async(k)=>{const value=globalThis.__alienTestBucket.get(k);return value?{body:value,size:value.length}:null;}}};`}));}}]});
 const r=await import(pathToFileURL(bundle).href),run=randomUUID().slice(0,8),names=['seller','buyer','other','admin'].map(n=>`aliens-${n}-${run}`),actors={};
@@ -27,6 +27,7 @@ globalThis.fetch=async(url,init)=>{assert.equal(url,'https://api.resend.com/emai
 try{
  for(const name of names){const rows=await db(`select app.ensure_profile(${quote(name)},${quote(name)},'Aliens fixture',null) as id`,{actorKind:'clerk',clerkUserId:name});actors[name]={actorKind:'clerk',clerkUserId:name,profileId:rows[0].id,isAdmin:name===names[3]};}
  const [seller,buyer,other,admin]=names,id=randomUUID();let d=draft();
+ assert.equal(r.time.utcDate('2027-03-14T00:00','America/Los_Angeles'),'2027-03-14T08:00:00.000Z');assert.equal(r.time.lastEventDate('2027-03-15T07:00:00Z','America/Los_Angeles').slice(0,10),'2027-03-14');assert.throws(()=>r.time.utcDate('2027-03-14T02:30','America/Los_Angeles'));checks+=3;
  const newcomer=await ok(await call('member','new-member-without-profile'));assert.deepEqual(newcomer.listings,[]);assert.equal(newcomer.profile_id,null);checks+=2;
  for(const entry of JSON.parse(await readFile(join(root,'src/data/aliens/official-events.json'),'utf8'))){const normalized=r.input.listingDocument.parse(entry.document);assert.equal(normalized.all_day,true);const rows=await owner(`select app.alien_valid_document(${quote(JSON.stringify(normalized))}::jsonb,true) as valid`);assert.equal(rows[0].valid,true);checks+=2;}
  await expectStatus(save(null,id,0,'save',d),401);
@@ -77,6 +78,7 @@ try{
  const expired=await ok(await getItem(null,id));assert.equal(expired.status,'expired');checks++;
  await db('select app.alien_maintenance()',actors[admin]);
  const reminders=await db("select count(*)::int n from app.notifications where event_type='aliens.expiry'",actors[seller]);assert.equal(reminders[0].n,1);checks++;
+ item=await ok(await save(seller,id,item.version,'sold'));const closedReminder=await db("select count(*)::int n from app.notifications where event_type='aliens.expiry' and needs_action",actors[seller]);assert.equal(closedReminder[0].n,0);checks++;
  item=await ok(await save(seller,id,item.version,'renew'));
  // Event restrictions and duplicate detection work without a listing fee or photo requirement.
  const start=new Date(Date.now()+7*864e5).toISOString(),end=new Date(Date.now()+7*864e5+3600e3).toISOString();

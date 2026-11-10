@@ -207,8 +207,10 @@ begin
   published_at=case when p_action in ('publish','renew') then coalesce(published_at,now()) else published_at end,
   expires_at=case when p_action in ('publish','renew') then case when d->>'kind'='event' then (d->>'ends_at')::timestamptz else now()+interval '30 days' end when p_action='save' and status='active' and d->>'kind'='event' then (d->>'ends_at')::timestamptz else expires_at end
  where id=p_id returning * into l;
- if p_action in ('publish','renew') then
+ if p_action in ('publish','renew','sold','remove') then
   update app.notifications set needs_action=false where resource_type='alien-listing' and resource_id=p_id;
+ end if;
+ if p_action in ('publish','renew') then
   for s in select * from app.alien_searches where owner_id<>actor and app.alien_matches(d,filters) loop
    perform app.enqueue_member_notification(s.owner_id,'alien-match:'||s.id||':'||p_id,'aliens.match','A listing matches your saved search',s.name,'/aliens-list/'||p_id,null,null,false);
   end loop;

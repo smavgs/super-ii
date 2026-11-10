@@ -199,6 +199,8 @@ async function loadThread(older = false) {
             form.querySelectorAll<HTMLInputElement | HTMLButtonElement>('textarea,button').forEach(el => el.disabled = next.blocked);
             document.querySelector('[data-message-status]')!.textContent = next.blocked ? 'Messaging is unavailable while either member has blocked the other.' : '';
         }
+        // A long background interval can contain more than a page of new messages.
+        if(!older && loadedIds.size && next.messages.length===100 && next.messages.every(m=>!loadedIds.has(m.id))){loadedIds.clear();log.replaceChildren();oldest=null;}
         if(older || !oldest){oldest=next.messages[0]??oldest;hasOlder=next.messages.length===100;}
         const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
         const fresh = next.messages.filter(m => !loadedIds.has(m.id));

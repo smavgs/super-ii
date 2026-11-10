@@ -28,7 +28,7 @@ PR #132 was deployed with migration 0036, the runtime package route and initial 
 
 ## Aliens List release candidate (2026-11-10)
 
-Implemented and locally tested: free worldwide used/refurbished/open-box AI hardware and Wanted listings; events initially San Francisco and Shenzhen; two-photo sale publication; rounded map locations, city/radius discovery, private conversations, block/report, moderation, saved searches, bell alerts and optional daily email. The interface uses the existing 👾 emoji, Community navigation, three Workspace shortcuts and a compact homepage strip. Migrations 0049–0050, 80 isolated behavioral checks, the full PostgreSQL suite and the production build pass. Email delivery is mocked in tests; physical phone/WeChat use is not verified. Deployment and final CI are pending. See [release verification](qa/ALIENS-LIST-2026-11-10.md).
+Implemented and locally tested: free worldwide used/refurbished/open-box AI hardware and Wanted listings; events initially San Francisco and Shenzhen; two-photo sale publication; rounded map locations, city/radius discovery, private conversations, block/report, moderation, saved searches, bell alerts and optional daily email. The interface uses the existing 👾 emoji, Community navigation, three Workspace shortcuts and a compact homepage strip. Migrations 0049–0050, 84 isolated behavioral checks, the full PostgreSQL suite and the production build pass. Email delivery is mocked in tests; physical phone/WeChat use is not verified. Deployment and final CI are pending. See [release verification](qa/ALIENS-LIST-2026-11-10.md).
 
 ## Capability register
 

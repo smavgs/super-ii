@@ -1,3 +1,4 @@
+import {localDate,utcDate,lastEventDate} from '@/lib/aliens/event-time';
 import {append} from './shared';
 import { listingDocument, publicationIssues, hardwareCategories, eventCategories, type ListingDocument, type Listing } from '@/lib/aliens/input';
 import { initLocationMap } from './map';
@@ -10,23 +11,12 @@ if (form) {
     const initial = JSON.stringify(documentValue);
     const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
     const checked = (name: string) => (field(name) as HTMLInputElement).checked;
-    function localDate(iso: string, zone: string) { if (!iso)
-        return ''; const parts = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(iso)); const p = Object.fromEntries(parts.map(x => [x.type, x.value])); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
-    function utcDate(value: string, zone: string) { if (!value)
-        return ''; let time = Date.parse(value + 'Z'); const target = time; for (let i = 0; i < 4; i++) {
-        const rendered = Date.parse(localDate(new Date(time).toISOString(), zone) + 'Z');
-        const delta = target - rendered;
-        if (!delta)
-            break;
-        time += delta;
-    } if (localDate(new Date(time).toISOString(), zone) !== value)
-        throw new Error('This local time does not exist because of a daylight-saving change. Choose another time.'); return new Date(time).toISOString(); }
     function dateOnlyMode(){const only=checked('all_day');for(const name of ['event_start','event_end']){const input=field(name) as HTMLInputElement;const value=input.value;input.type=only?'date':'datetime-local';input.value=only?value.slice(0,10):value.length===10?value+'T09:00':value;}}
     field('all_day').addEventListener('change',dateOnlyMode);
     if (documentValue.starts_at)
         field('event_start').value = localDate(documentValue.starts_at, documentValue.timezone);
     if (documentValue.ends_at)
-        field('event_end').value = localDate(documentValue.all_day?new Date(Date.parse(documentValue.ends_at)-864e5).toISOString():documentValue.ends_at, documentValue.timezone);
+        field('event_end').value = documentValue.all_day?lastEventDate(documentValue.ends_at,documentValue.timezone):localDate(documentValue.ends_at,documentValue.timezone);
     dateOnlyMode();
     function read(): ListingDocument {
         const data = new FormData(form!);
@@ -56,7 +46,7 @@ if (form) {
     function renderPhotos() { const grid = form!.querySelector('[data-photo-grid]')!; grid.replaceChildren(); photos.forEach((hash, index) => { const wrap = node('div'), image = node('img'), remove = node('button', '×'); image.src = `/api/aliens-list/media/${id}/${hash}.jpg`; image.alt = `Your photo ${index + 1}`; remove.type = 'button'; remove.setAttribute('aria-label', `Remove photo ${index + 1}`); remove.addEventListener('click', () => { if (busy)
         return; photos = photos.filter(h => h !== hash); dirty = true; renderPhotos(); }); append(wrap, image, remove); append(grid, wrap); }); }
     renderPhotos();
-    function lock(value: boolean) { busy = value; form!.querySelectorAll<HTMLButtonElement>('button').forEach(el => el.disabled = value); const input = form!.querySelector<HTMLInputElement>('[data-photos]'); if (input)
+    function lock(value: boolean) { busy = value; form!.querySelectorAll<HTMLElement>('.alien-editor__fields,.alien-editor__side').forEach(el=>el.inert=value); form!.querySelectorAll<HTMLButtonElement>('button').forEach(el => el.disabled = value); const input = form!.querySelector<HTMLInputElement>('[data-photos]'); if (input)
         input.disabled = value; }
     async function save(action: 'save' | 'publish') {
         documentValue = read();
