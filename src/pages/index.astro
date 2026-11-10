@@ -1,4 +1,5 @@
 ---
+import AliensHome from '@/components/AliensHome.astro';
 import HeroPixels from '@/components/HeroPixels.astro';
 import InfoTip from '@/components/InfoTip.astro';
 import AgentBash from '@/components/AgentBash.astro';
@@ -324,4 +325,5 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
       </ul>
     </div>
   </section>
+  <AliensHome />
 </BaseLayout>

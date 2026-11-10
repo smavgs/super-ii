@@ -1,0 +1,20 @@
+---
+interface Props { small?: boolean }
+const { small = false } = Astro.props;
+---
+<span class:list={['alien-mascot', { 'alien-mascot--small': small }]} aria-hidden="true">👾</span>
+<style>
+  .alien-mascot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1em;
+    height: 1em;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-size: 4.5rem;
+    font-weight: normal;
+    line-height: 1;
+  }
+  .alien-mascot--small { font-size: 2.2rem; }
+</style>

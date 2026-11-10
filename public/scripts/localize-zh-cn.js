@@ -4,7 +4,7 @@
   const excluded = new Set(['SCRIPT', 'STYLE', 'PRE', 'CODE', 'SAMP', 'KBD', 'TEXTAREA', 'TEMPLATE', 'SVG']);
   const blockedRoots = ['/api', '/locales', '/.well-known', '/mcp', '/a2a'];
   const localizableRoots = new Set([
-    '', 'about', 'account', 'agents', 'bring-my-work', 'build', 'builders', 'chats', 'checkout',
+    '', 'aliens-list', 'about', 'account', 'agents', 'bring-my-work', 'build', 'builders', 'chats', 'checkout',
     'collections', 'contact', 'datasets', 'docs', 'enterprise', 'fame', 'feed', 'frontier-ai',
     'highlights', 'join-team', 'legal', 'models', 'new', 'notebooks', 'organizations', 'papers',
     'people', 'posts', 'pricing', 'products', 'proposals', 'repositories', 'review', 'robot', 'security',
@@ -244,7 +244,7 @@
     return nativeFetch(input, { ...init, headers });
   };
 
-  fetch('/locales/zh-cn.json?v=20261013-1', { credentials: 'same-origin' })
+  fetch('/locales/zh-cn.json?v=20261013-1&aliens=20261110', { credentials: 'same-origin' })
     .then((response) => {
       if (!response.ok) throw new Error('Simplified Chinese catalogue unavailable');
       return response.json();

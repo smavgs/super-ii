@@ -1,3 +1,4 @@
+import { aliensRussian, aliensChinese } from './aliens/localization';
 import { publicDetailRussian, publicDetailChinese } from './public-detail-localization';
 import { quickShareRussian, quickShareChinese } from './quick-share-localization';
 import { exploreRussian, exploreChinese } from './explore-localization';
@@ -46,6 +47,7 @@ const localizableRoots = new Set([
   'about',
   'account',
   'agents',
+  'aliens-list',
   'bring-my-work',
   'build',
   'builders',
@@ -2977,6 +2979,7 @@ export const russianMessages: Readonly<Record<string, string>> = Object.freeze({
   ...reviewedRussianMessages,
   ...creatorRussian,
   ...quickShareRussian,
+  ...aliensRussian,
 });
 
 export const chineseMessages: Readonly<Record<string, string>> = Object.freeze({
@@ -2984,6 +2987,7 @@ export const chineseMessages: Readonly<Record<string, string>> = Object.freeze({
   ...reviewedChineseMessages,
   ...creatorChinese,
   ...quickShareChinese,
+  ...aliensChinese,
 });
 
 const helpRussian: Readonly<Record<string, string>> = Object.freeze({

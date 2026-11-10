@@ -119,6 +119,7 @@ const kindLabel = (kind: string) => ({ model: 'Model', dataset: 'Dataset', space
         </details>}
 
         <CompanyProductWorkspace />
+        <nav class="button-row" aria-label="Your Aliens List"><a class="button button--secondary button--small" href="/aliens-list/mine">👾 My listings</a><a class="button button--secondary button--small" href="/aliens-list/mine?tab=messages">Messages</a><a class="button button--secondary button--small" href="/aliens-list/mine?tab=searches">Saved searches</a></nav>
         <section class="workspace-activity" id="activity" aria-labelledby="activity-title">
           <h3 id="activity-title">Recent activity</h3>
           {notifications.length ? <>

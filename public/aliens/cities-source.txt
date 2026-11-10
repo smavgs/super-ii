@@ -1,0 +1,4 @@
+City data: GeoNames cities15000, https://www.geonames.org/
+Source: https://download.geonames.org/export/dump/cities15000.zip
+License: Creative Commons Attribution 4.0, https://creativecommons.org/licenses/by/4.0/
+Modified: selected fields; coordinates rounded to two decimal places; sorted by population.

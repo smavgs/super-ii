@@ -1,0 +1,34 @@
+---
+import AliensLayout from '@/layouts/AliensLayout.astro';
+import AlienListing from '@/components/AlienListing.astro';
+import AlienLocation from '@/components/AlienLocation.astro';
+import {alienSession} from '@/lib/aliens/http';
+import {parseFilters,hardwareCategories,eventCategories,conditions,type Listing} from '@/lib/aliens/input';
+import {runtimeValue} from '@/lib/db';
+let filters;let invalid=false;try{filters=parseFilters(Astro.url.searchParams);}catch{filters={kind:'hardware' as const};invalid=true;}
+filters.kind??='hardware';const events=filters.kind==='event';
+const page=Math.min(200,Math.max(0,Math.floor(Number(Astro.url.searchParams.get('page'))||0)));
+let items:Listing[]=[];let total=0,unavailable=false;
+try{const {sql}=await alienSession(Astro.locals);const r=await sql`select app.alien_browse(${JSON.stringify(filters)}::jsonb,${page}) as result`;items=r[0]?.result.items??[];total=r[0]?.result.total??0;}catch{unavailable=true;}
+Astro.response.headers.set('cache-control','private, no-store');
+const href=(n:number)=>{const q=new URLSearchParams(Astro.url.searchParams);q.set('page',String(n));return '/aliens-list?'+q;};
+const totalLabel=Astro.locals.locale==='zh-CN'?`${total} 条信息`:Astro.locals.locale==='ru'?`Объявлений: ${total}`:`${total} ${total===1?'listing':'listings'}`;
+const tileUrl=runtimeValue(Astro.locals,'ALIENS_MAP_TILES')??'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+---
+<AliensLayout active={events?'events':'hardware'}>
+ <div class="alien-intro"><h1>{events?'Events':'Hardware'}</h1><p>{events?'AI, robotics and hardware events in San Francisco and Shenzhen.':'Used, refurbished and open-box hardware. Worldwide. Real people.'}</p></div>
+ <form class="alien-search" method="get" action="/aliens-list" data-browse-form>
+  <div class="alien-search__main"><label>What are you looking for?<input name="q" value={filters.q} maxlength="160" placeholder={events?'A meetup, topic or hackathon…':'GPU, Mac, workstation, robotics…'}/></label><label>{events?'Events':'Listing type'}<select name="kind"><option value="hardware" selected={filters.kind==='hardware'}>All hardware</option><option value="sale" selected={filters.kind==='sale'}>For sale / free</option><option value="wanted" selected={filters.kind==='wanted'}>Wanted</option><option value="event" selected={events}>Events</option></select></label><button class="alien-button alien-button--yellow" type="submit">Search ↗</button></div>
+  <details class="alien-filters"><summary>Location & filters</summary><div class="alien-filter-grid"><AlienLocation city={filters.city} place={Astro.url.searchParams.get('place')??''} lat={filters.lat} lon={filters.lon} radius={filters.radius}/><div class="alien-form-grid"><label>Category<select name="category"><option value="">All categories</option>{Object.entries(events?eventCategories:hardwareCategories).map(([v,label])=><option value={v} selected={filters.category===v}>{label}</option>)}</select></label>{!events&&<><label>Condition<select name="condition"><option value="">Any condition</option>{Object.entries(conditions).map(([v,label])=><option value={v} selected={filters.condition===v}>{label}</option>)}</select></label><label>Delivery<select name="shipping"><option value="">Any delivery</option><option value="pickup" selected={filters.shipping==='pickup'}>Local pickup</option><option value="domestic" selected={filters.shipping==='domestic'}>Domestic shipping</option><option value="international" selected={filters.shipping==='international'}>International shipping</option></select></label><label>Maximum price<input name="max_price" type="number" min="0" max="1000000000" step="0.01" value={filters.max_price}/></label><label>Currency<input name="currency" maxlength="3" pattern="[A-Z]{3}" value={filters.currency??'USD'}/></label></>}</div></div></details>
+ </form>
+ {(filters.q||filters.city||filters.lat!==undefined||filters.category||filters.condition||filters.shipping||filters.max_price!==undefined)&&<p class="alien-applied">{[filters.q,Astro.url.searchParams.get('place')||filters.city,filters.lat!==undefined?`${filters.radius??50} km`:null,filters.category,filters.condition,filters.shipping,filters.max_price!==undefined?`${filters.currency} ≤ ${filters.max_price}`:null].filter(Boolean).join(' · ')}</p>}
+ {events&&<div class="alien-city-tabs"><a href="/aliens-list?kind=event&city=San+Francisco">San Francisco ↗</a><a href="/aliens-list?kind=event&city=Shenzhen">Shenzhen ↗</a><a href="/aliens-list/new?kind=event">Add an event +</a></div>}
+ <div class="alien-results-bar"><span>{unavailable?'Listings temporarily unavailable':totalLabel}</span><div class="alien-actions"><button class="alien-text-button" data-save-search data-filters={JSON.stringify(filters)} type="button">☆ Save search</button><a href={events?'/aliens-list?kind=event':'/aliens-list'}>Clear filters</a><button class="alien-button alien-map-toggle" type="button" data-map-toggle aria-pressed="false">Map</button></div></div>
+ <p class="alien-status" role="status" data-status>{invalid?'Some filters were invalid and have been reset.':''}</p>
+ <div class="alien-discovery" data-discovery><div class="alien-results">
+ {items.map(item=><AlienListing {item}/>)}
+ {!items.length&&<div class="alien-empty"><span aria-hidden="true">⌕</span><h2>{unavailable?'We could not load listings.':events?'More good gatherings start here.':'The next find could start with you.'}</h2><p>{unavailable?'Please try again shortly.':events?'Add an upcoming event, or save this search for new gatherings.':'Try a wider area, save this search, or tell the community what you need.'}</p><div class="alien-actions">{unavailable?<a class="alien-button" href={Astro.url.pathname+Astro.url.search}>Try again</a>:<><a class="alien-button alien-button--violet" href={events?'/aliens-list/new?kind=event':'/aliens-list/new?kind=wanted'}>{events?'Add an event':'Post Wanted'}</a><a class="alien-button" href={events?'/aliens-list?kind=event':'/aliens-list'}>Widen search</a></>}</div></div>}
+ {total>24&&<nav class="alien-pagination" aria-label="Listing pages">{page>0&&<a class="alien-button" href={href(page-1)}>← Previous</a>}<span>Page {page+1} of {Math.ceil(total/24)}</span>{((page + 1) * 24 < total) &&<a class="alien-button" href={href(page+1)}>Next →</a>}</nav>}
+ </div><aside class="alien-map-panel"><div class="alien-map" data-alien-map data-map-mode="browse" data-lat={filters.lat??(events?37.78:20)} data-lon={filters.lon??(events?-122.42:0)} data-radius={filters.radius??50} data-has-location={String(filters.lat!==undefined)} data-tile-url={tileUrl} aria-label="Approximate listing locations"></div><p class="alien-muted">Approximate locations. Drag the circle’s center, then press Search. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="external noopener">Report a map issue</a></p></aside></div>
+</AliensLayout>
+<script>import '@/scripts/aliens/browse';</script>

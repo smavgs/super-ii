@@ -26,6 +26,10 @@ The shared Create / repository editor is implemented and locally tested. It adds
 
 PR #132 was deployed with migration 0036, the runtime package route and initial Worker version `904a6f1a-747a-478e-ac90-e8b1b6c6cd42`. Signed-in Workspace and Create open the gold **Upload now** model/dataset dialog. Both domains pass published-package HEAD/resume and protected-route checks; a real Chrome download of the existing dataset contains all seven original files with matching checksums. Local tests cover upload/retry/publication-confirmation and optional Drive sharing. No production test upload or Drive card was created. A first member upload through the popup, multi-gigabyte public throughput and mainland/WeChat completion remain unverified. See [verification](qa/QUICK-SHARE-2026-10-24.md) and [architecture](docs/architecture/quick-sharing.md).
 
+## Aliens List release candidate (2026-11-10)
+
+Implemented and locally tested: free worldwide used/refurbished/open-box AI hardware and Wanted listings; events initially San Francisco and Shenzhen; two-photo sale publication; rounded map locations, city/radius discovery, private conversations, block/report, moderation, saved searches, bell alerts and optional daily email. The interface uses the existing 👾 emoji, Community navigation, three Workspace shortcuts and a compact homepage strip. Migrations 0049–0050, 80 isolated behavioral checks, the full PostgreSQL suite and the production build pass. Email delivery is mocked in tests; physical phone/WeChat use is not verified. Deployment and final CI are pending. See [release verification](qa/ALIENS-LIST-2026-11-10.md).
+
 ## Capability register
 
 | Capability | Status | Availability | Evidence |

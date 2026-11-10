@@ -1,0 +1,17 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import {alienMailConfig,verifyAlienEmailToken} from '@/lib/aliens/mail';
+import {sqlClient} from '@/lib/db';
+import {sameOrigin} from '@/lib/auth';
+const token=Astro.url.searchParams.get('token')??'';
+const config=alienMailConfig(Astro.locals);
+const verified=config?await verifyAlienEmailToken(config.secret,token):null;
+let done=false,error='';
+Astro.response.headers.set('cache-control','private, no-store');
+Astro.response.headers.set('referrer-policy','no-referrer');
+if(Astro.request.method==='POST') {
+ if(!sameOrigin(Astro.request)||!verified){Astro.response.status=403;error='This link is invalid.';}
+ else {try{const sql=sqlClient(Astro.locals);if(!sql)throw new Error();const r=await sql`select app.alien_unsubscribe(${verified.id}::uuid,${verified.nonce}::uuid) as ok`;done=r[0]?.ok===true;if(!done)error='This link is no longer valid.';}catch{error='Please try again shortly.';}}
+}
+---
+<BaseLayout title="Aliens List email preferences" noindex preferLight><section class="shell section"><h1>{done?'Email alerts are off':'Aliens List email alerts'}</h1>{done?<p>Your bell notifications remain available in Super ii.</p>:verified?<form method="post"><p>Turn off the daily email summary for Aliens List.</p><button class="button button--dark" type="submit">Turn off email alerts</button></form>:<p>This preference link is invalid. Manage your alerts in Aliens List.</p>}{error&&<p role="alert">{error}</p>}<p><a href="/aliens-list/mine">Return to Aliens List</a></p></section></BaseLayout>

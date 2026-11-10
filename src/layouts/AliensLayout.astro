@@ -1,0 +1,15 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import AlienMascot from '@/components/AlienMascot.astro';
+import '@/styles/pixel-controls.css';
+import '@/styles/aliens.css';
+interface Props {title?:string;description?:string;active?:string;noindex?:boolean}
+const {title='Aliens List',description='Find hardware. Meet builders. Free to list. Free to connect.',active='',noindex=false}=Astro.props;
+---
+<BaseLayout {title} {description} {noindex} preferLight className="aliens-page">
+ <div class="alien-shell aliens-skin shell"><header class="alien-heading"><a class="alien-brand" href="/aliens-list"><AlienMascot/><div><span class="alien-eyebrow">Super ii · Community</span><strong>Aliens List</strong><span>Find hardware. Meet builders.</span></div></a><div class="alien-actions"><a class="alien-button alien-button--yellow" href="/aliens-list/new">＋ Post free</a><a class="alien-button" href="/aliens-list/mine">My listings</a></div></header>
+ <nav class="alien-nav" aria-label="Aliens List"><a href="/aliens-list" aria-current={active==='hardware'?'page':undefined}>▤ Hardware</a><a href="/aliens-list?kind=event" aria-current={active==='events'?'page':undefined}>▦ Events</a><span></span><a href="/aliens-list/mine?tab=messages" aria-current={active==='messages'?'page':undefined}>Messages</a><a href="/aliens-list/mine?tab=searches" aria-current={active==='searches'?'page':undefined}>Saved searches</a></nav>
+ <slot/>
+ <footer class="alien-note">Free to list. Free to connect. Members arrange payment and delivery directly. <a href="/aliens-list/guide">How it works</a></footer>
+ </div>
+</BaseLayout>
