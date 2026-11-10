@@ -1,0 +1,12 @@
+---
+import type {Listing} from '@/lib/aliens/input';
+import {categories,conditions,priceLabel} from '@/lib/aliens/input';
+interface Props{item:Listing;manage?:boolean}
+const {item,manage=false}=Astro.props;const d=item.document;
+---
+<article class="alien-listing" data-listing-id={item.id} data-lat={d.lat} data-lon={d.lon} data-title={d.title}>
+ <a class="alien-thumb" href={`/aliens-list/${item.id}`} tabindex="-1" aria-hidden="true">{d.photos[0]?<img src={`/api/aliens-list/media/${item.id}/${d.photos[0]}.jpg`} width="150" height="120" alt="" loading="lazy"/>:<span>{d.kind==='event'?'▦':d.kind==='wanted'?'⌕':'▤'}</span>}</a>
+ <div class="alien-listing__body"><div class="alien-meta"><span class="alien-tag" data-kind={d.kind}>{d.kind==='wanted'?'Wanted':d.kind==='event'?'Event':conditions[d.condition as keyof typeof conditions]}</span><span>{categories[d.category as keyof typeof categories]}</span>{manage&&<span class="alien-tag">{item.status}</span>}</div><h2><a href={`/aliens-list/${item.id}`} data-no-translate>{d.title}</a></h2><p class="alien-price">{priceLabel(d,Astro.locals.locale)}</p><p class="alien-muted"><span data-no-translate>{d.city}{d.area?` · ${d.area}`:''}</span> · {d.country}{d.kind==='event'&&d.starts_at&&<> · <time datetime={d.starts_at}>{new Date(d.starts_at).toLocaleDateString(Astro.locals.locale??'en',{month:'short',day:'numeric',timeZone:d.timezone||'UTC'})}</time></>}</p>
+ {manage&&<div class="alien-actions"><a class="alien-text-button" href={`/aliens-list/new?id=${item.id}`}>Edit</a>{item.status!=='hidden'&&<>{['expired','removed','active'].includes(item.status)&&d.kind!=='event'&&<button data-listing-action="renew" data-id={item.id} data-version={item.version}>Renew 30 days</button>}{item.status==='active'&&<button data-listing-action="sold" data-id={item.id} data-version={item.version}>{d.kind==='wanted'?'Mark found':d.kind==='event'?'Close event':'Mark sold'}</button>}{item.status!=='removed'&&<button data-listing-action="remove" data-id={item.id} data-version={item.version}>Remove</button>}</>}</div>}
+ </div>
+</article>

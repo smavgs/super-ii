@@ -49,6 +49,7 @@
     "astro": "7.3.5",
     "drizzle-orm": "0.45.3",
     "jose": "6.2.12",
+    "leaflet": "1.9.4",
     "markdown-it": "15.0.3",
     "qrcode": "1.5.4",
     "simple-icons": "16.33.0",
@@ -59,15 +60,16 @@
     "@cloudflare/workers-types": "^5.20260926.1",
     "@modelcontextprotocol/client": "2.3.1",
     "@types/http-cache-semantics": "4.2.0",
+    "@types/leaflet": "1.9.21",
     "@types/node": "26.6.3",
     "@types/qrcode": "1.5.6",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "esbuild": "0.28.2",
     "http-cache-semantics": "file:vendor/http-cache-semantics",
+    "sharp": "0.35.5",
     "typescript": "6.0.3",
-    "wrangler": "4.142.0",
-    "sharp": "0.35.5"
+    "wrangler": "4.142.0"
   },
   "overrides": {
     "adm-zip": "https://codeload.github.com/cthackers/adm-zip/tar.gz/7d90dea2bfd35bc4761d6c8cf822f26b59aeef77",

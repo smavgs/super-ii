@@ -179,7 +179,14 @@
     "/api/robot/analytics",
     "/api/transparent/check",
     "/api/transparent/reports",
-    "/api/transparent/compare"
+    "/api/transparent/compare",
+    "/aliens-list",
+    "/aliens-list/new",
+    "/aliens-list/mine",
+    "/aliens-list/guide",
+    "/aliens-list/email",
+    "/api/aliens-list/listings",
+    "/api/aliens-list/member"
   ],
   "englishOnlyRoutes": [
     "/agents/connect.md",

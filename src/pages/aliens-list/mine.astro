@@ -1,0 +1,17 @@
+---
+import AliensLayout from '@/layouts/AliensLayout.astro';
+const a=typeof Astro.locals.auth==='function'?Astro.locals.auth():null;
+if(!a||!('userId'in a)||!a.userId)return Astro.redirect('/sign-in?redirect_url='+encodeURIComponent(Astro.url.pathname+Astro.url.search));
+Astro.response.headers.set('cache-control','private, no-store');
+const tab=['listings','messages','searches','moderation'].includes(Astro.url.searchParams.get('tab')??'')?Astro.url.searchParams.get('tab')!:'listings';
+---
+<AliensLayout title="Your Aliens List" noindex active={tab}>
+ <div class="alien-intro"><h1>{tab==='messages'?'Messages':tab==='searches'?'Saved searches':tab==='moderation'?'Reports':'My listings'}</h1><p>Your listings, conversations and saved searches. All in one place.</p></div>
+ <a class="alien-text-button" href="?tab=moderation" data-moderation-link hidden>Reports</a>
+ <p class="alien-status" data-status role="status">Loading your {tab}…</p>
+ <section data-member-view data-tab={tab}><div data-member-list></div>
+ {tab==='messages'&&<div class="alien-conversation" data-conversation hidden><header><h2 data-thread-title data-no-translate></h2><p data-thread-member></p><div class="alien-actions"><button class="alien-text-button" data-block type="button">Block member</button><a data-thread-listing href="/aliens-list">View listing ↗</a></div></header><button class="alien-text-button" data-load-older type="button" hidden>Load earlier messages</button><div class="alien-message-log" data-message-log role="log" aria-label="Conversation messages" aria-live="polite"></div><form data-message-form><label>Your message<textarea name="body" rows="3" required maxlength="4000" placeholder="Write a private message…"></textarea></label><button class="alien-button alien-button--violet" type="submit">Send message ↗</button><p class="alien-status" data-message-status role="status"></p></form></div>}
+ </section>
+ <details class="alien-filters alien-email"><summary>Notification preferences</summary><p>New messages, matches and renewal reminders appear in your Super ii bell.</p><label class="alien-check"><input type="checkbox" data-email-toggle disabled/> Email me a daily summary when I have unread updates.</label><p class="alien-muted" data-email-status role="status">Email is off until you choose it. Private messages stay in Super ii.</p></details>
+</AliensLayout>
+<script>import '@/scripts/aliens/member';</script>

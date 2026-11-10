@@ -1,0 +1,11 @@
+---
+interface Props{city?:string;country?:string;lat?:number|null;lon?:number|null;radius?:number;editor?:boolean;place?:string}
+const {city='',country='',lat=null,lon=null,radius=50,editor=false,place=''}=Astro.props;
+---
+<div class="alien-location" data-location data-location-editor={String(editor)}>
+ <label>{editor?'City or town':'Near a city'}<span class="alien-input-action"><input type="text" name={editor?'city':'place'} value={editor?city:place||city} placeholder="City name" maxlength="100" autocomplete="off" data-city-query/><button type="button" class="alien-button" data-city-find>Find city</button></span></label>
+ <select aria-label="Choose a city" data-city-options hidden size="5"></select><p class="alien-muted" data-city-status aria-live="polite"></p>
+ <input type="hidden" name="lat" value={lat??''}/><input type="hidden" name="lon" value={lon??''}/>
+ {editor?<label>Country / region<input name="country" value={country} maxlength="2" pattern="[A-Z]{2}" placeholder="US, CN, IN…" required data-country/></label>:<label>Distance<select name="radius" data-radius>{Array.from(new Set([5,10,25,50,100,250,500,1000,5000,20000,radius])).sort((a,b)=>a-b).map(n=><option value={n} selected={n===radius}>{n===20000?'Worldwide':`${n} km`}</option>)}</select></label>}
+ <small>City data: <a href="https://www.geonames.org/" rel="external noopener" target="_blank">GeoNames</a>. {editor?'Choose a city or place the approximate pin on the map.':'You can also move the search circle on the map.'}</small>
+</div>
