@@ -10,16 +10,13 @@ import AlienMascot from './AlienMascot.astro';
    </div>)}
   </div>
  </div>
- <button class="aliens-home__pause" type="button" aria-label="Pause Aliens List animation" aria-pressed="false">Ⅱ</button>
 </section>
 <style>
  .aliens-home{position:relative;overflow:hidden;background:#f2e8ff;color:#20344b;border-top:2px solid #20344b;border-bottom:2px solid #20344b}.aliens-home__inner{display:flex;align-items:center;gap:1.6rem;padding-block:2rem}.aliens-home h2{font-family:var(--font-mono);font-size:clamp(1.4rem,2.8vw,2rem);letter-spacing:-.06em;margin:.35rem 0 1rem}.aliens-home .eyebrow{margin:0;font-size:.76rem}.aliens-home__actions{display:flex;flex-wrap:wrap;gap:.6rem}.aliens-home__actions a{padding:.6rem .8rem;border:1px solid #20344b;font-weight:650;text-decoration:none;background:#fffdf6;box-shadow:2px 2px #20344b}.aliens-home__actions a:hover{background:#e3c9ff;transform:translateY(-1px)}.aliens-home__actions .aliens-home__post{background:#ffe500}.aliens-home__pixels{font-family:monospace;color:#ac7cdb;font-size:3rem;line-height:.65;margin-left:auto}.aliens-home__ticker{overflow:hidden;border-top:1px solid #c2acd8;background:#20344b;color:#eadcff;font-family:var(--font-mono);font-size:.8rem;padding:.55rem 0;white-space:nowrap}
  .aliens-home__track,.aliens-home__group{display:flex;width:max-content}.aliens-home__group,.aliens-home__topics{flex:none}.aliens-home__topics{padding-inline-end:1ch}
  .aliens-home__ticker[data-ready] .aliens-home__track{animation:aliens-topics var(--aliens-topic-duration) linear infinite}
- .aliens-home__pause{position:absolute;bottom:0;right:0;height:2.4rem;width:2.4rem;background:#20344b;color:white;border:0;cursor:pointer}
- .aliens-home[data-paused] .aliens-home__track{animation-play-state:paused}
  @keyframes aliens-topics{to{transform:translateX(-50%)}}
- @media(prefers-reduced-motion:reduce){.aliens-home__ticker[data-ready] .aliens-home__track{animation:none}.aliens-home__pause{display:none}}
+ @media(prefers-reduced-motion:reduce){.aliens-home__ticker[data-ready] .aliens-home__track{animation:none}}
  @media(max-width:600px){.aliens-home__inner{gap:1rem;padding-block:1.5rem}.aliens-home__pixels{display:none}.aliens-home__inner :global(.alien-mascot){width:3rem;font-size:3rem}.aliens-home__actions a{font-size:.9rem}}
 </style>
 <script>
@@ -46,5 +43,4 @@ import AlienMascot from './AlienMascot.astro';
   observer.observe(topics);
   fit();
  });
- document.querySelectorAll<HTMLButtonElement>('.aliens-home__pause').forEach(button=>button.addEventListener('click',()=>{const paused=button.closest('section')!.toggleAttribute('data-paused');button.setAttribute('aria-pressed',String(paused));button.setAttribute('aria-label',paused?'Play Aliens List animation':'Pause Aliens List animation');button.textContent=paused?'▶':'Ⅱ';}));
 </script>
