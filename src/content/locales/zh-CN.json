@@ -2,7 +2,7 @@
   "locale": "zh-CN",
   "sourceLocale": "en",
   "generatedFrom": "src/content/locales/ru.json source keys; reviewed with protected-token validation",
-  "messageCount": 5669,
+  "messageCount": 5672,
   "messages": {
     "# Overview Document intended use, limitations, evaluation, training data, and responsible-use notes.": "# 概述文档：预期用途、局限性、评估、训练数据及负责任使用说明",
     "$0 to start.": "从 $0 开始。",
@@ -5672,6 +5672,9 @@
     "This app runs on its own website.": "此应用在其自己的网站上运行。",
     "This app requires its own website. Its description and source files remain here on Super ii.": "此应用需要在其自己的网站上打开。您仍可在 Super ii 查看介绍和源文件。",
     "Open on app’s website ↗": "在应用网站打开 ↗",
-    "This source requires the original provider’s access approval. Use the source link to review its terms.": "此来源需要原始提供方批准访问。请通过来源链接查看其条款。"
+    "This source requires the original provider’s access approval. Use the source link to review its terms.": "此来源需要原始提供方批准访问。请通过来源链接查看其条款。",
+    "Aliens List hardware classifieds and events": "Aliens List 硬件分类信息与活动",
+    "Migrations 0049–0050, 84 isolated behavioral checks and the full database suite; 20 live API/access checks on both domains; native 👾, source-linked event details, mobile list/map, homepage ticker and sign-in redirects inspected in the browser. Public browsing is free; posting, private messages and saved searches require a free account. Existing data counts were preserved. The hourly Worker schedule is deployed; email remains opt-in and its delivery was mocked in tests. See qa/ALIENS-LIST-2026-11-10.md.": "已应用迁移 0049–0050，通过 84 项隔离行为检查及完整数据库测试；两个域名通过 20 项线上 API 与访问权限检查。浏览器检查确认了原有 👾、带来源链接的活动详情、手机宽度列表与地图、首页滚动条及登录跳转。公开浏览免费；发布、私信及保存搜索需要免费账户。原有表的记录数量保持不变。每小时 Worker 任务已部署；邮件仍需主动订阅，测试中使用了模拟投递。参见 qa/ALIENS-LIST-2026-11-10.md。",
+    "live; first member listing, conversation and digest delivery pending": "已上线；首个成员发布、私信对话和摘要邮件送达尚待验证"
   }
 }
