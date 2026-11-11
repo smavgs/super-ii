@@ -6,6 +6,8 @@ Visual thesis: Super ii's warm yellow and navy frame, the same native 👾 emoji
 Content plan: short identity and two tabs; search and city/radius; useful listings or honest empty state; concise listing detail and contact; small homepage strip after Skills.
 Interaction thesis: the familiar 👾 emoji, a gently moving topic strip with pause/reduced-motion support, crisp button feedback; stationary actions and keyboard-equivalent map controls.
 
+The homepage ticker runs automatically with two identical text groups. Each group repeats enough phrases to exceed the visible width; resizing and font changes recalculate the coverage. The track moves by exactly one group at a constant 20 pixels per second, so the next cycle joins without a blank tail. Manual pause and reduced-motion preferences remain available.
+
 ## Delivery checklist
 
 - [x] Listings, photos, renewal/expiry, ownership and moderation
