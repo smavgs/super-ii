@@ -10,19 +10,6 @@ from typing import Any
 MAX_GGUF_VOCABULARY = 1_000_000
 MAX_CHAT_TEMPLATE_CHARACTERS = 1_000_000
 
-# llama.cpp sometimes introduces an architecture identifier before the pinned
-# Transformers GGUF converter learns that name. These aliases are deliberately
-# narrow: the generated tokenizer still has to match llama.cpp's exact token
-# IDs for every verification vector before it can be published.
-ARCHITECTURE_ALIASES = {
-    "gemma3": "gemma3_text",
-    "gemma4": "gemma4_text",
-    "minimax-m2": "minimax_m2",
-    "qwen2moe": "qwen2_moe",
-    "qwen3moe": "qwen3_moe",
-    "qwen35": "qwen3",
-}
-
 
 def _type_number(value: Any) -> int:
     raw = getattr(value, "value", value)
@@ -103,38 +90,6 @@ def _tokenizer_dictionary(reader: Any, mapping: dict[str, dict[str, str]]) -> di
         ):
             raise ValueError(f"GGUF tokenizer {name} is invalid")
     return result
-
-
-def _converter_candidates(
-    architecture: str,
-    tokenizer_type: str,
-    supported: set[str],
-) -> list[str]:
-    candidates: list[str] = []
-
-    def add(value: str | None) -> None:
-        if value and value in supported and value not in candidates:
-            candidates.append(value)
-
-    normalized = ARCHITECTURE_ALIASES.get(architecture, architecture)
-    add(normalized)
-    if "qwen" in architecture:
-        add("qwen3")
-        add("qwen2")
-    if "llama" in architecture or "mistral" in architecture:
-        add("llama")
-    if tokenizer_type == "llama":
-        add("llama")
-    elif tokenizer_type == "gpt2":
-        # GPT-2 metadata is shared by native GPT models, Qwen-family models and
-        # Llama 3. Exact oracle matching below chooses the only safe result.
-        add("gpt2")
-        add("qwen3")
-        add("llama")
-    elif tokenizer_type in {"t5", "spm", "sentencepiece"}:
-        add("t5")
-        add("llama")
-    return candidates
 
 
 def _matches_reference(tokenizer: Any, vectors: list[dict[str, Any]]) -> bool:
@@ -220,8 +175,7 @@ def export_portable_gguf_tokenizer(
 
     from gguf import GGUFReader
     from transformers import PreTrainedTokenizerFast
-    from transformers.integrations.ggml import (
-        GGUF_TO_FAST_CONVERTERS,
+    from transformers.integrations.gguf import (
         GGUF_TOKENIZER_MAPPING,
         convert_gguf_tokenizer,
     )
@@ -247,41 +201,32 @@ def export_portable_gguf_tokenizer(
     )
     if not isinstance(source_pretokenizer, str) or len(source_pretokenizer) > 64:
         raise ValueError("GGUF tokenizer pre-tokenizer is invalid")
-    candidates = _converter_candidates(
-        architecture,
-        tokenizer_type,
-        set(GGUF_TO_FAST_CONVERTERS),
-    )
-    if not candidates:
-        raise ValueError("GGUF tokenizer has no supported safe converter")
-
     converted = None
     additional_kwargs: dict[str, Any] = {}
     selected_architecture = ""
     selected_variant = ""
-    for candidate in candidates:
+    # Transformers 5.22 selects the converter from GGUF tokenizer metadata.
+    # Pass the original architecture so its Gemma/Phi special cases still apply.
+    try:
+        candidate_tokenizer, candidate_kwargs = convert_gguf_tokenizer(
+            architecture,
+            tokenizer_dictionary,
+        )
+    except (IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
+        raise ValueError("GGUF tokenizer has no supported safe converter") from exc
+    for variant_name, variant_tokenizer in _conversion_variants(
+        candidate_tokenizer,
+        source_pretokenizer=source_pretokenizer,
+    ):
         try:
-            candidate_tokenizer, candidate_kwargs = convert_gguf_tokenizer(
-                candidate,
-                tokenizer_dictionary,
-            )
+            matches_reference = _matches_reference(variant_tokenizer, reference_vectors)
         except (IndexError, KeyError, RuntimeError, TypeError, ValueError):
             continue
-        for variant_name, variant_tokenizer in _conversion_variants(
-            candidate_tokenizer,
-            source_pretokenizer=source_pretokenizer,
-        ):
-            try:
-                matches_reference = _matches_reference(variant_tokenizer, reference_vectors)
-            except (IndexError, KeyError, RuntimeError, TypeError, ValueError):
-                continue
-            if matches_reference:
-                converted = variant_tokenizer
-                additional_kwargs = dict(candidate_kwargs)
-                selected_architecture = candidate
-                selected_variant = variant_name
-                break
-        if converted is not None:
+        if matches_reference:
+            converted = variant_tokenizer
+            additional_kwargs = dict(candidate_kwargs)
+            selected_architecture = architecture
+            selected_variant = variant_name
             break
     if converted is None:
         raise ValueError("GGUF tokenizer conversion did not match pinned llama.cpp")
