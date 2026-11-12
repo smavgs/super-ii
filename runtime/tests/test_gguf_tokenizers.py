@@ -44,7 +44,7 @@ def _entry_int32_array(name: str, values: list[int]) -> bytes:
     )
 
 
-def _tiny_qwen35_gguf(path: Path) -> None:
+def _tiny_qwen35_gguf(path: Path, *, tokenizer_type: str = "gpt2") -> None:
     tokens = [
         "a",
         "b",
@@ -56,7 +56,7 @@ def _tiny_qwen35_gguf(path: Path) -> None:
     ]
     metadata = [
         _entry_string("general.architecture", "qwen35"),
-        _entry_string("tokenizer.ggml.model", "gpt2"),
+        _entry_string("tokenizer.ggml.model", tokenizer_type),
         _entry_string_array("tokenizer.ggml.tokens", tokens),
         _entry_string_array("tokenizer.ggml.merges", ["a b"]),
         _entry_int32_array("tokenizer.ggml.token_type", [1, 1, 1, 3, 3, 3, 3]),
@@ -90,7 +90,7 @@ def test_qwen35_gguf_is_converted_to_exact_portable_tokenizer(tmp_path: Path) ->
     decoded = decode_token_ids(destination, encoded["token_ids"], skip_special_tokens=False)
 
     assert result["source_architecture"] == "qwen35"
-    assert result["converter_architecture"] == "qwen3"
+    assert result["converter_architecture"] == "qwen35"
     assert encoded["token_ids"] == [2]
     assert decoded["text"] == "ab"
     assert (destination / "tokenizer.json").is_file()
@@ -115,6 +115,29 @@ def test_gguf_conversion_fails_closed_when_native_ids_do_not_match(tmp_path: Pat
             ],
             context_length=None,
         )
+
+
+def test_gguf_conversion_rejects_unsupported_tokenizer_type(tmp_path: Path) -> None:
+    source = tmp_path / "tokenizer.gguf"
+    destination = tmp_path / "pack"
+    _tiny_qwen35_gguf(source, tokenizer_type="unsupported")
+
+    with pytest.raises(ValueError, match="no supported safe converter"):
+        export_portable_gguf_tokenizer(
+            source,
+            destination,
+            [
+                {
+                    "name": "plain",
+                    "text": "ab",
+                    "add_special_tokens": False,
+                    "token_ids": [2],
+                }
+            ],
+            context_length=None,
+        )
+
+    assert not destination.exists()
 
 
 def test_native_oracle_can_select_exact_non_normalizing_unicode_variant() -> None:
