@@ -138,7 +138,7 @@ jobs:
           print("SUMMARY",json.dumps({k:report[k] for k in ("total","ok","missing")}),flush=True)
           if len(records)!=198: raise SystemExit(f"Expected 198 records, found {len(records)}")
           PY
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: robot-pics-recovery
           path: robot-pics-recovery/
