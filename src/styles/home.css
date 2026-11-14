@@ -14,9 +14,9 @@ html[lang='ru'] .home-skin .hero h1 { max-width: 100%; overflow-wrap: normal; wo
   html[lang='ru'] .home-skin .hero h1 { font-size: clamp(2rem, 9vw, 3.4rem); }
 }
 .hero-pixels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; contain: strict; }
-.hero-pixels span { position: absolute; left: var(--x); top: var(--y); display: flex; align-items: center; justify-content: center; width: var(--size); height: var(--size); font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; font-size: var(--size); font-weight: normal; line-height: 1; opacity: .17; animation: hero-pixel-drift var(--duration) steps(8, end) var(--delay) infinite alternate paused; }
+.hero-pixels span { position: absolute; left: var(--x); top: var(--y); display: flex; align-items: center; justify-content: center; width: var(--size); height: var(--size); font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; font-size: var(--size); font-weight: normal; line-height: 1; opacity: 1; animation: hero-pixel-drift var(--duration) steps(8, end) var(--delay) infinite alternate paused; }
 .hero-pixels.is-moving span { animation-play-state: running; }
-@keyframes hero-pixel-drift { 0% { transform: translate(0, 0); opacity: .08; } 50% { opacity: .25; } 100% { transform: translate(var(--drift), -28px); opacity: .13; } }
+@keyframes hero-pixel-drift { from { transform: translate(0, 0); } to { transform: translate(var(--drift), -28px); } }
 @media (prefers-reduced-motion: reduce) { .hero-pixels span { animation: none; } }
 @media (forced-colors: active) { .home-skin .hero h1 { background: none; -webkit-text-fill-color: currentColor; } .hero-pixels { display: none; } }
 .home-skin main > section { scroll-margin-top: 5rem; }
