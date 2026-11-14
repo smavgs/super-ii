@@ -3,7 +3,7 @@
     const x = (i * 37 + 7) % 100;
     // Concentrate motion along the edges, leaving the main copy calm.
     const y = i % 3 === 0 ? 7 + (i * 13) % 20 : 72 + (i * 7) % 25;
-    return <span style={`--x:${x}%;--y:${y}%;--size:${3 + i % 4 * 2}px;--shade:${24 + i % 5 * 18};--delay:-${i * .73}s;--duration:${12 + i % 7}s;--drift:${i % 2 ? 16 : -16}px`}></span>;
+    return <span style={`--x:${x}%;--y:${y}%;--size:${3 + i % 4 * 2}px;--delay:-${i * .73}s;--duration:${12 + i % 7}s;--drift:${i % 2 ? 16 : -16}px`}>👾</span>;
   })}
 </div>
 <script>
