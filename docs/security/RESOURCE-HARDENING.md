@@ -50,7 +50,7 @@ Issuing Work tokens, commerce delegations, Social pairing codes, trusted publish
 
 The browser preserves the submitted selections, requests an email code through the documented Clerk session APIs, refreshes the session token, and retries only a rejected action, once. Cancelling grants nothing. This is fresh first-factor verification, **not MFA**. The current Clerk application requires a verified email and supports email codes; changing those settings requires extending or rechecking this flow. A future MFA policy must not silently downgrade to email-only verification.
 
-Clerk production account settings were saved with disposable-email blocking and Strict enumeration protection. Email aliases remain usable. MFA and passkeys require a paid plan and were not enabled by this code change; subscription approval is separate.
+Clerk production account settings were saved with disposable-email blocking and Strict enumeration protection. Email aliases remain usable. The operator chose to remain on the free plan on 2026-11-21; production MFA and passkeys remain disabled because they require a paid plan.
 
 ## Redirects and mail
 
@@ -67,3 +67,7 @@ The supplied report's claim that DKIM is absent was contradicted by live DNS: Pr
 5. Record the merged SHA, Worker version and runtime binary hash. An application rollback can retain the stricter additive database function. Restore the previous runtime binary/script if necessary and restart; RFC3339 state remains readable by both versions. Restore the function only if a confirmed regression requires it.
 
 The Rust date dependency was changed from the unmaintained `chrono` crate to `time`, retaining RFC3339 JSON timestamps. RustSec remains a required check with denied warnings; no advisory was ignored.
+
+All six Python locks were also refreshed for available advisory fixes, including Pillow 13, its compatible Gradio 6.32 release, certifi, filelock, aiohttp, Brotli, multidict, OpenTelemetry, setuptools and Tornado. Minimum constraints prevent those versions falling back on the next lock update. The downloadable recipe explicitly overrides the published SDK 0.3.0's obsolete filelock upper bound; current SDK source already supports filelock 4.x and recipe tests verify that combination. This does not republish or replace the SDK on PyPI.
+
+OSV scanning of all six locks leaves the previously documented Accelerate advisory, which still has no upstream fix. The immutable-snapshot shard validator remains mandatory; see [the compensating control](ACCELERATE-CVE-2026-69112.md). This exception is reported explicitly by the audit and does not hide new advisories for Accelerate or another package.

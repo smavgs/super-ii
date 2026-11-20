@@ -15,7 +15,11 @@ Status: locally tested release candidate. Live configuration changes are listed 
 
 - OpenRouter existing `superii` key: US$50 monthly credit limit. This is not a platform-wide bill cap.
 - Clerk production: block disposable emails enabled; user enumeration prevention set to Strict. Existing bot-signup protection and account lockout remain enabled.
-- Clerk production MFA/passkeys remain unavailable on Hobby. Pro monthly pricing was inspected; no subscription was purchased.
+- Clerk production MFA/passkeys remain unavailable on Hobby. The operator explicitly chose the free plan on 2026-11-21; no subscription was purchased.
 - Clerk and Private Email DKIM DNS records exist. An older Clerk email passed alignment, but complete current sender validation and stronger DMARC enforcement remain pending.
 
 No production stress test, independent penetration certification, full provider-email exercise or hostile compute isolation is claimed. Keep the canonical capability register conservative until release evidence is recorded.
+
+## Dependency refresh
+
+The initial GitHub inventory contained 277 open alerts across repeated Python dependency manifests. Targeted compatible upgrades cover all available fixes from that inventory. After refreshing all six locks, OSV scanned 238 distinct package/version pairs and reported only the known Accelerate 1.14.0 issue (GHSA-4j2p-28q2-5m79 / PYSEC-2026-3804), for which immutable-snapshot shard checks remain required. npm audit reported zero advisories. RustSec reported zero denied advisories after chrono removal. Counts are point-in-time evidence, not a guarantee against future vulnerabilities.

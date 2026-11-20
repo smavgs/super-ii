@@ -20,7 +20,7 @@ dependencies = [
   "huggingface-hub==2.1.1",
   "httpx==0.28.1",
   "nbformat==5.11.1",
-  "pillow==12.3.0",
+  "pillow==13.0.0",
   "psycopg[binary]==3.3.8",
   "pydantic-settings==2.16.2",
   "pyarrow==26.0.1",
@@ -39,7 +39,7 @@ diffusion = [
   "torch==2.14.1",
 ]
 spaces = [
-  "gradio==6.31.0",
+  "gradio==6.32.0",
 ]
 test = [
   "httpx2==2.16.0",
@@ -89,3 +89,6 @@ ignore = ["S101"]
 "src/superii_runtime/bridge.py" = ["S103", "S324"]
 "tests/*" = ["S104"]
 "tests/test_official_notebooks.py" = ["S102"]
+
+[tool.uv]
+constraint-dependencies = ["aiohttp>=3.14.4", "brotli>=1.2.1", "certifi>=2026.10.19", "filelock>=4.2.1", "multidict>=6.9.1", "opentelemetry-api>=1.45.2", "setuptools>=84.1.0", "tornado>=6.6.1", "pillow>=13.0.0"]
