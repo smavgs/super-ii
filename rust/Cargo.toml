@@ -25,9 +25,10 @@ path = "src/bin/superii.rs"
 axum = { version = "=0.8.9", features = ["http1", "json", "tokio"] }
 base64 = "=0.23.1"
 bytes = "=1.12.1"
-chrono = { version = "=0.4.45", default-features = false, features = ["clock", "serde"] }
+time = { version = "=0.3.55", features = ["serde", "serde-well-known", "formatting", "parsing"] }
 clap = { version = "=4.6.7", features = ["derive", "env"] }
 futures-util = "=0.3.34"
+fs2 = "=0.4.3"
 hex = "=0.4.3"
 http-body-util = "=0.1.5"
 httpdate = "=1.0.3"

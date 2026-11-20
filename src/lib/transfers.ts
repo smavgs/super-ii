@@ -106,6 +106,7 @@ export function copyTusResponse(upstream: Response): Response {
   const headers = new Headers({ 'cache-control': 'no-store' });
   for (const name of [
     'tus-resumable',
+    'retry-after',
     'tus-version',
     'tus-extension',
     'tus-checksum-algorithm',

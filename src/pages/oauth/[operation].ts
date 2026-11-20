@@ -20,7 +20,7 @@ export const ALL: APIRoute = async ({ locals, request, url, params }) => {
     'access-control-allow-methods': 'POST, OPTIONS',
     'access-control-allow-headers': 'content-type',
   };
-  const reply = (body: unknown, status = 200) => Response.json(body, { status, headers });
+  const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: { ...headers, ...(status === 429 ? { 'retry-after': '3600' } : status === 503 ? { 'retry-after': '30' } : {}) } });
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (!['authorize', 'register', 'device', 'token'].includes(operation ?? ''))
     return reply({ error: 'not_found' }, 404);
@@ -156,7 +156,10 @@ export const ALL: APIRoute = async ({ locals, request, url, params }) => {
       expires_in: 600,
       interval: 5,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('registration_capacity_reached')) {
+      return reply({ error: 'temporarily_unavailable' }, 503);
+    }
     return reply(
       {
         error: 'invalid_request',

@@ -76,6 +76,7 @@ import AgentConnections from './AgentConnections.astro';
 </section>
 
 <script>
+  import { verifiedFetch } from '@/lib/verified-fetch';
   type Organization = { id: string; handle: string; full_name: string; role: string };
   type AgentIdentity = {
     id: string; organization_id: string; handle: string; display_name: string;
@@ -111,7 +112,7 @@ import AgentConnections from './AgentConnections.astro';
   }
 
   async function jsonRequest(url: string, init: RequestInit = {}) {
-    const response = await fetch(url, init);
+    const response = await verifiedFetch(url, init);
     const body = await response.json().catch(() => ({})) as Record<string, unknown>;
     if (!response.ok) throw new Error(typeof body.error === 'string' ? body.error : `Request failed (${response.status})`);
     return body;

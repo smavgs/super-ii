@@ -5,6 +5,8 @@ import { sqlClient } from '@/lib/db';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { repositoryScopes, type RepositoryScope } from '@/lib/scoped-auth';
 import { validGithubSubject } from '@/lib/github-oidc';
+import { requireRecentVerification } from '@/lib/sensitive-action';
+import { readBoundedJsonObject } from '@/lib/bounded-json';
 
 const workflowPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/\.github\/workflows\/[A-Za-z0-9._/-]+@refs\/(?:heads|tags)\/[A-Za-z0-9._/-]+$/;
 const canonicalAudience = 'https://superii.site';
@@ -45,14 +47,17 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
 export const POST: APIRoute = async ({ locals, params, request }) => {
   const authorization = await owner(locals, params.repositoryId ?? '', request);
   if ('error' in authorization) return Response.json({ error: authorization.error }, { status: authorization.status });
+  const verification = requireRecentVerification(locals);
+  if (verification) return verification;
   const rate = await consumeRateLimit(locals, request, authorization.sql, 'trusted-publisher.configure', 30, 3600);
   if (rate !== 'allowed') {
     return Response.json({ error: rate === 'limited' ? 'trusted publisher configuration limit reached' : 'safety service unavailable' }, {
       status: rate === 'limited' ? 429 : 503,
     });
   }
-  let body: Record<string, unknown>;
-  try { body = await request.json() as Record<string, unknown>; } catch { return Response.json({ error: 'invalid JSON' }, { status: 400 }); }
+  const parsed = await readBoundedJsonObject(request, 16_384);
+  if (!parsed.ok) return Response.json({ error: parsed.error }, { status: parsed.status });
+  const body = parsed.value;
   const subject = textValue(body.subject, 500);
   const workflowRef = textValue(body.workflow_ref, 1000) || null;
   const requestedScopes = Array.isArray(body.allowed_scopes)

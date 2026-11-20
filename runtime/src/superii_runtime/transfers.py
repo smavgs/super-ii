@@ -11,6 +11,7 @@ from .settings import Settings
 
 TUS_VERSION = "1.0.0"
 TUS_RESPONSE_HEADERS = {
+    "retry-after",
     "cache-control",
     "location",
     "tus-checksum-algorithm",

@@ -82,6 +82,7 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
 </section>
 
 <script>
+  import { verifiedFetch } from '@/lib/verified-fetch';
   type Item = Record<string, unknown>;
   const root = document.querySelector<HTMLElement>('[data-commerce-workspace]');
   const form = root?.querySelector<HTMLFormElement>('[data-commerce-form]');
@@ -103,7 +104,7 @@ const money = (cents: number | null) => cents === null ? 'Custom proposal' : `$$
   }
 
   async function jsonRequest(url: string, init?: RequestInit) {
-    const response = await fetch(url, init);
+    const response = await verifiedFetch(url, init);
     const body = await response.json().catch(() => ({})) as Record<string, unknown>;
     if (!response.ok) throw new Error(String(body.message ?? body.error ?? 'Request failed.'));
     return body;

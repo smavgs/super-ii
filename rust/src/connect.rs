@@ -391,7 +391,9 @@ pub fn apply_connect(plan: ConnectPlan, receipt_dir: PathBuf) -> Result<ApplyRes
         original_existed: plan.before.is_some(),
         before_sha256: plan.before.as_deref().map(sha256_bytes),
         after_sha256: sha256_bytes(&plan.after),
-        created_at: chrono::Utc::now().to_rfc3339(),
+        created_at: time::OffsetDateTime::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .map_err(|error| error.to_string())?,
         previous_receipt_id: None,
     };
     let receipt_path = receipt_dir.join(format!("{receipt_id}.json"));
@@ -485,7 +487,9 @@ pub fn apply_rollback(
         original_existed: true,
         before_sha256: Some(receipt.after_sha256.clone()),
         after_sha256: sha256_bytes(&restored),
-        created_at: chrono::Utc::now().to_rfc3339(),
+        created_at: time::OffsetDateTime::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .map_err(|error| error.to_string())?,
         previous_receipt_id: Some(receipt.receipt_id),
     };
     let path = receipt_dir.join(format!("{rollback_id}.json"));

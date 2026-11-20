@@ -75,12 +75,13 @@ let origin;
 let server;
 let calls = 0;
 let preview = false;
+let freshAuthentication = true;
 function localsFor(user) {
   return {
     __testActor: user
       ? { actorKind: "clerk", clerkUserId: user }
       : { actorKind: "public" },
-    auth: () => ({ userId: user ?? null }),
+    auth: () => ({ userId: user ?? null, has: () => Boolean(user && freshAuthentication) }),
     currentUser: async () =>
       user
         ? {
@@ -267,6 +268,13 @@ try {
     options,
   });
   assert.equal(result.response.status, 403);
+  freshAuthentication = false;
+  result = await json('/api/agent-connections/approve', {
+    id: view.data.request.id, allow: true, options,
+  }, { user: alice });
+  assert.equal(result.response.status, 403);
+  assert.equal(result.data.error, 'verification_required');
+  freshAuthentication = true;
   result = await json(
     "/api/agent-connections/approve",
     {

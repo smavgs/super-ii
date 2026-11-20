@@ -9,7 +9,7 @@ export const ALL: APIRoute = async ({ locals, request }) => {
     const sql = sqlClient(locals);
     if (!sql) return Response.json({ error: 'Transparent MCP database unavailable' }, { status: 503 });
     const rate = await consumeRateLimit(locals, request, sql, 'mcp.transparent', 120, 3600);
-    if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Transparent MCP rate limit reached' : 'Transparent MCP safety service unavailable' }, { status: rate === 'limited' ? 429 : 503 });
+    if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Transparent MCP rate limit reached' : 'Transparent MCP safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers: { 'cache-control': 'no-store', 'retry-after': rate === 'limited' ? '3600' : '30' } });
   }
   const origin = new URL(request.url).origin;
   return createSuperiiTransparentMcpHandler(locals, origin, request).fetch(request);

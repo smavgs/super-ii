@@ -1,4 +1,6 @@
 import type { APIRoute } from 'astro';
+import type { NeonQueryFunction } from '@neondatabase/serverless';
+import { readBoundedJsonObject } from '@/lib/bounded-json';
 import { ensureAuthenticatedProfile, sameOrigin, type AuthenticatedProfile } from '@/lib/auth';
 import { runtimeValue, sqlClient } from '@/lib/db';
 import {
@@ -56,10 +58,17 @@ function retryAfter(upstream: Response): string {
   return value && /^\d{1,6}$/.test(value) ? value : '60';
 }
 
-async function callOpenRouter(apiKey: string, body: object): Promise<{
+async function callOpenRouter(locals: App.Locals, sql: NeonQueryFunction<false, false>, apiKey: string, body: object): Promise<{
   response: Response;
   payload: unknown;
+  capacityLimited?: boolean;
 } | null> {
+  // Initial answers and search follow-ups consume the same durable platform allowance.
+  const allowance = await consumeIdentityRateLimit(locals, sql, 'platform', 'assistant.provider', 120, 3600);
+  if (allowance !== 'allowed') return {
+    response: new Response(null, { status: 503, headers: { 'retry-after': allowance === 'limited' ? '3600' : '30' } }),
+    payload: null, capacityLimited: true,
+  };
   try {
     const response = await fetch(OPENROUTER_CHAT_ENDPOINT, {
       method: 'POST',
@@ -84,6 +93,10 @@ async function callOpenRouter(apiKey: string, body: object): Promise<{
 
 function providerFailure(result: Awaited<ReturnType<typeof callOpenRouter>>) {
   if (!result) return json({ error: 'assistant connection unavailable' }, 503, { 'retry-after': '30' });
+  if (result.capacityLimited || result.response.status === 402) return json({
+    error: 'Assistant capacity is temporarily full. Your work remains available; please try again later.',
+    code: 'assistant_capacity_reached',
+  }, 503, { 'retry-after': result.response.headers.get('retry-after') ?? '3600' });
   console.error(JSON.stringify({
     message: 'assistant provider rejected request',
     status: result.response.status,
@@ -113,7 +126,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
     return json({ error: 'authentication service unavailable' }, 503);
   }
 
-  const rawBody = await request.text().catch(() => '');
+  const bounded = await readBoundedJsonObject(request, 96_000);
+  if (!bounded.ok) return json({ error: bounded.error }, bounded.status);
+  const rawBody = JSON.stringify(bounded.value);
   if (!rawBody || rawBody.length > MAX_REQUEST_CHARS) {
     return json({ error: rawBody ? 'assistant request too large' : 'invalid assistant request' }, rawBody ? 413 : 400);
   }
@@ -253,7 +268,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     }, 200);
   };
 
-  const initial = await callOpenRouter(apiKey, openRouterChatRequest(messages, webSearchEnabled, skillContext, grounding));
+  const initial = await callOpenRouter(locals, sql, apiKey, openRouterChatRequest(messages, webSearchEnabled, skillContext, grounding));
   if (!initial?.response.ok) return providerFailure(initial);
 
   const toolCall = webSearchEnabled ? openRouterToolCall(initial.payload) : null;
@@ -317,6 +332,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   if (!sources) return json({ error: 'web search is temporarily unavailable' }, 503, { 'retry-after': '30' });
 
   const final = await callOpenRouter(
+    locals, sql,
     apiKey,
     openRouterSearchAnswerRequest(messages, toolCall, sources, skillContext, grounding),
   );

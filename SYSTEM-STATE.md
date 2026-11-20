@@ -32,6 +32,8 @@ PR #160 is merged at `58799a54f2f4c7dc23da26d700cb5e904429a445`; required PR and
 
 ## Capability register
 
+The 2026-11-20 request/transfer hardening is locally tested; its separate Worker, database and runtime rollout remains to be recorded. Live account configuration now blocks disposable email, uses Strict Clerk enumeration protection, and caps the existing OpenRouter key at US$50 monthly. This is not a whole-platform cost ceiling or MFA. See [security boundaries](docs/security/RESOURCE-HARDENING.md) and [verification](qa/SECURITY-RESOURCE-HARDENING-2026-11-20.md).
+
 | Capability | Status | Availability | Evidence |
 | --- | --- | --- | --- |
 | Aliens List hardware classifieds and events | production | live; first member listing, conversation and digest delivery pending | Migrations 0049–0050, 84 isolated behavioral checks and the full database suite; 20 live API/access checks on both domains; native 👾, source-linked event details, mobile list/map, homepage ticker and sign-in redirects inspected in the browser. Public browsing is free; posting, private messages and saved searches require a free account. Existing data counts were preserved. The hourly Worker schedule is deployed; email remains opt-in and its delivery was mocked in tests. See qa/ALIENS-LIST-2026-11-10.md. |

@@ -226,6 +226,7 @@ const published = repository?.revision_status === 'published';
 </BaseLayout>
 
 {repository && <script>
+  import { verifiedFetch } from '@/lib/verified-fetch';
   const workspace = document.querySelector('[data-repository-workspace]');
   const repositoryId = workspace instanceof HTMLElement ? workspace.dataset.repositoryId : null;
   const branchId = workspace instanceof HTMLElement ? workspace.dataset.branchId : null;
@@ -309,7 +310,7 @@ const published = repository?.revision_status === 'published';
     if (submit instanceof HTMLButtonElement) submit.disabled = true;
     try {
       const values = new FormData(trustedPublisherForm);
-      const response = await fetch(`/api/repositories/${repositoryId}/trusted-publishers`, {
+      const response = await verifiedFetch(`/api/repositories/${repositoryId}/trusted-publishers`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

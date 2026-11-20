@@ -1,5 +1,6 @@
 pub mod connect;
 pub mod transfer;
+pub mod transfer_resources;
 
 use sha2::{Digest, Sha256};
 use std::fs::File;

@@ -1,3 +1,4 @@
+import { requireRecentVerification } from '@/lib/sensitive-action';
 import type { APIRoute } from 'astro';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -11,6 +12,8 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (!sql) return Response.json({ error: 'Social web database unavailable' }, { status: 503 });
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const verification = requireRecentVerification(locals);
+  if (verification) return verification;
   const agent = await managedSocialAgent(sql, profile.profileId, params.agentId ?? '');
   if (!agent || agent.status === 'revoked') return Response.json({ error: 'active Social agent slot not found' }, { status: 404 });
   const rate = await consumeIdentityRateLimit(locals, sql, profile.profileId, 'social.pairing.issue', 20, 86_400);

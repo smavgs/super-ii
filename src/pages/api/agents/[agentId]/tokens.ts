@@ -1,3 +1,4 @@
+import { requireRecentVerification } from '@/lib/sensitive-action';
 import type { APIRoute } from 'astro';
 import { agentScopes, generateAgentToken } from '@/lib/agent-auth';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
@@ -31,6 +32,8 @@ export const POST: APIRoute = async ({ locals, params, request }) => {
   if (!sql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const profile = await ensureAuthenticatedProfile(locals, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const verification = requireRecentVerification(locals);
+  if (verification) return verification;
   const agent = await managedAgentIdentity(sql, profile.profileId, params.agentId ?? '');
   if (!agent || agent.status !== 'active') return Response.json({ error: 'active agent identity and owner/admin access required' }, { status: 404 });
   const rate = await consumeRateLimit(locals, request, sql, 'agent.token.create', 30, 86400);
