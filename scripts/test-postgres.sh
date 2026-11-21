@@ -37,6 +37,10 @@ for migration in "$project_root"/database/migrations/*.sql; do
     psql -v ON_ERROR_STOP=1 -U postgres -d superii_test < "$migration" >/dev/null
 done
 
+docker exec -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -U postgres -d superii_test \
+  < "$project_root/database/tests/resource_hardening_smoke.sql" >/dev/null
+
 docker exec "$container_name" psql -v ON_ERROR_STOP=1 -U postgres -d superii_test -c "
   create role superii_web_test login password 'web-test-password' inherit
     nosuperuser nocreatedb nocreaterole noreplication nobypassrls;

@@ -9,7 +9,7 @@ export const ALL: APIRoute = async ({ locals, request }) => {
     const sql = sqlClient(locals);
     if (!sql) return Response.json({ error: 'Robot MCP safety controls unavailable' }, { status: 503 });
     const rate = await consumeRateLimit(locals, request, sql, 'mcp.robot', 600, 3600);
-    if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Robot MCP rate limit reached' : 'Robot MCP safety service unavailable' }, { status: rate === 'limited' ? 429 : 503 });
+    if (rate !== 'allowed') return Response.json({ error: rate === 'limited' ? 'Robot MCP rate limit reached' : 'Robot MCP safety service unavailable' }, { status: rate === 'limited' ? 429 : 503, headers: { 'cache-control': 'no-store', 'retry-after': rate === 'limited' ? '3600' : '30' } });
   }
   const origin = new URL(request.url).origin;
   return createSuperiiRobotMcpHandler(locals, origin).fetch(request);

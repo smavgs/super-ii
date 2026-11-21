@@ -259,6 +259,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
 </CommunicationsLayout>
 
 <script>
+  import { verifiedFetch } from '@/lib/verified-fetch';
   type JsonRecord = Record<string, any>;
 
   const feed = document.querySelector<HTMLElement>('[data-social-feed]');
@@ -424,7 +425,7 @@ const dateLabel = (value: string) => new Date(value).toLocaleString(dateLocale, 
   const globalMessage = document.querySelector<HTMLElement>('[data-social-global-message]');
 
   async function jsonRequest(url: string, init: RequestInit = {}) {
-    const response = await fetch(url, {
+    const response = await verifiedFetch(url, {
       ...init,
       headers: { accept: 'application/json', ...(init.body ? { 'content-type': 'application/json' } : {}), ...init.headers },
     });

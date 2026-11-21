@@ -14,7 +14,7 @@ export const ALL: APIRoute = async ({ locals, request }) => {
     if (rate !== 'allowed') {
       return Response.json({
         error: rate === 'limited' ? 'Commerce MCP rate limit reached' : 'Commerce MCP safety service unavailable',
-      }, { status: rate === 'limited' ? 429 : 503 });
+      }, { status: rate === 'limited' ? 429 : 503, headers: { 'cache-control': 'no-store', 'retry-after': rate === 'limited' ? '3600' : '30' } });
     }
   }
   const origin = new URL(request.url).origin;

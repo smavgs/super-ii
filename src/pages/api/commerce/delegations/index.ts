@@ -1,3 +1,4 @@
+import { requireRecentVerification } from '@/lib/sensitive-action';
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import {
@@ -75,6 +76,8 @@ export const POST: APIRoute = async ({ locals, request }) => {
   if (!sql || !identitySql) return Response.json({ error: 'database unavailable' }, { status: 503 });
   const profile = await ensureAuthenticatedProfile(locals, identitySql, sql);
   if (!profile) return Response.json({ error: 'authentication required' }, { status: 401 });
+  const verification = requireRecentVerification(locals);
+  if (verification) return verification;
   const rate = await consumeRateLimit(locals, request, sql, 'commerce.delegation.create', 20, 86400);
   if (rate !== 'allowed') {
     return Response.json({

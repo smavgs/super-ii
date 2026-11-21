@@ -22,13 +22,17 @@ export const POST: APIRoute = async ({ locals, request }) => {
     return Response.json({ error: 'invalid Make Robot request', issues: parsed.error.issues }, { status: 422, headers: { 'cache-control': 'no-store' } });
   }
   const sql = sqlClient(locals);
-  if (sql) {
+  if (!sql) return Response.json({ error: 'planning safety service unavailable' }, {
+    status: 503, headers: { ...corsHeaders, 'retry-after': '30' },
+  });
     const rate = await consumeRateLimit(locals, request, sql, 'robot.plan', 120, 3600);
     if (rate !== 'allowed') {
-      return Response.json({ error: rate === 'limited' ? 'Make Robot planning limit reached' : 'planning safety service unavailable' }, { status: rate === 'limited' ? 429 : 503 });
+      return Response.json({ error: rate === 'limited' ? 'Make Robot planning limit reached' : 'planning safety service unavailable' }, {
+        status: rate === 'limited' ? 429 : 503,
+        headers: { ...corsHeaders, 'retry-after': rate === 'limited' ? '3600' : '30' },
+      });
     }
     await sql`select app.record_robot_discovery('rest','planner','make-robot')`.catch(() => undefined);
-  }
   return Response.json({ plan: makeRobotPlan(parsed.data) }, {
     headers: corsHeaders,
   });

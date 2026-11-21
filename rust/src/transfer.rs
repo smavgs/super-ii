@@ -1,15 +1,15 @@
 use axum::Router;
 use axum::body::Body;
-use axum::extract::{Path as AxumPath, Request, State};
+use axum::extract::{DefaultBodyLimit, Path as AxumPath, Request, State};
 use axum::http::header::{
     ACCEPT_RANGES, CACHE_CONTROL, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE, ETAG, RANGE,
+    RETRY_AFTER,
 };
 use axum::http::{HeaderMap, HeaderName, HeaderValue, Response, StatusCode};
 use axum::response::{IntoResponse, Json};
 use axum::routing::get;
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use chrono::{DateTime, Utc};
 use http_body_util::BodyExt;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
@@ -19,15 +19,16 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{SeekFrom, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, SystemTime};
 use subtle::ConstantTimeEq;
 use thiserror::Error;
+use time::OffsetDateTime;
 use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::sync::Mutex as AsyncMutex;
-use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
+use crate::transfer_resources::{PendingChunk, Resources, TransferLimits, admit};
 use crate::{sha256_file, valid_sha256};
 
 pub const TUS_VERSION: &str = "1.0.0";
@@ -65,6 +66,12 @@ pub enum TransferError {
     Checksum,
     #[error("upload is too large")]
     TooLarge,
+    #[error("transfer service is busy; retry from the last confirmed offset")]
+    Busy,
+    #[error("transfer storage capacity reached; retry later")]
+    Capacity,
+    #[error("transfer timed out; resume from the last confirmed offset")]
+    Timeout,
     #[error("transfer state conflict: {0}")]
     Conflict(String),
     #[error("storage error")]
@@ -84,6 +91,8 @@ impl IntoResponse for TransferError {
             Self::Offset | Self::Conflict(_) => StatusCode::CONFLICT,
             Self::Checksum => StatusCode::from_u16(460).expect("valid checksum status"),
             Self::TooLarge => StatusCode::PAYLOAD_TOO_LARGE,
+            Self::Busy | Self::Capacity => StatusCode::SERVICE_UNAVAILABLE,
+            Self::Timeout => StatusCode::REQUEST_TIMEOUT,
             Self::Io(_) | Self::Json(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         let mut response = Json(serde_json::json!({ "error": self.to_string() })).into_response();
@@ -91,6 +100,14 @@ impl IntoResponse for TransferError {
         response
             .headers_mut()
             .insert(TUS_RESUMABLE, HeaderValue::from_static(TUS_VERSION));
+        response
+            .headers_mut()
+            .insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        if status == StatusCode::SERVICE_UNAVAILABLE {
+            response
+                .headers_mut()
+                .insert(RETRY_AFTER, HeaderValue::from_static("30"));
+        }
         if status == StatusCode::PRECONDITION_FAILED {
             response
                 .headers_mut()
@@ -106,7 +123,8 @@ pub struct TransferStore {
     token: Arc<Vec<u8>>,
     max_upload_bytes: u64,
     max_chunk_bytes: u64,
-    locks: Arc<Mutex<HashMap<Uuid, Arc<AsyncMutex<()>>>>>,
+    locks: Arc<Mutex<HashMap<Uuid, Weak<AsyncMutex<()>>>>>,
+    resources: Arc<Resources>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -134,9 +152,12 @@ pub struct TransferRecord {
     pub actual_sha256: Option<String>,
     pub storage_key: Option<String>,
     pub status: TransferStatus,
-    pub expires_at: DateTime<Utc>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
 }
 
 #[derive(Debug, Deserialize)]
@@ -150,7 +171,8 @@ pub struct CreateTransfer {
     pub created_by: String,
     pub length: u64,
     pub expected_sha256: Option<String>,
-    pub expires_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: OffsetDateTime,
 }
 
 #[derive(Debug, Serialize)]
@@ -178,6 +200,22 @@ impl TransferStore {
         max_upload_bytes: u64,
         max_chunk_bytes: u64,
     ) -> Result<Self, TransferError> {
+        Self::with_limits(
+            storage_root,
+            token,
+            max_upload_bytes,
+            max_chunk_bytes,
+            TransferLimits::default(),
+        )
+    }
+
+    pub fn with_limits(
+        storage_root: PathBuf,
+        token: String,
+        max_upload_bytes: u64,
+        max_chunk_bytes: u64,
+        limits: TransferLimits,
+    ) -> Result<Self, TransferError> {
         if token.len() < 32 {
             return Err(TransferError::Invalid(
                 "internal transfer token must contain at least 32 characters".into(),
@@ -201,12 +239,14 @@ impl TransferStore {
             fs::create_dir_all(&directory)?;
             set_directory_mode(&directory)?;
         }
+        let resources = Arc::new(Resources::new(&root, limits, max_chunk_bytes)?);
         Ok(Self {
             root: Arc::new(root),
             token: Arc::new(token.into_bytes()),
             max_upload_bytes,
             max_chunk_bytes,
             locks: Arc::new(Mutex::new(HashMap::new())),
+            resources,
         })
     }
 
@@ -229,10 +269,13 @@ impl TransferStore {
 
     fn lock(&self, id: Uuid) -> Arc<AsyncMutex<()>> {
         let mut locks = self.locks.lock().expect("transfer lock registry poisoned");
-        locks
-            .entry(id)
-            .or_insert_with(|| Arc::new(AsyncMutex::new(())))
-            .clone()
+        locks.retain(|_, lock| lock.strong_count() > 0);
+        if let Some(lock) = locks.get(&id).and_then(Weak::upgrade) {
+            return lock;
+        }
+        let lock = Arc::new(AsyncMutex::new(()));
+        locks.insert(id, Arc::downgrade(&lock));
+        lock
     }
 
     fn transfer_directory(&self, id: Uuid) -> PathBuf {
@@ -252,8 +295,16 @@ impl TransferStore {
         if request.length == 0 || request.length > self.max_upload_bytes {
             return Err(TransferError::TooLarge);
         }
-        if request.expires_at <= Utc::now() {
+        if request.expires_at <= OffsetDateTime::now_utc() {
             return Err(TransferError::Expired);
+        }
+        if request.expires_at > OffsetDateTime::now_utc() + time::Duration::days(7)
+            || request.created_by.is_empty()
+            || request.created_by.len() > 255
+        {
+            return Err(TransferError::Invalid(
+                "invalid transfer owner or expiry".into(),
+            ));
         }
         if let Some(expected) = request.expected_sha256.as_deref()
             && !valid_sha256(expected)
@@ -261,41 +312,54 @@ impl TransferStore {
             return Err(TransferError::Invalid("expected SHA-256 is invalid".into()));
         }
         let directory = self.transfer_directory(request.id);
-        fs::create_dir(&directory).map_err(|error| {
-            if error.kind() == std::io::ErrorKind::AlreadyExists {
+        if directory.exists() {
+            return Err(TransferError::Conflict("transfer already exists".into()));
+        }
+        self.resources
+            .reserve(self.root(), request.id, &request.created_by, request.length)?;
+        if let Err(error) = fs::create_dir(&directory) {
+            self.resources.release(request.id);
+            return Err(if error.kind() == std::io::ErrorKind::AlreadyExists {
                 TransferError::Conflict("transfer already exists".into())
             } else {
                 TransferError::Io(error)
-            }
-        })?;
-        set_directory_mode(&directory)?;
-        let payload = self.payload_path(request.id);
-        let file = OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(payload)?;
-        file.sync_all()?;
-        let now = Utc::now();
-        let record = TransferRecord {
-            id: request.id,
-            repository_id: request.repository_id,
-            revision_id: request.revision_id,
-            path: request.path,
-            filename: request.filename.chars().take(255).collect(),
-            mime_type: request.mime_type.chars().take(255).collect(),
-            created_by: request.created_by.chars().take(255).collect(),
-            length: request.length,
-            offset: 0,
-            expected_sha256: request.expected_sha256,
-            actual_sha256: None,
-            storage_key: None,
-            status: TransferStatus::Created,
-            expires_at: request.expires_at,
-            created_at: now,
-            updated_at: now,
-        };
-        self.save_record(&record)?;
-        Ok(record)
+            });
+        }
+        let result = (|| {
+            set_directory_mode(&directory)?;
+            let payload = self.payload_path(request.id);
+            let file = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(payload)?;
+            file.sync_all()?;
+            let now = OffsetDateTime::now_utc();
+            let record = TransferRecord {
+                id: request.id,
+                repository_id: request.repository_id,
+                revision_id: request.revision_id,
+                path: request.path,
+                filename: request.filename.chars().take(255).collect(),
+                mime_type: request.mime_type.chars().take(255).collect(),
+                created_by: request.created_by.chars().take(255).collect(),
+                length: request.length,
+                offset: 0,
+                expected_sha256: request.expected_sha256,
+                actual_sha256: None,
+                storage_key: None,
+                status: TransferStatus::Created,
+                expires_at: request.expires_at,
+                created_at: now,
+                updated_at: now,
+            };
+            self.save_record(&record)?;
+            Ok(record)
+        })();
+        if result.is_err() {
+            let _ = fs::remove_dir_all(directory);
+            self.resources.release(request.id);
+        }
+        result
     }
 
     pub fn load(&self, id: Uuid) -> Result<TransferRecord, TransferError> {
@@ -311,7 +375,7 @@ impl TransferStore {
         if record.id != id {
             return Err(TransferError::Conflict("transfer identity mismatch".into()));
         }
-        if record.expires_at <= Utc::now()
+        if record.expires_at <= OffsetDateTime::now_utc()
             && !matches!(
                 record.status,
                 TransferStatus::Available | TransferStatus::Rejected
@@ -351,9 +415,12 @@ impl TransferStore {
         if content_length == 0 || content_length > self.max_chunk_bytes {
             return Err(TransferError::TooLarge);
         }
-        let lock = self.lock(id);
-        let _guard = lock.lock().await;
-        let mut record = self.load(id)?;
+        let upload = admit(&self.resources.uploads)?;
+        let guard = self
+            .lock(id)
+            .try_lock_owned()
+            .map_err(|_| TransferError::Busy)?;
+        let record = self.load(id)?;
         if !matches!(
             record.status,
             TransferStatus::Created | TransferStatus::Uploading
@@ -370,67 +437,92 @@ impl TransferStore {
         if next > record.length {
             return Err(TransferError::TooLarge);
         }
-
-        let chunk_path = self.transfer_directory(id).join(format!(
+        self.resources.check_disk(self.root())?;
+        let chunk = PendingChunk(self.transfer_directory(id).join(format!(
             "chunk-{}-{}.pending",
             expected_offset,
             Uuid::new_v4()
-        ));
-        let mut target = tokio::fs::OpenOptions::new()
+        )));
+        // Open synchronously so cancellation cannot race a delayed background open.
+        let file = OpenOptions::new()
             .create_new(true)
             .write(true)
-            .open(&chunk_path)
-            .await?;
-        let mut sha1 = Sha1::new();
-        let mut sha256 = Sha256::new();
-        let mut received = 0_u64;
-        while let Some(frame) = body.frame().await {
-            let frame = frame.map_err(|_| TransferError::Invalid("invalid request body".into()))?;
-            if let Ok(data) = frame.into_data() {
-                received = received
-                    .checked_add(data.len() as u64)
-                    .ok_or(TransferError::TooLarge)?;
-                if received > content_length || received > self.max_chunk_bytes {
-                    let _ = tokio::fs::remove_file(&chunk_path).await;
-                    return Err(TransferError::TooLarge);
+            .open(&chunk.0)?;
+        let mut target = tokio::fs::File::from_std(file);
+        let receive = async {
+            let mut sha1 = Sha1::new();
+            let mut sha256 = Sha256::new();
+            let mut received = 0_u64;
+            loop {
+                let frame = tokio::time::timeout(self.resources.limits.idle_timeout, body.frame())
+                    .await
+                    .map_err(|_| TransferError::Timeout)?;
+                let Some(frame) = frame else {
+                    break;
+                };
+                let frame =
+                    frame.map_err(|_| TransferError::Invalid("invalid request body".into()))?;
+                if let Ok(data) = frame.into_data() {
+                    received = received
+                        .checked_add(data.len() as u64)
+                        .ok_or(TransferError::TooLarge)?;
+                    if received > content_length || received > self.max_chunk_bytes {
+                        return Err(TransferError::TooLarge);
+                    }
+                    sha1.update(&data);
+                    sha256.update(&data);
+                    tokio::io::AsyncWriteExt::write_all(&mut target, &data).await?;
                 }
-                sha1.update(&data);
-                sha256.update(&data);
-                tokio::io::AsyncWriteExt::write_all(&mut target, &data).await?;
             }
-        }
-        if received != content_length {
-            let _ = tokio::fs::remove_file(&chunk_path).await;
-            return Err(TransferError::Invalid("content length mismatch".into()));
-        }
-        tokio::io::AsyncWriteExt::flush(&mut target).await?;
-        target.sync_all().await?;
+            if received != content_length {
+                return Err(TransferError::Invalid("content length mismatch".into()));
+            }
+            tokio::io::AsyncWriteExt::flush(&mut target).await?;
+            target.sync_all().await?;
+            if let Some(header) = checksum {
+                verify_checksum(header, &sha1.finalize(), &sha256.finalize())?;
+            }
+            Ok::<(), TransferError>(())
+        };
+        tokio::time::timeout(self.resources.limits.upload_timeout, receive)
+            .await
+            .map_err(|_| TransferError::Timeout)??;
         drop(target);
+        let disk_job = admit(&self.resources.disk_jobs)?;
+        let store = self.clone();
+        // A disconnected client cannot release the lock/permits while a blocking commit is
+        // still running. A retry discovers its durable result through HEAD.
+        tokio::task::spawn_blocking(move || {
+            let (_upload, _guard, _disk_job) = (upload, guard, disk_job);
+            store.commit_chunk(record, next, chunk)
+        })
+        .await
+        .map_err(|_| TransferError::Conflict("transfer commit task failed".into()))?
+    }
 
-        if let Some(header) = checksum {
-            let sha1_bytes = sha1.finalize();
-            let sha256_bytes = sha256.finalize();
-            if let Err(error) = verify_checksum(header, &sha1_bytes, &sha256_bytes) {
-                let _ = fs::remove_file(&chunk_path);
-                return Err(error);
-            }
-        }
-
-        let payload_path = self.payload_path(id);
-        let actual_length = fs::metadata(&payload_path)?.len();
-        if actual_length != record.offset {
-            let _ = fs::remove_file(&chunk_path);
+    fn commit_chunk(
+        &self,
+        mut record: TransferRecord,
+        next: u64,
+        chunk: PendingChunk,
+    ) -> Result<TransferRecord, TransferError> {
+        let payload_path = self.payload_path(record.id);
+        let mut payload = OpenOptions::new().write(true).open(&payload_path)?;
+        let actual_length = payload.metadata()?.len();
+        if actual_length < record.offset {
             return Err(TransferError::Conflict(
-                "quarantine length does not match committed offset".into(),
+                "quarantine is shorter than committed offset".into(),
             ));
         }
-        let mut payload = OpenOptions::new().append(true).open(&payload_path)?;
-        let mut chunk = File::open(&chunk_path)?;
-        std::io::copy(&mut chunk, &mut payload)?;
+        // Recover bytes written before an interrupted state commit without losing acknowledged data.
+        if actual_length > record.offset {
+            payload.set_len(record.offset)?;
+        }
+        use std::io::Seek;
+        payload.seek(SeekFrom::Start(record.offset))?;
+        std::io::copy(&mut File::open(&chunk.0)?, &mut payload)?;
         payload.flush()?;
         payload.sync_all()?;
-        fs::remove_file(&chunk_path)?;
-
         record.offset = next;
         record.status = if next == record.length {
             let (actual_sha256, actual_size) = sha256_file(&payload_path)?;
@@ -442,8 +534,10 @@ impl TransferStore {
             {
                 record.status = TransferStatus::Rejected;
                 record.actual_sha256 = Some(actual_sha256);
-                record.updated_at = Utc::now();
+                record.updated_at = OffsetDateTime::now_utc();
                 self.save_record(&record)?;
+                fs::remove_file(&payload_path)?;
+                self.resources.release(record.id);
                 return Err(TransferError::Checksum);
             }
             record.actual_sha256 = Some(actual_sha256);
@@ -451,14 +545,28 @@ impl TransferStore {
         } else {
             TransferStatus::Uploading
         };
-        record.updated_at = Utc::now();
+        record.updated_at = OffsetDateTime::now_utc();
         self.save_record(&record)?;
+        self.resources.advance(record.id, record.offset);
         Ok(record)
     }
 
     pub async fn promote(&self, id: Uuid) -> Result<TransferRecord, TransferError> {
-        let lock = self.lock(id);
-        let _guard = lock.lock().await;
+        let guard = self
+            .lock(id)
+            .try_lock_owned()
+            .map_err(|_| TransferError::Busy)?;
+        let disk_job = admit(&self.resources.disk_jobs)?;
+        let store = self.clone();
+        tokio::task::spawn_blocking(move || {
+            let (_guard, _disk_job) = (guard, disk_job);
+            store.promote_sync(id)
+        })
+        .await
+        .map_err(|_| TransferError::Conflict("promotion task failed".into()))?
+    }
+
+    fn promote_sync(&self, id: Uuid) -> Result<TransferRecord, TransferError> {
         let mut record = self.load(id)?;
         if record.status == TransferStatus::Available {
             return Ok(record);
@@ -500,14 +608,17 @@ impl TransferStore {
         }
         record.status = TransferStatus::Available;
         record.storage_key = Some(format!("objects/sha256/{}/{}", &sha256[..2], sha256));
-        record.updated_at = Utc::now();
+        record.updated_at = OffsetDateTime::now_utc();
         self.save_record(&record)?;
+        self.resources.release(id);
         Ok(record)
     }
 
     pub async fn reject(&self, id: Uuid) -> Result<TransferRecord, TransferError> {
-        let lock = self.lock(id);
-        let _guard = lock.lock().await;
+        let _guard = self
+            .lock(id)
+            .try_lock_owned()
+            .map_err(|_| TransferError::Busy)?;
         let mut record = self.load(id)?;
         if record.status == TransferStatus::Available {
             return Err(TransferError::Conflict(
@@ -519,14 +630,17 @@ impl TransferStore {
             fs::remove_file(payload)?;
         }
         record.status = TransferStatus::Rejected;
-        record.updated_at = Utc::now();
+        record.updated_at = OffsetDateTime::now_utc();
         self.save_record(&record)?;
+        self.resources.release(id);
         Ok(record)
     }
 
     pub async fn terminate(&self, id: Uuid) -> Result<(), TransferError> {
-        let lock = self.lock(id);
-        let _guard = lock.lock().await;
+        let _guard = self
+            .lock(id)
+            .try_lock_owned()
+            .map_err(|_| TransferError::Busy)?;
         let record = self.load(id)?;
         if record.status == TransferStatus::Available {
             return Err(TransferError::Conflict(
@@ -534,10 +648,7 @@ impl TransferStore {
             ));
         }
         fs::remove_dir_all(self.transfer_directory(id))?;
-        self.locks
-            .lock()
-            .expect("transfer lock registry poisoned")
-            .remove(&id);
+        self.resources.release(id);
         Ok(())
     }
 
@@ -755,11 +866,22 @@ fn tus_headers(headers: &mut HeaderMap, record: Option<&TransferRecord>) {
     }
 }
 
-async fn health() -> impl IntoResponse {
+async fn health(State(store): State<TransferStore>) -> impl IntoResponse {
     Json(serde_json::json!({
         "service": "superii-transferd",
         "status": "ok",
-        "version": env!("CARGO_PKG_VERSION")
+        "version": env!("CARGO_PKG_VERSION"),
+        "limits": {
+            "concurrent_uploads": store.resources.limits.concurrent_uploads,
+            "concurrent_downloads": store.resources.limits.concurrent_downloads,
+            "concurrent_disk_jobs": store.resources.limits.concurrent_disk_jobs,
+            "active_transfers": store.resources.limits.active_transfers,
+            "transfers_per_owner": store.resources.limits.transfers_per_owner,
+            "quarantine_bytes": store.resources.limits.quarantine_bytes,
+            "free_disk_reserve_bytes": store.resources.limits.free_disk_reserve_bytes,
+            "idle_timeout_seconds": store.resources.limits.idle_timeout.as_secs(),
+            "upload_timeout_seconds": store.resources.limits.upload_timeout.as_secs()
+        }
     }))
 }
 
@@ -904,9 +1026,13 @@ async fn scrub_objects(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, TransferError> {
     require_auth(&store, &headers)?;
-    let report = tokio::task::spawn_blocking(move || store.scrub())
-        .await
-        .map_err(|_| TransferError::Conflict("scrub task failed".into()))??;
+    let permit = admit(&store.resources.disk_jobs)?;
+    let report = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        store.scrub()
+    })
+    .await
+    .map_err(|_| TransferError::Conflict("scrub task failed".into()))??;
     Ok(Json(report))
 }
 
@@ -916,13 +1042,44 @@ async fn get_object(
     headers: HeaderMap,
 ) -> Result<Response<Body>, TransferError> {
     require_auth(&store, &headers)?;
+    let permit = admit(&store.resources.downloads)?;
     let path = store.object_path(&sha256)?;
     let size = fs::metadata(&path)?.len();
     let requested = headers.get(RANGE).and_then(|value| value.to_str().ok());
     let range = parse_range(requested, size)?;
     let mut file = tokio::fs::File::open(path).await?;
     file.seek(SeekFrom::Start(range.start)).await?;
-    let stream = ReaderStream::new(file.take(range.length()));
+    let mut file = file.take(range.length());
+    let (sender, receiver) = tokio::sync::mpsc::channel(1);
+    let limits = store.resources.limits.clone();
+    tokio::spawn(async move {
+        let _permit = permit;
+        let copy = async {
+            loop {
+                let mut buffer = vec![0_u8; 64 * 1024];
+                let read = file.read(&mut buffer).await?;
+                if read == 0 {
+                    break;
+                }
+                buffer.truncate(read);
+                tokio::time::timeout(
+                    limits.idle_timeout,
+                    sender.send(Ok::<_, std::io::Error>(buffer)),
+                )
+                .await
+                .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "download stalled"))?
+                .map_err(|_| {
+                    std::io::Error::new(std::io::ErrorKind::BrokenPipe, "download closed")
+                })?;
+            }
+            Ok::<(), std::io::Error>(())
+        };
+        // Closing early is detectable through Content-Length; resume remains a Range request.
+        let _ = tokio::time::timeout(limits.download_timeout, copy).await;
+    });
+    let stream = futures_util::stream::unfold(receiver, |mut receiver| async move {
+        receiver.recv().await.map(|chunk| (chunk, receiver))
+    });
     let mut response = Response::new(Body::from_stream(stream));
     *response.status_mut() = if requested.is_some() {
         StatusCode::PARTIAL_CONTENT
@@ -962,11 +1119,12 @@ fn numeric_header(headers: &HeaderMap, name: &HeaderName) -> Result<u64, Transfe
 }
 
 pub fn router(store: TransferStore) -> Router {
-    Router::new()
-        .route("/health", get(health))
+    let protected = Router::new()
         .route(
             "/v1/transfers",
-            axum::routing::options(tus_options).post(create_transfer),
+            axum::routing::options(tus_options)
+                .post(create_transfer)
+                .layer(DefaultBodyLimit::max(16 * 1024)),
         )
         .route(
             "/v1/transfers/{id}",
@@ -985,7 +1143,32 @@ pub fn router(store: TransferStore) -> Router {
         )
         .route("/v1/objects/{sha256}", get(get_object))
         .route("/v1/scrub", axum::routing::post(scrub_objects))
+        .route_layer(axum::middleware::from_fn_with_state(
+            store.clone(),
+            request_gate,
+        ))
+        .with_state(store.clone());
+    Router::new()
+        .route("/health", get(health))
         .with_state(store)
+        .merge(protected)
+}
+
+async fn request_gate(
+    State(store): State<TransferStore>,
+    request: Request,
+    next: axum::middleware::Next,
+) -> Result<axum::response::Response, TransferError> {
+    // Authenticate before JSON extraction, disk access or waiting for a request body.
+    require_auth(&store, request.headers())?;
+    let _permit = admit(&store.resources.requests)?;
+    if request.method() == axum::http::Method::POST && request.uri().path() == "/v1/transfers" {
+        tokio::time::timeout(store.resources.limits.idle_timeout, next.run(request))
+            .await
+            .map_err(|_| TransferError::Timeout)
+    } else {
+        Ok(next.run(request).await)
+    }
 }
 
 pub async fn serve(store: TransferStore, bind: SocketAddr) -> Result<(), std::io::Error> {
@@ -1083,17 +1266,30 @@ pub fn cleanup_expired(store: &TransferStore) -> Result<usize, TransferError> {
         let Ok(id) = Uuid::parse_str(&entry.file_name().to_string_lossy()) else {
             continue;
         };
+        let Ok(_guard) = store.lock(id).try_lock_owned() else {
+            continue;
+        };
         match store.load(id) {
             Err(TransferError::Expired) => {
                 fs::remove_dir_all(entry.path())?;
+                store.resources.release(id);
                 removed += 1;
             }
             Err(TransferError::Json(_) | TransferError::Io(_)) => {
                 let modified = entry.metadata()?.modified().unwrap_or(SystemTime::now());
                 if modified.elapsed().unwrap_or_default() > Duration::from_secs(7 * 86_400) {
                     fs::remove_dir_all(entry.path())?;
+                    store.resources.release(id);
                     removed += 1;
                 }
+            }
+            Ok(record)
+                if record.expires_at < OffsetDateTime::now_utc() - time::Duration::days(7) =>
+            {
+                // Completed/rejected transfer metadata is temporary; published CAS objects stay.
+                fs::remove_dir_all(entry.path())?;
+                store.resources.release(id);
+                removed += 1;
             }
             _ => {}
         }
@@ -1106,7 +1302,7 @@ mod tests {
     use super::*;
     use axum::body::Bytes;
     use base64::engine::general_purpose::STANDARD;
-    use chrono::Duration as ChronoDuration;
+    use time::Duration as CalendarDuration;
 
     fn store() -> (tempfile::TempDir, TransferStore) {
         let directory = tempfile::tempdir().expect("tempdir");
@@ -1126,7 +1322,29 @@ mod tests {
             created_by: Uuid::new_v4().to_string(),
             length: 8,
             expected_sha256: expected,
-            expires_at: Utc::now() + ChronoDuration::hours(1),
+            expires_at: OffsetDateTime::now_utc() + CalendarDuration::hours(1),
+        }
+    }
+
+    #[test]
+    fn persisted_rfc3339_timestamps_remain_compatible() {
+        let (_directory, store) = store();
+        let record = store.create(request(Uuid::new_v4(), None)).expect("create");
+        for timestamp in [
+            "2026-11-20T12:34:56Z",
+            "2026-11-20T12:34:56.123456789+00:00",
+            "2026-11-20T18:04:56.123456+05:30",
+        ] {
+            let mut value = serde_json::to_value(&record).expect("record");
+            for field in ["created_at", "updated_at", "expires_at"] {
+                value[field] = timestamp.into();
+            }
+            let restored: TransferRecord = serde_json::from_value(value).expect("legacy timestamp");
+            let serialized = serde_json::to_value(&restored).expect("serialize");
+            assert!(serialized["expires_at"].is_string());
+            let roundtrip: TransferRecord = serde_json::from_value(serialized).expect("round trip");
+            assert_eq!(roundtrip.expires_at, restored.expires_at);
+            let _: SystemTime = restored.expires_at.into();
         }
     }
 
@@ -1216,5 +1434,327 @@ mod tests {
             assert!(validate_repository_path(path).is_err(), "{path}");
         }
         assert!(validate_repository_path("models/model.gguf").is_ok());
+    }
+    fn limited_store(limits: TransferLimits) -> (tempfile::TempDir, TransferStore) {
+        let directory = tempfile::tempdir().expect("tempdir");
+        let store = TransferStore::with_limits(
+            directory.path().to_path_buf(),
+            "x".repeat(32),
+            1024,
+            16,
+            limits,
+        )
+        .expect("store");
+        (directory, store)
+    }
+
+    fn no_pending(store: &TransferStore, id: Uuid) {
+        assert!(
+            fs::read_dir(store.transfer_directory(id))
+                .expect("entries")
+                .all(|e| !e
+                    .expect("entry")
+                    .file_name()
+                    .to_string_lossy()
+                    .ends_with(".pending"))
+        );
+    }
+
+    #[tokio::test]
+    async fn stalled_upload_releases_capacity_and_remains_resumable() {
+        let (_directory, store) = limited_store(TransferLimits {
+            concurrent_uploads: 1,
+            idle_timeout: Duration::from_millis(20),
+            ..TransferLimits::default()
+        });
+        let id = Uuid::new_v4();
+        store.create(request(id, None)).expect("create");
+        let body =
+            Body::from_stream(futures_util::stream::pending::<Result<Bytes, std::io::Error>>());
+        assert!(matches!(
+            store.append(id, 0, 8, None, body).await,
+            Err(TransferError::Timeout)
+        ));
+        assert_eq!(store.resources.uploads.available_permits(), 1);
+        assert_eq!(store.load(id).expect("record").offset, 0);
+        no_pending(&store, id);
+        assert_eq!(
+            store
+                .append(id, 0, 8, None, Body::from("verified"))
+                .await
+                .expect("resume")
+                .offset,
+            8
+        );
+    }
+
+    #[tokio::test]
+    async fn trickle_cannot_extend_the_total_upload_deadline() {
+        let (_directory, store) = limited_store(TransferLimits {
+            idle_timeout: Duration::from_millis(100),
+            upload_timeout: Duration::from_millis(35),
+            ..TransferLimits::default()
+        });
+        let id = Uuid::new_v4();
+        store.create(request(id, None)).expect("create");
+        let stream = futures_util::stream::unfold((), |_| async {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            Some((Ok::<_, std::io::Error>(Bytes::from_static(b"a")), ()))
+        });
+        assert!(matches!(
+            store
+                .append(id, 0, 8, None, Body::from_stream(stream))
+                .await,
+            Err(TransferError::Timeout)
+        ));
+        assert_eq!(store.load(id).expect("record").offset, 0);
+        no_pending(&store, id);
+    }
+
+    #[tokio::test]
+    async fn cancelled_upload_cleans_chunk_and_sheds_waiters() {
+        let (_directory, store) = limited_store(TransferLimits {
+            concurrent_uploads: 1,
+            ..TransferLimits::default()
+        });
+        let id = Uuid::new_v4();
+        store.create(request(id, None)).expect("create");
+        let other = Uuid::new_v4();
+        store.create(request(other, None)).expect("create other");
+        let (started, ready) = tokio::sync::oneshot::channel();
+        let copy = store.clone();
+        let task = tokio::spawn(async move {
+            let body = Body::from_stream(futures_util::stream::once(async move {
+                started.send(()).expect("signal");
+                std::future::pending::<Result<Bytes, std::io::Error>>().await
+            }));
+            copy.append(id, 0, 8, None, body).await
+        });
+        ready.await.expect("started");
+        for transfer in [id, other] {
+            assert!(matches!(
+                store
+                    .append(transfer, 0, 8, None, Body::from("verified"))
+                    .await,
+                Err(TransferError::Busy)
+            ));
+        }
+        assert!(matches!(
+            store.terminate(id).await,
+            Err(TransferError::Busy)
+        ));
+        task.abort();
+        assert!(task.await.expect_err("cancelled").is_cancelled());
+        no_pending(&store, id);
+        assert_eq!(
+            store
+                .append(id, 0, 8, None, Body::from("verified"))
+                .await
+                .expect("resume")
+                .offset,
+            8
+        );
+    }
+
+    #[tokio::test]
+    async fn malformed_and_oversized_bodies_never_advance_or_leave_chunks() {
+        let (_directory, store) = store();
+        let id = Uuid::new_v4();
+        store.create(request(id, None)).expect("create");
+        let bad = Body::from_stream(futures_util::stream::once(async {
+            Err::<Bytes, _>(std::io::Error::other("disconnected"))
+        }));
+        for body in [Body::from("too much data"), Body::from("x"), bad] {
+            assert!(store.append(id, 0, 4, None, body).await.is_err());
+            assert_eq!(store.load(id).expect("record").offset, 0);
+            no_pending(&store, id);
+        }
+    }
+
+    #[tokio::test]
+    async fn quota_is_atomic_persistent_and_released_by_termination() {
+        let limits = TransferLimits {
+            quarantine_bytes: 16,
+            ..TransferLimits::default()
+        };
+        let (directory, store) = limited_store(limits.clone());
+        let mut tasks = Vec::new();
+        for _ in 0..12 {
+            let copy = store.clone();
+            tasks.push(tokio::task::spawn_blocking(move || {
+                copy.create(request(Uuid::new_v4(), None))
+            }));
+        }
+        let mut accepted = Vec::new();
+        for task in tasks {
+            match task.await.expect("task") {
+                Ok(record) => accepted.push(record.id),
+                Err(TransferError::Capacity) => {}
+                error => panic!("unexpected {error:?}"),
+            }
+        }
+        assert_eq!(accepted.len(), 2);
+        drop(store);
+        let store = TransferStore::with_limits(
+            directory.path().to_path_buf(),
+            "x".repeat(32),
+            1024,
+            16,
+            limits,
+        )
+        .expect("restart");
+        assert!(matches!(
+            store.create(request(Uuid::new_v4(), None)),
+            Err(TransferError::Capacity)
+        ));
+        store.terminate(accepted[0]).await.expect("terminate");
+        store
+            .create(request(Uuid::new_v4(), None))
+            .expect("capacity returned");
+    }
+
+    #[test]
+    fn owner_limits_and_disk_reserve_fail_closed() {
+        let (_directory, store) = limited_store(TransferLimits {
+            transfers_per_owner: 1,
+            ..TransferLimits::default()
+        });
+        let first = request(Uuid::new_v4(), None);
+        let owner = first.created_by.clone();
+        store.create(first).expect("first");
+        let mut second = request(Uuid::new_v4(), None);
+        second.created_by = owner;
+        assert!(matches!(store.create(second), Err(TransferError::Capacity)));
+        store
+            .create(request(Uuid::new_v4(), None))
+            .expect("another owner");
+        let (_directory, full) = limited_store(TransferLimits {
+            free_disk_reserve_bytes: u64::MAX,
+            ..TransferLimits::default()
+        });
+        assert!(matches!(
+            full.create(request(Uuid::new_v4(), None)),
+            Err(TransferError::Capacity)
+        ));
+    }
+
+    #[tokio::test]
+    async fn restart_removes_orphan_chunks_and_recovers_uncommitted_tail() {
+        let (directory, store) = store();
+        let id = Uuid::new_v4();
+        store.create(request(id, None)).expect("create");
+        store
+            .append(id, 0, 4, None, Body::from("veri"))
+            .await
+            .expect("chunk");
+        fs::write(
+            store.transfer_directory(id).join("chunk-orphan.pending"),
+            b"garbage",
+        )
+        .expect("orphan");
+        OpenOptions::new()
+            .append(true)
+            .open(store.payload_path(id))
+            .expect("payload")
+            .write_all(b"partial")
+            .expect("tail");
+        assert!(
+            TransferStore::new(directory.path().to_path_buf(), "x".repeat(32), 1024, 16).is_err(),
+            "no second writer"
+        );
+        drop(store);
+        let store = TransferStore::new(directory.path().to_path_buf(), "x".repeat(32), 1024, 16)
+            .expect("restart");
+        no_pending(&store, id);
+        let record = store
+            .append(id, 4, 4, None, Body::from("fied"))
+            .await
+            .expect("resume");
+        assert_eq!(record.status, TransferStatus::Uploaded);
+        assert_eq!(
+            fs::read(store.payload_path(id)).expect("bytes"),
+            b"verified"
+        );
+    }
+
+    #[tokio::test]
+    async fn expired_cleanup_skips_active_writer_then_returns_capacity() {
+        let (_directory, store) = limited_store(TransferLimits {
+            active_transfers: 1,
+            ..TransferLimits::default()
+        });
+        let id = Uuid::new_v4();
+        let mut record = store.create(request(id, None)).expect("create");
+        record.expires_at = OffsetDateTime::now_utc() - CalendarDuration::seconds(1);
+        store.save_record(&record).expect("expire");
+        let guard = store.lock(id).try_lock_owned().expect("hold");
+        assert_eq!(cleanup_expired(&store).expect("cleanup"), 0);
+        assert!(matches!(
+            store.create(request(Uuid::new_v4(), None)),
+            Err(TransferError::Capacity)
+        ));
+        drop(guard);
+        assert_eq!(cleanup_expired(&store).expect("cleanup"), 1);
+        store
+            .create(request(Uuid::new_v4(), None))
+            .expect("capacity restored");
+    }
+
+    #[tokio::test]
+    async fn download_backpressure_times_out_and_returns_permit() {
+        let (_directory, store) = limited_store(TransferLimits {
+            concurrent_downloads: 1,
+            idle_timeout: Duration::from_millis(20),
+            ..TransferLimits::default()
+        });
+        let digest = "a".repeat(64);
+        let parent = store.root().join("objects/sha256/aa");
+        fs::create_dir_all(&parent).expect("parent");
+        fs::write(parent.join(&digest), vec![0; 4 * 64 * 1024]).expect("fixture");
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            INTERNAL_TOKEN,
+            HeaderValue::from_str(&"x".repeat(32)).expect("token"),
+        );
+        let response = get_object(
+            State(store.clone()),
+            AxumPath(digest.clone()),
+            headers.clone(),
+        )
+        .await
+        .expect("stream");
+        assert!(matches!(
+            get_object(
+                State(store.clone()),
+                AxumPath(digest.clone()),
+                headers.clone()
+            )
+            .await,
+            Err(TransferError::Busy)
+        ));
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while store.resources.downloads.available_permits() == 0 {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("stalled stream released");
+        drop(response);
+        let mut ranged = headers;
+        ranged.insert(RANGE, HeaderValue::from_static("bytes=2-5"));
+        let response = get_object(State(store.clone()), AxumPath(digest), ranged)
+            .await
+            .expect("resume");
+        assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(
+            response
+                .into_body()
+                .collect()
+                .await
+                .expect("body")
+                .to_bytes()
+                .len(),
+            4
+        );
     }
 }

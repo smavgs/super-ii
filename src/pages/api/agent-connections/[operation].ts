@@ -1,3 +1,4 @@
+import { requireRecentVerification } from '@/lib/sensitive-action';
 import type { APIRoute } from 'astro';
 import { ensureAuthenticatedProfile, sameOrigin } from '@/lib/auth';
 import { sqlClient } from '@/lib/db';
@@ -62,6 +63,10 @@ export const ALL: APIRoute = async ({ locals, request, url, params }) => {
     }
     if (params.operation !== 'approve' || typeof body.allow !== 'boolean')
       return connectionJson({ error: 'invalid_request' }, 400);
+    if (body.allow) {
+      const verification = requireRecentVerification(locals);
+      if (verification) return verification;
+    }
     const code = connectionSecret();
     const rows =
       await sql`select app.approve_agent_connection(${body.id}::uuid,${profile.profileId}::uuid,${body.allow},${JSON.stringify(body.options ?? {})}::jsonb,${await sha256Hex(code)}) as result`;

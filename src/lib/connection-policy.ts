@@ -74,6 +74,8 @@ export function validRedirectUri(value: unknown): value is string {
     return (
       !url.username &&
       !url.password &&
+      !url.hostname.includes('*') &&
+      !url.hostname.includes('%') &&
       url.href === value &&
       (url.protocol === 'https:' ||
         (url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)))

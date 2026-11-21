@@ -1,0 +1,12 @@
+.sii-verification{box-sizing:border-box;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:2px solid #182434;border-radius:14px;background:var(--surface,#fff);color:var(--ink,#182434);box-shadow:6px 6px 0 #182434;font-family:inherit}
+.sii-verification::backdrop{background:rgb(10 17 28 / .65)}
+.sii-verification__badge{font:700 12px/1.5 'IBM Plex Mono',monospace;letter-spacing:.04em}
+.sii-verification h2{font-size:24px;margin:14px 0 10px}
+.sii-verification p{line-height:1.5}
+.sii-verification label{font-weight:700}
+.sii-verification input{display:block;box-sizing:border-box;width:100%;padding:12px;border:2px solid #182434;border-radius:8px;margin-top:8px;font:inherit;letter-spacing:.2em;background:#fff;color:#182434}
+.sii-verification__actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end;margin-top:24px}
+.sii-verification button{padding:10px 16px;border:2px solid #182434;border-radius:8px;background:#fff;color:#182434;font:700 14px/1.4 'IBM Plex Mono',monospace;cursor:pointer}
+.sii-verification button[type=submit]{background:#ffd631;box-shadow:2px 2px 0 #182434}
+.sii-verification button:disabled{opacity:.6;cursor:wait}
+.sii-verification :focus-visible{outline:3px solid #8655e8;outline-offset:3px}
