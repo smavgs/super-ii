@@ -11,6 +11,7 @@ import NotificationBell from './NotificationBell.astro';
 
 const path = stripLocalePrefix(Astro.url.pathname);
 const authConfigured = authIsConfigured(Astro.locals);
+const workspaceLabel = Astro.locals.locale === 'ru' ? 'Кабинет' : Astro.locals.locale === 'zh-CN' ? '工作区' : 'Workspace';
 
 const groups = [
   { label: 'Explore', icon: 'ph-compass', items: [
@@ -77,7 +78,7 @@ const activeGroup = Math.max(0, groups.findIndex((group) => group.items.some((it
               <a class="button button--dark button--small" href="/sign-up?redirect_url=%2Faccount">Join free</a>
             </Show>
             <Show when="signed-in">
-              <a class="button button--dark button--small" href="/account">Workspace <span aria-hidden="true">👾</span></a>
+              <a class="button button--dark button--small header-workspace" href="/account" data-no-translate><span>{workspaceLabel}</span><span aria-hidden="true">👾</span></a>
               <span class="header-profile"><UserButton
                 appearance={{
                   elements: { avatarBox: 'sii-clerk-avatar' },

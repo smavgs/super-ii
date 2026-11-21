@@ -118,6 +118,10 @@ docker exec -i "$container_name" \
 
 docker exec -e PGPASSWORD=web-test-password -i "$container_name" \
   psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U superii_web_test -d superii_test \
+  < "$project_root/database/tests/welcome_smoke.sql" >/dev/null
+
+docker exec -e PGPASSWORD=web-test-password -i "$container_name" \
+  psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U superii_web_test -d superii_test \
   -v CONTEXT_KEY=test-web-v1 \
   -v CONTEXT_SECRET=test-web-context-secret-0123456789abcdef \
   < "$project_root/database/tests/linked_showcase_smoke.sql" >/dev/null

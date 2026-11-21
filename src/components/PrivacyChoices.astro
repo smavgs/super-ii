@@ -1,0 +1,20 @@
+---
+import { localizedPath, stripLocalePrefix } from '@/lib/i18n';
+import { welcomeCopy } from '@/lib/welcome';
+import AlienMascot from './AlienMascot.astro';
+import '@/styles/welcome.css';
+const locale = Astro.locals.locale ?? 'en';
+const copy = welcomeCopy[locale];
+---
+<dialog class="privacy-choices" data-privacy-choices data-auto-open={stripLocalePrefix(Astro.url.pathname) === '/' ? 'true' : 'false'} data-no-translate data-machine-exclude aria-labelledby="privacy-choice-title" aria-describedby="privacy-choice-intro">
+  <div class="privacy-choices__eyebrow" aria-hidden="true">[ SUPER ii / COOKIES ]</div>
+  <div class="privacy-choices__mascot" aria-hidden="true"><AlienMascot /><span class="privacy-choices__cookie">🍪</span><span class="privacy-choices__spark">+</span></div>
+  <h2 id="privacy-choice-title" tabindex="-1">{copy.privacyTitle}</h2>
+  <p id="privacy-choice-intro">{copy.privacyIntro}</p>
+  <div class="privacy-choices__actions">
+    <button class="privacy-choices__allow" type="button" data-privacy-choice="allow"><span aria-hidden="true">✓</span>{copy.allow}</button>
+    <button class="privacy-choices__decline" type="button" data-privacy-choice="deny"><span aria-hidden="true">×</span>{copy.decline}</button>
+  </div>
+  <details class="privacy-choices__details"><summary>{copy.details}<span aria-hidden="true"> +</span></summary><p data-privacy-current></p><p>{copy.detail}</p><p>{copy.necessary}</p><p>{copy.remember}</p><a href={localizedPath('/legal/privacy', locale) + '#optional-analytics'}>{copy.privacyLink} ↗</a></details>
+</dialog>
+<script>import '@/scripts/privacy-choices';</script>

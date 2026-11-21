@@ -8,6 +8,8 @@ export type EarlyGuardEnv = {
 };
 
 export function protocolBodyLimit(path: string): number | null {
+  if (path === '/api/handles/check') return 256;
+  if (path === '/api/experience/events') return 512;
   if (path === '/mcp' || path.startsWith('/mcp/')) return 1_048_576;
   if (path.startsWith('/a2a/')) return 65_536;
   if (path.startsWith('/oauth/') || path.startsWith('/api/oauth/')) return 16_384;
