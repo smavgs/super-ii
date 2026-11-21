@@ -2,7 +2,7 @@
   "locale": "zh-CN",
   "sourceLocale": "en",
   "generatedFrom": "src/content/locales/ru.json source keys; reviewed with protected-token validation",
-  "messageCount": 5672,
+  "messageCount": 5678,
   "messages": {
     "# Overview Document intended use, limitations, evaluation, training data, and responsible-use notes.": "# 概述文档：预期用途、局限性、评估、训练数据及负责任使用说明",
     "$0 to start.": "从 $0 开始。",
@@ -5675,6 +5675,12 @@
     "This source requires the original provider’s access approval. Use the source link to review its terms.": "此来源需要原始提供方批准访问。请通过来源链接查看其条款。",
     "Aliens List hardware classifieds and events": "Aliens List 硬件分类信息与活动",
     "Migrations 0049–0050, 84 isolated behavioral checks and the full database suite; 20 live API/access checks on both domains; native 👾, source-linked event details, mobile list/map, homepage ticker and sign-in redirects inspected in the browser. Public browsing is free; posting, private messages and saved searches require a free account. Existing data counts were preserved. The hourly Worker schedule is deployed; email remains opt-in and its delivery was mocked in tests. See qa/ALIENS-LIST-2026-11-10.md.": "已应用迁移 0049–0050，通过 84 项隔离行为检查及完整数据库测试；两个域名通过 20 项线上 API 与访问权限检查。浏览器检查确认了原有 👾、带来源链接的活动详情、手机宽度列表与地图、首页滚动条及登录跳转。公开浏览免费；发布、私信及保存搜索需要免费账户。原有表的记录数量保持不变。每小时 Worker 任务已部署；邮件仍需主动订阅，测试中使用了模拟投递。参见 qa/ALIENS-LIST-2026-11-10.md。",
-    "live; first member listing, conversation and digest delivery pending": "已上线；首个成员发布、私信对话和摘要邮件送达尚待验证"
+    "live; first member listing, conversation and digest delivery pending": "已上线；首个成员发布、私信对话和摘要邮件送达尚待验证",
+    "Request and transfer resource protection": "请求与文件传输资源保护",
+    "canonical domains and local runtime live": "正式域名和本地运行环境已上线",
+    "Migration 0051 preserves the OAuth function owner/grants and existing rows. Actual-body bounds, pre-database network admission, durable registration/provider quotas, Rust concurrency/disk reservations and bounded streams are deployed. Twenty live public/access checks and an existing-object Range check passed; full local integration/CI covers failures and recovery. Workers and Clerk remain on free plans. This is not a global bill cap, MFA, independent penetration certification or hostile compute isolation. See qa/SECURITY-RESOURCE-HARDENING-2026-11-20.md.": "迁移 0051 保留 OAuth 函数的所有者、权限和现有记录。已部署实际请求体大小限制、访问数据库前的网络限流、持久化注册与服务商配额、Rust 并发限制、磁盘预留及有界数据流。两个域名的 20 项公开访问检查以及现有对象的 Range 读取通过；本地集成测试和 CI 覆盖失败与恢复。Workers 和 Clerk 继续使用免费方案。这不代表全平台费用上限、MFA、独立渗透认证或不可信计算隔离。参见 qa/SECURITY-RESOURCE-HARDENING-2026-11-20.md。",
+    "Fresh verification before sensitive access grants": "授予敏感权限前重新验证身份",
+    "deployed; first real production reverification still unverified": "已部署；首次真实生产环境重新验证尚未验证",
+    "Signed-session first-factor age check protects new Work tokens, commerce grants, Social pairing, trusted publishers and connection approval. Local database and browser fixture tests verify rejection, preserved selections, cancellation and one retry. Existing machine credentials and revocation retain their contracts. No production token was issued for this test.": "通过已签名会话检查第一身份验证因素的时间，保护新 Work 令牌、商业授权、Social 配对、可信发布者和连接批准。本地数据库测试及浏览器模拟验证了拒绝、保留选择、取消和仅重试一次。现有机器凭据与撤销权限保持原有契约。本测试没有签发生产令牌。"
   }
 }

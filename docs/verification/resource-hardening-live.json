@@ -1,0 +1,181 @@
+{
+  "checked_on": "2026-11-21",
+  "core_commit": "1c23fe0a887f06d594fcac81b8513886769d5510",
+  "worker_configuration_commit": "767c9633388df08ac585504185e54fdf9b0b8e96",
+  "worker_version": "ed1ef006-3d80-42b1-ad2b-ce221f6389c1",
+  "migration": {
+    "migration": "0051_request_resource_hardening",
+    "applied": true,
+    "function_owner_and_grants_preserved": true,
+    "repositories": 8,
+    "oauth_clients": 4
+  },
+  "transfer": {
+    "health": {
+      "limits": {
+        "active_transfers": 128,
+        "concurrent_disk_jobs": 2,
+        "concurrent_downloads": 16,
+        "concurrent_uploads": 8,
+        "free_disk_reserve_bytes": 5368709120,
+        "idle_timeout_seconds": 60,
+        "quarantine_bytes": 53687091200,
+        "transfers_per_owner": 16,
+        "upload_timeout_seconds": 900
+      },
+      "service": "superii-transferd",
+      "status": "ok",
+      "version": "0.1.0"
+    },
+    "binary_sha256": "cec85bebf0c9a6491e486c889eb570ff6f6062fc69ef5549ad32c67159f1f604",
+    "existing_object_range": "206, exact original bytes"
+  },
+  "runtime": {
+    "status": "ready",
+    "database": true,
+    "storage": true,
+    "transfer_service": true,
+    "required_scanners": {
+      "clamav": true,
+      "gitleaks": true
+    },
+    "publishing_enabled": true,
+    "publication_policy": true
+  },
+  "public_checks": [
+    {
+      "host": "superii.site",
+      "path": "/api/health",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/models/smavgs/minicpm-v4.6-q4-k-m-verified-ollama",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/datasets/smavgs/mmmlu-multilingual-knowledge-sample",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/siiwebskill.md",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/mcp",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "superii.site",
+      "path": "/mcp",
+      "status": 413,
+      "expected": 413
+    },
+    {
+      "host": "superii.site",
+      "path": "/oauth/register",
+      "status": 400,
+      "expected": 400
+    },
+    {
+      "host": "superii.site",
+      "path": "/api/assistant/chat",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "host": "superii.site",
+      "path": "/api/agents/00000000-0000-4000-8000-000000000000/tokens",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/api/health",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/models/smavgs/minicpm-v4.6-q4-k-m-verified-ollama",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/datasets/smavgs/mmmlu-multilingual-knowledge-sample",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/siiwebskill.md",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/mcp",
+      "status": 200,
+      "expected": 200
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/mcp",
+      "status": 413,
+      "expected": 413
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/oauth/register",
+      "status": 400,
+      "expected": 400
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/api/assistant/chat",
+      "status": 401,
+      "expected": 401
+    },
+    {
+      "host": "www.superii.site",
+      "path": "/api/agents/00000000-0000-4000-8000-000000000000/tokens",
+      "status": 401,
+      "expected": 401
+    }
+  ],
+  "public_download": {
+    "file": "LICENSE",
+    "status": 206,
+    "content_range": "bytes 0-3/1239",
+    "byte_count": 4
+  },
+  "limits_of_evidence": [
+    "No production load test or new public fixture",
+    "Fresh Clerk code exchange tested only with a local provider fixture",
+    "Clerk MFA/passkeys deferred on free plan",
+    "Business mail alignment test not performed; DMARC unchanged",
+    "OpenRouter key cap is not a whole-platform spending ceiling",
+    "Known Accelerate advisory remains with compensating shard checks"
+  ]
+}

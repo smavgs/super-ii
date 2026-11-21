@@ -15,11 +15,11 @@ The Worker checks host, URI length, network admission and selected protocol bodi
 | OAuth actual body | 16 KiB | 413 |
 | Assistant actual body | 96,000 bytes, then existing character limit | 413 |
 | Protocol body read | 30 seconds total | 408 |
-| Worker CPU per invocation | 10 seconds | Cloudflare enforcement |
+| Worker CPU per invocation | Existing Workers Free plan ceiling (10 ms) | Cloudflare enforcement |
 | OAuth registrations, all callers and aliases | 600/hour, durable PostgreSQL counter | 503; Retry-After 3600 |
 | Assistant provider calls, including search follow-up | 120/hour, durable PostgreSQL counter | 503; Retry-After 3600 |
 
-Existing endpoint/account quotas remain in force. Binary transfers retain streaming. Cloudflare's rate-limit counters are approximate and local to a location; they are not a global billing cap. The default workers.dev and preview URLs are disabled to close an alternate entry point. Canonical API routes do not require browser challenges.
+Existing endpoint/account quotas remain in force. Binary transfers retain streaming. Cloudflare's rate-limit counters are approximate and local to a location; they are not a global billing cap. The default workers.dev and preview URLs are disabled to close an alternate entry point. Canonical API routes do not require browser challenges. Production remains on Workers Free: a custom CPU ceiling is not accepted on that plan, so the existing plan ceiling is retained. The published Free plan also limits requests to 100,000/day; exhaustion can affect availability. No paid plan was purchased.
 
 The operator set the existing OpenRouter `superii` key to **US$50, resetting monthly** on 2026-11-20. This is an account-side credit limit, not a repository setting. It does not cap Cloudflare, Neon, storage, other keys, BYOK, subscriptions or transfer traffic. A whole-platform US$50 ceiling has not been established. Provider rejection pauses assistant processing with an explicit capacity message; it does not disable repository work.
 
