@@ -1,5 +1,6 @@
 ---
 import AliensHome from '@/components/AliensHome.astro';
+import HandleInvitation from '@/components/HandleInvitation.astro';
 import HeroPixels from '@/components/HeroPixels.astro';
 import InfoTip from '@/components/InfoTip.astro';
 import AgentBash from '@/components/AgentBash.astro';
@@ -84,6 +85,7 @@ if (heroAction.signedIn) Astro.response.headers.set('Cache-Control', 'private, n
 ---
 
 <BaseLayout className="home-skin">
+  {!heroAction.signedIn && <HandleInvitation />}
   <SuperAssistant />
   <section class="hero">
     <HeroPixels />

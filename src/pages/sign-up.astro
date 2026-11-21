@@ -6,12 +6,15 @@ import { safeAuthRedirect } from '@/lib/auth-redirects';
 import { localizedHref, localizedPath } from '@/lib/i18n';
 import { isSignedInUser } from '@/lib/member-actions';
 import { authIsConfigured } from '@/lib/site';
+import { requestedHandle, welcomeCopy } from '@/lib/welcome';
 
 const authConfigured = authIsConfigured(Astro.locals);
 const locale = Astro.locals.locale ?? 'en';
+const handle = requestedHandle(Astro.url.searchParams.get('handle'));
+const copy = welcomeCopy[locale];
 const agentStarterRedirect = '/account#agent-starter';
 const requestedRedirect = Astro.url.searchParams.get('redirect_url');
-const plainPostSignUpRedirect = safeAuthRedirect(requestedRedirect, agentStarterRedirect);
+const plainPostSignUpRedirect = handle ? '/account?welcome=handle#profile' : safeAuthRedirect(requestedRedirect, agentStarterRedirect);
 const postSignUpRedirect = localizedHref(plainPostSignUpRedirect, locale);
 const plainSignInUrl = plainPostSignUpRedirect === agentStarterRedirect
   ? '/sign-in'
@@ -29,6 +32,7 @@ if (isSignedInUser(Astro.locals)) return Astro.redirect(postSignUpRedirect, 302)
       <div class="auth-panel__inner">
         <h2>Create your free account</h2>
         <p>Email · Google · GitHub. Free to join. No card required.</p>
+        {handle && <div class="signup-handle" data-no-translate><p>{copy.chosen}: <strong>@{handle}</strong></p><p>{copy.pending}</p></div>}
         {authConfigured ? (
           <SignUp
             routing="path"
@@ -36,6 +40,7 @@ if (isSignedInUser(Astro.locals)) return Astro.redirect(postSignUpRedirect, 302)
             signInUrl={signInUrl}
             forceRedirectUrl={postSignUpRedirect}
             fallbackRedirectUrl={postSignUpRedirect}
+            unsafeMetadata={handle ? { superiiRequestedHandle: handle } : undefined}
             appearance={{
               elements: {
                 rootBox: 'sii-clerk-root',

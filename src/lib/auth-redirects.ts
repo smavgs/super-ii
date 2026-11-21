@@ -10,6 +10,7 @@ const safeExactRedirects = new Set([
   '/account#agents',
   '/account#commerce',
   '/account#profile',
+  '/account?welcome=handle#profile',
   '/account#repositories',
   '/bring-my-work',
   '/frontier-ai',

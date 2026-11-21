@@ -1,0 +1,22 @@
+---
+import { localizedPath } from '@/lib/i18n';
+import { welcomeCopy } from '@/lib/welcome';
+import '@/styles/welcome.css';
+const locale = Astro.locals.locale ?? 'en';
+const copy = welcomeCopy[locale];
+---
+<aside class="handle-invitation" data-handle-invitation data-no-translate data-machine-exclude aria-label={copy.compact}>
+  <button class="handle-invitation__toggle" type="button" data-handle-toggle aria-controls="home-handle-form" aria-expanded="false">
+    <span aria-hidden="true">👾</span><span>{copy.compact}</span><span aria-hidden="true">↗</span>
+  </button>
+  <form id="home-handle-form" class="handle-invitation__form" action={localizedPath('/sign-up', locale)} method="get" data-handle-form>
+    <span class="handle-invitation__intro"><span aria-hidden="true">👾</span> {copy.invite}</span>
+    <label class="handle-invitation__field"><span class="sr-only">{copy.label}</span><span aria-hidden="true">@</span><input name="handle" aria-describedby="home-handle-status" aria-label={copy.label} required maxlength="30" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="yourname" data-handle-input /></label>
+    <input type="hidden" name="redirect_url" value="/account?welcome=handle#profile" />
+    <button class="handle-invitation__submit" type="submit" data-handle-submit>{copy.check}<span aria-hidden="true"> ↗</span></button>
+    <button class="handle-invitation__collapse" type="button" data-handle-collapse aria-label={copy.close}>×</button>
+    <p id="home-handle-status" class="handle-invitation__status" role="status" data-handle-status hidden>{copy.hint}</p>
+  </form>
+</aside>
+<noscript><style>.handle-invitation__toggle,.handle-invitation__collapse{display:none!important}.handle-invitation .handle-invitation__form{display:flex!important}</style></noscript>
+<script>import '@/scripts/handle-invitation';</script>

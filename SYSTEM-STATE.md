@@ -107,6 +107,8 @@ The 2026-11-20 request/transfer hardening was deployed and checked on 2026-11-21
 
 ## Release truth rules
 
+Homepage welcome and privacy choices (2026-11-21): implemented, locally verified, not yet deployed. The scoped mobile header fix, floating handle invitation, signup preference handoff and optional aggregate measurement use migration 0052. No existing profile handle is renamed. Cookie choices and copy are supplied in English, Russian and Simplified Chinese. Browser fixtures, the full build and restricted PostgreSQL 17 integration checks pass; real new-account signup and physical iPhone testing remain unverified. See [verification and rollout boundary](qa/HOME-WELCOME-2026-11-21.md).
+
 - `implemented` never means deployed.
 - `production` never means generally available.
 - A disconnected scanner, database, object store, or runtime closes the affected path instead of bypassing it.

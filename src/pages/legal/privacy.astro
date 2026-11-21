@@ -2,9 +2,11 @@
 import ExploreLayout from '@/layouts/ExploreLayout.astro';
 import GuideReader from '@/components/GuideReader.astro';
 import '@/styles/guides.css';
+import { welcomeCopy } from '@/lib/welcome';
 
 export const prerender = false;
-const effectiveDate = 'November 10, 2026';
+const effectiveDate = 'November 21, 2026';
+const privacyCopy = welcomeCopy[Astro.locals.locale ?? 'en'];
 const aliensPrivacy = {
   "en": "Aliens List stores listing drafts, published text and photos, approximate locations, private conversations, reports, blocks, saved searches and notification choices. Published listings and the member’s public profile are visible to everyone. Coordinates are rounded before storage and photo metadata is removed. Conversations are accessible to their participants; moderators can review reported messages. Removing a listing hides its public page but keeps the owner’s record and existing conversations. You can remove saved searches, disable email, block members, or request deletion through the privacy contact form. Optional daily email uses your verified account email and Resend; it contains a link to unread updates, never private message text. Maps load tiles from OpenStreetMap, whose servers receive normal browser network information. City lookup is served by Super ii.",
   "ru": "Aliens List хранит черновики, опубликованные тексты и фото, примерные координаты, личную переписку, жалобы, блокировки, сохранённые поиски и настройки уведомлений. Опубликованные объявления и публичный профиль участника видны всем. Координаты округляются до сохранения, а метаданные фотографий удаляются. Переписка доступна её участникам; модераторы могут просматривать сообщения, на которые поступила жалоба. Удаление объявления скрывает публичную страницу, но сохраняет запись владельца и существующую переписку. Можно удалить сохранённые поиски, отключить почту, заблокировать участника или запросить удаление через форму обращения по вопросам конфиденциальности. Необязательная ежедневная сводка отправляется через Resend на подтверждённую почту аккаунта и содержит ссылку на обновления, но не текст личных сообщений. Карты загружают тайлы OpenStreetMap; его серверы получают обычные сетевые данные браузера. Поиск городов обслуживается Super ii.",
@@ -100,6 +102,11 @@ const sigmaPrivacy = {
 
       <p>Robot view counting uses a daily salted network hash to deduplicate repeated opens; it does not store raw network addresses in those records. Deduplication records older than 31 days are removed during subsequent view recording, while aggregate totals remain. Likes remain until removed or the account is deleted. Product inquiries remain in the company's private inbox for follow-up; archiving changes their status and does not delete them. You can request removal through our privacy contact form.</p>
       <h2 id="choices">6. Your choices and rights</h2>
+      <div id="optional-analytics" data-no-translate>
+        <h3>{privacyCopy.settings}</h3>
+        <p>{privacyCopy.detail}</p><p>{privacyCopy.necessary}</p><p>{privacyCopy.remember}</p>
+        <p><a href="#optional-analytics" data-privacy-open>{privacyCopy.settings} ↗</a></p>
+      </div>
       <p data-no-translate><strong>Aliens List:</strong> {aliensPrivacy[Astro.locals.locale ?? 'en']}</p>
       <p data-no-translate><strong>Sigma News:</strong> {sigmaPrivacy[Astro.locals.locale ?? 'en']}</p>
       <p>Depending on where you live, you may have rights to access, correct, delete, restrict, object to, or obtain a copy of personal information, and to withdraw consent where processing relies on consent. You may also have the right to complain to a local data-protection authority.</p>

@@ -38,6 +38,8 @@ html[lang='ru'] .directory-links { grid-template-columns: minmax(0, 1fr); }
   .site-header .header-auth { gap: 0; min-width: 0; flex-shrink: 1; }
   .site-header .header-sign-in, .site-header .header-profile { display: none; }
   .site-header .button { min-width: 0; padding: .5rem .6rem; font-size: .9rem; white-space: normal; overflow-wrap: anywhere; }
+  .site-header .header-workspace { white-space: nowrap; overflow-wrap: normal; flex-shrink: 0; gap: .2rem; padding-inline: .4rem; }
+  .site-header .header-workspace > span { flex-shrink: 0; }
   .site-directory .mobile-auth { display: flex; }
   .site-footer.site-chrome .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .site-footer.site-chrome .footer-intro { grid-column: 1 / -1; }

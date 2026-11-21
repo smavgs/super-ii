@@ -2,6 +2,7 @@
 import BrandMark from './BrandMark.astro';
 import LogoMark from './LogoMark.astro';
 import SigmaSignup from './SigmaSignup.astro';
+import { welcomeCopy } from '@/lib/welcome';
 import { isLocalizablePath, localizedPath, stripLocalePrefix, type SiteLocale } from '@/lib/i18n';
 
 const year = new Date().getFullYear();
@@ -53,6 +54,7 @@ const languageHref = (targetLocale: SiteLocale) => {
 
   <div class="shell footer-bottom">
     <span>© {year} Super ii</span>
+    <a href="/legal/privacy#optional-analytics" data-privacy-open data-no-translate>{welcomeCopy[locale].settings}</a>
     <nav class="footer-policy-links" aria-label="Policies and service status"><a href="/status">Status</a><a href="/legal/privacy">Privacy</a><a href="/legal/terms">Terms</a><a class="brand-inline" href="https://x.com/superiisite" rel="me external" aria-label="Super ii on X" data-no-translate><BrandMark brand="x" size="xs" label="X" />@superiisite</a></nav>
     {hasTranslation && <span class="footer-language-group" data-no-translate>
       {languageOrder[locale].map((targetLocale) => {

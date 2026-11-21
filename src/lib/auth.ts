@@ -1,5 +1,6 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { setSqlActorContext } from './db';
+import { requestedHandle as validatedHandle } from './welcome';
 
 export type AuthenticatedProfile = {
   clerkUserId: string;
@@ -26,7 +27,9 @@ export async function ensureAuthenticatedProfile(
   const primaryEmail = user.emailAddresses.find(
     (email) => email.id === user.primaryEmailAddressId,
   )?.emailAddress;
-  const requestedHandle = user.username
+  // This metadata is an untrusted preference, never an identity or permission.
+  // ensure_profile allocates once and preserves an existing member's handle.
+  const requestedHandle = validatedHandle(user.unsafeMetadata?.superiiRequestedHandle) ?? user.username
     ?? primaryEmail?.split('@')[0]
     ?? `user-${userId.slice(-8)}`;
   const displayName = [user.firstName, user.lastName].filter(Boolean).join(' ')
