@@ -23,7 +23,8 @@
 html:has(.handle-invitation) { scroll-padding-top: 9rem; }
 .privacy-choices { position: fixed; inset: 50% 16px auto auto; transform: translateY(-50%); margin: 0; box-sizing: border-box; width: 276px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 1.15rem; color: #101010; background: #fff; border: 2px solid #101010; border-radius: 4px; box-shadow: 6px 6px 0 #101010; font-family: var(--font-ui); }
 .privacy-choices[open] { animation: privacy-enter .3s cubic-bezier(.2,.8,.2,1) both; }
-.privacy-choices::backdrop { background: #071a2f1f; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.privacy-choices::backdrop { background: #071a2f1f; backdrop-filter: blur(4px); }
+@supports (-webkit-backdrop-filter: blur(4px)) { .privacy-choices::backdrop { -webkit-backdrop-filter: blur(4px); } }
 .privacy-choices__eyebrow { color: #555; font: 600 .62rem/1.4 var(--font-mono); letter-spacing: .04em; }
 .privacy-choices__mascot { position: relative; display: flex; align-items: center; justify-content: center; width: 132px; height: 96px; margin: .65rem auto; }
 .privacy-choices__mascot > .alien-mascot { animation: cookie-offer 5s ease-in-out infinite; }
