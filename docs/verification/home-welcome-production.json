@@ -1,0 +1,309 @@
+{
+  "release_date_local": "2026-11-21",
+  "timezone": "America/Los_Angeles",
+  "source_commit": "34c9e7aecf7a0335c0032072379c0c4220253764",
+  "pull_requests": [
+    187,
+    188
+  ],
+  "worker": {
+    "version": "04b04129-5585-48a4-87d9-2fec73f4cc04",
+    "deployment": "98b2348a-282f-496a-b304-13944f30342a",
+    "deployed_at_utc": "2026-11-22T03:48:08.832601Z",
+    "traffic_percent": 100,
+    "initial_version": "221d07d5-c7ea-422a-88c3-79dc5ec2da6c",
+    "pre_welcome_rollback_version": "6fadd126-120d-428a-8118-809cfe183ac9",
+    "existing_binding_names_and_types_preserved": 29,
+    "custom_domains": [
+      "superii.site",
+      "www.superii.site"
+    ],
+    "cron": "17 * * * *",
+    "preview_urls": false,
+    "workers_dev": false
+  },
+  "database": {
+    "migration": "0052_welcome_experience.sql",
+    "sha256": "2a162cc5f0b6dbfc0f91588394b148c4a290902a3f56be23cce74cf981ee4201",
+    "existing_profile_identities_and_handles_unchanged": true,
+    "repository_count_unchanged": true,
+    "allocator_owner_and_acl_unchanged": true,
+    "application_direct_counter_access": false,
+    "restricted_recorder_test_rolled_back": true
+  },
+  "http_checks": {
+    "worker_version": "221d07d5-c7ea-422a-88c3-79dc5ec2da6c",
+    "ok": true,
+    "count": 36,
+    "checks": [
+      {
+        "origin": "https://superii.site",
+        "check": "health",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "localized-home-en",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "localized-home-ru",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "localized-home-zh-CN",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "catalogue-models",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "catalogue-datasets",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "catalogue-spaces",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "catalogue-robots",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "catalogue-sigma",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "handle-smavgs",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "handle-admin",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "handle-available",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "handle-cross-origin-refused",
+        "status": 403,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "anonymous-report-refused",
+        "status": 403,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "no-consent-event-ignored",
+        "status": 204,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "declined-event-ignored",
+        "status": 204,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "extra-event-field-refused",
+        "status": 422,
+        "ok": true
+      },
+      {
+        "origin": "https://superii.site",
+        "check": "event-cross-origin-refused",
+        "status": 403,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "health",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "localized-home-en",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "localized-home-ru",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "localized-home-zh-CN",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "catalogue-models",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "catalogue-datasets",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "catalogue-spaces",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "catalogue-robots",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "catalogue-sigma",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "handle-smavgs",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "handle-admin",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "handle-available",
+        "status": 200,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "handle-cross-origin-refused",
+        "status": 403,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "anonymous-report-refused",
+        "status": 403,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "no-consent-event-ignored",
+        "status": 204,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "declined-event-ignored",
+        "status": 204,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "extra-event-field-refused",
+        "status": 422,
+        "ok": true
+      },
+      {
+        "origin": "https://www.superii.site",
+        "check": "event-cross-origin-refused",
+        "status": 403,
+        "ok": true
+      }
+    ]
+  },
+  "final_css_release": {
+    "both_domains_healthy": true,
+    "backdrop_blur": "blur(4px)",
+    "responsive_checks": [
+      {
+        "locale": "en",
+        "width": 390,
+        "height": 844
+      },
+      {
+        "locale": "en",
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "locale": "ru",
+        "width": 390,
+        "height": 844
+      },
+      {
+        "locale": "zh-CN",
+        "width": 844,
+        "height": 390
+      }
+    ],
+    "dialogs_fit": true,
+    "document_overflow": false,
+    "reduced_motion_respected": true
+  },
+  "live_browser": {
+    "isolated_context": true,
+    "real_handle_availability": true,
+    "chosen_handle_reached_live_clerk_signup": true,
+    "signup_completed": false,
+    "invitation_fixed_below_header": true,
+    "requests_while_declined": 0,
+    "requests_after_withdrawal": 0,
+    "allow_request_payload_keys": [
+      "event",
+      "surface",
+      "locale"
+    ],
+    "allow_request_intercepted_to_avoid_test_counter": true,
+    "new_production_test_accounts": 0
+  },
+  "verification_boundaries": [
+    "No physical iPhone/Safari session.",
+    "Signed-in mobile header geometry used local markup fixtures.",
+    "No real new-account OAuth/email completion.",
+    "Allow payload was intercepted; the restricted database recorder was exercised separately in a rolled-back transaction.",
+    "Aggregate actions do not represent unique visitors or completed signups/downloads."
+  ]
+}
