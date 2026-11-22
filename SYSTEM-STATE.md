@@ -3,6 +3,7 @@
 Canonical product and operations truth for the Super ii control plane and self-hosted runtime.
 
 - Snapshot: 2026-11-21
+- Latest website release: homepage welcome and cookie choices are live in English, Russian and Chinese, with migration 0052 and Worker `04b04129-5585-48a4-87d9-2fec73f4cc04` from commit `34c9e7aecf7a0335c0032072379c0c4220253764`. Real availability checks reach the live signup widget; a new-account completion and physical iPhone session remain unverified. See [release evidence](qa/HOME-WELCOME-2026-11-21.md).
 - Verification scope: Request/transfer hardening and dependency fixes are deployed: migration 0051, bounded Rust transfer service, refreshed Python runtime and images, and Worker ed1ef006-3d80-42b1-ad2b-ce221f6389c1. Twenty live read/access checks passed on both domains, and signed-in Workspace remains usable. Clerk remains on the free plan; MFA/passkeys are deferred by the operator, and DMARC delivery verification was not performed. Aliens List is deployed with migrations 0049–0050, three organizer-sourced events, public discovery and protected member tools. Both domains pass 20 read-only/access-boundary checks; desktop and mobile-width browser inspection confirms the native 👾, events, map toggle, homepage strip and sign-in redirects. Real member posting, conversations and optional digest delivery remain unverified in production. Earlier capability entries retain their documented verification boundaries, including Sigma News and the November 2 notifications and public-page release.
 - Canonical origin: https://superii.site
 - Policy: a capability never advances because code exists alone; each status requires evidence from its own layer.
@@ -107,7 +108,7 @@ The 2026-11-20 request/transfer hardening was deployed and checked on 2026-11-21
 
 ## Release truth rules
 
-Homepage welcome and privacy choices (2026-11-21): implemented, locally verified, not yet deployed. The scoped mobile header fix, floating handle invitation, signup preference handoff and optional aggregate measurement use migration 0052. No existing profile handle is renamed. Cookie choices and copy are supplied in English, Russian and Simplified Chinese. Browser fixtures, the full build and restricted PostgreSQL 17 integration checks pass; real new-account signup and physical iPhone testing remain unverified. See [verification and rollout boundary](qa/HOME-WELCOME-2026-11-21.md).
+Homepage welcome and privacy choices (2026-11-21): deployed and verified with migration 0052 and PRs #187–188. The scoped mobile header fix, floating handle invitation, signup preference handoff and optional aggregate measurement preserve existing profile handles. Cookie choices and copy are supplied in English, Russian and Simplified Chinese. Browser fixtures, the full build, restricted PostgreSQL 17 integration checks and live public checks pass; real new-account signup and physical iPhone testing remain unverified. See [verification and rollout boundary](qa/HOME-WELCOME-2026-11-21.md).
 
 - `implemented` never means deployed.
 - `production` never means generally available.
