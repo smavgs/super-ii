@@ -5,7 +5,8 @@
 .site-header .icon-button { min-width: 2.75rem; height: 2.75rem; border: 1px solid var(--ws-border); border-radius: 3px; background: var(--ws-panel); color: var(--ink); }
 .site-header .icon-button:hover, .site-header .menu-toggle[aria-expanded='true'] { background: var(--ws-cyan); color: #071a2f; border-color: #20344b; }
 .site-header .header-profile { display: flex; margin-left: .3rem; }
-.site-directory { inset: 5rem max(.75rem, calc((100vw - 90rem) / 2)) auto auto; width: min(24rem, calc(100vw - 1.5rem)); max-height: calc(100dvh - 5.75rem); padding: .65rem; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); box-shadow: 4px 4px 0 var(--ws-shadow), 0 16px 40px #071a2f20; overscroll-behavior: contain; overflow-y: auto; }
+/* Keep the directory above floating controls and ahead of legacy mobile-nav rules. */
+.mobile-nav.site-directory { z-index: 660; inset: 5rem max(.75rem, calc((100vw - 90rem) / 2)) auto auto; width: min(24rem, calc(100vw - 1.5rem)); max-height: calc(100dvh - 5.75rem); padding: .65rem; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); box-shadow: 4px 4px 0 var(--ws-shadow), 0 16px 40px #071a2f20; overscroll-behavior: contain; overflow-y: auto; }
 .site-directory[hidden] { display: none; }
 .site-directory > nav { width: 100%; max-width: none; gap: .65rem; padding: 0; }
 .directory-group { min-width: 0; border: 1px solid var(--ws-border); border-radius: 4px; background: var(--ws-panel); }
