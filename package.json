@@ -34,25 +34,25 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "14.4.6",
-    "@clerk/astro": "4.1.22",
-    "@clerk/localizations": "4.24.6",
+    "@astrojs/cloudflare": "14.4.9",
+    "@clerk/astro": "4.1.28",
+    "@clerk/localizations": "4.26.1",
     "@fontsource-variable/source-sans-3": "5.3.1",
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@huggingface/transformers": "4.2.0",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@modelcontextprotocol/server": "2.4.0",
-    "@neondatabase/serverless": "1.2.0",
+    "@neondatabase/serverless": "1.2.1",
     "@noble/hashes": "2.4.0",
     "@phosphor-icons/web": "2.1.2",
     "agents": "0.33.0",
-    "astro": "7.4.7",
+    "astro": "7.4.13",
     "drizzle-orm": "0.45.4",
-    "jose": "6.2.15",
+    "jose": "6.2.18",
     "leaflet": "1.9.4",
     "markdown-it": "15.0.3",
     "qrcode": "1.5.4",
-    "simple-icons": "16.36.0",
+    "simple-icons": "16.38.0",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -69,7 +69,7 @@
     "http-cache-semantics": "file:vendor/http-cache-semantics",
     "sharp": "0.35.5",
     "typescript": "6.0.3",
-    "wrangler": "4.158.0"
+    "wrangler": "4.165.0"
   },
   "overrides": {
     "adm-zip": "https://codeload.github.com/cthackers/adm-zip/tar.gz/7d90dea2bfd35bc4761d6c8cf822f26b59aeef77",
